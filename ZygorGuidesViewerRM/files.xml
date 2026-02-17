@@ -4,6 +4,7 @@
 	<Script file="Ver.lua"/>
 	<Script file="Parser.lua"/>
 	<Script file="Options.lua"/>
+	<Script file="GuideBrowser.lua"/>
 	<Script file="Waypoints.lua"/>
 	<Script file="Log.lua"/>
 	<Script file="Functions.lua"/>
@@ -22,8 +23,6 @@
 
 	<Script file="Foglight.lua"/>
 	<Script file="MapCoords.lua"/>
-
-	<Script file="Dev.lua"/>
 
 	<Include file="MapSpotMarkerTemplates.xml" />
 	<Script file="MapSpot.lua" />

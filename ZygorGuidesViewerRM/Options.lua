@@ -101,6 +101,13 @@ function me:Options_RegisterDefaults()
 			stepnumbers = true,
 
 			guidesinhistory = 5,
+			guidebrowserpath = "",
+			guidebrowsersearch = "",
+			guidebrowserselectedguide = nil,
+			guidebrowserfolderpage = 1,
+			guidebrowserguidepage = 1,
+			guidebrowsertreepage = 1,
+			guidebrowsertreeexpanded = {},
 
 			waypointaddon = "internal",
 
@@ -143,6 +150,7 @@ function me:Options_RegisterDefaults()
 end
 
 function me:Options_DefineOptions()
+	local settings_title = "|cffffff88Z|cffffee66y|cffffdd44g|cffffcc22o|cffffbb00r|r |cffffaa00Guides Viewer Remastered|r"
 	local Getter_Simple = function(info)
 		return self.db.profile[info[#info]]
 	end
@@ -161,10 +169,9 @@ function me:Options_DefineOptions()
 			self.db.profile.anchor_arrow = { point="CENTER", relPoint="BOTTOMLEFT", x=x, y=y }
 		end
 	end
-
 	self.options = {
 		type='group',
-		name = L["name"],
+		name = settings_title,
 		desc = L["desc"],
 		handler = self,
 		get = Getter_Simple,
@@ -182,10 +189,36 @@ function me:Options_DefineOptions()
 				name = L["opt_guide"]:format(self.version),
 				order = 1,
 			},
-			guide = {
+			guidebrowser = {
 				order = 2,
-				type = "select",
+				type = "group",
 				name = "",
+				inline = true,
+				args = {
+					gbtitle = {
+						order = 1,
+						type = "description",
+						name = "|cffffd200Remastered Guide Selector|r",
+						width = "full",
+					},
+					gbspacer = {
+						order = 1.1,
+						type = "description",
+						name = " |n |n |n |n |n |n |n |n |n |n |n |n |n",
+						width = "full",
+					},
+				},
+			},
+			guidebrowser_outerspacer = {
+				order = 2.1,
+				type = "description",
+				name = " |n |n |n |n |n |n |n |n |n |n |n |n |n |n |n",
+				width = "full",
+			},
+			guide = {
+				order = 2.2,
+				type = "select",
+				name = "Legacy Guide Dropdown",
 				values = function() return ZGV:GetGuides() end,
 				get = "GetCurrentGuideNum",
 				set = function(info,i) self:SetGuide(i) self:FocusStep(1) end,
@@ -901,7 +934,7 @@ function me:Options_DefineOptions()
 			},
 		}
 	}
-			
+
 	self.optionsmap = {
 		name = L["opt_group_map"],
 		desc = L["opt_group_map_desc"],
@@ -1274,7 +1307,7 @@ end
 function me:Options_SetupBlizConfig()
 	InterfaceOptionsFrame:GetRegions():SetTexture(0,0,0,0.9)
 	LibStub("AceConfigDialog-3.0"):SetDefaultSize("ZygorGuidesViewer", 600, 400)
-	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer", self.options.name)
+	local rootpanel = LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer", self.options.name)
 	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Display", self.optionsdisplay.name, self.options.name)
 	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Progress", self.optionsprogress.name, self.options.name);
 	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Map", self.optionsmap.name, self.options.name)
@@ -1284,6 +1317,9 @@ function me:Options_SetupBlizConfig()
 	end
 	--LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Data", self.optionsdata.name, self.options.name)
 	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Profile", self.optionsprofile.name, self.options.name)
+	if rootpanel and self.SetupGuideManagerInlinePanel then
+		self:SetupGuideManagerInlinePanel(rootpanel)
+	end
 end
 
 
@@ -1400,7 +1436,7 @@ end
 
 function me:OpenOptions()
 	--self:OpenConfigMenu()
-	InterfaceOptionsFrame_OpenToCategory(L['name'])
+	InterfaceOptionsFrame_OpenToCategory((self.options and self.options.name) or "Zygor Guides Viewer Remastered")
 end
 
 
