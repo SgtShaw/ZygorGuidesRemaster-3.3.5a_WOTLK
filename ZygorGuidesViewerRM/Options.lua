@@ -909,6 +909,7 @@ function me:Options_DefineOptions()
 							[2] = "Protanopia",
 							[3] = "Deuteranopia",
 							[4] = "Tritanopia",
+							[5] = "Global",
 						},
 						width = "normal",
 						get = function()
@@ -916,10 +917,11 @@ function me:Options_DefineOptions()
 							if m=="protan" then return 2 end
 							if m=="deutan" then return 3 end
 							if m=="tritan" then return 4 end
+							if m=="global" then return 5 end
 							return 1
 						end,
 						set = function(_,v)
-							local map = { [1]="off",[2]="protan",[3]="deutan",[4]="tritan" }
+							local map = { [1]="off",[2]="protan",[3]="deutan",[4]="tritan",[5]="global" }
 							self.db.profile.colorblindmode = map[v] or "off"
 							self:UpdateSkin()
 							self:UpdateFrame(true)
@@ -1128,7 +1130,7 @@ function me:Options_DefineOptions()
 						width = "full",
 						disabled = function()
 							local m = self.db.profile.colorblindmode
-							return m=="protan" or m=="deutan" or m=="tritan"
+							return m=="protan" or m=="deutan" or m=="tritan" or m=="global"
 						end,
 						set = function(i,v)
 							Setter_Simple(i,v)

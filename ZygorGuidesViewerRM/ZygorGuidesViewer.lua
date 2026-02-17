@@ -5489,8 +5489,8 @@ end
 
 local COLORBLIND_PALETTES = {
 	protan = {
-		arrow = { bad={0.25,0.45,0.90}, mid={0.95,0.80,0.30}, good={0.15,0.80,0.85} },
-		dist  = { bad={0.25,0.45,0.90}, mid={0.95,0.80,0.30}, good={0.15,0.80,0.85} },
+		arrow = { bad={0.000000,0.447059,0.698039}, mid={0.901961,0.623529,0.000000}, good={0.000000,0.619608,0.450980} },
+		dist  = { bad={0.000000,0.447059,0.698039}, mid={0.901961,0.623529,0.000000}, good={0.000000,0.619608,0.450980} },
 		goals = {
 			goalbackincomplete = {r=0.22,g=0.34,b=0.78,a=0.72},
 			goalbackprogressing= {r=0.50,g=0.44,b=0.78,a=0.74},
@@ -5501,8 +5501,8 @@ local COLORBLIND_PALETTES = {
 		},
 	},
 	deutan = {
-		arrow = { bad={0.72,0.42,0.90}, mid={0.95,0.74,0.28}, good={0.20,0.78,0.90} },
-		dist  = { bad={0.72,0.42,0.90}, mid={0.95,0.74,0.28}, good={0.20,0.78,0.90} },
+		arrow = { bad={0.000000,0.447059,0.698039}, mid={0.901961,0.623529,0.000000}, good={0.800000,0.474510,0.654902} },
+		dist  = { bad={0.000000,0.447059,0.698039}, mid={0.901961,0.623529,0.000000}, good={0.800000,0.474510,0.654902} },
 		goals = {
 			goalbackincomplete = {r=0.55,g=0.32,b=0.76,a=0.72},
 			goalbackprogressing= {r=0.70,g=0.48,b=0.56,a=0.74},
@@ -5513,8 +5513,8 @@ local COLORBLIND_PALETTES = {
 		},
 	},
 	tritan = {
-		arrow = { bad={0.90,0.35,0.25}, mid={0.88,0.40,0.70}, good={0.25,0.80,0.35} },
-		dist  = { bad={0.90,0.35,0.25}, mid={0.88,0.40,0.70}, good={0.25,0.80,0.35} },
+		arrow = { bad={0.835294,0.368627,0.000000}, mid={0.901961,0.623529,0.000000}, good={0.000000,0.447059,0.698039} },
+		dist  = { bad={0.835294,0.368627,0.000000}, mid={0.901961,0.623529,0.000000}, good={0.000000,0.447059,0.698039} },
 		goals = {
 			goalbackincomplete = {r=0.74,g=0.30,b=0.24,a=0.72},
 			goalbackprogressing= {r=0.70,g=0.32,b=0.55,a=0.74},
@@ -5524,11 +5524,15 @@ local COLORBLIND_PALETTES = {
 			goalbackobsolete   = {r=0.58,g=0.34,b=0.56,a=0.62},
 		},
 	},
+	global = {
+		arrow = { bad={0.000000,0.447059,0.698039}, mid={0.901961,0.623529,0.000000}, good={0.000000,0.619608,0.450980} },
+		dist  = { bad={0.000000,0.447059,0.698039}, mid={0.901961,0.623529,0.000000}, good={0.000000,0.619608,0.450980} },
+	},
 }
 
 function me:GetColorblindMode()
 	local m = self.db and self.db.profile and self.db.profile.colorblindmode
-	if m=="protan" or m=="deutan" or m=="tritan" then return m end
+	if m=="protan" or m=="deutan" or m=="tritan" or m=="global" then return m end
 	return "off"
 end
 

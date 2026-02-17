@@ -286,7 +286,7 @@ end
 local function RemasterUseSimplifiedNounColors()
 	if not (ZGV and ZGV.db and ZGV.db.profile) then return false end
 	local mode = ZGV.db.profile.colorblindmode
-	if mode=="protan" or mode=="deutan" or mode=="tritan" then return true end
+	if mode=="protan" or mode=="deutan" or mode=="tritan" or mode=="global" then return true end
 	return ZGV.db.profile.simplifyarrownouncolors
 end
 
@@ -297,6 +297,7 @@ local function RemasterNounColor(kind)
 		if mode=="protan" then return "|cff63d7ff" end   -- bright cyan
 		if mode=="deutan" then return "|cff7fa8ff" end   -- vivid blue
 		if mode=="tritan" then return "|cffff7ccf" end   -- bright pink
+		if mode=="global" then return "|cff63d7ff" end   -- bright cyan
 		return "|cffbb99ff"
 	end
 	if kind=="quest" then return "|cffbb99ff" end

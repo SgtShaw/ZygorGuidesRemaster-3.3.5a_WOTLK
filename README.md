@@ -18,7 +18,7 @@ This project keeps the classic Zygor workflow while delivering a cleaner remaste
 ## 🔖 Version
 
 - 📦 Addon version: **3.0**
-- 🔢 Revision: **76**
+- 🔢 Revision: **77**
 - 🎮 Intended client: **WotLK 3.3.5a / 12340**
 
 ## 🎯 Who This Is For
@@ -138,7 +138,7 @@ This addon is fully open source and can be inspected before use.
 
 ## 📜 Changelog
 
-### v3.0 (Revision 76)
+### v3.0 (Revision 77)
 - Remastered UI improvements
 - Packaging and installation cleanup
 - Expanded guide coverage
@@ -183,7 +183,7 @@ This remaster focuses on UI/UX modernization, packaging quality, compatibility m
 ## 🖼️ Example Images
 ### New Pointer Arrow
 ![new pointer arrow](docs/images/new-arrow.gif)
-### ... With Colorblind Options!
+### ... With Colorblind Options! (colors updated, need new gifs)
 ![colorblind deuteran](docs/images/new-arrow-deuteran.gif)
 ![colorblind protan](docs/images/new-arrow-protan.gif)
 ![colorblind tritan](docs/images/new-arrow-tritan.gif)
