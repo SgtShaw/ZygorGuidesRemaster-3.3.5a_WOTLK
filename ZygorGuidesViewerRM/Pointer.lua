@@ -1801,6 +1801,7 @@ function Pointer.ArrowFrame_OnUpdate(self,elapsed)
 	--]]
 
 	if not self.waypoint then self:Hide() return end
+	if profile and profile.arrowshow==false then self:Hide() return end
 	if profile.hidearrowwithguide and self.waypoint.type=="way" and not ZGV.Frame:IsVisible() then self:Hide() return end
 	--if GetCurrentMapContinentAndZone()~=self.waypoint.c then end
 

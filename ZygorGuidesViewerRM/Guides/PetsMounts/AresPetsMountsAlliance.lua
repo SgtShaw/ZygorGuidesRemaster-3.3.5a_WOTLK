@@ -3,6 +3,7 @@ if not ZygorGuidesViewer then return end
 
 ZygorGuidesViewer:RegisterGuide("Ares' Pets & Mounts Guides\\Weekly Mount Runs\\Outland Mount Loop",[[
 author ErebusAres
+	type petsmounts
 description Run fast Outland mount farms in one guide: Karazhan, Sethekk Halls, Tempest Keep, and Magisters' Terrace.
 startlevel 80
 step //1
@@ -45,6 +46,7 @@ step //14
 
 ZygorGuidesViewer:RegisterGuide("Ares' Pets & Mounts Guides\\Weekly Mount Runs\\Northrend + Azeroth Mount Loop",[[
 author ErebusAres
+	type petsmounts
 description Farm quick Wrath-era and classic weekly mount drops: Utgarde Pinnacle, Eye of Eternity, Obsidian Sanctum, Onyxia, and Stratholme.
 startlevel 80
 step //1
@@ -90,6 +92,7 @@ step //16
 
 ZygorGuidesViewer:RegisterGuide("Ares' Pets & Mounts Guides\\Rare Hunts\\Northrend Rare Spawn Safari",[[
 author ErebusAres
+	type petsmounts
 description Patrol Northrend for iconic rare spawns and spirit beasts.
 startlevel 80
 step //1

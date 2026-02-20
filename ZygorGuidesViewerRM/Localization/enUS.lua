@@ -33,8 +33,8 @@ ZygorGuidesViewer_L("Main", "enUS", function() return {
 	["opt_fontsize_desc"] = "Set your preferred text size. Note that the window scale affects this, too.",
 	["opt_fontsecsize"] = "Secondary text scale",
 	["opt_fontsecsize_desc"] = "Set your preferred secondary text size, used to display additional descriptions and notes.",
-	["opt_backcolor"] = "Background colour",
-	["opt_backcolor_desc"] = "The background colour of the window.",
+	["opt_backcolor"] = "Background color",
+	["opt_backcolor_desc"] = "The background color of the window.",
 
 	["opt_group_window"] = "Window features",
 	--["opt_minimapnotedesc"] = "Show waypoint caption",
@@ -190,8 +190,8 @@ ZygorGuidesViewer_L("Main", "enUS", function() return {
 	['opt_arrowfreeze_desc'] = "Make the pointer arrow ignore all mouse actions. Uncheck to enable dragging the arrow.",
 	['opt_arrowcam'] = "Arrow follows camera",
 	['opt_arrowcam_desc'] = "Show directions basing on the direction the camera is turned. If unchecked, the pointer arrow shows directions basing only on where your character is facing.\n\nNote: in camera mode, the arrow might point in weird directions when using click-to-move.",
-	['opt_arrowcolordir'] = "Colour by direction",
-	['opt_arrowcolordir_desc'] = "Colour the arrow's gem green when pointing at the destination.\n\nDeselect to let the gem turn green when approaching the destination.",
+	['opt_arrowcolordir'] = "Color by direction",
+	['opt_arrowcolordir_desc'] = "Color the arrow's gem green when pointing at the destination.\n\nDeselect to let the gem turn green when approaching the destination.",
 	['opt_arrowscale'] = "Arrow scale",
 	['opt_arrowscale_desc'] = "Set the size of the waypointing arrow.",
 	['opt_arrowfontsize'] = "Arrow font size",
@@ -220,7 +220,7 @@ ZygorGuidesViewer_L("Main", "enUS", function() return {
 	-- Gold Guide options
 
 	['opt_group_gold'] = "Gold Guide",
-	['opt_group_gold_desc'] = "These options control the behaviour of the map notes of the Zygor Alliance/Horde Gold Guide.",
+	['opt_group_gold_desc'] = "These options control the behavior of the map notes of the Zygor Alliance/Horde Gold Guide.",
 	['opt_gold_detectiondist'] = "Detection distance",
 	['opt_gold_detectiondist_desc'] = "Controls at what distance are the gold-making locations considered 'near'.",
 	['opt_gold_reqmode'] = "Filter locations by profession",

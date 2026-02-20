@@ -1,6 +1,8 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/
 ..\FrameXML\UI.xsd">
 	<!-- Autoloading of included guides. Add your Guide##.lua files here as you please. -->
+	<Script file="ZygorIncludesAlliance.lua"/>
+	<Script file="ZygorIncludesHorde.lua"/>
 	
 	<Script file="Leveling\ZygorGuidesAlliance.lua"/>
 	<Script file="Leveling\ZygorGuidesHorde.lua"/>

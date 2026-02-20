@@ -4,6 +4,8 @@ if UnitFactionGroup("player")~="Alliance" then return end
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Holidays Guide Achievements\\Midsummer Fire Festival\\Introduction",[[
 author danaton
+	type achievements
+	faction alliance
 next Ding80's Alliance Holidays Guide Achievements\\Midsummer Fire Festival\\Extinguishing and Flame Warden of Eastern Kingdoms
 description Empty
 startlevel 80
@@ -43,6 +45,8 @@ startlevel 80
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Holidays Guide Achievements\\Midsummer Fire Festival\\Extinguishing and Flame Warden of Eastern Kingdoms",[[
 author danaton
+	type achievements
+	faction alliance
 next Ding80's Alliance Holidays Guide Achievements\\Midsummer Fire Festival\\Extinguishing and Flame Warden of Kalimdor
 description Contains a route for achievements: "Flame Warden of Eastern Kingdoms", "Extinguishing Eastern Kingdoms"
 startlevel 80
@@ -167,6 +171,8 @@ startlevel 80
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Holidays Guide Achievements\\Midsummer Fire Festival\\Extinguishing and Flame Warden of Kalimdor",[[
 author danaton
+	type achievements
+	faction alliance
 next Ding80's Alliance Holidays Guide Achievements\\Midsummer Fire Festival\\King of the Fire Festival
 description Contains a route for achievements: "Flame Warden of Kalimdor", "Extinguishing Kalimdor"
 startlevel 80
@@ -285,6 +291,8 @@ startlevel 80
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Holidays Guide Achievements\\Midsummer Fire Festival\\King of the Fire Festival",[[
 author danaton
+	type achievements
+	faction alliance
 next Ding80's Alliance Holidays Guide Achievements\\Midsummer Fire Festival\\Extinguishing and Flame Warden of Outland
 description Contains a route for achievements: "King of the Fire Festival".
 startlevel 80
@@ -325,6 +333,8 @@ startlevel 80
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Holidays Guide Achievements\\Midsummer Fire Festival\\Extinguishing and Flame Warden of Outland",[[
 author danaton
+	type achievements
+	faction alliance
 next Ding80's Alliance Holidays Guide Achievements\\Midsummer Fire Festival\\Burning Hot Pole Dance
 description Contains a route for achievements: "Flame Warden of Outland", "Extinguishing Outland"
 startlevel 80
@@ -388,6 +398,8 @@ startlevel 80
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Holidays Guide Achievements\\Midsummer Fire Festival\\Burning Hot Pole Dance",[[
 author danaton
+	type achievements
+	faction alliance
 description Contains a route for achievements: "Burning Hot Pole Dance"
 startlevel 80
 		step
@@ -405,6 +417,8 @@ startlevel 80
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Holidays Guide Achievements\\Midsummer Fire Festival\\Torch Juggler",[[
 author danaton
+	type achievements
+	faction alliance
 description Contains a route for achievements: "Torch Juggler"
 startlevel 80
 		step

@@ -24,6 +24,7 @@ function me:Options_RegisterDefaults()
 			maint_queryquests = true,
 
 			guides_history = {},
+			guide_progress = {},
 
 			RecipesKnown = {},
 		},
@@ -116,10 +117,14 @@ function me:Options_RegisterDefaults()
 			golddistmode = 1, -- in range
 
 			arrowmeters = false,
+			arrowshow = true,
 			arrowfreeze = false,
 			--arrowcam = false,
 			arrowcolordir = true,
 			arrowcolormode = "direction",
+			arrowcolorcustom_far = {r=1.0,g=0.0,b=0.0},
+			arrowcolorcustom_mid = {r=0.8,g=0.7,b=0.0},
+			arrowcolorcustom_near = {r=0.0,g=1.0,b=0.0},
 			arrowoutline = false,
 			arrowoutlinemode = "default",
 			simplifyarrownouncolors = false,
@@ -157,6 +162,38 @@ function me:Options_DefineOptions()
 	local Setter_Simple = function(info,value)
 		self.db.profile[info[#info]] = value
 	end
+	local function CloneOptionNode(node, seen)
+		if type(node) ~= "table" then return node end
+		seen = seen or {}
+		if seen[node] then return seen[node] end
+		local out = {}
+		seen[node] = out
+		for k,v in pairs(node) do
+			out[k] = CloneOptionNode(v, seen)
+		end
+		return out
+	end
+	local function BuildSplitOptionsArgs(sourceArgs, keys, descText)
+		local args = {}
+		args.desc = {
+			order = 1,
+			type = "description",
+			name = descText or "",
+		}
+		local order = 2
+		for _,key in ipairs(keys or {}) do
+			local node = sourceArgs and sourceArgs[key]
+			if node then
+				local cloned = CloneOptionNode(node)
+				if type(cloned) == "table" and cloned.order == nil then
+					cloned.order = order
+				end
+				args[key] = cloned
+				order = order + 1
+			end
+		end
+		return args
+	end
 	local ResetArrowPosition = function()
 		if self.Pointer and self.Pointer.ResetArrowAnchorToDefault then
 			self.Pointer:ResetArrowAnchorToDefault()
@@ -188,32 +225,6 @@ function me:Options_DefineOptions()
 				type = "header",
 				name = L["opt_guide"]:format(self.version),
 				order = 1,
-			},
-			guidebrowser = {
-				order = 2,
-				type = "group",
-				name = "",
-				inline = true,
-				args = {
-					gbtitle = {
-						order = 1,
-						type = "description",
-						name = "|cffffd200Remastered Guide Selector|r",
-						width = "full",
-					},
-					gbspacer = {
-						order = 1.1,
-						type = "description",
-						name = " |n |n |n |n |n |n |n |n |n |n |n |n |n",
-						width = "full",
-					},
-				},
-			},
-			guidebrowser_outerspacer = {
-				order = 2.1,
-				type = "description",
-				name = " |n |n |n |n |n |n |n |n |n |n |n |n |n |n |n",
-				width = "full",
 			},
 			guide = {
 				order = 2.2,
@@ -247,16 +258,6 @@ function me:Options_DefineOptions()
 				set = "SetVisible",
 				width = "full",
 				order = 3.4,
-			},
-			sep1 = {
-				type="description", name=" |n |n |n", order=98
-			},
-			report = {
-				name = L["opt_report"],
-				desc = L["opt_report_desc"],
-				type = 'execute',
-				func = function() ZGV:BugReport() end,
-				order = 99,
 			},
 			debug = {
 				hidden = true,
@@ -894,47 +895,176 @@ function me:Options_DefineOptions()
 				width = "full",
 				order = 3.7,
 			},
-			colorblind = {
-				name = "Colorblind Options",
-				type = "group",
-				inline = true,
-				order = 3.9,
-				args = {
-					colorblindmode = {
-						name = "Colorblind Mode",
-						desc = "Override guide, arrow, and distance colors with colorblind-friendly palettes. Also forces simplified arrow noun colors with optimized contrast.",
-						type = "select",
-						values = {
-							[1] = "Off",
-							[2] = "Protanopia",
-							[3] = "Deuteranopia",
-							[4] = "Tritanopia",
-							[5] = "Global",
-						},
-						width = "normal",
-						get = function()
-							local m = self.db.profile.colorblindmode
-							if m=="protan" then return 2 end
-							if m=="deutan" then return 3 end
-							if m=="tritan" then return 4 end
-							if m=="global" then return 5 end
-							return 1
-						end,
-						set = function(_,v)
-							local map = { [1]="off",[2]="protan",[3]="deutan",[4]="tritan",[5]="global" }
-							self.db.profile.colorblindmode = map[v] or "off"
-							self:UpdateSkin()
-							self:UpdateFrame(true)
-							if self.Pointer and self.Pointer.ArrowFrame then
-								self.Pointer:RefreshArrowStyle()
-							end
-							self:SetWaypoint()
-						end,
-						order = 1,
-					},
-				},
-			},
 		}
+	}
+
+	self.optionsaccessibility = {
+		name = "Accessibility",
+		desc = "Color visibility and readability options.",
+		type = 'group',
+		order = 3.6,
+		handler = self,
+		get = Getter_Simple,
+		set = Setter_Simple,
+		args = {
+			desc = {
+				order = 1,
+				type = "description",
+				name = "Adjust visual accessibility options for color and text clarity.",
+			},
+			colorblindmode = {
+				name = "Colorblind Mode",
+				desc = "Override guide, arrow, and distance colors with colorblind-friendly palettes. Also forces simplified arrow noun colors with optimized contrast.",
+				type = "select",
+				values = {
+					[1] = "Off",
+					[2] = "Protanopia",
+					[3] = "Deuteranopia",
+					[4] = "Tritanopia",
+					[5] = "Global",
+					[6] = "Custom",
+				},
+				width = "normal",
+				get = function()
+					local m = self.db.profile.colorblindmode
+					if m=="protan" then return 2 end
+					if m=="deutan" then return 3 end
+					if m=="tritan" then return 4 end
+					if m=="global" then return 5 end
+					if m=="custom" then return 6 end
+					return 1
+				end,
+				set = function(_,v)
+					local map = { [1]="off",[2]="protan",[3]="deutan",[4]="tritan",[5]="global",[6]="custom" }
+					self.db.profile.colorblindmode = map[v] or "off"
+					self:UpdateSkin()
+					self:UpdateFrame(true)
+					if self.Pointer and self.Pointer.ArrowFrame then
+						self.Pointer:RefreshArrowStyle()
+					end
+					self:SetWaypoint()
+				end,
+				order = 2,
+			},
+			customcolors_spacer = {
+				type = "description",
+				name = " ",
+				width = "full",
+				order = 2.05,
+			},
+			arrowcolorcustom_far = {
+				name = "Far",
+				type = "color",
+				disabled = function() return self.db.profile.colorblindmode ~= "custom" end,
+				get = function()
+					local c = self.db.profile.arrowcolorcustom_far or {r=1.0,g=0.0,b=0.0}
+					return c.r,c.g,c.b
+				end,
+				set = function(_,r,g,b)
+					self.db.profile.arrowcolorcustom_far = {r=r,g=g,b=b}
+					ZGV:SetWaypoint()
+				end,
+				width = "half",
+				order = 2.1,
+			},
+			arrowcolorcustom_mid = {
+				name = "Mid",
+				type = "color",
+				disabled = function() return self.db.profile.colorblindmode ~= "custom" end,
+				get = function()
+					local c = self.db.profile.arrowcolorcustom_mid or {r=0.8,g=0.7,b=0.0}
+					return c.r,c.g,c.b
+				end,
+				set = function(_,r,g,b)
+					self.db.profile.arrowcolorcustom_mid = {r=r,g=g,b=b}
+					ZGV:SetWaypoint()
+				end,
+				width = "half",
+				order = 2.2,
+			},
+			arrowcolorcustom_near = {
+				name = "Near",
+				type = "color",
+				disabled = function() return self.db.profile.colorblindmode ~= "custom" end,
+				get = function()
+					local c = self.db.profile.arrowcolorcustom_near or {r=0.0,g=1.0,b=0.0}
+					return c.r,c.g,c.b
+				end,
+				set = function(_,r,g,b)
+					self.db.profile.arrowcolorcustom_near = {r=r,g=g,b=b}
+					ZGV:SetWaypoint()
+				end,
+				width = "half",
+				order = 2.3,
+			},
+			simplifyarrownouncolors = {
+				name = "Simplified Arrow Noun Colors",
+				desc = "Use one noun color on remastered arrow text. Coordinates remain gold. Auto-forced by Colorblind Mode.",
+				type = "toggle",
+				width = "full",
+				disabled = function()
+					local m = self.db.profile.colorblindmode
+					return m=="protan" or m=="deutan" or m=="tritan" or m=="global"
+				end,
+				set = function(i,v)
+					Setter_Simple(i,v)
+					ZGV:SetWaypoint()
+				end,
+				order = 3,
+			},
+		},
+	}
+
+	self.optionsabout = {
+		name = "About",
+		desc = "Version, support, and diagnostics.",
+		type = "group",
+		order = 4.8,
+		handler = self,
+		get = Getter_Simple,
+		set = Setter_Simple,
+		args = {
+			desc = {
+				order = 1,
+				type = "description",
+				name = "Zygor Guides Viewer Remastered for WoTLK 3.3.5a",
+			},
+			version = {
+				order = 1.1,
+				type = "description",
+				name = function()
+					return ("Version: %s"):format(tostring(self.version or "unknown"))
+				end,
+				width = "full",
+			},
+			revision = {
+				order = 1.2,
+				type = "description",
+				name = function()
+					return ("Revision: %s"):format(tostring(self.revision or "unknown"))
+				end,
+				width = "full",
+			},
+			sep1 = {
+				order = 2,
+				type = "header",
+				name = "Support",
+			},
+			report = {
+				name = L["opt_report"],
+				desc = L["opt_report_desc"],
+				type = "execute",
+				func = function() ZGV:BugReport() end,
+				order = 2.1,
+				width = "full",
+			},
+			diag = {
+				order = 3,
+				type = "description",
+				name = "Tip: `/zygor status` and `/zygor debug` help with troubleshooting.",
+				width = "full",
+			},
+		},
 	}
 
 	self.optionsmap = {
@@ -1022,6 +1152,23 @@ function me:Options_DefineOptions()
 				order = 10,
 				disabled = function() return self.db.profile.waypointaddon~="internal" end,
 				args = {
+					arrowshow = {
+						name = "Show Arrow",
+						desc = "Show or hide the internal waypoint arrow.",
+						type = "toggle",
+						width = "full",
+						order = 10.05,
+						set = function(i,v)
+							Setter_Simple(i,v)
+							if ZGV.Pointer and ZGV.Pointer.ArrowFrame then
+								if v then
+									ZGV:SetWaypoint()
+								else
+									ZGV.Pointer:HideArrow()
+								end
+							end
+						end,
+					},
 					arrowfreeze = {
 						name = L["opt_arrowfreeze"],
 						desc = L["opt_arrowfreeze_desc"],
@@ -1065,6 +1212,7 @@ function me:Options_DefineOptions()
 							self.db.profile.arrowcolormode = (v==2) and "distance" or "direction"
 							-- Keep legacy bool in sync for compatibility with any older paths.
 							self.db.profile.arrowcolordir = (v~=2)
+							ZGV:SetWaypoint()
 						end,
 						width = "normal",
 						order = 11.001,
@@ -1122,21 +1270,6 @@ function me:Options_DefineOptions()
 						end,
 						width = "normal",
 						order = 10.215,
-					},
-					simplifyarrownouncolors = {
-						name = "Simplified Arrow Noun Colors",
-						desc = "Use one noun color on remastered arrow text. Coordinates remain gold. Auto-forced by Colorblind Mode.",
-						type = "toggle",
-						width = "full",
-						disabled = function()
-							local m = self.db.profile.colorblindmode
-							return m=="protan" or m=="deutan" or m=="tritan" or m=="global"
-						end,
-						set = function(i,v)
-							Setter_Simple(i,v)
-							ZGV:SetWaypoint()
-						end,
-						order = 11.01,
 					},
 					remasterpointeronlegacy = {
 						name = "Use Remastered Pointer on Legacy Skins",
@@ -1205,6 +1338,77 @@ function me:Options_DefineOptions()
 				hidden = function() return not self.db.profile.debug end
 			},
 		}
+	}
+
+	-- Retail-style split pages built from existing options, so behavior stays identical.
+	self.optionsstepdisplay = {
+		name = "Step Display",
+		desc = "Step row layout, goal visuals, and step readability.",
+		type = "group",
+		order = 2.2,
+		handler = self,
+		get = Getter_Simple,
+		set = Setter_Simple,
+		args = BuildSplitOptionsArgs(self.optionsdisplay.args, {"step"}, "Configure how guide steps and goals are displayed."),
+	}
+	if self.optionsdisplay.args
+	and self.optionsdisplay.args.window
+	and self.optionsdisplay.args.window.args
+	and self.optionsdisplay.args.window.args.showcountsteps then
+		self.optionsstepdisplay.args.showcountsteps = CloneOptionNode(self.optionsdisplay.args.window.args.showcountsteps)
+		self.optionsstepdisplay.args.showcountsteps.order = 1.5
+	end
+
+	self.optionstravelsystem = {
+		name = "Travel System",
+		desc = "Travel provider and core waypoint system behavior.",
+		type = "group",
+		order = 2.4,
+		handler = self,
+		get = Getter_Simple,
+		set = Setter_Simple,
+		args = BuildSplitOptionsArgs(self.optionsmap.args, {"waypoints","hidearrowwithguide"}, "Choose how travel and waypoint providers are handled."),
+	}
+
+	self.optionsmapswaypoints = {
+		name = "Maps & Waypoints",
+		desc = "Arrow visuals and minimap/map waypoint display.",
+		type = "group",
+		order = 2.5,
+		handler = self,
+		get = Getter_Simple,
+		set = Setter_Simple,
+		args = BuildSplitOptionsArgs(self.optionsmap.args, {"minicons","transparency","scale","_internal","resetarrowposition"}, "Configure map markers and internal arrow visuals."),
+	}
+
+	self.optionsnotifications = {
+		name = "Notifications",
+		desc = "Progress and completion flash cues.",
+		type = "group",
+		order = 2.6,
+		handler = self,
+		get = Getter_Simple,
+		set = Setter_Simple,
+		args = BuildSplitOptionsArgs(
+			(self.optionsdisplay.args and self.optionsdisplay.args.step and self.optionsdisplay.args.step.args) or {},
+			{"goalupdateflash","goalcompletionflash","flashborder"},
+			"Configure visual notification cues while progressing through steps."
+		),
+	}
+
+	self.optionsactionbuttons = {
+		name = "Action Buttons",
+		desc = "Clickable goal/step interaction display behavior.",
+		type = "group",
+		order = 2.7,
+		handler = self,
+		get = Getter_Simple,
+		set = Setter_Simple,
+		args = BuildSplitOptionsArgs(
+			(self.optionsdisplay.args and self.optionsdisplay.args.step and self.optionsdisplay.args.step.args) or {},
+			{"stepnumbers","goalicons","tooltipsbelow"},
+			"Configure goal icon and interactive step presentation."
+		),
 	}
 	
 	--[[
@@ -1298,9 +1502,16 @@ end
 function me:Options_SetupConfig()
 	LibStub("AceConfig-3.0"):RegisterOptionsTable("ZygorGuidesViewer", self.options, ZYGORGUIDESVIEWER_COMMAND );
 	LibStub("AceConfig-3.0"):RegisterOptionsTable("ZygorGuidesViewer-Display", self.optionsdisplay, "zgdisplay");
+	LibStub("AceConfig-3.0"):RegisterOptionsTable("ZygorGuidesViewer-StepDisplay", self.optionsstepdisplay, "zgstepdisplay");
 	LibStub("AceConfig-3.0"):RegisterOptionsTable("ZygorGuidesViewer-Progress", self.optionsprogress, "zgprogress");
+	LibStub("AceConfig-3.0"):RegisterOptionsTable("ZygorGuidesViewer-Travel", self.optionstravelsystem, "zgtravel");
+	LibStub("AceConfig-3.0"):RegisterOptionsTable("ZygorGuidesViewer-Maps", self.optionsmapswaypoints, "zgmaps");
+	LibStub("AceConfig-3.0"):RegisterOptionsTable("ZygorGuidesViewer-Notifications", self.optionsnotifications, "zgnotify");
+	LibStub("AceConfig-3.0"):RegisterOptionsTable("ZygorGuidesViewer-ActionButtons", self.optionsactionbuttons, "zgaction");
 	LibStub("AceConfig-3.0"):RegisterOptionsTable("ZygorGuidesViewer-Map", self.optionsmap, "zgmap");
 	LibStub("AceConfig-3.0"):RegisterOptionsTable("ZygorGuidesViewer-Conv", self.optionsconv, "zgconv");
+	LibStub("AceConfig-3.0"):RegisterOptionsTable("ZygorGuidesViewer-Accessibility", self.optionsaccessibility, "zgaccess");
+	LibStub("AceConfig-3.0"):RegisterOptionsTable("ZygorGuidesViewer-About", self.optionsabout, "zgabout");
 	LibStub("AceConfig-3.0"):RegisterOptionsTable("ZygorGuidesViewer-Debug", self.optionsdebug, "zgdebug");
 	--LibStub("AceConfig-3.0"):RegisterOptionsTable("ZygorGuidesViewer-Data", self.optionsdata, "--[[#$$#]]");
 	LibStub("AceConfig-3.0"):RegisterOptionsTable("ZygorGuidesViewer-Profile", self.optionsprofile, "zgprofile");
@@ -1311,17 +1522,20 @@ function me:Options_SetupBlizConfig()
 	LibStub("AceConfigDialog-3.0"):SetDefaultSize("ZygorGuidesViewer", 600, 400)
 	local rootpanel = LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer", self.options.name)
 	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Display", self.optionsdisplay.name, self.options.name)
+	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-StepDisplay", self.optionsstepdisplay.name, self.options.name)
 	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Progress", self.optionsprogress.name, self.options.name);
-	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Map", self.optionsmap.name, self.options.name)
+	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Travel", self.optionstravelsystem.name, self.options.name)
+	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Maps", self.optionsmapswaypoints.name, self.options.name)
+	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Notifications", self.optionsnotifications.name, self.options.name)
+	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-ActionButtons", self.optionsactionbuttons.name, self.options.name)
 	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Conv", self.optionsconv.name, self.options.name)
+	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Accessibility", self.optionsaccessibility.name, self.options.name)
+	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-About", self.optionsabout.name, self.options.name)
 	if (self.db.profile.debug) then
 		LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Debug", self.optionsdebug.name, self.options.name)
 	end
 	--LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Data", self.optionsdata.name, self.options.name)
 	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Profile", self.optionsprofile.name, self.options.name)
-	if rootpanel and self.SetupGuideManagerInlinePanel then
-		self:SetupGuideManagerInlinePanel(rootpanel)
-	end
 end
 
 

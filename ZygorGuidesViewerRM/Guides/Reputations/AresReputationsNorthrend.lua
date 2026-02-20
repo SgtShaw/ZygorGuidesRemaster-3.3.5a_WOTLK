@@ -4,6 +4,8 @@ if UnitFactionGroup("player")~="Alliance" then return end
 
 ZygorGuidesViewer:RegisterGuide("Ares' Alliance Quest Guides\\Reputation\\The Wyrmrest Accord Pre-Quests",[[
 	author ErebusAres
+	type reputations
+	faction alliance
 	startlevel 80
 	next Ares' Alliance Quest Guides\\Reputation\\The Wyrmrest Accord Dailies
 	description This guide unlocks the Wyrmrest Accord daily quest chain in Dragonblight.
@@ -13,6 +15,8 @@ ZygorGuidesViewer:RegisterGuide("Ares' Alliance Quest Guides\\Reputation\\The Wy
 
 ZygorGuidesViewer:RegisterGuide("Ares' Alliance Quest Guides\\Reputation\\The Wyrmrest Accord Dailies",[[
 	author ErebusAres
+	type reputations
+	faction alliance
 	startlevel 80
 	description This guide runs the Wyrmrest Accord daily quest route in Dragonblight.
 	step
@@ -21,6 +25,8 @@ ZygorGuidesViewer:RegisterGuide("Ares' Alliance Quest Guides\\Reputation\\The Wy
 
 ZygorGuidesViewer:RegisterGuide("Ares' Alliance Quest Guides\\Reputation\\The Sons of Hodir Pre-Quests",[[
 	author ErebusAres
+	type reputations
+	faction alliance
 	startlevel 80
 	description This guide unlocks the Sons of Hodir chain in The Storm Peaks.
 	step
@@ -29,6 +35,8 @@ ZygorGuidesViewer:RegisterGuide("Ares' Alliance Quest Guides\\Reputation\\The So
 
 ZygorGuidesViewer:RegisterGuide("Ares' Alliance Quest Guides\\Reputation\\The Oracles Pre-Quests",[[
 	author ErebusAres
+	type reputations
+	faction alliance
 	startlevel 80
 	next Ares' Alliance Quest Guides\\Reputation\\The Oracles Dailies
 	description This guide unlocks The Oracles daily quests in Sholazar Basin.
@@ -38,6 +46,8 @@ ZygorGuidesViewer:RegisterGuide("Ares' Alliance Quest Guides\\Reputation\\The Or
 
 ZygorGuidesViewer:RegisterGuide("Ares' Alliance Quest Guides\\Reputation\\The Oracles Dailies",[[
 	author ErebusAres
+	type reputations
+	faction alliance
 	startlevel 80
 	description This guide runs The Oracles daily quests in Sholazar Basin.
 	step
@@ -46,6 +56,8 @@ ZygorGuidesViewer:RegisterGuide("Ares' Alliance Quest Guides\\Reputation\\The Or
 
 ZygorGuidesViewer:RegisterGuide("Ares' Alliance Quest Guides\\Reputation\\Frenzyheart Tribe Pre-Quests",[[
 	author ErebusAres
+	type reputations
+	faction alliance
 	startlevel 80
 	next Ares' Alliance Quest Guides\\Reputation\\Frenzyheart Tribe Dailies
 	description This guide unlocks Frenzyheart Tribe daily quests in Sholazar Basin.
@@ -55,6 +67,8 @@ ZygorGuidesViewer:RegisterGuide("Ares' Alliance Quest Guides\\Reputation\\Frenzy
 
 ZygorGuidesViewer:RegisterGuide("Ares' Alliance Quest Guides\\Reputation\\Frenzyheart Tribe Dailies",[[
 	author ErebusAres
+	type reputations
+	faction alliance
 	startlevel 80
 	description This guide runs Frenzyheart Tribe daily quests in Sholazar Basin.
 	step
@@ -63,6 +77,8 @@ ZygorGuidesViewer:RegisterGuide("Ares' Alliance Quest Guides\\Reputation\\Frenzy
 
 ZygorGuidesViewer:RegisterGuide("Ares' Alliance Quest Guides\\Reputation\\Northrend Reputation Hub",[[
 	author ErebusAres
+	type reputations
+	faction alliance
 	startlevel 80
 	description Quick launcher for major Northrend reputation guides.
 	step
@@ -89,6 +105,8 @@ ZygorGuidesViewer:RegisterGuide("Ares' Alliance Quest Guides\\Reputation\\Northr
 
 ZygorGuidesViewer:RegisterGuide("Ares' Alliance Quest Guides\\Reputation\\Argent Crusade (Overview)",[[
 	author ErebusAres
+	type reputations
+	faction alliance
 	startlevel 80
 	description Redirects to the proven Argent Crusade reputation overview guide.
 	step
@@ -97,6 +115,8 @@ ZygorGuidesViewer:RegisterGuide("Ares' Alliance Quest Guides\\Reputation\\Argent
 
 ZygorGuidesViewer:RegisterGuide("Ares' Alliance Quest Guides\\Reputation\\Kirin Tor (Overview)",[[
 	author ErebusAres
+	type reputations
+	faction alliance
 	startlevel 80
 	description Redirects to the proven Kirin Tor reputation overview guide.
 	step
@@ -105,6 +125,8 @@ ZygorGuidesViewer:RegisterGuide("Ares' Alliance Quest Guides\\Reputation\\Kirin 
 
 ZygorGuidesViewer:RegisterGuide("Ares' Alliance Quest Guides\\Reputation\\Knights of the Ebon Blade (Overview)",[[
 	author ErebusAres
+	type reputations
+	faction alliance
 	startlevel 80
 	description Redirects to the proven Knights of the Ebon Blade reputation overview guide.
 	step
@@ -113,6 +135,8 @@ ZygorGuidesViewer:RegisterGuide("Ares' Alliance Quest Guides\\Reputation\\Knight
 
 ZygorGuidesViewer:RegisterGuide("Ares' Alliance Quest Guides\\Reputation\\The Kalu'ak (Overview)",[[
 	author ErebusAres
+	type reputations
+	faction alliance
 	startlevel 80
 	description Redirects to the proven Kalu'ak reputation overview guide.
 	step
@@ -121,6 +145,8 @@ ZygorGuidesViewer:RegisterGuide("Ares' Alliance Quest Guides\\Reputation\\The Ka
 
 ZygorGuidesViewer:RegisterGuide("Ares' Alliance Quest Guides\\Reputation\\The Sons of Hodir (Overview)",[[
 	author ErebusAres
+	type reputations
+	faction alliance
 	startlevel 80
 	description Redirects to the proven Sons of Hodir reputation overview guide.
 	step
@@ -129,6 +155,8 @@ ZygorGuidesViewer:RegisterGuide("Ares' Alliance Quest Guides\\Reputation\\The So
 
 ZygorGuidesViewer:RegisterGuide("Ares' Alliance Quest Guides\\Reputation\\The Wyrmrest Accord (Overview)",[[
 	author ErebusAres
+	type reputations
+	faction alliance
 	startlevel 80
 	description Redirects to the proven Wyrmrest Accord reputation overview guide.
 	step
@@ -137,6 +165,8 @@ ZygorGuidesViewer:RegisterGuide("Ares' Alliance Quest Guides\\Reputation\\The Wy
 
 ZygorGuidesViewer:RegisterGuide("Ares' Alliance Quest Guides\\Reputation\\Explorers' League (Overview)",[[
 	author ErebusAres
+	type reputations
+	faction alliance
 	startlevel 80
 	description Redirects to the proven Explorers' League reputation overview guide.
 	step
@@ -145,6 +175,8 @@ ZygorGuidesViewer:RegisterGuide("Ares' Alliance Quest Guides\\Reputation\\Explor
 
 ZygorGuidesViewer:RegisterGuide("Ares' Alliance Quest Guides\\Reputation\\The Frostborn (Overview)",[[
 	author ErebusAres
+	type reputations
+	faction alliance
 	startlevel 80
 	description Redirects to the proven Frostborn reputation overview guide.
 	step

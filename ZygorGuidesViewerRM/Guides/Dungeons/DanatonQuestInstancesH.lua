@@ -4,6 +4,7 @@ if UnitFactionGroup("player")~="Horde" then return end
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Quest Instance Guides\\Ragefire Chasm (9)",[[
 	startlevel 9
+	type dungeons
 	step
 		goto Undercity,56.2,92.2
 		.talk Bragor Bloodfist##36273
@@ -43,6 +44,7 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Quest Instance Guides\\Ragefire Chasm 
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Quest Instance Guides\\Wailing Caverns (15)",[[
 	startlevel 15
+	type dungeons
 		step
 			goto Thunder Bluff,22.8,20.9
 			.talk Apothecary Zamah##3419
@@ -125,6 +127,7 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Quest Instance Guides\\Wailing Caverns
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Quest Instance Guides\\Blackfathom Deeps (18)",[[
 	startlevel 18
+	type dungeons
 	step
 		goto Stonetalon Mountains,47.4,64.2
 		.talk Tsunaman##11862
@@ -148,6 +151,7 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Quest Instance Guides\\Blackfathom Dee
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Quest Instance Guides\\Razorfen Kraul (23)",[[
 	startlevel 23
+	type dungeons
 	step
 		goto Thunder Bluff,36,59.9
 		.talk Auld Stonespire##4451

@@ -4,6 +4,7 @@ if UnitFactionGroup("player")~="Alliance" then return end
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Quest Instance Guides\\Deadmines (15)",[[
 author danaton
+	type dungeons
 startlevel 15
 		step //1
 			goto Ironforge,69.18,50.57
@@ -80,6 +81,7 @@ startlevel 15
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Quest Instance Guides\\Wailing Caverns (15)",[[
 author danaton
+	type dungeons
 startlevel 15
 		step
 			goto The Barrens,62.4,37.6
@@ -113,6 +115,7 @@ startlevel 15
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Quest Instance Guides\\Blackfathom Deeps (20)",[[
 author danaton
+	type dungeons
 startlevel 20
 		step //1
 			goto Ironforge,50.8,5.6
@@ -140,6 +143,7 @@ startlevel 20
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Quest Instance Guides\\Razorfen Kraul (23)",[[
 author danaton
+	type dungeons
 startlevel 23
 		step
 			goto Stormwind,80.6,59.9
@@ -196,6 +200,7 @@ startlevel 23
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Quest Instance Guides\\Gnomeregan (25)",[[
 author danaton
+	type dungeons
 startlevel 25
 		step //1
 			goto Darnassus,59.50,45.40
@@ -271,6 +276,7 @@ startlevel 25
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Quest Instance Guides\\The Stockade (25)",[[
 author danaton
+	type dungeons
 startlevel 25
 		step
 			goto Wetlands,49.67,18.25
@@ -310,6 +316,7 @@ startlevel 25
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Quest Instance Guides\\Razorfen Downs (32)",[[
 author danaton
+	type dungeons
 startlevel 32
 		step
 			goto Stormwind,50.3,45.5
@@ -330,6 +337,7 @@ startlevel 32
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Quest Instance Guides\\Uldaman (35)",[[
 author danaton
+	type dungeons
 startlevel 35
 		step
 			goto Ironforge,74.70,11.80
@@ -401,6 +409,7 @@ startlevel 35
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Quest Instance Guides\\Zul'Farrak (40)",[[
 author danaton
+	type dungeons
 startlevel 40
 		step //1
 			goto Stormwind,49.49,85.85
@@ -483,6 +492,7 @@ startlevel 40
 ]])
 ZygorGuidesViewer:RegisterGuide("Ding80's Quest Instance Guides\\Maraudon (45)",[[
 author danaton
+	type dungeons
 description This guide contain all quest-chain for Maraudon Dungeon.
 startlevel 45
 		step //1
@@ -585,6 +595,7 @@ startlevel 45
 ]])
 ZygorGuidesViewer:RegisterGuide("Ding80's Quest Instance Guides\\Sunken Temple (47)",[[
 author danaton
+	type dungeons
 startlevel 47
 		step //1
 			.' First you need to complete quest chain on Zul'Farrak!
@@ -700,6 +711,7 @@ startlevel 47
 ]])
 ZygorGuidesViewer:RegisterGuide("Ding80's Quest Instance Guides\\Blackrock Depth (50)",[[
 author danaton
+	type dungeons
 startlevel 50
 		step //1
 			.' Recommended start 52 level.
@@ -863,6 +875,7 @@ startlevel 50
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Quest Instance Guides\\Stratholme (55)",[[
 author danaton
+	type dungeons
 startlevel 55
 		step //1
 			goto Eastern Plaguelands,4.7,38.4
@@ -973,6 +986,7 @@ startlevel 55
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Quest Instance Guides\\Blackrock Spire (57)",[[
 author danaton
+	type dungeons
 startlevel 57
 		step
 			.' First you need to complete quest chain on Sunken Temple!
@@ -1117,6 +1131,7 @@ startlevel 57
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Quest Instance Guides\\Scholomance (60) - [Skeleton Key]",[[
 author danaton
+	type dungeons
 startlevel 60
 		step
 			goto Ironforge,24.05,74.72
@@ -1220,11 +1235,13 @@ startlevel 60
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Quest Instance Guides\\[Empty] Scholomance (60)",[[
 	startlevel 60
+	type dungeons
 	step //1
 ]])
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Quest Instance Guides\\Hellfire Citadel: Hellfire Ramparts (59)",[[
 author danaton
+	type dungeons
 startlevel 59
 		step
 			'. Hellfire Ramparts first dungeon in the Hellfire Citadel questline chain.
@@ -1286,6 +1303,7 @@ startlevel 59
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Quest Instance Guides\\Hellfire Citadel: The Blood Furnace (59)",[[
 author danaton
+	type dungeons
 startlevel 59
 		step
 			.' You must complete Hellfire Ramparts questline before proceeding with this chain.
@@ -1304,6 +1322,7 @@ startlevel 59
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Quest Instance Guides\\Hellfire Citadel: The Shattered Halls (67)",[[
 author danaton
+	type dungeons
 startlevel 67
 		step //1
 			.' You must complete Hellfire Ramparts and The Blood Furnace questline before proceeding with this chain.
@@ -1328,6 +1347,7 @@ startlevel 67
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Quest Instance Guides\\Heroic Instance Keys\\Hellfire Citadel (70)",[[
 author danaton
+	type dungeons
 startlevel 70
 		step //1
 			.' Need rep|tip Manually skip this step
@@ -1340,6 +1360,7 @@ startlevel 70
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Quest Instance Guides\\Heroic Instance Keys\\Auchindoun (70)",[[
 author danaton
+	type dungeons
 startlevel 70
 		step //1
 			.' Need rep|tip Manually skip this step

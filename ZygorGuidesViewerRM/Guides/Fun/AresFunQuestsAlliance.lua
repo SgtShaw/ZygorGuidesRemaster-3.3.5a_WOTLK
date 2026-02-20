@@ -3,6 +3,7 @@ if not ZygorGuidesViewer then return end
 
 ZygorGuidesViewer:RegisterGuide("Ares' Fun Guides\\Noggenfogger Elixir",[[
 author ErebusAres
+	type misc
 description Unlock the ability to buy Noggenfogger Elixir in Gadgetzan.
 startlevel 44
 step //1
@@ -50,6 +51,8 @@ goto Tanaris,51.8,28.7
 
 ZygorGuidesViewer:RegisterGuide("Ares' Fun Guides\\Utility Tricks\\Unlock Dalaran Return Crystal (Alliance 74+)",[[
 author ErebusAres
+	type misc
+	faction alliance
 description Solo path to unlock the Dalaran intro and both return crystals with no summons or portals from other players.
 startlevel 74
 step //1
@@ -98,6 +101,7 @@ step //13
 
 ZygorGuidesViewer:RegisterGuide("Ares' Fun Guides\\Utility Tricks\\Travel Network Power Setup (70-80)",[[
 author ErebusAres
+	type misc
 description Front-load key Wrath travel unlocks to save time on every later guide: Dalaran home/FP plus major Northrend hubs.
 startlevel 74
 step //1
@@ -156,6 +160,7 @@ step //17
 
 ZygorGuidesViewer:RegisterGuide("Ares' Fun Guides\\Utility Tricks\\Experimental Dalaran Ghost + BG Sync (Server-Dependent)",[[
 author ErebusAres
+	type misc
 description Experimental level-70 Dalaran entry method using ghost gryphon + battleground return behavior. This is realm-dependent and may not work everywhere.
 startlevel 70
 step //1
@@ -196,6 +201,7 @@ step //13
 
 ZygorGuidesViewer:RegisterGuide("Ares' Fun Guides\\Exploration Tricks\\Ironforge Airport Mountain Climb",[[
 author ErebusAres
+	type misc
 description Reach the hidden Ironforge Airport area by mountain climbing from Dun Morogh.
 startlevel 20
 step //1
@@ -231,6 +237,7 @@ step //12
 
 ZygorGuidesViewer:RegisterGuide("Ares' Fun Guides\\Exploration Tricks\\Karazhan Crypts OOB Exterior Peek",[[
 author ErebusAres
+	type misc
 description Visit the Karazhan Crypts exterior and practice terrain-jump routing around Deadwind Pass.
 startlevel 70
 step //1
@@ -260,6 +267,7 @@ step //9
 
 ZygorGuidesViewer:RegisterGuide("Ares' Fun Guides\\Exploration Tricks\\Old Hyjal Mountain Route Attempt",[[
 author ErebusAres
+	type misc
 description Attempt the classic mountain route toward old Hyjal from Winterspring cliffs.
 startlevel 80
 step //1

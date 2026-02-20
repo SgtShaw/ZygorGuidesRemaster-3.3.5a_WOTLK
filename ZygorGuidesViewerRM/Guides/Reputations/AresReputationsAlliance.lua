@@ -6,6 +6,8 @@ if UnitFactionGroup("player")~="Alliance" then return end
 ZygorGuidesViewer:RegisterGuide("Ares' Alliance Quest Guides\\Reputation\\Cenarion Expedition, Reputation Repeatables",[[
 	description This guide contains the repeatable quests to gain reputation with the Cenarion Expedition.
 	author ErebusAres
+	type reputations
+	faction alliance
 	next Ares' Alliance Quest Guides\\Reputation\\Cenarion Expedition Reputation
 	step //1
 		goto Zangarmarsh,80.2,64.2
@@ -33,6 +35,8 @@ ZygorGuidesViewer:RegisterGuide("Ares' Alliance Quest Guides\\Reputation\\Cenari
 	description This guide contains the quests to gain reputation with the Cenarion Expedition.
 	description The Quests are in order via list on https://www.wowhead.com/tbc/guide/cenarion-expedition-reputation-rewards-burning-crusade-classic-wow
 	author ErebusAres
+	type reputations
+	faction alliance
 	step //1
 		goto Hellfire Peninsula,23.4,36.6
 		.talk Amaan the Wise##16796

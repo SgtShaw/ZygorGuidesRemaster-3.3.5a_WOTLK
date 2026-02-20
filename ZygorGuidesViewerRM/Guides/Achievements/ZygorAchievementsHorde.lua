@@ -5,6 +5,8 @@ if UnitFactionGroup("player")~="Horde" then return end
 
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Profession Achievements\\Fishing\\One That Didn't Get Away",[[
 description This guide will show you how to earn the achievement, One That Didn't Get Away.
+	type achievements
+	faction horde
 step
 condition achieved(878)
 goto Stormwind City,55.0,69.7
@@ -24,6 +26,8 @@ step
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\General Achievements\\The Right Stuff",[[
 description Learn the artisan riding skill.
 author support@zygorguides.com
+	type achievements
+	faction horde
 step
 condition achieved(892)
 'Reach level 20 to get this Achievement.
@@ -43,6 +47,8 @@ step
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\General Achievements\\Shave and a Haircut",[[
 description Visit a Barber Shop and get your hair cut.
 author support@zygorguides.com
+	type achievements
+	faction horde
 step
 condition achieved(545)
 goto Orgrimmar,40.0,60.7
@@ -56,6 +62,8 @@ step
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\General Achievements\\Dual Talent Specialization",[[
 description Visit your class trainer when you are at least level 30 and activate your Dual Talent Specialization.
 author support@zygorguides.com
+	type achievements
+	faction horde
 step
 condition achieved(2716)
 goto Orgrimmar,63.8,32.7
@@ -116,6 +124,8 @@ step
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\General Achievements\\Safe Deposit",[[
 description Buy 7 additional bank slots.
+	type achievements
+	faction horde
 step
 condition achieved(546)
 'This achievement will cost you _111.1_ Gold to complete.
@@ -133,6 +143,8 @@ step
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\General Achievements\\Greedy Achievement",[[
 description Win a greed roll on a superior or better item above level 185 by rolling 100.
 author support@zygorguides.com
+	type achievements
+	faction horde
 step
 condition achieved(558)
 For this achievement you will need to be in a group and roll a 100 on a superior (blue) item of item level 185 that drops from a mob in the following dungeons:
@@ -152,6 +164,8 @@ step
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\General Achievements\\Needy Achievement",[[
 description Win a need roll on a superior or better item above level 185 by rolling 100.
 author support@zygorguides.com
+	type achievements
+	faction horde
 step
 condition achieved(559)
 For this achievement you will need to be in a group and roll a 100 on a superior (blue) item of item level 185 that drops from a mob in the following dungeons:
@@ -171,6 +185,8 @@ step
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\General Achievements\\My Sack is Gigantique",[[
 description Equip Haris Pilton's "Gigantique" Bag.
 author support@zygorguides.com
+	type achievements
+	faction horde
 step
 condition achieved(1165)
 'For this achievement, you will need to purchase and equip a bag you can purchase from Haris Pilton. The bag is 1200 gold, so you may have to save up before completing this achievement.
@@ -188,6 +204,8 @@ step
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\General Achievements\\Friend or Fowl?",[[
 description Slay 15 turkeys in 3 minutes.
 author support@zygorguides.com
+	type achievements
+	faction horde
 step
 condition achieved(1254)
 goto Howling Fjord,66.3,71.1
@@ -199,6 +217,8 @@ step
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\General Achievements\\Going Down?",[[
 description Fall 65 yards without dying.
 author support@zygorguides.com
+	type achievements
+	faction horde
 step
 condition achieved(964)
 'For this achievement you must fall 65 yards without dying. You can do this in several different ways, depending on yoiur class, but we listed the easiest way regardless of level and class.
@@ -213,6 +233,8 @@ step
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\General Achievements\\Well Read",[[
 description Read books.
 author support@zygorguides.com
+	type achievements
+	faction horde
 step
 condition achieved(1244)
 .' This guide will walk you through the _Well Read_ Achievement.
@@ -403,6 +425,8 @@ step
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\General Achievements\\Higher Learning",[[
 description Read the volumes of "The Schools of Arcane Magic" found in Dalaran.
+	type achievements
+	faction horde
 step
 condition achieved(1956)
 'Warning: These books have respawn timers of about 3-4 hours (it seems to be random between those times), so this achievement may take you a while to get. |tip The book you want won't always be there.  Fake trash books spawn to make the achievement even harder to get, but keep at it.  Make sure you click the fake trash books anyway, so the real books have a chance to spawn.
@@ -455,6 +479,8 @@ step
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\General Achievements\\It's Happy Hour Somewhere",[[
 description Drink 25 different types of beverages.
+	type achievements
+	faction horde
 step
 condition achieved(1833)
 goto Orgrimmar,53.6,78.8
@@ -522,6 +548,8 @@ step
 
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\General Achievements\\Tastes Like Chicken",[[
 description Sample 50 different kinds of Azeroth's delectable dishes.
+	type achievements
+	faction horde
 step
 condition achieved(1832)
 goto Orgrimmar,53.6,78.8
@@ -658,6 +686,8 @@ step
 
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\General Achievements\\Armored Brown Bear",[[
 description Obtain an Armored Brown Bear from Mei Francis in Dalaran.
+	type achievements
+	faction horde
 step
 condition achieved(2076)
 'You will need 750 gold to complete this achievement
@@ -673,6 +703,8 @@ step
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\General Achievements\\Wooly Mammoth",[[
 description Obtain a Wooly Mammoth from Mei Francis in Dalaran.
+	type achievements
+	faction horde
 step
 condition achieved(2077)
 'You will need 2,175 Justice Points to complete this achievement |tip You earn Justice Points for completing your first random normal dungeon each day, as well as for killing Heroic dungeon bosses.
@@ -688,6 +720,8 @@ step
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\General Achievements\\Traveler's Tundra Mammoth",[[
 description Obtain a Traveler's Tundra Mammoth from Mei Francis in Dalaran.
+	type achievements
+	faction horde
 step
 condition achieved(2078)
 'You will need 20,000 gold to complete this achievement
@@ -704,6 +738,8 @@ step
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\General Achievements\\Ring of the Kirin Tor",[[
 description Purchase a Signet of the Kirin Tor, Band of the Kirin Tor, Loop of the Kirin Tor, or Ring of the Kirin Tor in Dalaran.
+	type achievements
+	faction horde
 step
 condition achieved(2084)
 'You will need 8,500 gold to complete this achievement
@@ -723,6 +759,8 @@ step
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\General Achievements\\One Hump or Two?",[[
 description Obtain a camel mount in Uldum (with just one hump).
+	type achievements
+	faction horde
 step
 condition achieved(4888)
 'You will need 100 gold to complete this achievement
@@ -743,6 +781,8 @@ step
 
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\General Achievements\\From Hell's Heart I Stab At Thee",[[
 description This guide will help you obtain the From Hell's Heart I Stab At Thee Achievement
+	type achievements
+	faction horde
 step
 condition achieved(4975)
 goto Shimmering Expanse,70.6,55.0
@@ -755,6 +795,8 @@ step
 
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\General Achievements\\Bloody Rare",[[
 description Kill all of the Rare enemies in Outlands
+	type achievements
+	faction horde
 step
 achieveid 1311
 condition achieved(1312)
@@ -921,6 +963,8 @@ step
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\General Achievements\\Frostbitten",[[
 description Kill all of the extremely rare and hard to find Northrend Creatures.
+	type achievements
+	faction horde
 step
 achieveid 2256
 condition achieved(2257)
@@ -1091,6 +1135,8 @@ step
 'Congratulations, you have obtained the Frostbitten achievement!
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\General Achievements\\Giddy Up!",[[
+	type achievements
+	faction horde
 step
 condition achieved(891)
 .' For this achievement, you will need to reach level 20.
@@ -1149,6 +1195,8 @@ label "end"
 'Congratulations, you have obtained the _Giddy Up!_ achievement!
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\General Achievements\\Fast and Furious",[[
+	type achievements
+	faction horde
 step
 condition achieved(889)
 .' For this achievement, you will need to reach level 40.
@@ -1207,6 +1255,8 @@ label "end"
 'Congratulations, you have obtained the _Giddy Up!_ achievement!
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\General Achievements\\Into The Wild Blue Yonder",[[
+	type achievements
+	faction horde
 step
 condition achieved(890)
 'For this achievement, you will need to reach level 60.
@@ -1225,6 +1275,8 @@ label "end"
 
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\General Achievements\\Epic",[[
 description Equip items in each slot that have at least an item level of 213
+	type achievements
+	faction horde
 step
 condition achieved(556)
 For this achievement you will need to simply equip a Epic (purple) item in all your Armor and Weapon slots. For rings and trinkets you can just equip one ring or trinket in both slots seperately.
@@ -1263,6 +1315,8 @@ label "finish"
 
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\General Achievements\\Superior",[[
 description Equip a superior item in every slot with a minimum item level of 187. Equip an epic item in every slot with a minimum item level of 213.
+	type achievements
+	faction horde
 step
 condition achieved(557)
 For this achievement you will need to simply equip a Superior (blue) item in all your Armor and Weapon slots. For rings and trinkets you can just equip one ring or trinket in both slots seperately.
@@ -1300,6 +1354,8 @@ label "finish"
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\General Achievements\\Get to the Choppa!",[[
 description Learn the Mekgineer's Chopper.
+	type achievements
+	faction horde
 step
 condition achieved(2097)
 .' In order to earn this achievement, you will need to either purcahse or create a Mechano-Hog.
@@ -1337,6 +1393,8 @@ step
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\General Achievements\\Surveying the Damage",[[
 description
+	type achievements
+	faction horde
 step
 condition achieved(4827)
 .' In order to earn this achievement, you will need to visit the places that Deathwing had the most effect on during Cataclysm.
@@ -1386,6 +1444,8 @@ step
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\General Achievements\\Leeeeeeeeeeeeeroy!",[[
 description This guide will show you how to earn the Jenkins Title.
 author support@zygorguides.com
+	type achievements
+	faction horde
 step
 'This achievement will require you to kill 50 rookery whelps within 15 seconds.
 |confirm
@@ -1404,6 +1464,8 @@ step
 
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Quest Achievements\\Dungeon Quests Completed",[[
 description Complete dungeon quests.
+	type achievements
+	faction horde
 step
 condition achieved(4957)
 goto Orgrimmar,45.9,66.9 |n
@@ -1544,6 +1606,8 @@ step
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Quest Achievements\\Hemet Nesingwary: The Collected Quests",[[
 description Complete the Green Hills of Stranglethorn, Hills Like White Elekk and Snows of Northrend achievements.
+	type achievements
+	faction horde
 step
 condition achieved(941)
 .' This guide will walk you through obtaining the Hemet Nesingwary: The Collected Quests achievement.
@@ -2020,6 +2084,8 @@ step
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Quest Achievements\\The Green Hills Of Stranglethorn",[[
 description Complete the Green Hills of Stranglethorn questline.
+	type achievements
+	faction horde
 step
 condition achieved(940)
 title +The Green Hills of Stranglethorn
@@ -2156,6 +2222,8 @@ step
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Quest Achievements\\Hills Like White Elekk",[[
 description Complete the Hills Like White Elekk questline.
+	type achievements
+	faction horde
 step
 condition achieved(939)
 title +Hills Like White Elekks
@@ -2244,6 +2312,8 @@ step
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Quest Achievements\\The Snows of Northrend",[[
 description Complete the Snows of Northrend questline.
+	type achievements
+	faction horde
 step
 condition achieved(938)
 title +The Snows of Northrend
@@ -2486,6 +2556,8 @@ step
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Quest Achievements\\Of Blood And Anguish",[[
 description Complete the Ring of Blood and Amphitheater of Anguish.
+	type achievements
+	faction horde
 step
 condition achieved(1576)
 goto Nagrand,42.8,20.7
@@ -2640,6 +2712,8 @@ goto 48.5,56.4
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Quest Achievements\\The First Rule of Ring of Blood is You Don't Talk About Ring of Blood",[[
 description Complete the Ring of Blood, Amphitheater of Anguish and Crucible of Carnage.
+	type achievements
+	faction horde
 step
 condition achieved(4958)
 goto Nagrand,42.8,20.7
@@ -2863,6 +2937,8 @@ step
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Quest Achievements\\A Simple Re-Quest",[[
 description Complete a daily quest every day for five consecutive days.
+	type achievements
+	faction horde
 step
 condition achieved(31)
 'To earn this achievement, you must complete a daily quests every day for five consecutive days.
@@ -2887,6 +2963,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Quest Achiev
 description Complete
 description 50, 100, 250, 500, 1000, 1500, 2000 and
 description 3000 Quests.
+	type achievements
+	faction horde
 step
 achieveid 503,504,505,506,507,508,32
 condition achieved(978)
@@ -2915,6 +2993,8 @@ step
 
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Quest Achievements\\Outland\\Blade's Edge Bomberman",[[
 description Complete the Bomb Them Again! quest in under 2 minutes 15 seconds while not in a group.
+	type achievements
+	faction horde
 step
 condition achieved(1276)
 goto Blade's Edge Mountains,28.8,57.5
@@ -2995,6 +3075,8 @@ step
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Quest Achievements\\Outland\\Bombs Away",[[
 description Complete the Fires Over Skettis quest in under 2 minutes 15 seconds while not in a group.
+	type achievements
+	faction horde
 step
 condition achieved(1275)
 goto Shattrath City,64.2,42.3
@@ -3025,6 +3107,8 @@ step
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Quest Achievements\\Northrend\\Honorary Frenzyheart",[[
 description Complete the 8 daily quests for the Frenzyheart listed below.
+	type achievements
+	faction horde
 step
 condition achieved(961)
 label "begin"
@@ -3048,6 +3132,8 @@ step
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Quest Achievements\\Northrend\\Savior of the Oracles",[[
 description Complete the 8 daily quests for the Oracles listed below.
+	type achievements
+	faction horde
 step
 condition achieved(962)
 #include OraclePreQuests
@@ -3070,6 +3156,8 @@ step
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Quest Achievements\\Northrend\\Guru of Drakuru",[[
 description Complete the main storyline quests involving Drakuru.
+	type achievements
+	faction horde
 step
 condition achieved(1596)
 #include "CleansingDrakTharon"
@@ -3086,6 +3174,8 @@ step
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Quest Achievements\\Northrend\\Rapid Defense",[[
 description Complete the Defending Wyrmrest Temple quest in under 3 minutes while not in a group.
+	type achievements
+	faction horde
 step
 condition achieved(1277)
 'For this quests, you will want to go as fast as you can. |tip If you track the achievement, a timer will automatically appear for you.  You will want to use your speed increase ability as often as possible.
@@ -3124,6 +3214,8 @@ step
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Quest Achievements\\Northrend\\Mine Sweeper",[[
 description Get caught in 10 consecutive land mine explosions in the Sparksocket Minefield without landing.
+	type achievements
+	faction horde
 step
 condition achieved(1428)
 goto The Storm Peaks,36.2,86.9
@@ -3136,6 +3228,8 @@ step
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Quest Achievements\\Northrend\\Veteran of the Wrathgate",[[
 description Complete the Dragonblight quests leading up to and including the Return to Angrathar.
 author support@zygorguides.com
+	type achievements
+	faction horde
 step
 condition achieved(547)
 goto Dragonblight,12.8,48.5
@@ -3357,6 +3451,8 @@ step
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Quest Achievements\\D.E.H.T.A's Little P.I.T.A.",[[
 description Complete the D.E.H.T.A. questline in Borean Tundra
+	type achievements
+	faction horde
 step
 condition achieved(561)
 goto Borean Tundra,57,44.3
@@ -3511,6 +3607,8 @@ step
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Profession Achievements\\Cooking\\The Cake Is Not A Lie Achievement",[[
 description Bake a Delicious Chocolate Cake.
 author support@zygorguides.com
+	type achievements
+	faction horde
 step
 condition achieved(877)
 #include "H_the_cake_is_not_a_lie"
@@ -3520,12 +3618,16 @@ step
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Profession Achievements\\Cooking\\Kickin' It Up a Notch Achievement",[[
 description Complete each of The Rokk's 4 cooking daily quests.
 author support@zygorguides.com
+	type achievements
+	faction horde
 
 step
 condition achieved(906)
 #include "H_Kickin'_It_Up_a_Notch"]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Profession Achievements\\Cooking\\The Outland Gourmet Achievement",[[
 description Cook each of the Outland cooking recipes.
+	type achievements
+	faction horde
 step
 condition achieved(1800)
 'You must have a _Cooking_ skill level of at least 350 for this achievement.
@@ -3538,6 +3640,8 @@ Congratulations! You're earned The Outland Gourmet achievement!
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Profession Achievements\\Cooking\\The Northrend Gourmet Achievement",[[
 description Cook 45 of the Northrend recipes.
+	type achievements
+	faction horde
 step
 condition achieved(1779)
 achieveid 1777,1778
@@ -3553,12 +3657,16 @@ title +Wrath of the Lich King Recipes
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Profession Achievements\\Cooking\\Critter Gitter Achievement",[[
 description Using Critter Bites, coerce 10 critters to be your pet within 3 minutes or less.
 
+	type achievements
+	faction horde
 step
 condition achieved(1781)
 #include "H_Critter_Gitter"]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Profession Achievements\\Cooking\\Dinner Impossible Achievement",[[
 description Present a Great Feast in each of the battlegrounds listed below.
 
+	type achievements
+	faction horde
 step
 condition achieved(1785)
 #include "H_Dinner_Impossible"]])
@@ -3566,6 +3674,8 @@ condition achieved(1785)
 
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Profession Achievements\\Cooking\\Cooking With Style Achievement",[[
 description Obtain a Chef's Hat.
+	type achievements
+	faction horde
 step
 condition achieved(3296)
 label "start"
@@ -3604,6 +3714,8 @@ Congratulations! You've earned the Cooking with Style achievement!
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Profession Achievements\\Cooking\\Captain Rumsey's Lager Achievement",[[
 description Brew up some of Captain Rumsey's Lager.
+	type achievements
+	faction horde
 step
 condition achieved(1801)
 'Use the Shattrath or Dalaran Cooking Dailies, or the Fishing Dailies of this guide to get this recipe
@@ -3842,6 +3954,8 @@ step
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Profession Achievements\\Cooking\\Our Daily Bread Achievement",[[
 description Complete each of the cooking daily quests offered by Katherine Lee in Dalaran.
 
+	type achievements
+	faction horde
 step
 condition achieved(1783)
 #include "H_Our_Daily_Bread"]])
@@ -3851,6 +3965,8 @@ condition achieved(1783)
 
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Profession Achievements\\Cooking\\Hail to the Chef Achievement",[[
 description This guide will show you all the achievements you need to complete the Hail to the Chef Achievement.
+	type achievements
+	faction horde
 step
 condition achieved(1563)
 label	start
@@ -3905,6 +4021,8 @@ step
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Profession Achievements\\Fishing\\Journeyman Fisherman",[[
 description Obtain 150 skill points in fishing.
+	type achievements
+	faction horde
 step
 condition achieved(126)
 .' To get this, you simply need to achieve 150 fishing.  You can fish anywhere for this, but Stormwind is recommended for the easiest catches.
@@ -3940,6 +4058,8 @@ step
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Profession Achievements\\Fishing\\The Old Gnome and the Sea",[[
 description Successfully fish from a school.
+	type achievements
+	faction horde
 step
 condition achieved(153)
 'Go to Ashenvale |goto Ashenvale |noway |c
@@ -3954,6 +4074,8 @@ step
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Profession Achievements\\Fishing\\The Scavenger",[[
 description Successfully fish each of the junk nodes.
+	type achievements
+	faction horde
 step
 condition achieved(1257)
 goto Zangarmarsh,57.0,56.0
@@ -3982,6 +4104,8 @@ step
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Profession Achievements\\Fishing\\The Fishing Diplomat",[[
 description Fish something up in Orgrimmar and Stormwind.
+	type achievements
+	faction horde
 step
 condition achieved(150)
 goto Orgrimmar,24.8,62.8
@@ -3998,6 +4122,8 @@ step
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Profession Achievements\\Fishing\\Mr. Pinchy's Magical Crawdad Box",[[
 description Fish your way to Mr. Pinchy's Magical Crawdad Box.
+	type achievements
+	faction horde
 step
 condition achieved(726)
 goto Northern Stranglethorn,31.0,37.7
@@ -4020,6 +4146,8 @@ goto Terokkar Forest,66.5,84.3
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Profession Achievements\\Fishing\\1000 Fish",[[
 description Fish up 1000 items.
+	type achievements
+	faction horde
 step
 condition achieved(1561)
 achieveid 1560,1559,1558,1557,1556
@@ -4038,6 +4166,8 @@ step
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Profession Achievements\\Fishing\\Old Crafty",[[
 description Fish up Old Crafty in Orgrimmar.
+	type achievements
+	faction horde
 step
 condition achieved(1836)
 .' In order to Earn this achievement, you will need to fish from any pool of water in Orgrimmar.
@@ -4054,6 +4184,8 @@ step
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Profession Achievements\\Fishing\\Old Ironjaw",[[
 description Fish up Old Ironjaw in Ironforge.
+	type achievements
+	faction horde
 step
 condition achieved(1837)
 .' In order to Earn this achievement, you will need to fish from any pool of water (or lava) in Ironforge.
@@ -4070,6 +4202,8 @@ step
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Profession Achievements\\Fishing\\The Lurker Above",[[
 description Fish up The Lurker Below in Serpentshrine Cavern.
+	type achievements
+	faction horde
 step
 condition achieved(144)
 .' In order to earn this achievement, you will need to be in a raid group.
@@ -4101,6 +4235,8 @@ step
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Profession Achievements\\Fishing\\Old Man Barlowned",[[
 description Complete each of Old Man Barlo's 5 fishing daily quests.
+	type achievements
+	faction horde
 step
 condition achieved(905)
 .' In order the earn this achievement, you will need to have completed these 5 daily quests:
@@ -4167,6 +4303,8 @@ step
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Profession Achievements\\Fishing\\Outland Angler",[[
 description Catch a fish in specific nodes.
+	type achievements
+	faction horde
 step
 condition achieved(1225)
 .' In order to earn this achievement, you will need to fish from 6 different pools of fish in the Outlands.
@@ -4207,6 +4345,8 @@ step
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Profession Achievements\\Fishing\\Northrend Angler",[[
 description Catch a fish in specific nodes
+	type achievements
+	faction horde
 step
 condition achieved(1517)
 .' In order to earn this achievement, you will have to fish from 10 different schools of fish in Northrend.
@@ -4271,6 +4411,8 @@ step
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Profession Achievements\\Fishing\\Chasing Marcia",[[
 description Complete each of Marcia Chase's 5 fishing daily quests.
+	type achievements
+	faction horde
 step
 condition achieved(3217)
 label "start"
@@ -4360,6 +4502,8 @@ step
 
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Profession Achievements\\Fishing\\Fish Don't Leave Footprints",[[
 description Learn the ability to find fish.
+	type achievements
+	faction horde
 step
 condition achieved(1243)
 goto Northern Stranglethorn,31.0,37.7
@@ -4372,6 +4516,8 @@ step
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Profession Achievements\\Fishing\\The Coin Master",[[
 description Complete the coin fishing achievements.
+	type achievements
+	faction horde
 step
 condition achieved(1243)
 achieveid 2094,2095,1957
@@ -4476,6 +4622,8 @@ label	congrats
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Profession Achievements\\Fishing\\I Smell A Giant Rat",[[
 description Fish up the Giant Sewer Rat from The Underbelly in Dalaran.
+	type achievements
+	faction horde
 step
 condition achieved(1958)
 goto Dalaran,59.7,47.3 |n
@@ -4492,6 +4640,8 @@ step
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Profession Achievements\\Fishing\\Turtles All the Way Down",[[
 description Fish up a Sea Turtle mount from any fishing pool in Deepholm, Mount Hyjal, Twilight Highlands, Uldum, or Northrend.
+	type achievements
+	faction horde
 step
 condition achieved(3218)
 .' In order to earn this achievement, you will need to fish from any school of fish within a Northrend or Cataclysm Zone.
@@ -4508,6 +4658,8 @@ step
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Profession Achievements\\Fishing\\Accomplished Angler",[[
 description Complete the fishing achievements
+	type achievements
+	faction horde
 step
 condition achieved(1516)
 .' This achievement is earned once you have completed a majority of the Fishing achievements.
@@ -4538,6 +4690,8 @@ step
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Profession Achievements\\First Aid\\Journeyman Medic",[[
 description This guide will tell you how to
 description earn the achievment Journeyman Medic
+	type achievements
+	faction horde
 step
 condition achieved(131)
 'Proceeding to proper section |next |only if default
@@ -4552,6 +4706,8 @@ label	end
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Profession Achievements\\First Aid\\Expert Medic",[[
 description This guide will tell you how to
 description earn the achievment Journeyman Medic
+	type achievements
+	faction horde
 step
 condition achieved(132)
 'Proceeding to proper section |next |only if default
@@ -4566,6 +4722,8 @@ label	end
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Profession Achievements\\First Aid\\Artisan Medic",[[
 description This guide will tell you how to
 description earn the achievment Journeyman Medic
+	type achievements
+	faction horde
 step
 condition achieved(133)
 'Proceeding to proper section |next |only if default
@@ -4580,6 +4738,8 @@ label	end
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Profession Achievements\\First Aid\\Master Medic",[[
 description This guide will tell you how to
 description earn the achievment Journeyman Medic
+	type achievements
+	faction horde
 step
 condition achieved(134)
 'Proceeding to proper section |next |only if default
@@ -4594,6 +4754,8 @@ label	end
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Profession Achievements\\First Aid\\Grand Master Medic",[[
 description This guide will tell you how to
 description earn the achievment Journeyman Medic
+	type achievements
+	faction horde
 step
 condition achieved(135)
 'Proceeding to proper section |next |only if default
@@ -4608,6 +4770,8 @@ label	end
 
 
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Profession Achievements\\First Aid\\Stocking Up",[[
+	type achievements
+	faction horde
 step
 condition achieved(137)
 title + First Aid 350-450
@@ -4634,6 +4798,8 @@ step
 ]])
 
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Profession Achievements\\First Aid\\Ultimate Triage",[[
+	type achievements
+	faction horde
 step
 condition achieved(141)
 .' For this Achievement, you will need to _bandage_ a player who is _at 5% health_.
@@ -4658,6 +4824,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Events\\Pilg
 description This guide will walk you through earning
 description the Pilgrim's Bounty Achievements.
 
+	type achievements
+	faction horde
 step
 #include "Pilgrims_Bounty_Quests_Horde"
 #include "Pilgrims_Bounty_Achievements_Horde"
@@ -4671,6 +4839,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Events\\Luna
 description This guide will walk you through earning
 description the Lunar Festival Achievements.
 
+	type achievements
+	faction horde
 step
 #include "H_Lunar_Festival_Elders"
 #include "H_Lunar_Festival_Quests"
@@ -4679,13 +4849,19 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Events\\Love
 description This guide will walk you through earning
 description the Love is in the Air Achievements.
 
+	type achievements
+	faction horde
 step
 #include "H_Love_Is_In_The_Air_Achievements"]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Events\\Noblegarden",[[
 
+	type achievements
+	faction horde
 step
 #include "H_Noblegarden_Achievements"]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Events\\Children's Week\\Children's Week Achievements",[[
+	type achievements
+	faction horde
 step
 #include "H_Children's_Week_Achievements"
 .' You will need to do this questline in order to obtain Egbert's Egg, Sleepy Willy, and the Elekk Training Collar.
@@ -4696,6 +4872,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\Events\\Mids
 description This guide will walk you through earning the
 description Midsummer Fire Festival Achievements.
 
+	type achievements
+	faction horde
 step
 #include "Midsummer_Achievements"]])
 
@@ -4901,6 +5079,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Horde Achievements Guides\\FARMING",[[
 
 
 
+	type achievements
+	faction horde
 step
 INSTANCE // // TIME PER RUN
 //-------------------------------

@@ -4,6 +4,8 @@ if UnitFactionGroup("player")~="Alliance" then return end
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance General Achievements Guide\\To All The Squirrels I've Loved Before",[[
 author danaton
+	type achievements
+	faction alliance
 description Contains all the steps to get the "To All The Squirrels I've Loved Before" achievement.
 startlevel 79
 		step
@@ -284,6 +286,8 @@ startlevel 79
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance General Achievements Guide\\Well Read",[[
 author danaton
+	type achievements
+	faction alliance
 description Contains all the steps to get the "Well Read" achievement.
 startlevel 79
 		step

@@ -4,6 +4,8 @@ if UnitFactionGroup("player")~="Alliance" then return end
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Burning Crusade\\[62] Hellfire Peninsula",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (81 quests) for Hellfire Peninsula location.
 startlevel 62
 		step
@@ -818,6 +820,8 @@ startlevel 62
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Burning Crusade\\[64] Zangarmarsh",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (57 quests) for Zangarmarsh location.
 startlevel 64
 		step
@@ -1429,6 +1433,8 @@ startlevel 64
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Burning Crusade\\[64] Terokkar Forest",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain for Terokkar Forest (64/63 quests).
 startlevel 64
 		step
@@ -2230,6 +2236,8 @@ startlevel 64
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Burning Crusade\\[68] Nagrand",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (75 quests) for Nagrand location.
 startlevel 68
 		step
@@ -3227,6 +3235,8 @@ startlevel 68
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Burning Crusade\\[68] Blade's Edge Mountains",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain for Blade's Edge Mountains (86 quests) location.
 startlevel 68
 		step
@@ -4495,6 +4505,8 @@ startlevel 68
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Burning Crusade\\[68] Netherstorm",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (120 quests) for Netherstorm location.
 startlevel 68
 		step
@@ -6021,6 +6033,8 @@ startlevel 68
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Burning Crusade\\[68] Shadowmoon Valley",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (90 quests) for Shadowmoon Valley location.
 startlevel 68
 		step

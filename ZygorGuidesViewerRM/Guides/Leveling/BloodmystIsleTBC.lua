@@ -5,6 +5,8 @@ if UnitFactionGroup("player")~="Alliance" then return end
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides TBC solo\\Bloodmyst Isle",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	next Ding80's Alliance Leveling Guides TBC solo\\Levels (25-29)
 	startlevel 12
 

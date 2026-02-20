@@ -7,6 +7,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' GarryOwen Dailies Guide\\GarryOwen\\Sigil
 	description This guide section contains the GarryOwen Dailies for Level 60+.
 	description This guide section should be in order of easiest to hardest.
 	author ErebusAres
+	type daily
 	next Ares' GarryOwen Dailies Guide\\GarryOwen\\Burning Crusade GarryOwen Dailies
     daily
 	startlevel 60
@@ -92,6 +93,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' GarryOwen Dailies Guide\\GarryOwen\\Burni
 	description This guide section contains the GarryOwen Dailies for Level 70+.
 	description This guide section should be in order of easiest to hardest.
 	author ErebusAres
+	type daily
     daily
 	startlevel 70
 	step //1

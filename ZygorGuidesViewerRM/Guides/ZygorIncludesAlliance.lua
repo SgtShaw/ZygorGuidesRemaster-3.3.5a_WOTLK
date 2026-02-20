@@ -27726,6 +27726,8 @@ ZygorGuidesViewer:RegisterInclude("dalaran_leave_sewer",[[
 --Oh snap! Guide in the includes.. Find it a home?
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Pets & Mounts Guide\\Mount Training",[[
 	condition end (level<40 and achieved(891)) or (level<60 and achieved(889)) or (level<68 and achieved(890) and knowspell(90267)) or (level<70 and knowspell(54197)) or (level<80 and achieved(892))  or (level<90 and achieved(5180)) or (level<100 and knowspell(115913) and achieved(5180))
+	faction alliance
+	type petsmounts
 	step
 		#include "basic_mounts"
 ]])

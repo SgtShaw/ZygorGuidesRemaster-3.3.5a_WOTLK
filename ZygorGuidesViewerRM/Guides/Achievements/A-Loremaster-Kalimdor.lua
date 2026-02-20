@@ -4,6 +4,8 @@ if UnitFactionGroup("player")~="Alliance" then return end
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Kalimdor\\[10] Azuremyst Isle",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (55 quests) for Azuremyst Isle location.
 startlevel 10
 		step
@@ -499,6 +501,8 @@ startlevel 10
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Kalimdor\\[20] Bloodmyst Isle",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (63 quests) for Bloodmyst Isle location.
 startlevel 20
 		step
@@ -1205,6 +1209,8 @@ startlevel 20
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Kalimdor\\[10] Teldrassil",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (47 quests) for Teldrassil Night Elf location.
 startlevel 10
 		step
@@ -1654,6 +1660,8 @@ startlevel 10
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Kalimdor\\[20] Darkshore",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (66 quests) for Darkshore location.
 startlevel 20
 		step
@@ -2302,6 +2310,8 @@ startlevel 20
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Kalimdor\\[30] Ashenvale",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (48 quests) for Ashenvale location.
 startlevel 30
 		step
@@ -2797,6 +2807,8 @@ startlevel 30
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Kalimdor\\[30] The Barrens",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (15 quests) for The Barrens location.
 startlevel 30
 		step
@@ -2946,6 +2958,8 @@ startlevel 30
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Kalimdor\\[30] Stonetalon Mountains",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (28 quests) for Stonetalon Mountains location.
 startlevel 30
 		step
@@ -3169,6 +3183,8 @@ startlevel 30
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Kalimdor\\[40] Desolace",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (31 quests) for Desolace location.
 startlevel 40
 		step
@@ -3517,6 +3533,8 @@ startlevel 40
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Kalimdor\\[50] Dustwallow Marsh",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (66 quests) for Dustwallow Marsh location.
 startlevel 50
 		step
@@ -4102,6 +4120,8 @@ startlevel 50
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Kalimdor\\[50] Thousand Needles",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (34 quests) for Thousand Needles location.
 startlevel 50
 		step
@@ -4423,6 +4443,8 @@ startlevel 50
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Kalimdor\\[50] Tanaris",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (27 quests) for Tanaris location.
 startlevel 50
 		step
@@ -4740,6 +4762,8 @@ startlevel 50
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Kalimdor\\[50] Feralas",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (54 quests) for Feralas location.
 startlevel 50
 		step
@@ -5298,6 +5322,8 @@ startlevel 50
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Kalimdor\\[60] Felwood",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (21 quests) for Felwood location.
 startlevel 60
 		step
@@ -5607,6 +5633,8 @@ startlevel 60
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Kalimdor\\[60] Un'Goro Crater",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (46 quests) for Un'Goto Crater location.
 startlevel 60
 		step
@@ -6115,6 +6143,8 @@ startlevel 60
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Kalimdor\\[60] Winterspring",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (22 quests) for Winterspring location.
 startlevel 60
 		step
@@ -6520,6 +6550,8 @@ startlevel 60
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Kalimdor\\[60] Azshara",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (12 Kalimdor + 17 Eastern Kingdoms quests) for Azshara location.
 startlevel 60
 		step
@@ -6840,6 +6872,8 @@ startlevel 60
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Kalimdor\\[60] Silithus",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (27 quests) for Silithus location.
 startlevel 60
 		step

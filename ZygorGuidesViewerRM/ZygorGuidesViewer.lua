@@ -722,13 +722,30 @@ function me:EnsureRemasterFrames()
 	local guideButton = CreateFrame("Button", "ZGVRemasterGuideButton", toolbar)
 	styleButton(guideButton, "Guides", 70, 20)
 	guideButton:SetPoint("LEFT", toolbar, "LEFT", 8, 0)
-	guideButton:SetScript("OnClick", function()
-		if ZGV and ZGV.OpenGuideMenu then
-			ZGV:OpenGuideMenu()
-		elseif ZGV and ZGV.OpenQuickMenu then
-			ZGV:OpenQuickMenu()
+	guideButton:SetScript("OnClick", function(selfBtn, button)
+		if button == "RightButton" then
+			if ZGV and ZGV.ToggleGuideManagerFrame then
+				ZGV:ToggleGuideManagerFrame("home")
+			elseif ZGV and ZGV.OpenGuideMenu then
+				ZGV:OpenGuideMenu()
+			end
+		else
+			if ZGV and ZGV.OpenGuideMenu then
+				ZGV:OpenGuideMenu()
+			elseif ZGV and ZGV.OpenQuickMenu then
+				ZGV:OpenQuickMenu()
+			end
 		end
 	end)
+	guideButton:RegisterForClicks("LeftButtonUp","RightButtonUp")
+	guideButton:SetScript("OnEnter", function(selfBtn)
+		GameTooltip:SetOwner(selfBtn, "ANCHOR_TOPRIGHT")
+		GameTooltip:SetText("Guides")
+		GameTooltip:AddLine(tipClick("to open guide menu"))
+		GameTooltip:AddLine(tipRight("to open guide manager"))
+		GameTooltip:Show()
+	end)
+	guideButton:SetScript("OnLeave", function() GameTooltip:Hide() end)
 	frames.guideButton = guideButton
 
 	local prevButton = CreateFrame("Button", "ZGVRemasterPrevButton", toolbar)
@@ -810,7 +827,11 @@ function me:EnsureRemasterFrames()
 	settingsButton:SetPoint("RIGHT", toolbar, "RIGHT", -8, 0)
 	settingsButton:SetScript("OnClick", function(selfBtn, button)
 		if button == "RightButton" then
-			ZygorGuidesViewer:OpenOptions()
+			if ZGV and ZGV.ToggleGuideManagerFrame then
+				ZGV:ToggleGuideManagerFrame("options")
+			else
+				ZygorGuidesViewer:OpenOptions()
+			end
 		else
 			ZygorGuidesViewer:OpenQuickMenu(selfBtn)
 		end
@@ -820,7 +841,7 @@ function me:EnsureRemasterFrames()
 		GameTooltip:SetOwner(selfBtn, "ANCHOR_TOPRIGHT")
 		GameTooltip:SetText("Settings")
 		GameTooltip:AddLine(tipClick("for quick menu"))
-		GameTooltip:AddLine(tipRight("to open options"))
+		GameTooltip:AddLine(tipRight("to open guide manager options"))
 		GameTooltip:Show()
 	end)
 	settingsButton:SetScript("OnLeave", function()
@@ -1160,9 +1181,25 @@ function me:GetGuideByTitle(title)
 	end
 end
 
+function me:GetRememberedGuideStep(title)
+	if not title or not self.db or not self.db.char then return nil end
+	self.db.char.guide_progress = self.db.char.guide_progress or {}
+	local rec = self.db.char.guide_progress[title]
+	if rec and rec.step and rec.step > 0 then
+		return rec.step
+	end
+	local history = self.db.char.guides_history or {}
+	for i = #history, 1, -1 do
+		local h = history[i]
+		if h and h.full == title and h.step and h.step > 0 then
+			return h.step
+		end
+	end
+	return nil
+end
+
 function me:SetGuide(name,step,temp)
 	if not name then return end
-	if not step then step=1 end
 	self:Debug("SetGuide "..name.." ("..tostring(step))
 
 	local guide
@@ -1198,6 +1235,10 @@ function me:SetGuide(name,step,temp)
 		self.CurrentGuideName = name
 		if not temp then
 			self.db.char.guidename = name
+		end
+
+		if not step then
+			step = self:GetRememberedGuideStep(name) or 1
 		end
 
 
@@ -1257,6 +1298,11 @@ function me:FocusStep(num,quiet)
 	self.CurrentStepNum = num
 	if not self.CurrentGuideIsTemporary then
 		self.db.char.step = num
+		self.db.char.guide_progress = self.db.char.guide_progress or {}
+		self.db.char.guide_progress[self.CurrentGuideName] = {
+			step = num,
+			updated = time(),
+		}
 	end
 	self.CurrentStep = self.CurrentGuide["steps"][num]
 
@@ -1302,17 +1348,21 @@ function me:FocusStep(num,quiet)
 
 	-- add to last-guides history
 	local history = self.db.char.guides_history
-	local found
+	local foundIndex
 	for i,g in ipairs(history) do
 		if g.full==self.CurrentGuideName then
 			-- update
 			g.step=num
-			found=true
+			foundIndex=i
 			break
 		end
 	end
-	if not found then
-		tinsert(history,{full=self.CurrentGuideName,short=self.CurrentGuide.title_short,step=step})
+	if foundIndex then
+		-- Keep history truly "recent": move touched guide to the end.
+		local touched = tremove(history, foundIndex)
+		tinsert(history, touched)
+	else
+		tinsert(history,{full=self.CurrentGuideName,short=self.CurrentGuide.title_short,step=num})
 		if #history>self.db.profile.guidesinhistory then tremove(history,1) end
 	end
 
@@ -4660,6 +4710,25 @@ function me:OpenGuideMenu()
 	--DropDownList1:SetBackdrop(backdrop)
 	EasyMenu(menu,ZGVFMenu,nil,30,10,"MENU",3)
 	UIDropDownMenu_SetWidth(ZGVFMenu, 300)
+	-- Clamp the root dropdown so it always opens fully on-screen near UI edges.
+	local root = _G.DropDownList1
+	if root and root.IsShown and root:IsShown() and root.GetLeft and root.GetRight then
+		root:SetClampedToScreen(true)
+		local left,right = root:GetLeft(), root:GetRight()
+		local top,bottom = root:GetTop(), root:GetBottom()
+		local pleft,pright = UIParent:GetLeft() or 0, UIParent:GetRight() or GetScreenWidth()
+		local ptop,pbottom = UIParent:GetTop() or GetScreenHeight(), UIParent:GetBottom() or 0
+		if left and right and top and bottom then
+			local nx, ny = left, top
+			local pad = 6
+			if left < pleft + pad then nx = pleft + pad end
+			if right > pright - pad then nx = nx - (right - (pright - pad)) end
+			if top > ptop - pad then ny = ptop - pad end
+			if bottom < pbottom + pad then ny = ny + ((pbottom + pad) - bottom) end
+			root:ClearAllPoints()
+			root:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", nx, ny)
+		end
+	end
 end
 
 function me:OpenQuickMenu(anchor)
@@ -4792,6 +4861,21 @@ local function FindGroup(self,title)
 end
 
 me.registered_groups = { groups={},guides={}}
+me.registered_includes = {}
+me.mutexes = me.mutexes or {}
+
+-- Compatibility shim for legacy guide/include files that guard duplicate loads.
+function me:DoMutex(name)
+	if not name then return false end
+	if self.mutexes[name] then return true end
+	self.mutexes[name] = true
+	return false
+end
+
+function me:RegisterInclude(name,data)
+	if not name or not data then return end
+	self.registered_includes[name] = data
+end
 
 function me:RegisterGuide(title,data,extra)
 	local group,tit = title:match("^(.*)\\+(.-)$")
@@ -5532,7 +5616,7 @@ local COLORBLIND_PALETTES = {
 
 function me:GetColorblindMode()
 	local m = self.db and self.db.profile and self.db.profile.colorblindmode
-	if m=="protan" or m=="deutan" or m=="tritan" or m=="global" then return m end
+	if m=="protan" or m=="deutan" or m=="tritan" or m=="global" or m=="custom" then return m end
 	return "off"
 end
 
@@ -5541,12 +5625,34 @@ function me:GetColorblindPalette()
 end
 
 function me:GetArrowColorGradient()
+	local profile = self.db and self.db.profile
+	if profile and self:GetColorblindMode()=="custom" then
+		local far = profile.arrowcolorcustom_far or {r=1.0,g=0.0,b=0.0}
+		local mid = profile.arrowcolorcustom_mid or {r=0.8,g=0.7,b=0.0}
+		local near = profile.arrowcolorcustom_near or {r=0.0,g=1.0,b=0.0}
+		return {
+			bad = {far.r or 1.0, far.g or 0.0, far.b or 0.0},
+			mid = {mid.r or 0.8, mid.g or 0.7, mid.b or 0.0},
+			good = {near.r or 0.0, near.g or 1.0, near.b or 0.0},
+		}
+	end
 	local p = self:GetColorblindPalette()
 	if p and p.arrow then return p.arrow end
 	return { bad={1.0,0.0,0.0}, mid={0.8,0.7,0.0}, good={0.0,1.0,0.0} }
 end
 
 function me:GetDistanceColorGradient()
+	local profile = self.db and self.db.profile
+	if profile and self:GetColorblindMode()=="custom" then
+		local far = profile.arrowcolorcustom_far or {r=1.0,g=0.0,b=0.0}
+		local mid = profile.arrowcolorcustom_mid or {r=0.8,g=0.7,b=0.0}
+		local near = profile.arrowcolorcustom_near or {r=0.0,g=1.0,b=0.0}
+		return {
+			bad = {far.r or 1.0, far.g or 0.0, far.b or 0.0},
+			mid = {mid.r or 0.8, mid.g or 0.7, mid.b or 0.0},
+			good = {near.r or 0.0, near.g or 1.0, near.b or 0.0},
+		}
+	end
 	local p = self:GetColorblindPalette()
 	if p and p.dist then return p.dist end
 	return { bad={1.0,0.5,0.4}, mid={1.0,0.9,0.5}, good={0.7,1.0,0.6} }

@@ -4,6 +4,8 @@ if UnitFactionGroup("player")~="Alliance" then return end
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Eastern Kingdoms\\[Beta] Stormwind City",[[
 author danaton
+	type achievements
+	faction alliance
 description Coming Soon
 startlevel 60
 		step
@@ -185,6 +187,8 @@ startlevel 60
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Eastern Kingdoms\\[10] Elwynn Forest",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (46 quests) for Elwynn Forest location.
 startlevel 10
 		step
@@ -547,6 +551,8 @@ startlevel 10
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Eastern Kingdoms\\[20] Westfall",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (26 quests) for Westfall location.
 startlevel 20
 		step
@@ -869,6 +875,8 @@ startlevel 20
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Eastern Kingdoms\\[25] Redridge Mountains",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (40 quests) for Redridge Mountains location.
 startlevel 25
 		step //1
@@ -1242,6 +1250,8 @@ startlevel 25
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Eastern Kingdoms\\[30] Duskwood",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (73 quests) for Duskwood location.
 startlevel 30
 		step
@@ -1753,6 +1763,8 @@ startlevel 30
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Eastern Kingdoms\\[45] Stranglethorn Vale",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (69 quests) for Stranglethorn Vale location.
 startlevel 45
 		step
@@ -2409,6 +2421,8 @@ startlevel 45
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Eastern Kingdoms\\[45] Swamp of Sorrows",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (13 quests) for Swamp of Sorrows location.
 startlevel 45
 		step
@@ -2562,6 +2576,8 @@ startlevel 45
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Eastern Kingdoms\\[60] Blasted Lands",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (16 quests) for Blasted Lands location.
 startlevel 60
 		step
@@ -2735,6 +2751,8 @@ startlevel 60
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Eastern Kingdoms\\[50] Searing Gorge",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (30 quests) for Searing Gorge location.
 startlevel 50
 		step
@@ -3069,6 +3087,8 @@ startlevel 50
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Eastern Kingdoms\\[60] Burning Steppes",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (10 quests) for Burning Steppes location.
 startlevel 60
 		step
@@ -3212,6 +3232,8 @@ startlevel 60
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Eastern Kingdoms\\[45] Badlands",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (20 quests) for Badlands location.
 startlevel 45
 		step
@@ -3472,6 +3494,8 @@ startlevel 45
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Eastern Kingdoms\\[20] Dun Morogh",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (40 quests) for Dun Morogh location.
 startlevel 20
 		step
@@ -3874,6 +3898,8 @@ startlevel 20
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Eastern Kingdoms\\[20] Loch Modan",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (38 quests) for Loch Modan location.
 startlevel 20
 		step
@@ -4232,6 +4258,8 @@ startlevel 20
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Eastern Kingdoms\\[30] Wetlands",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (48 quests) for Wetlands location.
 startlevel 30
 		step
@@ -4646,6 +4674,8 @@ startlevel 30
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Eastern Kingdoms\\[35] Hillsbrad Foothills",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (34 quests) for Hillsbrad Foothills location.
 startlevel 35
 		step
@@ -4995,6 +5025,8 @@ startlevel 35
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Eastern Kingdoms\\[40] Arathi Highlands",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (32 quests) for Arathi Highlands location.
 startlevel 40
 		step
@@ -5339,6 +5371,8 @@ startlevel 40
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Eastern Kingdoms\\[50] Hinterlands",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (17 quests) for Hinterlands location.
 startlevel 50
 		step
@@ -5536,6 +5570,8 @@ startlevel 50
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Eastern Kingdoms\\[60] Western Plaguelands",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (45 quests) for Western Plaguelands location.
 startlevel 60
 		step
@@ -5939,6 +5975,8 @@ startlevel 60
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Eastern Kingdoms\\[60] Eastern Plaguelands",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (35 quests) for Eastern Plaguelands location.
 startlevel 60
 		step

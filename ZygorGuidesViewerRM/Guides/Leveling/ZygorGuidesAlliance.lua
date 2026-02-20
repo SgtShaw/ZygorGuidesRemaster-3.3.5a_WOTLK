@@ -5,6 +5,8 @@ if UnitFactionGroup("player")~="Alliance" then return end
 
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Human (1-13)",[[
 	author support@zygorguides.com
+	type leveling
+	faction alliance
 	defaultfor Human
 	next Zygor's Alliance Leveling Guides\\Main Guide (13-20)
 	startlevel 1
@@ -767,6 +769,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Human (1-13)"
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Night Elf (1-13)",[[
 	author support@zygorguides.com
+	type leveling
+	faction alliance
 	defaultfor NightElf
 	next Zygor's Alliance Leveling Guides\\Main Guide (13-20)
 	startlevel 1
@@ -1615,6 +1619,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Night Elf (1-
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Gnome (1-13)",[[
 	author support@zygorguides.com
+	type leveling
+	faction alliance
 	defaultfor Gnome
 	next Zygor's Alliance Leveling Guides\\Main Guide (13-20)
 	startlevel 1
@@ -2243,6 +2249,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Gnome (1-13)"
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Dwarf (1-13)",[[
 	author support@zygorguides.com
+	type leveling
+	faction alliance
 	defaultfor Dwarf
 	next Zygor's Alliance Leveling Guides\\Main Guide (13-20)
 	startlevel 1
@@ -2951,6 +2959,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Dwarf (1-13)"
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Draenei (1-13)",[[
 	author support@zygorguides.com
+	type leveling
+	faction alliance
 	defaultfor Draenei
 	next Zygor's Alliance Leveling Guides\\Main Guide (13-20)
 	startlevel 1
@@ -3891,6 +3901,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Draenei (1-13
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Death Knight (55-60)",[[
 	author support@zygorguides.com
+	type leveling
+	faction alliance
 	defaultfor DeathKnight
 	next Zygor's Alliance Leveling Guides\\Outland (60-62)
 	startlevel 55
@@ -4748,6 +4760,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Death Knight 
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Main Guide (13-20)",[[
 	author support@zygorguides.com
+	type leveling
+	faction alliance
 	next Zygor's Alliance Leveling Guides\\Levels (20-25)
 	startlevel 13
 	step //1
@@ -5582,6 +5596,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Main Guide (1
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Levels (20-25)",[[
 	author support@zygorguides.com
+	type leveling
+	faction alliance
 	next Zygor's Alliance Leveling Guides\\Levels (25-30)
 	startlevel 20
 	step //1
@@ -6205,6 +6221,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Levels (20-25
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Levels (25-30)",[[
 	author support@zygorguides.com
+	type leveling
+	faction alliance
 	next Zygor's Alliance Leveling Guides\\Levels (30-35)
 	startlevel 25
 	step //1
@@ -6932,6 +6950,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Levels (25-30
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Levels (30-35)",[[
 	author support@zygorguides.com
+	type leveling
+	faction alliance
 	next Zygor's Alliance Leveling Guides\\Levels (35-40)
 	startlevel 30
 	step //1
@@ -7745,6 +7765,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Levels (30-35
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Levels (35-40)",[[
 	author support@zygorguides.com
+	type leveling
+	faction alliance
 	next Zygor's Alliance Leveling Guides\\Levels (40-45)
 	startlevel 35
 	step //1
@@ -8523,6 +8545,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Levels (35-40
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Levels (40-45)",[[
 	author support@zygorguides.com
+	type leveling
+	faction alliance
 	next Zygor's Alliance Leveling Guides\\Levels (45-50)
 	startlevel 40
 	step //1
@@ -9408,6 +9432,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Levels (40-45
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Levels (45-50)",[[
 	author support@zygorguides.com
+	type leveling
+	faction alliance
 	next Zygor's Alliance Leveling Guides\\Levels (50-55)
 	startlevel 45
 	step //1
@@ -10230,6 +10256,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Levels (45-50
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Levels (50-55)",[[
 	author support@zygorguides.com
+	type leveling
+	faction alliance
 	next Zygor's Alliance Leveling Guides\\Levels (55-60)
 	startlevel 50
 	step //1
@@ -11218,6 +11246,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Levels (50-55
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Levels (55-60)",[[
 	author support@zygorguides.com
+	type leveling
+	faction alliance
 	next Zygor's Alliance Leveling Guides\\Outland (60-62)
 	startlevel 55
 	step //1
@@ -12210,6 +12240,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Levels (55-60
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Outland (60-62)",[[
 	author support@zygorguides.com
+	type leveling
+	faction alliance
 	next Zygor's Alliance Leveling Guides\\Levels (62-64)
 	startlevel 60
 	step //1
@@ -12744,6 +12776,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Outland (60-6
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Levels (62-64)",[[
 	author support@zygorguides.com
+	type leveling
+	faction alliance
 	next Zygor's Alliance Leveling Guides\\Levels (64-66)
 	startlevel 62
 	step //1
@@ -13310,6 +13344,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Levels (62-64
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Levels (64-66)",[[
 	author support@zygorguides.com
+	type leveling
+	faction alliance
 	next Zygor's Alliance Leveling Guides\\Levels (66-68)
 	startlevel 64
 	step //1
@@ -13981,6 +14017,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Levels (64-66
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Levels (66-68)",[[
 	author support@zygorguides.com
+	type leveling
+	faction alliance
 	next Zygor's Alliance Leveling Guides\\Levels (68-70)
 	startlevel 66
 	step //1
@@ -14857,6 +14895,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Levels (66-68
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Levels (68-70)",[[
 	author support@zygorguides.com
+	type leveling
+	faction alliance
 	next Zygor's Alliance Leveling Guides\\Northrend (70-72)
 	startlevel 68
 	step //1
@@ -15836,6 +15876,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Levels (68-70
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Northrend (70-72)",[[
 	author support@zygorguides.com
+	type leveling
+	faction alliance
 	next Zygor's Alliance Leveling Guides\\Northrend (72-74)
 	startlevel 70
 	step //1
@@ -17389,6 +17431,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Northrend (70
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Northrend (72-74)",[[
 	author support@zygorguides.com
+	type leveling
+	faction alliance
 	next Zygor's Alliance Leveling Guides\\Northrend (74-76)
 	startlevel 72
 	step //1
@@ -19048,6 +19092,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Northrend (72
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Northrend (74-76)",[[
 	author support@zygorguides.com
+	type leveling
+	faction alliance
 	next Zygor's Alliance Leveling Guides\\Northrend (76-78)
 	startlevel 74
 	step //1
@@ -20633,6 +20679,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Northrend (74
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Northrend (76-78)",[[
 	author support@zygorguides.com
+	type leveling
+	faction alliance
 	next Zygor's Alliance Leveling Guides\\Northrend (78-80)
 	startlevel 76
 	step //1
@@ -22192,6 +22240,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Northrend (76
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Northrend (78-80)",[[
 	author support@zygorguides.com
+	type leveling
+	faction alliance
 	startlevel 78
 	step //1
 		goto Sholazar Basin,59.6,75.8

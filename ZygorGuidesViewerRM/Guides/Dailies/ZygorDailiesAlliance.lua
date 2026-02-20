@@ -7,6 +7,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Borean Tundra\
 	description This guide section contains the pre-quests to unlock the daily quests in the Coldarra region of Borean Tundra.
 	description The Kaskala region of Borean Tundra does not have any pre-quests to unlock the daily quest that is available there.
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	step //1
 		goto Borean Tundra,33.3,34.5
 		.talk Raelorasz##26117
@@ -65,6 +67,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Borean Tundra\
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Borean Tundra\\Coldarra Dailies",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through completing the daily quests in the Coldarra region of Borean Tundra.
 	daily
 	step //1
@@ -98,6 +102,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Borean Tundra\
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Borean Tundra\\Kaskala Dailies",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through completing the daily quests in the Kaskala region of Borean Tundra.
 	description There are no pre-quests needed to unlock the daily quest offered in this guide section.
 	daily
@@ -116,6 +122,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Borean Tundra\
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Dalaran\\Cooking Dailies Pre-Quests",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section contains the pre-quest to unlock the Cooking daily quests in Dalaran.
 	description This quest is only available to you if you have 350+ Cooking skill.
 	step //1
@@ -133,6 +141,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Dalaran\\Cooki
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Dalaran\\Jewelcrafting Dailies Pre-Quests",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section contains the pre-quest to unlock the Jewelcrafting daily quests in Dalaran.
 	description This quest is only available to you if you have 375+ Jewelcrafting skill.
 	step //1
@@ -149,6 +159,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Dalaran\\Jewel
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Dalaran\\Cooking Dailies",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through completing the Cooking daily quests in Dalaran.
 	daily
 	step //1
@@ -249,6 +261,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Dalaran\\Cooki
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Dalaran\\Fishing Dailies",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through completing the Fishing daily quests in Dalaran.
 	daily
 	step //1
@@ -308,6 +322,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Dalaran\\Fishi
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Dalaran\\Jewelcrafting Dailies",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through completing the Jewelcrafting daily quests in Dalaran.
 	daily
 	step //1
@@ -403,6 +419,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Dalaran\\Jewel
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Dragonblight\\Dragonblight Pre-Quests",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section contains the pre-quests to unlock the daily quests in the Wyrmrest Temple region of Dragonblight.
 	description The Moa'ki Harbor region of Dragonblight does not have any pre-quests to unlock the daily quest that is available there.
 	step //1
@@ -578,6 +596,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Dragonblight\\
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Dragonblight\\Moa'ki Harbor Dailies",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through completing the daily quest in the Moa'ki Harbor region of Dragonblight.
 	description There are no pre-quests needed to unlock the daily quest offered in this guide section.
 	daily
@@ -596,6 +616,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Dragonblight\\
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Dragonblight\\Wyrmrest Temple Dailies",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through completing the daily quest in the Wyrmrest Temple region of Dragonblight.
 	daily
 	step //1
@@ -624,6 +646,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Dragonblight\\
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Grizzly Hills\\Grizzly Hills Pre-Quests",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section contains the pre-quests to unlock the daily quest in the Granite Springs region of Grizzly Hills.
 	description The Blackriver Logging Camp, Blue Sky Logging Grounds, and Venture Bay regions of Grizzly Hills
 	description do not have any pre-quests to unlock the daily quests that are available in those regions.
@@ -708,6 +732,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Grizzly Hills\
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Grizzly Hills\\Blackriver Logging Camp Dailies",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through completing the daily quest in the Blackriver Logging Camp region of Grizzly Hills.
 	description There are no pre-quests needed to unlock the daily quest offered in this guide section.
 	daily
@@ -726,6 +752,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Grizzly Hills\
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Grizzly Hills\\Blue Sky Logging Grounds Dailies",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through completing the daily quests in the Blue Sky Logging Grounds region of Grizzly Hills.
 	description There are no pre-quests needed to unlock the daily quests offered in this guide section.
 	daily
@@ -782,6 +810,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Grizzly Hills\
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Grizzly Hills\\Granite Springs Dailies",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through completing the daily quest in the Granite Springs region of Grizzly Hills.
 	daily
 	step //1
@@ -800,6 +830,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Grizzly Hills\
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Grizzly Hills\\Venture Bay Dailies",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through completing the daily quests in the Venture Bay region of Grizzly Hills.
 	description There are no pre-quests needed to unlock the daily quests offered in this guide section.
 	daily
@@ -870,6 +902,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Grizzly Hills\
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Howling Fjord\\Howling Fjord Pre-Quests",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section contains the pre-quests to unlock the daily quest in the Kamagua and Steel Gate regions of Howling Fjord.
 	description The Westguard Keep region of Howling Fjord does not have any pre-quests to unlock the daily quest that is available there.
 	step //1
@@ -950,6 +984,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Howling Fjord\
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Howling Fjord\\Steel Gate Dailies",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through completing the daily quest in the Apothecary Camp region of Howling Fjord.
 	daily
 	step //1
@@ -970,6 +1006,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Howling Fjord\
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Howling Fjord\\Kamagua Dailies",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through completing the daily quest in the Kamagua region of Howling Fjord.
 	daily
 	step //1
@@ -994,6 +1032,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Howling Fjord\
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Howling Fjord\\Westguard Keep Dailies",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through completing the daily quest in the Westguard Keep region of Howling Fjord.
 	daily
 	 step //1
@@ -1014,6 +1054,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Howling Fjord\
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Icecrown\\Icecrown Full Zone Quest Path (Includes Regular Dailies Pre-Quests)",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section contains the quest path for the entire Icecrown zone, which includes the pre-quests
 	description to unlock the daily quests in the Orgrim's Hammer, Ymirheim, Aldur'Thar, Shadowvault, and Death's Rise regions of Icecrown.
 	description The Argent Tournament Grounds pre-quests are not included in this guide section.
@@ -2532,6 +2574,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Icecrown\\Icec
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Icecrown\\Argent Tournament Grounds Pre-Quests",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section contains the pre-quests to unlock most of the daily quests in the Argent Tournament Grounds region of Icecrown.
 	description You will need to achieve the Crusader title, using the Crusader Title Guide section in the Icecrown section, to unlock more daily quests.
 	step //1
@@ -2603,6 +2647,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Icecrown\\Arge
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Icecrown\\Argent Tournament Grounds Aspirant Rank Dailies",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through completing your race's Aspirant Rank dailies
 	description in order to achieve Argent Tournament Grounds Valiant Rank with your own race.
 	daily
@@ -2696,6 +2742,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Icecrown\\Arge
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Icecrown\\Argent Tournament Grounds Valiant Rank Dailies",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through completing your race's Valiant Rank dailies
 	description in order to achieve Argent Tournament Grounds Champion Rank with your own race.
 	description You must have completed the Argent Tournament Grounds Aspirant Rank Dailies guide section
@@ -3395,6 +3443,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Icecrown\\Arge
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Icecrown\\ATG Champion Rank Dailies - Death Knight Only",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description You must be a Death Knight to do the quests in this Argent Tournament Grounds guide section.
 	description Also, you must have completed the Argent Tournament Grounds Valiant Rank Dailies guide section.
 	daily
@@ -3495,6 +3545,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Icecrown\\ATG 
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Icecrown\\ATG Champion Rank Dailies - Non-Death Knight Only",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description You must NOT be a Death Knight to do the quests in this Argent Tournament Grounds guide section.
 	description Also, you must have completed the Argent Tournament Grounds Valiant Rank Dailies guide section.
 	daily
@@ -3595,6 +3647,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Icecrown\\ATG 
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Icecrown\\Argent Tournament Grounds Crusader Dailies",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description In order to be able to complete the quests in this guide section, you must already be Exalted
 	description with the Darkspear Trolls, Orgrimmar, Silvermoon City, Thunder Bluff, and Undercity factions.
 	description Also, you must have already become a Champion with each of those factions,
@@ -3658,6 +3712,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Icecrown\\Arge
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Icecrown\\ATG Black Knight Quest Chain",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This Argent Tournament Grounds guide section unlocks a Champion Rank group daily quest.
 	description We recommend you complete the Argent Tournament Grounds Valiant Rank Dailies guide section,
 	description and achieve Champion Rank with your race, before doing this quest chain.
@@ -3788,6 +3844,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Icecrown\\ATG 
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Icecrown\\The Skybreaker",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	daily
 	step //1
 		map Icecrown
@@ -3907,6 +3965,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Icecrown\\The 
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Icecrown\\The Valley of Lost Hope",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	daily
 	step //1
 		goto Icecrown,62.6,51.3
@@ -3937,6 +3997,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Icecrown\\The 
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Icecrown\\Ymirheim",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	daily
 	step //1
 		goto Icecrown,57.0,62.6
@@ -3959,6 +4021,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Icecrown\\Ymir
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Icecrown\\Aldur'thar: The Desolation Gate",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	daily
 	step //1
 		goto Icecrown,54.0,42.9
@@ -4012,6 +4076,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Icecrown\\Aldu
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Icecrown\\Shadowvault Dailies",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through completing the daily quests in the Shadowvault region of Icecrown.
 	daily
 	step //1
@@ -4063,6 +4129,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Icecrown\\Shad
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Icecrown\\Death's Rise Dailies",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through completing the daily quests in the Death's Rise region of Icecrown.
 	daily
 	step //1
@@ -4109,6 +4177,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Icecrown\\Deat
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Icecrown\\The Silver Covenant Dailies",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through completing the daily quests
 	description for The Silver Covenant faction in the Argent Tournament Grounds area of Icecrown.
 	daily
@@ -4196,6 +4266,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Icecrown\\The 
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Sholazar Basin\\Sholazar Basin Pre-Quests",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section contains the pre-quests to unlock the ability to complete daily quests
 	description for The Oracles and Frenzyheart Tribe factions in Sholazar Basin.
 	step //1
@@ -4447,6 +4519,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Sholazar Basin
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Sholazar Basin\\Frenzyheart Tribe Dailies",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through completing the daily quests for the Frenzyheart Tribe faction in Sholazar Basin.
 	daily
 	step //1
@@ -4593,6 +4667,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Sholazar Basin
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Sholazar Basin\\The Oracles Dailies",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through completing the daily quests for the The Oracles faction in Sholazar Basin.
 	daily
 	step //1
@@ -4729,6 +4805,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Sholazar Basin
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\The Storm Peaks\\The Storm Peaks Full Zone Quest Path (Includes Pre-Quests)",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section contains the quest path for the entire The Storm Peaks zone,
 	description which includes the pre-quests to unlock the daily quests in the Brunnhildar Village,
 	description Dun Niffelem (The Sons of Hodir), Frosthold, and K3 regions of The Storm Peaks.
@@ -5823,6 +5901,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\The Storm Peak
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\The Storm Peaks\\The Sons of Hodir Reputation (Friendly)",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through earning Honored reputation with The Sons of Hodir.
 	description You must have completed the The Storm Peaks Full Zone Guide (Includes Pre-Quests) guide section,
 	description as it contains pre-quests to unlock The Sons of Hodir up to Friendly reputation, before having access to the quests in this guide section.
@@ -5887,6 +5967,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\The Storm Peak
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\The Storm Peaks\\The Sons of Hodir Reputation (Honored) - Pre-Quest",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through completing a pre-quest, unlocked by earning
 	description Honored reputation with The Sons of Hodir faction, that unlocks a daily quest.
 	description You must have completed the The Sons of Hodir Reputation (Friendly) guide section
@@ -5916,6 +5998,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\The Storm Peak
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\The Storm Peaks\\The Sons of Hodir Reputation (Honored)",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through earning Revered reputation with The Sons of Hodir.
 	description You must have completed the The Sons of Hodir Reputation (Friendly) guide section and
 	description the The Sons of Hodir Reputation (Honored) - Pre-Quest guide section
@@ -6009,6 +6093,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\The Storm Peak
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\The Storm Peaks\\The Sons of Hodir Reputation (Revered)",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through earning Exalted reputation with The Sons of Hodir.
 	description You must have completed the The Sons of Hodir Reputation (Honored) guide section before having access to the quests in this guide section.
 	daily
@@ -6113,6 +6199,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\The Storm Peak
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\The Storm Peaks\\Brunnhildar Village Dailies",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through completing the daily quests in the Brunnhildar Village region of The Storm Peaks.
 	daily
 	step //1
@@ -6160,6 +6248,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\The Storm Peak
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\The Storm Peaks\\Dun Niffelem (The Sons of Hodir) Dailies",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through completing the daily quests in the Brunnhildar Village region of The Storm Peaks.
 	description If you are not Revered with The Sons of Hodir, you will not be able to accept some of the quests in this guide section.
 	description To become Revered with The Sons of Hodir, use the The Sons of Hodir (Friendly), The Sons of Hodir (Honored) - Pre-Quest,
@@ -6250,6 +6340,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\The Storm Peak
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\The Storm Peaks\\Frosthold Dailies",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	daily
 	step //1
 		goto The Storm Peaks,29.8,75.7
@@ -6267,6 +6359,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\The Storm Peak
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\The Storm Peaks\\K3 Dailies",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through completing the daily quests in the K3 region of The Storm Peaks.
 	daily
 	step //1
@@ -6284,6 +6378,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\The Storm Peak
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Zul'Drak\\Zul'Drak Pre-Quests",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section contains the pre-quests to unlock the daily quests in the The Argent Stand region of Zul'Drak.
 	step //1
 		goto Zul'Drak,39.5,66.9
@@ -6363,6 +6459,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Zul'Drak\\Zul'
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Zul'Drak\\The Argent Stand Dailies",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through completing the daily quests in the The Argent Stand region of Zul'Drak.
 	daily
 	step //1
@@ -6490,6 +6588,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Icecrown\\Crus
 	description This guide will help you to get Exalted reputation with the Darnassus, Exodar, Gnomeregan Exiles, Ironforge, and Stormwind factions.
 	description You need to be exalted with these 5 reputations in order to earn your Crusader title and open up more daily quests.
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	startlevel 77
 	step //1
 		goto Elwynn Forest,48.1,43.6
@@ -8320,6 +8420,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Icecrown\\Crus
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Icecrown\\Crusader Title Guide (Unlocks More Dailies)\\Human Champion Rank",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through achieving Argent Tournament Grounds Champion Rank with the Human race.
 	description You must have already completed the Argent Tournament Grounds Valiant Rank Dailies guide section in order to be able to complete this guide section.
 	description You cannot complete this section if you are a Human.
@@ -8445,6 +8547,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Icecrown\\Crus
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Icecrown\\Crusader Title Guide (Unlocks More Dailies)\\Night Elf Champion Rank",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through achieving Argent Tournament Grounds Champion Rank with the Night Elf race.
 	description You must have already completed the Argent Tournament Grounds Valiant Rank Dailies guide section in order to be able to complete this guide section.
 	description You cannot complete this section if you are a Night Elf.
@@ -8570,6 +8674,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Icecrown\\Crus
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Icecrown\\Crusader Title Guide (Unlocks More Dailies)\\Dwarf Champion Rank",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through achieving Argent Tournament Grounds Champion Rank with the Dwarf race.
 	description You must have already completed the Argent Tournament Grounds Valiant Rank Dailies guide section in order to be able to complete this guide section.
 	description You cannot complete this section if you are a Dwarf.
@@ -8698,6 +8804,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Icecrown\\Crus
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Icecrown\\Crusader Title Guide (Unlocks More Dailies)\\Gnome Champion Rank",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through achieving Argent Tournament Grounds Champion Rank with the Gnome race.
 	description You must have already completed the Argent Tournament Grounds Valiant Rank Dailies guide section in order to be able to complete this guide section.
 	description You cannot complete this section if you are a Gnome.
@@ -8823,6 +8931,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Icecrown\\Crus
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Icecrown\\Crusader Title Guide (Unlocks More Dailies)\\Draenei Champion Rank",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through achieving Argent Tournament Grounds Champion Rank with the Draenei race.
 	description You must have already completed the Argent Tournament Grounds Valiant Rank Dailies guide section in order to be able to complete this guide section.
 	description You cannot complete this section if you are a Draenei.
@@ -8948,6 +9058,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Icecrown\\Crus
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Speed Gold Runs\\Level 80 Dailies Speed Gold Run (No ATG Dailies)",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through a 25 daily quest speed gold run at level 80, without including any Argent Tournament Grounds dailies.
 	description To be able to complete all the quests in this guide section, you must have completed the The Storm Peaks Full Zone Guide (Includes Pre-Quests),
 	description The Sons of Hodir Reputation (Honored), and Icecrown Full Zone Quest Path (Includes Regular Dailies Pre-Quests) guide sections. 
@@ -9323,6 +9435,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Speed Gold Run
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Speed Gold Runs\\Level 80 Dailies Speed Gold Run (With ATG Dailies)",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through a 25 daily quest speed gold run at level 80.
 	description To be able to complete all the quests in this guide section, you must have completed
 	description the The Storm Peaks Full Zone Guide (Includes Pre-Quests), The Sons of Hodir Reputation (Honored),
@@ -11003,6 +11117,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Reputation\\Th
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Events\\Love is in the Air (February 7th - 20th)\\Love is in the Air Main Questline",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through completing the main questline for the Love is in the Air event.
 	step //1
 		goto Ironforge,35.3,69.0
@@ -11070,6 +11186,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Events\\Love i
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Events\\Love is in the Air (February 7th - 20th)\\Love is in the Air Dailies",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through completing the Love is in the Air even daily quests.
 	daily
 	step //1
@@ -11653,6 +11771,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Events\\Love i
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Events\\Lunar Festival (February 14th - March 6th)\\Lunar Festival Main Questline",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through completing the main questline for the Lunar Festival event.
 	step //1
 		goto Ironforge,30.9,61.6
@@ -11692,6 +11812,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Events\\Lunar 
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Events\\Lunar Festival (February 14th - March 6th)\\Lunar Festival Optimized Elders Path",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through an optimized path for honoring the elders
 	description that are spread out all over Azeroth for the Lunar Festival event.
 	description The 13 elders that are inside instances are not included in this guide section.
@@ -12118,6 +12240,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Events\\Lunar 
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Events\\Noblegarden (April 4th - April 11th)\\Noblegarden Quests and Dailies",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through completing the dailies for the Noblegarden event.
 	daily
 	step //1
@@ -12153,6 +12277,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Events\\Nobleg
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Events\\Noblegarden (April 4th - April 11th)\\Noblegarden Achievements",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through getting all 12 achievements for the Noblegarden event.
 	step //1
 		goto Teldrassil,57.0,60.5
@@ -12310,6 +12436,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Events\\Nobleg
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Events\\Children's Week (May 2nd - May 9th)\\Children's Week Stormwind Quests",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through completing the Stormwind questline for the Children's Week event.
 	startlevel 80
 	step //1
@@ -12414,6 +12542,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Events\\Childr
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Events\\Children's Week (May 2nd - May 9th)\\Children's Week Shattrath Quests",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through completing the Shattrath questline for the Children's Week event.
 	startlevel 80
 	step //1
@@ -12539,6 +12669,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Events\\Childr
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Events\\Children's Week (May 2nd - May 9th)\\Children's Week Dalaran Oracles Quests",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through completing the Dalaran Oracles questline for the Children's Week event.
 	startlevel 80
 	step //1
@@ -12627,6 +12759,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Events\\Childr
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Events\\Children's Week (May 2nd - May 9th)\\Children's Week Dalaran Wolvar Quests",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through completing the Dalaran Wolvar questline for the Children's Week event.
 	startlevel 80
 	step //1
@@ -12709,6 +12843,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Events\\Childr
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Events\\Children's Week (May 2nd - May 9th)\\Children's Week Achievements",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through completing the Achievements for the Children's Week event.
 	startlevel 80
 	step //1
@@ -12771,6 +12907,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Events\\Childr
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Events\\Midsummer Fire Festival (June 21st - July 5th)\\Midsummer Fire Festival Quests",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through completing the quests for the Midsummer Fire Festival event.
 	startlevel 80
 	step //1
@@ -13398,6 +13536,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Events\\Midsum
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Events\\Midsummer Fire Festival (June 21st - July 5th)\\Midsummer Fire Festival Achievements",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through completing the achievements for the Midsummer Fire Festival event.
 	startlevel 80
 	step //1
@@ -13457,6 +13597,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Events\\Midsum
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Events\\Operation Gnomeregan Pre-Cataclysm Event",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through completing the Operation Gnomeregan Pre-Cataclysm event.
 	step //1
 		goto Ironforge,68.7,49.0
@@ -13595,6 +13737,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Events\\Operat
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Events\\Harvest Festival",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through completing the Hervest Festival event.
 	step //1
 		goto Dun Morogh,52.6,36.0
@@ -13625,6 +13769,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Events\\Harves
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Events\\Brewfest (September 20th - October 6th)\\Brewfest Dailies",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through completing the daily quests for the Brewfest event.
 	step //1
 		'You will only be able to do 1 of the first 2 dailies in this guide, per day. |tip Quests "Bark for the Barleybrews!" or "Bark for the Thunderbrews!".
@@ -13712,6 +13858,8 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Events\\Brewfe
 ]])
 ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Dailies Guides\\Events\\Brewfest (September 20th - October 6th)\\Brewfest Achievements",[[
 	author support@zygorguides.com
+	type daily
+	faction alliance
 	description This guide section will walk you through completing the achievements for the Brewfest event.
 	step //1
 		goto Dun Morogh,48.5,40.0

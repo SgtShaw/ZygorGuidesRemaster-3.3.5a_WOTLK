@@ -3,6 +3,7 @@ if not ZygorGuidesViewer then return end
 
 ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Legendary\\Shadowmourne\\Start Through Shadow's Edge",[[
 	author ErebusAres
+	type titles
 	startlevel 80
 	next Ares' WotLK 3.3.5a Guides\\Legendary\\Shadowmourne\\Infusions Through Completion
 	description This guide covers the opening part of the Shadowmourne quest chain through obtaining Shadow's Edge.
@@ -44,6 +45,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Legendary\\Shadowmou
 
 ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Legendary\\Shadowmourne\\Infusions Through Completion",[[
 	author ErebusAres
+	type titles
 	startlevel 80
 	description This guide covers the remaining Shadowmourne chain from A Feast of Souls through The Lich King's Last Stand.
 	step //1
@@ -108,6 +110,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Legendary\\Shadowmou
 
 ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Legendary\\Val'anyr\\Fragments Through Reforging",[[
 	author ErebusAres
+	type titles
 	startlevel 80
 	description This guide covers the Val'anyr chain from fragment farming to reforging.
 	step //1

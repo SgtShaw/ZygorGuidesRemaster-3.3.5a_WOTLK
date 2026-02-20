@@ -5,6 +5,8 @@ if UnitFactionGroup("player")~="Alliance" then return end
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides TBC solo\\Human (1-5)",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	defaultfor Human
 	next Ding80's Alliance Leveling Guides TBC solo\\Main Guide (5-10)
 	startlevel 1
@@ -175,6 +177,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides TBC solo\\Hum
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides TBC solo\\Dun Morogh (1-5)",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	defaultfor Gnome,Dwarf
 	next Ding80's Alliance Leveling Guides TBC solo\\Main Guide (5-10)
 	startlevel 1
@@ -366,6 +370,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides TBC solo\\Dun
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides TBC solo\\Main Guide (5-10)",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	next Ding80's Alliance Leveling Guides TBC solo\\Main Guide (10-12)
 	startlevel 5
 
@@ -646,6 +652,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides TBC solo\\Mai
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides TBC solo\\Night Elf (1-10)",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	defaultfor NightElf
 	next Ding80's Alliance Leveling Guides TBC solo\\Main Guide (10-12)
 	startlevel 1
@@ -1305,6 +1313,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides TBC solo\\Nig
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides TBC solo\\Draenei (1-12)",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	defaultfor Draenei
 	next Ding80's Alliance Leveling Guides TBC solo\\Main Guide (10-12)
 
@@ -2105,6 +2115,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides TBC solo\\Dra
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides TBC solo\\Main Guide (10-12)",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	next Ding80's Alliance Leveling Guides TBC solo\\Main Guide (13-19)
 	startlevel 10
 
@@ -2410,6 +2422,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides TBC solo\\Mai
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides TBC solo\\Main Guide (13-19)",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	next Ding80's Alliance Leveling Guides TBC solo\\Levels (20-24)
 	startlevel 12
 	step
@@ -3199,6 +3213,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides TBC solo\\Mai
 ]])
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides TBC solo\\Levels (20-24)",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	next Ding80's Alliance Leveling Guides TBC solo\\Levels (25-29)
 	startlevel 20
 
@@ -3816,6 +3832,8 @@ step
 ]])
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides TBC solo\\Levels (25-29)",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	next Ding80's Alliance Leveling Guides TBC solo\\Levels (30-34)
 	startlevel 25
 
@@ -4577,6 +4595,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides TBC solo\\Lev
 ]])
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides TBC solo\\Levels (30-34)",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	next Ding80's Alliance Leveling Guides TBC solo\\Levels (35-39)
 	startlevel 30
 
@@ -5345,6 +5365,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides TBC solo\\Lev
 ]])
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides TBC solo\\Levels (35-39)",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	next Ding80's Alliance Leveling Guides TBC solo\\Levels (40-44)
 	startlevel 35
 
@@ -6200,6 +6222,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides TBC solo\\Lev
 ]])
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides TBC solo\\Levels (40-44)",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	next Ding80's Alliance Leveling Guides TBC solo\\Levels (45-49)
 	startlevel 40
 
@@ -7084,6 +7108,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides TBC solo\\Lev
 ]])
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides TBC solo\\Levels (45-49)",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	next Ding80's Alliance Leveling Guides TBC solo\\Levels (50-54)
 	startlevel 45
 
@@ -7950,6 +7976,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides TBC solo\\Lev
 ]])
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides TBC solo\\Levels (50-54)",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	next Ding80's Alliance Leveling Guides TBC solo\\Levels (55-58)
 	startlevel 50
 
@@ -8878,6 +8906,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides TBC solo\\Lev
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides TBC solo\\Levels (55-58)",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	next Ding80's Alliance Leveling Guides TBC solo\\Hellfire Peninsula
 	startlevel 55
 
@@ -9512,6 +9542,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides TBC solo\\Lev
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides TBC solo\\Hellfire Peninsula",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	next Ding80's Alliance Leveling Guides TBC solo\\Zangarmarsh
 	startlevel 58
 
@@ -10305,6 +10337,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides TBC solo\\Hel
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides TBC solo\\Zangarmarsh",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	next Ding80's Alliance Leveling Guides TBC solo\\Terokkar Forest
 	startlevel 61
 
@@ -10856,6 +10890,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides TBC solo\\Zan
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides TBC solo\\Terokkar Forest",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	next Ding80's Alliance Leveling Guides TBC solo\\Nagrand
 	startlevel 64
 
@@ -11631,6 +11667,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides TBC solo\\Ter
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides TBC solo\\Nagrand",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	startlevel 66
 	next Ding80's Alliance Leveling Guides TBC solo\\Blade's Edge Mountains
 
@@ -12100,6 +12138,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides TBC solo\\Nag
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides TBC solo\\Blade's Edge Mountains",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	startlevel 67
 	next Ding80's Alliance Leveling Guides TBC solo\\Netherstorm
 
@@ -12809,6 +12849,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides TBC solo\\Bla
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides TBC solo\\Netherstorm",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	startlevel 69
 	next Ding80's Alliance Leveling Guides TBC duo\\Shadowmoon Valley
 
@@ -13982,6 +14024,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides TBC solo\\Net
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides TBC solo\\Shadowmoon Valley",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	startlevel 70
 
 	step

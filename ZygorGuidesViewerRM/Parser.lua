@@ -170,9 +170,99 @@ local function MakeCondition(cond,forcebool)
 	return fun,err
 end
 
+local function ApplyIncludeVars(text,vars)
+	if not vars then return text end
+	return (text:gsub("%%([%w_]+)%%", function(key)
+		return vars[key] or ("%" .. key .. "%")
+	end))
+end
+
+local function ParseIncludeArgs(argstr,parentvars)
+	local vars = {}
+	if parentvars then
+		for k,v in pairs(parentvars) do vars[k]=v end
+	end
+	if not argstr or argstr=="" then return vars end
+
+	for key,val in argstr:gmatch(",%s*([%w_]+)%s*=%s*\"([^\"]*)\"") do
+		vars[key]=ApplyIncludeVars(val,parentvars)
+	end
+	for key,val in argstr:gmatch(",%s*([%w_]+)%s*=%s*'([^']*)'") do
+		vars[key]=ApplyIncludeVars(val,parentvars)
+	end
+	for key,val in argstr:gmatch(",%s*([%w_]+)%s*=%s*([^,%s]+)") do
+		if vars[key]==nil then vars[key]=ApplyIncludeVars(val,parentvars) end
+	end
+	return vars
+end
+
+local function NormalizeIncludeName(name)
+	if not name then return "" end
+	return tostring(name)
+		:lower()
+		:gsub("^%s+","")
+		:gsub("%s+$","")
+		:gsub("[%s%-_]+","")
+		:gsub("[^%w]","")
+end
+
+local function ResolveInclude(includes, name)
+	if not includes or not name then return nil end
+	if includes[name] then return includes[name] end
+
+	local trimmed = tostring(name):gsub("^%s+",""):gsub("%s+$","")
+	if includes[trimmed] then return includes[trimmed] end
+
+	local squashed = trimmed:gsub("__+","_")
+	if includes[squashed] then return includes[squashed] end
+
+	local normalized = NormalizeIncludeName(trimmed)
+	if normalized == "" then return nil end
+
+	for key, val in pairs(includes) do
+		if NormalizeIncludeName(key) == normalized then
+			return val
+		end
+	end
+	return nil
+end
+
+local function ExpandIncludes(text,parentvars,depth)
+	depth = depth or 0
+	if depth>30 then return nil,"Include recursion too deep" end
+
+	local out = {}
+	text = text .. "\n"
+	for line in text:gmatch("(.-)\n") do
+		local trimmed = line:gsub("^[%s\t]+",""):gsub("[%s\t]+$","")
+		local includename,includeparams = trimmed:match("^#include%s+\"([^\"]+)\"%s*(.*)$")
+		if not includename then
+			includename,includeparams = trimmed:match("^#include%s+'([^']+)'%s*(.*)$")
+		end
+
+		if includename then
+			local includes = ZGV.registered_includes
+			local include = ResolveInclude(includes, includename)
+			if not include then return nil,("Include not found: "..includename) end
+
+			local vars = ParseIncludeArgs(includeparams,parentvars)
+			local expanded,err = ExpandIncludes(ApplyIncludeVars(include,vars),vars,depth+1)
+			if not expanded then return nil,err end
+			tinsert(out,expanded)
+		else
+			tinsert(out,ApplyIncludeVars(line,parentvars))
+		end
+	end
+
+	return table.concat(out,"\n")
+end
+
 --- parse ONE guide section into usable arrays.
 function me:ParseEntry(text)
 	if not text then return nil,"No text!",0 end
+	local expanded,includeerr = ExpandIncludes(text,nil,0)
+	if not expanded then return nil,includeerr,0 end
+	text = expanded
 	local index = 1
 
 	local guide,step
@@ -243,6 +333,16 @@ function me:ParseEntry(text)
 				guide[cmd]=params:gsub("\\\\","\\")
 			elseif cmd=="author" then
 				guide[cmd]=params
+			elseif cmd=="type" then
+				guide[cmd]=params
+			elseif cmd=="expansion" then
+				guide[cmd]=params
+			elseif cmd=="faction" then
+				guide[cmd]=params
+			elseif cmd=="subcategory" then
+				guide[cmd]=params
+			elseif cmd=="sortindex" then
+				guide[cmd]=tonumber(params) or 0
 			elseif cmd=="description" then
 				guide[cmd]=(guide[cmd] and guide[cmd].."\n" or "") .. params
 			--elseif cmd=="faction" then --unused
@@ -327,7 +427,17 @@ function me:ParseEntry(text)
 				end
 
 				if not goal.map then
-					return nil,"'"..cmd.."' has no map parameter, neither has one been given before.",linecount,chunk
+					-- Legacy guides sometimes use bare coords without an explicit map.
+					-- Try current zone as a soft fallback before failing parse.
+					local fallbackmap = GetRealZoneText and GetRealZoneText()
+					if fallbackmap and BZL[fallbackmap] then fallbackmap = BZL[fallbackmap] end
+					if fallbackmap and fallbackmap~="" then
+						goal.map = fallbackmap
+						step.map = step.map or fallbackmap
+						prevmap = prevmap or fallbackmap
+					else
+						return nil,"'"..cmd.."' has no map parameter, neither has one been given before.",linecount,chunk
+					end
 				end
 
 			elseif cmd=="kill" or cmd=="get" or cmd=="collect" or cmd=="goal" or cmd=="buy" then
@@ -397,11 +507,19 @@ function me:ParseEntry(text)
 			elseif cmd=="equipped" then
 				goal.action = goal.action or cmd
 				local slot,item = params:match("^([a-zA-Z]+) (.*)")
-				slot,_ = GetInventorySlotInfo(slot)
-				if not slot then return nil,"equipped needs proper slot" end
-				if not item then return nil,"equipped needs item" end
-				goal.slot=slot
-				goal.item=item
+				local slotid
+				if slot then
+					local ok, sid = pcall(GetInventorySlotInfo, slot)
+					if ok then slotid = sid end
+				end
+				if not slotid or not item or item=="" then
+					-- Don't abort entire guide on malformed legacy "equipped" lines.
+					goal.action = nil
+					goal.text = "Equip " .. (params or "")
+				else
+					goal.slot=slotid
+					goal.item=item
+				end
 			elseif cmd=="hearth" then
 				goal.action = goal.action or cmd
 				goal.useitem = "Hearthstone"

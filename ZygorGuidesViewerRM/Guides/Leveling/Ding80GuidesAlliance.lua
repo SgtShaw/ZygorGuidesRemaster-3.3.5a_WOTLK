@@ -5,6 +5,8 @@ if UnitFactionGroup("player")~="Alliance" then return end
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Human (1-5)",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	defaultfor Human
 	next Ding80's Alliance Leveling Guides\\Main Guide (5-10)
 	startlevel 1
@@ -164,6 +166,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Human (1-5)"
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Dun Morogh (1-5)",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	defaultfor Gnome,Dwarf
 	next Ding80's Alliance Leveling Guides\\Main Guide (5-10)
 	startlevel 1
@@ -347,6 +351,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Dun Morogh (
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Main Guide (5-10)",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	next Ding80's Alliance Leveling Guides\\Main Guide (10-12)
 	startlevel 5
 
@@ -629,6 +635,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Main Guide (
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Night Elf (1-10)",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	defaultfor NightElf
 	next Ding80's Alliance Leveling Guides\\Main Guide (10-12)
 	startlevel 1
@@ -1239,6 +1247,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Night Elf (1
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Draenei (1-12)",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	defaultfor Draenei
 	next Ding80's Alliance Leveling Guides\\Main Guide (10-12)
 
@@ -1990,6 +2000,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Draenei (1-1
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Main Guide (10-12)",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	next Ding80's Alliance Leveling Guides\\Main Guide (13-19)
 	startlevel 10
 
@@ -2295,6 +2307,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Main Guide (
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Main Guide (13-19)",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	next Ding80's Alliance Leveling Guides\\Levels (20-24)
 	startlevel 12
 	step
@@ -3066,6 +3080,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Main Guide (
 ]])
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Levels (20-24)",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	next Ding80's Alliance Leveling Guides\\Levels (25-29)
 	startlevel 20
 
@@ -3791,6 +3807,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Levels (20-2
 ]])
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Levels (25-29)",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	next Ding80's Alliance Leveling Guides\\Levels (30-34)
 	startlevel 25
 
@@ -4392,6 +4410,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Levels (25-2
 ]])
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Levels (30-34)",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	next Ding80's Alliance Leveling Guides\\Levels (35-39)
 	startlevel 30
 
@@ -5176,6 +5196,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Levels (30-3
 ]])
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Levels (35-39)",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	next Ding80's Alliance Leveling Guides\\Levels (40-44)
 	startlevel 35
 
@@ -6012,6 +6034,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Levels (35-3
 ]])
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Levels (40-44)",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	next Ding80's Alliance Leveling Guides\\Levels (45-49)
 	startlevel 40
 
@@ -6902,6 +6926,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Levels (40-4
 ]])
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Levels (45-49)",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	next Ding80's Alliance Leveling Guides\\Levels (50-54)
 	startlevel 45
 
@@ -7769,6 +7795,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Levels (45-4
 ]])
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Levels (50-54)",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	next Ding80's Alliance Leveling Guides\\Levels (55-58)
 	startlevel 50
 
@@ -8686,6 +8714,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Levels (50-5
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Levels (55-58)",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	next Ding80's Alliance Leveling Guides\\Hellfire Peninsula
 	startlevel 55
 
@@ -9314,6 +9344,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Levels (55-5
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Hellfire Peninsula",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	next Ding80's Alliance Leveling Guides\\Zangarmarsh
 	startlevel 58
 
@@ -10066,6 +10098,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Hellfire Pen
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Zangarmarsh",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	next Ding80's Alliance Leveling Guides\\Terokkar Forest
 	startlevel 62
 
@@ -10617,6 +10651,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Zangarmarsh"
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Terokkar Forest",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	next Ding80's Alliance Leveling Guides\\Nagrand
 	startlevel 64
 
@@ -11261,6 +11297,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Terokkar For
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Nagrand",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	startlevel 66
 	next Ding80's Alliance Leveling Guides\\Blade's Edge Mountains
 	step
@@ -11729,6 +11767,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Nagrand",[[
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Blade's Edge Mountains",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	startlevel 67
 	next Ding80's Alliance Leveling Guides\\Howling Fjord
 
@@ -11937,6 +11977,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Blade's Edge
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Howling Fjord",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	startlevel 68
 	next Ding80's Alliance Leveling Guides\\Borean Tundra
 
@@ -11946,6 +11988,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Howling Fjor
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Borean Tundra",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	startlevel 70
 	next Ding80's Alliance Leveling Guides\\Dragonblight
 
@@ -13211,6 +13255,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Borean Tundr
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Dragonblight",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	startlevel 71
 	next Ding80's Alliance Leveling Guides\\Grizzly Hills
 
@@ -13220,6 +13266,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Dragonblight
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Grizzly Hills",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	startlevel 73
 	next Ding80's Alliance Leveling Guides\\Zul'Drak
 
@@ -13229,6 +13277,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Grizzly Hill
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Zul'Drak",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	startlevel 74
 	next Ding80's Alliance Leveling Guides\\Sholazar Basin
 
@@ -13238,6 +13288,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Zul'Drak",[[
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Sholazar Basin",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	startlevel 76
 	next Ding80's Alliance Leveling Guides\\Storm Peaks
 
@@ -13247,6 +13299,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Sholazar Bas
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Storm Peaks",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	startlevel 77
 	next Ding80's Alliance Leveling Guides\\Icecrown
 
@@ -13256,6 +13310,8 @@ ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Storm Peaks"
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Alliance Leveling Guides\\Icecrown",[[
 	author PolarCookie
+	type leveling
+	faction alliance
 	startlevel 80
 
 	step

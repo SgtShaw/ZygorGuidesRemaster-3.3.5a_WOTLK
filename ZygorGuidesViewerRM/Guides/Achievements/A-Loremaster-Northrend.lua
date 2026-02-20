@@ -4,6 +4,8 @@ if UnitFactionGroup("player")~="Alliance" then return end
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Northrend\\[68] Borean Tundra",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (142) for Borean Tundra location.
 startlevel 68
 		step
@@ -1506,6 +1508,8 @@ startlevel 68
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Northrend\\[68] Howling Fjord",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (130) for Howling Fjord location.
 startlevel 68
 		step
@@ -3229,6 +3233,8 @@ startlevel 68
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Northrend\\[72] Dragonblight",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (115) for Dragonblight location.
 startlevel 72
 		step
@@ -4641,6 +4647,8 @@ startlevel 72
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Northrend\\[74] Grizzly Hills",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (89) for Grizzly Hills location.
 startlevel 74
 		step
@@ -5879,6 +5887,8 @@ startlevel 74
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Northrend\\[74] Zul'Drak",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (101) for Zul'Drak location.
 startlevel 74
 		step
@@ -7501,6 +7511,8 @@ startlevel 74
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Northrend\\[76] Sholazar Basin",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (78) for Sholazar Basin location.
 startlevel 76
 		step
@@ -8379,6 +8391,8 @@ startlevel 76
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Northrend\\[77] The Storm Peaks",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (106/100) for The Storm Peaks location.
 startlevel 77
 		step
@@ -9666,6 +9680,8 @@ startlevel 77
 
 ZygorGuidesViewer:RegisterGuide("Ding80's Loremaster Alliance Guides\\Northrend\\[77] Icecrown",[[
 author danaton
+	type achievements
+	faction alliance
 description This guide contain quest-chain (142) for Icecrown location.
 startlevel 77
 		step

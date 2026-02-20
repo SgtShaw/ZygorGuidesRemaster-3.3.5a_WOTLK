@@ -20,6 +20,7 @@ if ZGV:DoMutex("Macros") then return end
 ZygorGuidesViewer:RegisterGuide("Zygor's Macros\\Warrior\\Devastate - Shield Slam - Heroic Strike",[[
 		description Keeps Heroic Strike queued and uses Devastate and Shield Slam for your supplemental aggro. [ctrl] uses Cleave instead of Heroic Strike.
 		author support@zygorguides.com
+		type misc
 		class WARRIOR
 		spec Protection
 		macroname 0DevSlamHero

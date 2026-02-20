@@ -6,6 +6,7 @@ if UnitFactionGroup("player")~="Alliance" then return end
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Exploration Achievements\\Kalimdor Progress",[[
     description This guide section displays the entire progress for Kalimdor.
     author ErebusAres
+	type achievements
     next Ares' Achievement Guides\\Explore Kalimdor\\Explore Teldrassil
     step //1
         .'Explore Kalimdor Total Progress |achieve 43
@@ -35,6 +36,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Exploration Achieveme
     ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Kalimdor\\Explore Teldrassil",[[
 	author ErebusAres
+	type achievements
     next Ares' Achievement Guides\\Explore Kalimdor\\Explore Darkshore
 	step //1
         .'Unlock Rut'theran Village|achieve 842/6|goto Teldrassil,55,91
@@ -82,6 +84,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Kalimdor\\Exp
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Kalimdor\\Explore Darkshore",[[
 author ErebusAres
+	type achievements
 next Ares' Achievement Guides\\Explore Kalimdor\\Explore Ashenvale
     step //1
         .'Boat to Darkshore|goto Teldrassil,54.9,96.8|or
@@ -120,6 +123,7 @@ next Ares' Achievement Guides\\Explore Kalimdor\\Explore Ashenvale
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Kalimdor\\Explore Ashenvale",[[
 author ErebusAres
+	type achievements
 next Ares' Achievement Guides\\Explore Kalimdor\\Explore Felwood
     step //1
         .'Head southeast to Ashenvale|goto Ashenvale|noway|c
@@ -170,6 +174,7 @@ next Ares' Achievement Guides\\Explore Kalimdor\\Explore Felwood
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Kalimdor\\Explore Felwood",[[
 author ErebusAres
+	type achievements
 next Ares' Achievement Guides\\Explore Kalimdor\\Explore Moonglade
     step //1
         .'Just stick to the road during most of this journey and deviate only when necessary.
@@ -207,6 +212,7 @@ next Ares' Achievement Guides\\Explore Kalimdor\\Explore Moonglade
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Kalimdor\\Explore Moonglade",[[
 author ErebusAres
+	type achievements
 next Ares' Achievement Guides\\Explore Kalimdor\\Explore Winterspring
     step //1
         .'Continue following the road around towards the north towards Moonglade|goto Felwood,64.9,8.3|tip Through the Bear Head shaped cave.
@@ -228,6 +234,7 @@ next Ares' Achievement Guides\\Explore Kalimdor\\Explore Winterspring
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Kalimdor\\Explore Winterspring",[[
 author ErebusAres
+	type achievements
 next Ares' Achievement Guides\\Explore Kalimdor\\Explore Azshara
     step //1
         .'Return back into the cave.|goto Felwood|noway|c
@@ -270,6 +277,7 @@ next Ares' Achievement Guides\\Explore Kalimdor\\Explore Azshara
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Kalimdor\\Explore Azshara",[[
 author ErebusAres
+	type achievements
 next Ares' Achievement Guides\\Explore Kalimdor\\Explore The Barrens
     step //1
         .'Fly to Forest Song, Ashenvale|goto Ashenvale|noway|c
@@ -328,6 +336,7 @@ next Ares' Achievement Guides\\Explore Kalimdor\\Explore The Barrens
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Kalimdor\\Explore The Barrens",[[
 author ErebusAres
+	type achievements
 next Ares' Achievement Guides\\Explore Kalimdor\\Explore Durotar
     step //1
         .'Travel or Fly to The Barrens|goto The Barrens|noway|c
@@ -388,6 +397,7 @@ next Ares' Achievement Guides\\Explore Kalimdor\\Explore Durotar
 ]]) 
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Kalimdor\\Explore Durotar",[[
 author ErebusAres
+	type achievements
 next Ares' Achievement Guides\\Explore Kalimdor\\Explore Dustwallow Marsh
     step //1
         .'Travel to Durotar|goto Durotar|noway|c
@@ -422,6 +432,7 @@ next Ares' Achievement Guides\\Explore Kalimdor\\Explore Dustwallow Marsh
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Kalimdor\\Explore Dustwallow Marsh",[[
 author ErebusAres
+	type achievements
 next Ares' Achievement Guides\\Explore Kalimdor\\Explore Mulgore
     step //1
         .'Travel to Dustwallow Marsh|goto Dustwallow Marsh|noway|c
@@ -450,6 +461,7 @@ next Ares' Achievement Guides\\Explore Kalimdor\\Explore Mulgore
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Kalimdor\\Explore Mulgore",[[
 author ErebusAres
+	type achievements
 next Ares' Achievement Guides\\Explore Kalimdor\\Explore Stonetalon Mtns
     step //1
         .'Travel to Mulgore|goto Mulgore|noway|c|or
@@ -487,6 +499,7 @@ next Ares' Achievement Guides\\Explore Kalimdor\\Explore Stonetalon Mtns
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Kalimdor\\Explore Stonetalon Mtns",[[ 
 author ErebusAres 
+	type achievements
 next Ares' Achievement Guides\\Explore Kalimdor\\Explore Desolace
     step //1
         .'Travel to Stonetalon Mountains|goto Stonetalon Mountains|noway|c 
@@ -519,6 +532,7 @@ next Ares' Achievement Guides\\Explore Kalimdor\\Explore Desolace
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Kalimdor\\Explore Desolace",[[
 author ErebusAres
+	type achievements
 next Ares' Achievement Guides\\Explore Kalimdor\\Explore Feralas
     step //1
         .'Travel to Desolace|goto Desolace|noway|c
@@ -560,6 +574,7 @@ next Ares' Achievement Guides\\Explore Kalimdor\\Explore Feralas
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Kalimdor\\Explore Feralas",[[
 author ErebusAres
+	type achievements
 next Ares' Achievement Guides\\Explore Kalimdor\\Explore Thousand Needles
     step //1
         .'Travel to Feralas|goto Feralas|noway|c
@@ -606,6 +621,7 @@ next Ares' Achievement Guides\\Explore Kalimdor\\Explore Thousand Needles
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Kalimdor\\Explore Thousand Needles",[[
 author ErebusAres
+	type achievements
 next Ares' Achievement Guides\\Explore Kalimdor\\Explore Tanaris
     step //1
         .'Travel to Thousand Needles|goto Thousand Needles|noway|c
@@ -630,6 +646,7 @@ next Ares' Achievement Guides\\Explore Kalimdor\\Explore Tanaris
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Kalimdor\\Explore Tanaris",[[
 author ErebusAres
+	type achievements
 next Ares' Achievement Guides\\Explore Kalimdor\\Explore Un'Goro Crater
     step //1
         .'Travel to Tanaris|goto Tanaris|noway|c
@@ -680,6 +697,7 @@ next Ares' Achievement Guides\\Explore Kalimdor\\Explore Un'Goro Crater
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Kalimdor\\Explore Un'Goro Crater",[[
 author ErebusAres
+	type achievements
 next Ares' Achievement Guides\\Explore Kalimdor\\Explore Silithus
     step //1
         .'Travel to Un'Goro Crater|goto Un'Goro Crater|noway|c
@@ -704,6 +722,7 @@ next Ares' Achievement Guides\\Explore Kalimdor\\Explore Silithus
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Kalimdor\\Explore Silithus",[[
 author ErebusAres
+	type achievements
 next Ares' Achievement Guides\\Explore Kalimdor\\Explore Azuremyst Isle
     step //1
         .'Travel to Silithus|goto Silithus|noway|c
@@ -728,6 +747,7 @@ next Ares' Achievement Guides\\Explore Kalimdor\\Explore Azuremyst Isle
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Kalimdor\\Explore Azuremyst Isle",[[ 
 author ErebusAres 
+	type achievements
 next Ares' Achievement Guides\\Explore Kalimdor\\Explore Bloodmyst Isle
     step //1
         .'Fly to The Exodar|goto The Exodar|noway|c|or
@@ -775,6 +795,7 @@ next Ares' Achievement Guides\\Explore Kalimdor\\Explore Bloodmyst Isle
 ]]) 
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Kalimdor\\Explore Bloodmyst Isle",[[
 author ErebusAres
+	type achievements
     step //1
         .'Travel North, over the bridge, to Bloodmyst Isle|goto Bloodmyst Isle|noway|c
     step //2
@@ -843,6 +864,7 @@ author ErebusAres
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Exploration Achievements\\Eastern Kingdoms Progress",[[
     description This guide section displays the entire progress for Eastern Kingdoms.
     author ErebusAres
+	type achievements
     next Ares' Achievement Guides\\Explore Eastern Kingdoms\\Explore Elwynn Forest
     step //1
         .'Explore Eastern Kingdoms Total Progress |achieve 42
@@ -869,6 +891,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Exploration Achieveme
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Eastern Kingdoms\\Explore Elwynn Forest",[[
     author ErebusAres
+	type achievements
     next Ares' Achievement Guides\\Explore Eastern Kingdoms\\Explore Westfall
     step //1
         .'Start from Stormwind|goto Stormwind|noway|c
@@ -901,6 +924,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Eastern Kingd
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Eastern Kingdoms\\Explore Westfall",[[
     author ErebusAres
+	type achievements
     next Ares' Achievement Guides\\Explore Eastern Kingdoms\\Explore Duskwood
     step //1
         .'Travel to Westfall|goto Westfall|noway|c
@@ -943,6 +967,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Eastern Kingd
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Eastern Kingdoms\\Explore Duskwood",[[
     author ErebusAres
+	type achievements
     next Ares' Achievement Guides\\Explore Eastern Kingdoms\\Explore Stranglethorn Vale
     step //1
         .'Travel to Duskwood|goto Duskwood|noway|c
@@ -985,6 +1010,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Eastern Kingd
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Eastern Kingdoms\\Explore Stranglethorn Vale",[[
     author ErebusAres
+	type achievements
     next Ares' Achievement Guides\\Explore Eastern Kingdoms\\Explore Redridge Mountains
     step //1
         .'Travel to Stranglethorn Vale|goto Stranglethorn Vale|noway|c
@@ -1059,6 +1085,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Eastern Kingd
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Eastern Kingdoms\\Explore Redridge Mountains",[[
     author ErebusAres
+	type achievements
     next Ares' Achievement Guides\\Explore Eastern Kingdoms\\Explore Burning Steppes
     step //1
         .'Fly to Darkshire in Duskwood|goto Darkshire|noway|c|and
@@ -1092,6 +1119,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Eastern Kingd
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Eastern Kingdoms\\Explore Burning Steppes",[[
     author ErebusAres
+	type achievements
     next Ares' Achievement Guides\\Explore Eastern Kingdoms\\Explore Searing Gorge
     step //1
         .'Travel Burning Steppes|goto Burning Steppes|noway|c
@@ -1122,6 +1150,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Eastern Kingd
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Eastern Kingdoms\\Explore Searing Gorge",[[
     author ErebusAres
+	type achievements
     next Ares' Achievement Guides\\Explore Eastern Kingdoms\\Explore Badlands
     step //1
         .'Travel Searing Gorge|goto Searing Gorge|noway|c
@@ -1146,6 +1175,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Eastern Kingd
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Eastern Kingdoms\\Explore Badlands",[[
     author ErebusAres
+	type achievements
     next Ares' Achievement Guides\\Explore Eastern Kingdoms\\Explore Loch Modan
     step //1
         .'Travel to Badlands|goto Badlands|noway|c
@@ -1172,6 +1202,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Eastern Kingd
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Eastern Kingdoms\\Explore Loch Modan",[[
     author ErebusAres
+	type achievements
     next Ares' Achievement Guides\\Explore Eastern Kingdoms\\Explore Wetlands
     step //1
         .'Travel to Loch Modan|goto Loch Modan|noway|c
@@ -1198,6 +1229,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Eastern Kingd
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Eastern Kingdoms\\Explore Wetlands",[[
     author ErebusAres
+	type achievements
     next Ares' Achievement Guides\\Explore Eastern Kingdoms\\Explore Arathi Highlands
     step //1
         .'Travel to Wetlands|goto Wetlands|noway|c
@@ -1234,6 +1266,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Eastern Kingd
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Eastern Kingdoms\\Explore Arathi Highlands",[[
     author ErebusAres
+	type achievements
     next Ares' Achievement Guides\\Explore Eastern Kingdoms\\Explore The Hinterlands
     step //1
         .'Travel to Arathi Highlands|goto Arathi Highlands|noway|c
@@ -1270,6 +1303,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Eastern Kingd
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Eastern Kingdoms\\Explore The Hinterlands",[[
     author ErebusAres
+	type achievements
     next Ares' Achievement Guides\\Explore Eastern Kingdoms\\Explore Western Plaguelands
     step //1
         .'Travel to The Hinterlands|goto The Hinterlands|noway|c
@@ -1300,6 +1334,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Eastern Kingd
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Eastern Kingdoms\\Explore Western Plaguelands",[[
     author ErebusAres
+	type achievements
     next Ares' Achievement Guides\\Explore Eastern Kingdoms\\Explore Eastern Plaguelands
     step //1
         .'Travel to Western Plaguelands|goto Western Plaguelands|noway|c
@@ -1328,6 +1363,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Eastern Kingd
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Eastern Kingdoms\\Explore Eastern Plaguelands",[[
     author ErebusAres
+	type achievements
     next Ares' Achievement Guides\\Explore Eastern Kingdoms\\Explore Swamp of Sorrows
     step //1
         .'Travel to Eastern Plaguelands|goto Eastern Plaguelands|noway|c
@@ -1374,6 +1410,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Eastern Kingd
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Eastern Kingdoms\\Explore Swamp of Sorrows",[[
     author ErebusAres
+	type achievements
     next Ares' Achievement Guides\\Explore Eastern Kingdoms\\Explore Blasted Lands
     step //1
         .'Travel to Swamp of Sorrows|goto Swamp of Sorrows|noway|c
@@ -1404,6 +1441,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Eastern Kingd
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Eastern Kingdoms\\Explore Blasted Lands",[[
     author ErebusAres
+	type achievements
     next Ares' Achievement Guides\\Explore Eastern Kingdoms\\Explore Deadwind Pass
     step //1
         .'Travel to Blasted Lands|goto Blasted Lands|noway|c
@@ -1434,6 +1472,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Eastern Kingd
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Eastern Kingdoms\\Explore Deadwind Pass",[[
     author ErebusAres
+	type achievements
     step //1
         .'Travel to Deadwind Pass|goto Deadwind Pass|noway|c
     step //2
@@ -1446,6 +1485,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Eastern Kingd
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Exploration Achievements\\Outland Progress",[[
     description This guide section displays the entire progress for Outland.
     next Ares' Achievement Guides\\Explore Outland\\Explore Hellfire Peninsula
+	type achievements
     step //1
         .'Explore Outland Total Progress |achieve 44
         .'Progress for Hellfire Peninsula |achieve 862
@@ -1458,6 +1498,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Exploration Achieveme
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Outland\\Explore Hellfire Peninsula",[[
     author ErebusAres
+	type achievements
     next Ares' Achievement Guides\\Explore Outland\\Explore Terokkar Forest
     step //1
         .'Travel to Hellfire Peninsula|goto Hellfire Peninsula|noway|c
@@ -1496,6 +1537,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Outland\\Expl
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Outland\\Explore Terokkar Forest",[[
     author ErebusAres
+	type achievements
     next Ares' Achievement Guides\\Explore Outland\\Explore Shadowmoon Valley
     step //1
         .'Travel to Terokkar Forest|goto Terokkar Forest|noway|c
@@ -1544,6 +1586,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Outland\\Expl
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Outland\\Explore Shadowmoon Valley",[[
     author ErebusAres
+	type achievements
     next Ares' Achievement Guides\\Explore Outland\\Explore Nagrand
     step //1
         .'Travel to Shadowmoon Valley|goto Shadowmoon Valley|noway|c
@@ -1576,6 +1619,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Outland\\Expl
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Outland\\Explore Nagrand",[[
     author ErebusAres
+	type achievements
     next Ares' Achievement Guides\\Explore Outland\\Explore Zangarmarsh
     step //1
         .'Travel to Nagrand|goto Nagrand|noway|c
@@ -1620,6 +1664,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Outland\\Expl
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Outland\\Explore Zangarmarsh",[[
     author ErebusAres
+	type achievements
     next Ares' Achievement Guides\\Explore Outland\\Explore Blade's Edge Mountains
     step //1
         .'Travel to Zangarmarsh|goto Zangarmarsh|noway|c
@@ -1660,6 +1705,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Outland\\Expl
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Outland\\Explore Blade's Edge Mountains",[[
     author ErebusAres
+	type achievements
     next Ares' Achievement Guides\\Explore Outland\\Explore Netherstorm
     step //1
         .'Travel to Blade's Edge Mountains|goto Blade's Edge Mountains|noway|c
@@ -1718,6 +1764,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Outland\\Expl
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Outland\\Explore Netherstorm",[[
     author ErebusAres
+	type achievements
     step //1
         .'Travel to Netherstorm|goto Netherstorm|noway|c
     step //2
@@ -1768,6 +1815,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Outland\\Expl
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Exploration Achievements\\Northrend Progress",[[
     description This guide section displays the entire progress for Northrend.
     next Ares' Achievement Guides\\Explore Northrend\\Explore Borean Tundra
+	type achievements
     step //1
         .'Explore Northrend Total Progress |achieve 45
         .'Progress for Borean Tundra |achieve 1264
@@ -1782,6 +1830,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Exploration Achieveme
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Northrend\\Explore Borean Tundra",[[
     author ErebusAres
+	type achievements
     next Ares' Achievement Guides\\Explore Northrend\\Explore Sholazar Basin
     step //1
         .'Travel to Borean Tundra|goto Borean Tundra|noway|c
@@ -1814,6 +1863,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Northrend\\Ex
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Northrend\\Explore Sholazar Basin",[[
     author ErebusAres
+	type achievements
     next Ares' Achievement Guides\\Explore Northrend\\Explore Icecrown
     step //1
         .'Travel to Sholazar Basin|goto Sholazar Basin|noway|c
@@ -1844,6 +1894,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Northrend\\Ex
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Northrend\\Explore Icecrown",[[
     author ErebusAres
+	type achievements
     next Ares' Achievement Guides\\Explore Northrend\\Explore Dragonblight
     step //1
         .'Travel to Icecrown|goto Icecrown|noway|c
@@ -1878,6 +1929,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Northrend\\Ex
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Northrend\\Explore Dragonblight",[[
     author ErebusAres
+	type achievements
     next Ares' Achievement Guides\\Explore Northrend\\Explore Crystalsong Forest
     step //1
         .'Travel to Dragonblight|goto Dragonblight|noway|c
@@ -1920,6 +1972,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Northrend\\Ex
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Northrend\\Explore Crystalsong Forest",[[
     author ErebusAres
+	type achievements
     next Ares' Achievement Guides\\Explore Northrend\\Explore Storm Peaks
     step //1
         .'Travel to Crystalsong Forest|goto Crystalsong Forest|noway|c
@@ -1942,6 +1995,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Northrend\\Ex
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Northrend\\Explore Storm Peaks",[[
     author ErebusAres
+	type achievements
     next Ares' Achievement Guides\\Explore Northrend\\Explore Zul'Drak
     step //1
         .'Travel to Storm Peaks|goto Storm Peaks|noway|c
@@ -1980,6 +2034,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Northrend\\Ex
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Northrend\\Explore Zul'Drak",[[
     author ErebusAres
+	type achievements
     next Ares' Achievement Guides\\Explore Northrend\\Explore Grizzly Hills
     step //1
         .'Travel to Zul'Drak|goto Zul'Drak|noway|c
@@ -2014,6 +2069,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Northrend\\Ex
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Northrend\\Explore Grizzly Hills",[[
     author ErebusAres
+	type achievements
     next Ares' Achievement Guides\\Explore Northrend\\Explore Howling Fjord
     step //1
         .'Travel to Grizzly Hills|goto Grizzly Hills|noway|c
@@ -2048,6 +2104,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Northrend\\Ex
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Northrend\\Explore Howling Fjord",[[
     author ErebusAres
+	type achievements
     step //1
         .'Travel to Howling Fjord|goto Howling Fjord|noway|c
     step //2
