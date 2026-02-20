@@ -168,7 +168,7 @@ ZygorTalentAdvisor:RegisterBuild("DEATHKNIGHT","Zygor Blood Tanking (53/8/10)",[
 	Major Glyph of Vampiric Blood
 	Minor Glyph of Horn of Winter
 	Minor Glyph of Raise Dead
-	Minor Glyph of of Pestilence
+	Minor Glyph of Pestilence
 ]])
 
 ZygorTalentAdvisor:RegisterBuild("DEATHKNIGHT","Zygor Unholy Raid DPS (0/17/54)",[[
@@ -245,6 +245,32 @@ ZygorTalentAdvisor:RegisterBuild("DEATHKNIGHT","WM Unholy DPS (0/17/54)",[[
 	Major Glyph of Dark Death
 	Major Glyph of Icy Touch
 	Minor Glyph of Horn of Winter
+	Minor Glyph of Pestilence
+	Minor Glyph of Raise Dead
+]])
+
+ZygorTalentAdvisor:RegisterBuild("DEATHKNIGHT","WH T7+ Blood (51 / 13 / 7)","https://www.wowhead.com/wotlk/talent-calc/death-knight/005512153330030320102013-3050505000023-005_001s9m11xv631ts841sxd51s8g",[[
+	Major Glyph of Vampiric Blood
+	Major Glyph of Disease
+	Minor Glyph of Raise Dead
+	Minor Glyph of Pestilence
+	Minor Glyph of Blood Tap
+]])
+
+ZygorTalentAdvisor:RegisterBuild("DEATHKNIGHT","WH T7+ Frost (17 / 54 / 0)","https://www.wowhead.com/wotlk/talent-calc/death-knight/23050005-32005350352203012300033101351_001s8q11s9f21xv631ts841sxd51s8g",[[
+	Major Glyph of Frost Strike
+	Major Glyph of Obliterate
+	Major Glyph of Disease
+	Minor Glyph of Raise Dead
+	Minor Glyph of Pestilence
+	Minor Glyph of Blood Tap
+]])
+
+ZygorTalentAdvisor:RegisterBuild("DEATHKNIGHT","WH T7+ Unholy (0 / 17 / 54)","https://www.wowhead.com/wotlk/talent-calc/death-knight/-320043500002-2300303050032152000150013133051_001s8711s9y21s8531s8g41sxd51ts8",[[
+	Major Glyph of Icy Touch
+	Major Glyph of the Ghoul
+	Major Glyph of Death and Decay
+	Minor Glyph of Blood Tap
 	Minor Glyph of Pestilence
 	Minor Glyph of Raise Dead
 ]])
@@ -626,7 +652,7 @@ ZygorTalentAdvisor:RegisterBuild("HUNTER","Wowhead Beast Mastery PVE (53/13/5)",
 	2/2 Improved Revive Pet
 	1/1 Aspect Mastery
 	5/5 Unleashed Fury
-	1/2 Improved Mend
+	1/2 Improved Mend Pet
 	5/5 Ferocity
 	1/1 Intimidation
 	2/2 Bestial Discipline
@@ -649,6 +675,33 @@ ZygorTalentAdvisor:RegisterBuild("HUNTER","Wowhead Beast Mastery PVE (53/13/5)",
 	Major Glyph of Bestial Wrath
 	Major Glyph of Serpent Sting
 	Major Glyph of Steady Shot
+	Minor Glyph of Feign Death
+	Minor Glyph of Mend Pet
+	Minor Glyph of Revive Pet
+]])
+
+ZygorTalentAdvisor:RegisterBuild("HUNTER","WH T7+ Beast Master (53 / 13 / 5)","https://www.wowhead.com/wotlk/talent-calc/hunter/51200201515012233110531351-005305-5_001qfy11qg021qft31rhf41rge51rga",[[
+	Major Glyph of Bestial Wrath
+	Major Glyph of Serpent Sting
+	Major Glyph of Steady Shot
+	Minor Glyph of Feign Death
+	Minor Glyph of Mend Pet
+	Minor Glyph of Revive Pet
+]])
+
+ZygorTalentAdvisor:RegisterBuild("HUNTER","WH T7+ Marksman (7 / 57 / 7)","https://www.wowhead.com/wotlk/talent-calc/hunter/502-035335131030013233035031051-5000002_001qg011xjs21qft31rhf41rge51rga",[[
+	Major Glyph of Serpent Sting
+	Major Glyph of Chimera Shot
+	Major Glyph of Steady Shot
+	Minor Glyph of Feign Death
+	Minor Glyph of Mend Pet
+	Minor Glyph of Revive Pet
+]])
+
+ZygorTalentAdvisor:RegisterBuild("HUNTER","WH T7+ Survival (0 / 15 / 56)","https://www.wowhead.com/wotlk/talent-calc/hunter/-005305101-5000032500033330531135301331_001xjt11xjw21xjv31rhf41rge51rga",[[
+	Major Glyph of Explosive Shot
+	Major Glyph of Explosive Trap
+	Major Glyph of Kill Shot
 	Minor Glyph of Feign Death
 	Minor Glyph of Mend Pet
 	Minor Glyph of Revive Pet
@@ -947,7 +1000,7 @@ ZygorTalentAdvisor:RegisterBuild("MAGE","Zygor Fire PVP (21 / 50 / 0)",[[
 	Major Glyph of Evocation
 	Major Glyph of Molten Armor
 	Minor Glyph of Arcane Intellect
-	Minor Glyph of Slow Flall
+	Minor Glyph of Slow Fall
 	Minor Glyph of Frost Armor
 ]])
 
@@ -987,8 +1040,8 @@ ZygorTalentAdvisor:RegisterBuild("MAGE","Zygor Arcane DPS (57 / 3 / 11)",[[
 	Major Glyph of Molten Armor
 	Major Glyph of Arcane Blast
 	Minor Glyph of Arcane Intellect
-	Minor Glyph of Slow Flall
-	Minor Glyph of Penguin
+	Minor Glyph of Slow Fall
+	Minor Glyph of the Penguin
 ]])
 
 ZygorTalentAdvisor:RegisterBuild("MAGE","WT Fire Raid DPS (18 / 53 / 0)",[[
@@ -1092,6 +1145,33 @@ ZygorTalentAdvisor:RegisterBuild("MAGE","WT Frost Raid DPS (18 / 0 / 53)",[[
 	Minor Glyph of Frost Armor
 ]])
 
+ZygorTalentAdvisor:RegisterBuild("MAGE","WH T7+ Arcane (57 / 3 / 11)","https://www.wowhead.com/wotlk/talent-calc/mage/033023030100330150323132505321-03-023023001_001wr211q1b21q1y31rj441rj551kd8",[[
+	Major Glyph of Arcane Blast
+	Major Glyph of Arcane Missiles
+	Major Glyph of Molten Armor
+	Minor Glyph of Arcane Intellect
+	Minor Glyph of Slow Fall
+	Minor Glyph of the Penguin
+]])
+
+ZygorTalentAdvisor:RegisterBuild("MAGE","WH T7+ Fire (18 / 53 / 0)","https://www.wowhead.com/wotlk/talent-calc/mage/23002303110003-0055032012303330053120300351_001q1g11q1y21xkk31wne41rj451rj5",[[
+	Major Glyph of Fireball
+	Major Glyph of Molten Armor
+	Major Glyph of Living Bomb
+	Minor Glyph of Blast Wave
+	Minor Glyph of Arcane Intellect
+	Minor Glyph of Slow Fall
+]])
+
+ZygorTalentAdvisor:RegisterBuild("MAGE","WH T7+ Frost (18 / 0 / 53)","https://www.wowhead.com/wotlk/talent-calc/mage/23000503110003--0533030311133100030152231351_00258s11q1j21q1y31kd841rj451rj5",[[
+	Major Glyph of Eternal Water
+	Major Glyph of Frostbolt
+	Major Glyph of Molten Armor
+	Minor Glyph of the Penguin
+	Minor Glyph of Arcane Intellect
+	Minor Glyph of Slow Fall
+]])
+
 ZygorTalentAdvisor:RegisterBuild("PRIEST","Zygor Leveling Build (13 / 0 / 58)",[[
 	3/3 Spirit Tap
 	2/2 Improved Spirit Tap
@@ -1131,7 +1211,7 @@ ZygorTalentAdvisor:RegisterBuild("PRIEST","Zygor Leveling Build (13 / 0 / 58)",[
 	Minor Glyph of Shadow Protection
 ]])
 
-ZygorTalentAdvisor:RegisterBuild("PRIEST","Zygor PVP  Build (13 / 0 / 58)",[[
+ZygorTalentAdvisor:RegisterBuild("PRIEST","Zygor PVP Build (13 / 0 / 58)",[[
 	3/3 Spirit Tap
 	2/2 Improved Spirit Tap
 	2/2 Improved Shadow Word: Pain
@@ -1437,6 +1517,66 @@ ZygorTalentAdvisor:RegisterBuild("ROGUE","Zygor Assassination (51 / 15 / 5)",[[
 	Minor Glyph of Blurred Speed
 ]])
 
+ZygorTalentAdvisor:RegisterBuild("ROGUE","WH T7+ Assassination (51 / 13 / 7)","https://www.wowhead.com/wotlk/talent-calc/rogue/005303104352100520103331051-005005003-502_001xs411xrh21xrr31rng41rnp51rnh",[[
+	Major Glyph of Mutilate
+	Major Glyph of Hunger For Blood
+	Major Glyph of Tricks of the Trade
+	Minor Glyph of Distract
+	Minor Glyph of Vanish
+	Minor Glyph of Safe Fall
+]])
+
+ZygorTalentAdvisor:RegisterBuild("ROGUE","WH T7+ Combat (Swords & Axes)","https://www.wowhead.com/wotlk/talent-calc/rogue/00532000514-0252051000035015223100501251_001xrr11xrm21xrp31rnh41rnp51rng",[[
+	Major Glyph of Tricks of the Trade
+	Major Glyph of Killing Spree
+	Major Glyph of Fan of Knives
+	Minor Glyph of Safe Fall
+	Minor Glyph of Vanish
+	Minor Glyph of Distract
+]])
+
+ZygorTalentAdvisor:RegisterBuild("ROGUE","WH T7+ Combat (Fist & Dagger)","https://www.wowhead.com/wotlk/talent-calc/rogue/00532000514-0252051050035010223100501251_001xrr11xrm21xrp31rnh41rnp51rng",[[
+	Major Glyph of Tricks of the Trade
+	Major Glyph of Killing Spree
+	Major Glyph of Fan of Knives
+	Minor Glyph of Safe Fall
+	Minor Glyph of Vanish
+	Minor Glyph of Distract
+]])
+
+ZygorTalentAdvisor:RegisterBuild("ROGUE","WH T7+ Combat (Fist & Sword/Axe)","https://www.wowhead.com/wotlk/talent-calc/rogue/00532000514-0252050050031015223100501251_001xrr11xrm21xrp31rnh41rnp51rng",[[
+	Major Glyph of Tricks of the Trade
+	Major Glyph of Killing Spree
+	Major Glyph of Fan of Knives
+	Minor Glyph of Safe Fall
+	Minor Glyph of Vanish
+	Minor Glyph of Distract
+]])
+
+ZygorTalentAdvisor:RegisterBuild("ROGUE","WH T7+ Combat (Mace & Dagger/Mace)","https://www.wowhead.com/wotlk/talent-calc/rogue/00532000514-0252050010035510223100501251_001xrr11xrm21xrp31rnh41rnp51rng",[[
+	Major Glyph of Tricks of the Trade
+	Major Glyph of Killing Spree
+	Major Glyph of Fan of Knives
+	Minor Glyph of Safe Fall
+	Minor Glyph of Vanish
+	Minor Glyph of Distract
+]])
+
+ZygorTalentAdvisor:RegisterBuild("ROGUE","WH T7+ Combat (Mace & Sword/Axe)","https://www.wowhead.com/wotlk/talent-calc/rogue/00532000514-0252051000032513223100501251_001xrr11xrm21xrp31rnh41rnp51rng",[[
+	Major Glyph of Tricks of the Trade
+	Major Glyph of Killing Spree
+	Major Glyph of Fan of Knives
+	Minor Glyph of Safe Fall
+	Minor Glyph of Vanish
+	Minor Glyph of Distract
+]])
+
+ZygorTalentAdvisor:RegisterBuild("ROGUE","WH T7+ Subtlety (11 / 0 / 60)","https://www.wowhead.com/wotlk/talent-calc/rogue/30532010113--5022032030301121350115031251_001xrr11qf121qf2",[[
+	Major Glyph of Tricks of the Trade
+	Major Glyph of Rupture
+	Major Glyph of Eviscerate
+]])
+
 ZygorTalentAdvisor:RegisterBuild("DRUID","Zygor Feral Leveling (0 / 55 / 16)",[[
 	5/5 Ferocity
 	2/2 Savage Fury
@@ -1717,6 +1857,42 @@ ZygorTalentAdvisor:RegisterBuild("DRUID","Zygor Feral Tanking (0 / 58 / 13)",[[
 	Minor Glyph of Unburdened Rebirth
 ]])
 
+ZygorTalentAdvisor:RegisterBuild("DRUID","WH T7+ Balance (58 / 0 / 13)","https://www.wowhead.com/wotlk/talent-calc/druid/5102203115331303213305311231--205003012_001nhc11nhe21wm031rfz41rg151wnq",[[
+	Major Glyph of Starfall
+	Major Glyph of Insect Swarm
+	Major Glyph of Focus
+	Minor Glyph of the Wild
+	Minor Glyph of Unburdened Rebirth
+	Minor Glyph of Typhoon
+]])
+
+ZygorTalentAdvisor:RegisterBuild("DRUID","WH T7+ Feral DPS (0 / 55 / 16)","https://www.wowhead.com/wotlk/talent-calc/druid/-503202132322010053120230310511-205503012_001ngz11nh221xjf31rfz41stk51rg1",[[
+	Major Glyph of Shred
+	Major Glyph of Rip
+	Major Glyph of Savage Roar
+	Minor Glyph of the Wild
+	Minor Glyph of Dash
+	Minor Glyph of Unburdened Rebirth
+]])
+
+ZygorTalentAdvisor:RegisterBuild("DRUID","WH T7+ Feral Tank (0 / 60 / 11)","https://www.wowhead.com/wotlk/talent-calc/druid/-503232132322010353120300313511-20350001_001ngv11ngt21zpv31rg241rg651rfz",[[
+	Major Glyph of Maul
+	Major Glyph of Frenzied Regeneration
+	Major Glyph of Survival Instincts
+	Minor Glyph of Challenging Roar
+	Minor Glyph of Thorns
+	Minor Glyph of the Wild
+]])
+
+ZygorTalentAdvisor:RegisterBuild("DRUID","WH T7+ Restoration (11 / 0 / 60)","https://www.wowhead.com/wotlk/talent-calc/druid/05320001--230023312131502531253313051_001xft11nh821xfv31rg141rfz51stk",[[
+	Major Glyph of Wild Growth
+	Major Glyph of Swiftmend
+	Major Glyph of Nourish
+	Minor Glyph of Unburdened Rebirth
+	Minor Glyph of the Wild
+	Minor Glyph of Dash
+]])
+
 ZygorTalentAdvisor:RegisterBuild("DRUID","Zygor Balance DPS (56 / 0 / 15)",[[
 	5/5 Starlight Wrath
 	3/3 Moonglow
@@ -1968,15 +2144,15 @@ ZygorTalentAdvisor:RegisterBuild("SHAMAN","WH Leveling ENH (19/52/0)",[[
 	2/3 Weapon Mastery
 	1/1 Stormstrike
 	1/1 Dual Wield
-	3/3 Weapon Mastery
-	2/3 Dual Weapon Specialization
+	1 Weapon Mastery // (now 3/3)
+	2/3 Dual Wield Specialization
 	1/1 Lava Lash
-	2/2 Improved Stormspike
-	2/2 Improved Windfury Totem
+	2/2 Improved Stormstrike
+	1 Improved Windfury Totem // (now 2/2)
 	1/3 Static Shock
 	1/1 Shamanistic Rage
 	3/3 Mental Quickness
-	2/3 Static Shock
+	1 Static Shock // (now 2/3)
 	5/5 Maelstrom Weapon
 	1/1 Feral Spirit
 	5/5 Concussion
@@ -1984,10 +2160,10 @@ ZygorTalentAdvisor:RegisterBuild("SHAMAN","WH Leveling ENH (19/52/0)",[[
 	2/3 Elemental Devastation
 	1 Elemental Focus
 	4/5 Elemental Fury
-	2/2 Improved Fire Nova
-	3/3 Elemental Devastation
-	5/5 Elemental Fury
-	3/3 Dual Weapon Specialization
+	2/2 Improved Fire Nova Totem
+	1 Elemental Devastation // (now 3/3)
+	1 Elemental Fury // (now 5/5)
+	1 Dual Wield Specialization // (now 3/3)
 ]],[[
 	Major Glyph of Flametongue Weapon
 	Major Glyph of Stormstrike
@@ -2011,9 +2187,9 @@ ZygorTalentAdvisor:RegisterBuild("SHAMAN","WH Enhancement Raid (19/52/0)",[[
 	3/3 Weapon Mastery
 	1/1 Stormstrike
 	1/1 Dual Wield
-	3/3 Dual Weapon Specialization
+	3/3 Dual Wield Specialization
 	1/1 Lava Lash
-	1/2 Improved Stormspike
+	1/2 Improved Stormstrike
 	3/3 Static Shock
 	1/1 Shamanistic Rage
 	3/3 Mental Quickness
@@ -2024,7 +2200,7 @@ ZygorTalentAdvisor:RegisterBuild("SHAMAN","WH Enhancement Raid (19/52/0)",[[
 	3/3 Elemental Devastation
 	1 Elemental Focus
 	5/5 Elemental Fury
-	2/2 Improved Fire Nova
+	2/2 Improved Fire Nova Totem
 ]],[[
 	Major Glyph of Flametongue Weapon
 	Major Glyph of Lightning Shield
@@ -2032,6 +2208,33 @@ ZygorTalentAdvisor:RegisterBuild("SHAMAN","WH Enhancement Raid (19/52/0)",[[
 	Minor Glyph of Water Walking
 	Minor Glyph of Water Breathing
 	Minor Glyph of Renewed Life
+]])
+
+ZygorTalentAdvisor:RegisterBuild("SHAMAN","WH T7+ Elemental (57 / 14 / 0)","https://www.wowhead.com/wotlk/talent-calc/shaman/0533001523213351322301351-005050031_001p4x11xsg21p4v31rpf41wnm51rpb",[[
+	Major Glyph of Lightning Bolt
+	Major Glyph of Totem of Wrath
+	Major Glyph of Flametongue Weapon
+	Minor Glyph of Water Shield
+	Minor Glyph of Thunderstorm
+	Minor Glyph of Renewed Life
+]])
+
+ZygorTalentAdvisor:RegisterBuild("SHAMAN","WH T7+ Restoration (0 / 16 / 55)","https://www.wowhead.com/wotlk/talent-calc/shaman/-0050503-50005331335310501122331251_001p4d11xsf21p4f31rpf41rpb51rp9",[[
+	Major Glyph of Chain Heal
+	Major Glyph of Earth Shield
+	Major Glyph of Earthliving Weapon
+	Minor Glyph of Water Shield
+	Minor Glyph of Renewed Life
+	Minor Glyph of Water Walking
+]])
+
+ZygorTalentAdvisor:RegisterBuild("SHAMAN","WH T7+ Enhancement (16 / 55 / 0)","https://www.wowhead.com/wotlk/talent-calc/shaman/053030152-30305003105021333031131131051_001p4p11p4t21p4v31rp941rpb51rp7",[[
+	Major Glyph of Stormstrike
+	Major Glyph of Fire Nova
+	Major Glyph of Flametongue Weapon
+	Minor Glyph of Water Walking
+	Minor Glyph of Renewed Life
+	Minor Glyph of Water Breathing
 ]])
 
 ZygorTalentAdvisor:RegisterBuild("WARLOCK","Zygor Affliction Leveling (56 / 0 / 15)",[[
@@ -2264,6 +2467,26 @@ ZygorTalentAdvisor:RegisterBuild("WARLOCK","WT Affliction DPS Raid (55 / 0 / 16)
 	Minor Glyph of Drain Soul
 ]])
 
+ZygorTalentAdvisor:RegisterBuild("WARLOCK","WH T7+ Affliction (55 / 0 / 16)","2350002030023510253500331151--550000051_001xtr1259321xt631rpp",[[
+	Major Glyph of Life Tap
+	Major Glyph of Quick Decay
+	Major Glyph of Haunt
+	Minor Glyph of Drain Soul
+]])
+ZygorTalentAdvisor:RegisterBuild("WARLOCK","WH T7+ Destruction (0 / 17 / 54)","https://www.wowhead.com/wotlk/talent-calc/warlock/-0331003-05203205220031051335131351_001pxb11pxj21xtr31rpp",[[
+	Major Glyph of Conflagrate
+	Major Glyph of Incinerate
+	Major Glyph of Life Tap
+	Minor Glyph of Drain Soul
+]])
+
+ZygorTalentAdvisor:RegisterBuild("WARLOCK","WH T7+ Demonology (0 / 56 / 15)","https://www.wowhead.com/wotlk/talent-calc/warlock/-003203301135202530135221351-55000005_001xtr1259321pxp31rpp",[[
+	Major Glyph of Life Tap
+	Major Glyph of Quick Decay
+	Major Glyph of Felguard
+	Minor Glyph of Drain Soul
+]])
+
 ZygorTalentAdvisor:RegisterBuild("WARRIOR","Zygor Fury Leveling (18 / 53 / 0)",[[
 	5/5 Cruelty
 	3/3 Armored to the Teeth
@@ -2455,6 +2678,69 @@ ZygorTalentAdvisor:RegisterBuild("WARRIOR","Zygor Protection (15 / 3 / 53)",[[
 	Major Glyph of Cleaving
 	Minor Glyph of Thunder Clap
 	Minor Glyph of Charge
+	Minor Glyph of Command
+]])
+
+ZygorTalentAdvisor:RegisterBuild("WARRIOR","WH T7+ Arms (Improved Mortal Strike)","https://www.wowhead.com/wotlk/talent-calc/warrior/3022302023335100102012213231251-305-2033_001s0h11rzz21s00322j441rqj51rqg",[[
+	Major Glyph of Rending
+	Major Glyph of Execution
+	Major Glyph of Mortal Strike
+	Minor Glyph of Command
+	Minor Glyph of Thunder Clap
+	Minor Glyph of Bloodrage
+]])
+
+ZygorTalentAdvisor:RegisterBuild("WARRIOR","WH T7+ Arms (Improved Execute)","https://www.wowhead.com/wotlk/talent-calc/warrior/3022302023335100002012211231251-30550000402_001s0h11s0021rzz322j441rqj51rqh",[[
+	Major Glyph of Rending
+	Major Glyph of Mortal Strike
+	Major Glyph of Execution
+	Minor Glyph of Command
+	Minor Glyph of Thunder Clap
+	Minor Glyph of Charge
+]])
+
+ZygorTalentAdvisor:RegisterBuild("WARRIOR","WH T7+ Fury (Standard)","https://www.wowhead.com/wotlk/talent-calc/warrior/30202300233-325003005500310053120501351_001s0211rzn21s0h31rqh422j451rqg",[[
+	Major Glyph of Whirlwind
+	Major Glyph of Heroic Strike
+	Major Glyph of Rending
+	Minor Glyph of Charge
+	Minor Glyph of Command
+	Minor Glyph of Bloodrage
+]])
+
+ZygorTalentAdvisor:RegisterBuild("WARRIOR","WH T7+ Fury (Overpower Weaving)","https://www.wowhead.com/wotlk/talent-calc/warrior/302023102331-305043000520310053120500351_001s0211rzn21s0h31rqg422j45cn2w",[[
+	Major Glyph of Whirlwind
+	Major Glyph of Heroic Strike
+	Major Glyph of Rending
+	Minor Glyph of Bloodrage
+	Minor Glyph of Command
+	Minor Glyph of Shattering Throw
+]])
+
+ZygorTalentAdvisor:RegisterBuild("WARRIOR","WH T7+ Protection (Standard)","https://www.wowhead.com/wotlk/talent-calc/warrior/3500200023-302-053351225000012521030113321_001s0711xty21s0m3cn2w41rqj522j4",[[
+	Major Glyph of Blocking
+	Major Glyph of Vigilance
+	Major Glyph of Devastate
+	Minor Glyph of Shattering Throw
+	Minor Glyph of Thunder Clap
+	Minor Glyph of Command
+]])
+
+ZygorTalentAdvisor:RegisterBuild("WARRIOR","WH T7+ Protection (Improved Demoralizing Shout)","https://www.wowhead.com/wotlk/talent-calc/warrior/05-302500005-053351225000012521030113321_001s0711xty21s0m3cn2w41rqj522j4",[[
+	Major Glyph of Blocking
+	Major Glyph of Vigilance
+	Major Glyph of Devastate
+	Minor Glyph of Shattering Throw
+	Minor Glyph of Thunder Clap
+	Minor Glyph of Command
+]])
+
+ZygorTalentAdvisor:RegisterBuild("WARRIOR","WH T7+ Protection (Rage Issues)","https://www.wowhead.com/wotlk/talent-calc/warrior/3502000023-3-053351225000012521330113311_001s0711xty21rzw3cn2w41rqj522j4",[[
+	Major Glyph of Blocking
+	Major Glyph of Vigilance
+	Major Glyph of Revenge
+	Minor Glyph of Shattering Throw
+	Minor Glyph of Thunder Clap
 	Minor Glyph of Command
 ]])
 
@@ -2792,6 +3078,24 @@ ZygorTalentAdvisor:RegisterBuild("PALADIN","GPT Retribution DPS Raiding (11 / 5 
     Minor Glyph of Blessing of Kings
 ]])
 
+ZygorTalentAdvisor:RegisterBuild("PALADIN","WH T7+ Holy (51 / 20 / 0)","https://www.wowhead.com/wotlk/talent-calc/paladin/50350150021013053100515221-50023131203_001nms11nmw31rk341rjv",[[
+	Major Glyph of Holy Light
+	Major Glyph of Seal of Wisdom
+	Minor Glyph of Lay on Hands
+	Minor Glyph of Sense Undead
+]])
+
+ZygorTalentAdvisor:RegisterBuild("PALADIN","WH T7+ Protection (0 / 53 / 18)","https://www.wowhead.com/wotlk/talent-calc/paladin/-05005135200132311333312321-521022012003_001nma11xqq21q3031rk341rjv",[[
+	Major Glyph of Judgement
+	Major Glyph of Divine Plea
+	Major Glyph of Seal of Vengeance
+	Minor Glyph of Lay on Hands
+	Minor Glyph of Sense Undead
+]])
+
+ZygorTalentAdvisor:RegisterBuild("PALADIN","WH T7+ Retribution (Aura Mastery) (11 / 5 / 55)","https://www.wowhead.com/wotlk/talent-calc/paladin/053201-05-05232051203331302133201331")
+ZygorTalentAdvisor:RegisterBuild("PALADIN","WH T7+ Retribution (Divine Guardian) (11 / 5 / 55)","https://www.wowhead.com/wotlk/talent-calc/paladin/02-453201002-05232051203331302133201331")
+
 ZygorTalentAdvisor:RegisterBuild("PRIEST","Zygor Shadow Raiding",{
 	"Twin Disciplines",
 	"Twin Disciplines",
@@ -2865,6 +3169,33 @@ ZygorTalentAdvisor:RegisterBuild("PRIEST","Zygor Shadow Raiding",{
 	"Twisted Faith",
 	"Dispersion",
 })
+
+ZygorTalentAdvisor:RegisterBuild("PRIEST","WH T7+ Discipline (57 / 14 / 0)","https://www.wowhead.com/wotlk/talent-calc/priest/0503203130300512331313231251-20450103_001xr311pbr21pc031rvm41rm351rms",[[
+	Major Glyph of Penance
+	Major Glyph of Power Word: Shield
+	Major Glyph of Prayer of Healing
+	Minor Glyph of Shadowfiend
+	Minor Glyph of Levitate
+	Minor Glyph of Fortitude
+]])
+
+ZygorTalentAdvisor:RegisterBuild("PRIEST","WH T7+ Holy (14 / 57 / 0)","https://www.wowhead.com/wotlk/talent-calc/priest/05032031103-234501032002151530000331351_001pbv11pc021xqz31rvm41rm351rms",[[
+	Major Glyph of Circle of Healing
+	Major Glyph of Prayer of Healing
+	Major Glyph of Guardian Spirit
+	Minor Glyph of Shadowfiend
+	Minor Glyph of Levitate
+	Minor Glyph of Fortitude
+]])
+
+ZygorTalentAdvisor:RegisterBuild("PRIEST","WH T7+ Shadow (14 / 0 / 57)","https://www.wowhead.com/wotlk/talent-calc/priest/05032031--325023051223010223152301351_001pc911pc721xqx31rvm41rms51rm3",[[
+	Major Glyph of Shadow
+	Major Glyph of Mind Flay
+	Major Glyph of Dispersion
+	Minor Glyph of Shadowfiend
+	Minor Glyph of Fortitude
+	Minor Glyph of Levitate
+]])
 
 ZygorTalentAdvisor:RegisterBuild("MAGE","Frost Leveling (18/0/53)",[[
 	5/5 Improved Frostbolt	// faster and faster

@@ -744,6 +744,14 @@ local function EnsureGuideManagerRows(self, panel, wanted)
 				return
 			end
 			if data.kind == "action" then
+				if type(data.func) == "function" then
+					data.func()
+					self:RefreshGuideManagerPanel(panel)
+					if panel.ownerFrame and panel.ownerFrame.SetSelectedGuide then
+						panel.ownerFrame:SetSelectedGuide(nil)
+					end
+					return
+				end
 				if data.action == "clear_search" then
 					if panel.search and panel.search.SetText then panel.search:SetText("") end
 				elseif data.action == "go_home" then

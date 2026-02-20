@@ -40,6 +40,17 @@ me.status_preview = {player={code="?"},pet={code="?"}}
 me.suggestion = {player={},pet={}}
 me.suggestion_preview = {player={},pet={}}
 
+function me:AnnounceIntegratedLoad()
+	if self._integratedLoadAnnounced then return end
+	self._integratedLoadAnnounced = true
+	local msg = "|cff88ff88ZygorTalentAdvisor loaded.|r Talent Advisor is integrated in this addon."
+	if ZGV and type(ZGV.Print) == "function" then
+		ZGV:Print(msg)
+	elseif ChatFrame1 and ChatFrame1.AddMessage then
+		ChatFrame1:AddMessage("Zygor Guides Viewer: "..msg)
+	end
+end
+
 function me:OnEnable()
 --	hooksecurefunc("TalentFrame_Load",MrRipley_LinkToTalentsFrame)
 	hooksecurefunc("ToggleTalentFrame",function()
@@ -172,10 +183,33 @@ function me:OnEnable()
 	if UnitClass("player") and GetTalentInfo(1,1) then self:PruneRegisteredBuilds() end
 	if select(2,UnitClass("player"))=="HUNTER" then self.petsupport=true end
 
+	-- Restore saved build selection early on each load/reload.
+	if self.db and self.db.char then
+		local idx
+		idx = tonumber(self.db.char.currentBuildIndex)
+		if idx and idx>0 and self.registeredBuilds and self.registeredBuilds[idx] then
+			self:SetCurrentBuild(idx,false)
+		elseif self.db.char.currentBuildTitle and self.db.char.currentBuildTitle~="" then
+			self:SetCurrentBuild(self.db.char.currentBuildTitle,false)
+		elseif self.db.char.currentBuildNone then
+			self:SetCurrentBuild(0,false)
+		end
+
+		idx = tonumber(self.db.char.currentPetBuildIndex)
+		if idx and idx>0 and self.registeredBuilds and self.registeredBuilds[idx] then
+			self:SetCurrentBuild(idx,true)
+		elseif self.db.char.currentPetBuildTitle and self.db.char.currentPetBuildTitle~="" then
+			self:SetCurrentBuild(self.db.char.currentPetBuildTitle,true)
+		elseif self.db.char.currentPetBuildNone then
+			self:SetCurrentBuild(0,true)
+		end
+	end
+
 	self.Log.entries = self.db.char.debuglog
 	self.Log:Add("Viewer started. ---------------------------")
 
 	self.popout = ZygorTalentAdvisorPopout
+	self:AnnounceIntegratedLoad()
 end
 
 function me:OnInitialize()
@@ -1334,6 +1368,13 @@ function me:SetCurrentBuild(num,pet)
 	self:DebugPush("SetCurrentBuild "..tostring(num)..","..tostring(pet))
 
 	if type(num)=="string" then
+		local asNumber = tonumber(num)
+		if asNumber then
+			num = asNumber
+		end
+	end
+
+	if type(num)=="string" then
 		for i,build in ipairs(builds) do
 			if build.title==num then
 				num=i
@@ -1403,7 +1444,21 @@ function me:SetCurrentBuild(num,pet)
 		if self.status[who].code~="BLACK" then  -- nil-safe
 
 			if type(build)=="string" then
-				if (build:find("^%d+$")) then
+				local looksLikeWowhead = (
+					(build:find("wowhead.com",1,true) and true)
+					or (build:find("_",1,true) and true)
+					or (build:match("^%d*%-%d*%-%d*$") and true)
+				)
+				if self.IsWowheadTalentCode and self:IsWowheadTalentCode(build) or looksLikeWowhead then
+					build,msg = self:ParseWowheadTalents(build,pet)
+					if build then
+						-- parsed? save.
+						builds[num].build=build
+					else
+						build=nil
+						self.status[who] = {code="BLACK",msg=L['status_black_brokenbuild']:format(msg)}
+					end
+				elseif (build:find("^%d+$")) then
 					-- numbers; Blizzard format
 					--self:Debug("Parsing Blizzard build format")
 					build = self:ParseBlizzardTalents(build,pet)
@@ -1475,8 +1530,12 @@ function me:SetCurrentBuild(num,pet)
 
 	if pet then
 		self.db.char.currentPetBuildTitle = self.currentBuildTitle['pet']
+		self.db.char.currentPetBuildIndex = self.currentBuildNum['pet']
+		self.db.char.currentPetBuildNone = (self.currentBuildNum['pet'] == nil)
 	else
 		self.db.char.currentBuildTitle = self.currentBuildTitle['player']
+		self.db.char.currentBuildIndex = self.currentBuildNum['player']
+		self.db.char.currentBuildNone = (self.currentBuildNum['player'] == nil)
 	end
 
 

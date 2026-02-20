@@ -1,12 +1,39 @@
 local me=ZygorTalentAdvisor
 
-function me:RegisterBuild (class,title,build,glyphs)
+local function NormalizeBuildNotes(notes)
+	if type(notes) ~= "string" then return nil end
+	notes = notes:gsub("^%s+", ""):gsub("%s+$", "")
+	if notes == "" then return nil end
+	return notes
+end
+
+function me:RegisterBuild (class,title,a,b,c)
+	local notes,build,glyphs
+
+	-- Legacy signatures:
+	--   RegisterBuild(class,title,build[,glyphs])
+	-- New signature:
+	--   RegisterBuild(class,title,notes,build[,glyphs])
+	if c ~= nil then
+		notes = NormalizeBuildNotes(a)
+		build = b
+		glyphs = c
+	elseif b ~= nil and (a == nil or a == "") then
+		notes = nil
+		build = b
+		glyphs = nil
+	else
+		notes = nil
+		build = a
+		glyphs = b
+	end
+
 	local _,_,pet,pettype = string.find(class,"(PET) (.+)")
 	if pet then
-		table.insert(self.registeredBuilds,{pettype=pettype,title=title,build=build})
+		table.insert(self.registeredBuilds,{pettype=pettype,title=title,build=build,notes=notes})
 		--self:Print("Registered pet build: "..title)
 	else
-		table.insert(self.registeredBuilds,{class=class,title=title,build=build,glyphs=glyphs})
+		table.insert(self.registeredBuilds,{class=class,title=title,build=build,glyphs=glyphs,notes=notes})
 		--self:Print("Registered build: "..title)
 	end
 end
@@ -37,8 +64,25 @@ function me:PruneRegisteredBuilds()
 	end
 
 	if #self.registeredBuilds>0 then
-		if self.db.char.currentBuildTitle then self:SetCurrentBuild(self.db.char.currentBuildTitle) end
-		if self.db.char.currentPetBuildTitle then self:SetCurrentBuild(self.db.char.currentPetBuildTitle) end
+		local idx
+		local _,myclass = UnitClass("player")
+		idx = tonumber(self.db.char.currentBuildIndex)
+		local canUsePlayerIndex = idx and idx>0 and self.registeredBuilds[idx]
+			and not self.registeredBuilds[idx].pettype
+			and (not self.registeredBuilds[idx].class or self.registeredBuilds[idx].class==myclass)
+		if canUsePlayerIndex then
+			self:SetCurrentBuild(idx,false)
+		elseif self.db.char.currentBuildTitle then
+			self:SetCurrentBuild(self.db.char.currentBuildTitle)
+		end
+
+		idx = tonumber(self.db.char.currentPetBuildIndex)
+		local canUsePetIndex = idx and idx>0 and self.registeredBuilds[idx] and self.registeredBuilds[idx].pettype
+		if canUsePetIndex then
+			self:SetCurrentBuild(idx,true)
+		elseif self.db.char.currentPetBuildTitle then
+			self:SetCurrentBuild(self.db.char.currentPetBuildTitle)
+		end
 	end
 
 	self.registeredBuildsPruned = true
@@ -53,6 +97,87 @@ function me:ParseBlizzardTalents(bliz,pet)
 		local rank = tonumber(strsub(bliz,1,1))
 		bliz = strsub(bliz,2)
 		for i=1,rank do table.insert(build,{tab,talent}) end
+	end
+
+	return build
+end
+
+local function NormalizeWowheadTalentCode(raw)
+	if type(raw) ~= "string" then return nil, "Input is not text." end
+	local s = raw:gsub("%s+", "")
+	if s == "" then return nil, "Input is empty." end
+	-- Normalize common Unicode dash variants to ASCII hyphen.
+	s = s:gsub("\226\128\145","-") -- non-breaking hyphen
+	s = s:gsub("\226\128\147","-") -- en dash
+	s = s:gsub("\226\128\148","-") -- em dash
+	s = s:gsub("\226\136\146","-") -- minus sign
+	-- For full URLs, grab the talent code segment after /talent-calc/<class>/...
+	if s:find("wowhead.com", 1, true) then
+		local extracted = s:match("talent%-calc/[^/]+/([^%?#]+)") or s:match("/([^/%?#]+)$")
+		if not extracted then
+			return nil, "URL does not end with a talent code."
+		end
+		s = extracted
+	end
+	-- Keep only the core code before Wowhead glyph suffix.
+	if s:find("_", 1, true) then
+		s = s:match("^([^_]+)") or s
+	end
+	-- Defensive cleanup for malformed pasted inputs.
+	s = s:gsub("[^0-9%-]", "")
+	if not s:match("^[0-9%-]+$") then
+		return nil, "Use digits and '-' only (or a full Wowhead URL)."
+	end
+	if s:match("^%d*%-%d*%-%d*$") then
+		return s
+	end
+	return nil, "Expected exactly 3 tree segments: tree1-tree2-tree3."
+end
+
+function me:IsWowheadTalentCode(raw)
+	local code = NormalizeWowheadTalentCode(raw)
+	return code ~= nil
+end
+
+function me:ParseWowheadTalents(raw,pet)
+	self:Debug("Parsing Wowhead build, pet="..tostring(pet))
+	local code, normerr = NormalizeWowheadTalentCode(raw)
+	if not code then
+		local shown = tostring(raw or ""):gsub("%s+","")
+		if #shown > 64 then shown = shown:sub(1,64).."..." end
+		return nil, "Invalid Wowhead talent code/url: "..tostring(normerr).." [raw="..shown.."]"
+	end
+
+	local seg1,seg2,seg3 = code:match("^([^%-]*)%-([^%-]*)%-([^%-]*)$")
+	if not seg1 then
+		return nil, "Wowhead code must contain 3 tree segments."
+	end
+
+	local segments = { seg1 or "", seg2 or "", seg3 or "" }
+	local build = {}
+	local tabs = GetNumTalentTabs(false,pet) or 0
+	if tabs < 1 then
+		return nil, "Talents are not available yet."
+	end
+
+	for tab=1,tabs do
+		local seg = segments[tab] or ""
+		local talents = GetNumTalents(tab,false,pet) or 0
+		for talent=1,talents do
+			local rank = tonumber(seg:sub(talent,talent)) or 0
+			local _, _, _, _, _, maxrank = GetTalentInfo(tab,talent,false,pet)
+			maxrank = tonumber(maxrank) or 0
+			if rank > maxrank then
+				return nil, ("Tree %d talent %d has rank %d, but max rank is %d."):format(tab,talent,rank,maxrank)
+			end
+			for i=1,rank do
+				table.insert(build,{tab,talent})
+			end
+		end
+		local extra = seg:sub(talents + 1)
+		if extra and extra:match("[1-9]") then
+			return nil, ("Tree %d contains ranks for unknown talents past index %d."):format(tab,talents)
+		end
 	end
 
 	return build

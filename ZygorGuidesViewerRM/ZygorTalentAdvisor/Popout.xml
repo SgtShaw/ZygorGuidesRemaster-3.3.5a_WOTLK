@@ -115,11 +115,31 @@
 					</Anchors>
 				</FontString>
 
+				<FontString name="$parentBuildSelectLabel" parentKey="buildSelectLabel" inherits="GameFontNormalSmall" text="" justifyH="LEFT" justifyV="TOP">
+					<Anchors>
+						<Anchor point="TOPLEFT"><Offset x="12" y="-46"/></Anchor>
+					</Anchors>
+				</FontString>
+
+				<FontString name="$parentNotesLabel" parentKey="notesLabel" inherits="GameFontNormalSmall" text="" justifyH="LEFT" justifyV="TOP">
+					<Anchors>
+						<Anchor point="TOPLEFT"><Offset x="12" y="-94"/></Anchor>
+					</Anchors>
+				</FontString>
+
+				<FontString name="$parentNotes" parentKey="notes" inherits="GameFontHighlightSmall" text="" justifyV="TOP" justifyH="LEFT">
+					<Size y="34"/>
+					<Anchors>
+						<Anchor point="TOPLEFT"><Offset x="12" y="-108"/></Anchor>
+						<Anchor point="TOPRIGHT"><Offset x="-12" y="-108"/></Anchor>
+					</Anchors>
+				</FontString>
+
 				<FontString name="$parentSuggestionLabel" parentKey="suggestionLabel" inherits="GameFontNormalSmall" text="" justifyV="TOP" justifyH="LEFT">
 					<Size y="100"/>
 					<Anchors>
-						<Anchor point="TOPLEFT"><Offset x="10" y="-50"/></Anchor>
-						<Anchor point="TOPRIGHT"><Offset x="-10" y="-50"/></Anchor>
+						<Anchor point="TOPLEFT"><Offset x="10" y="-132"/></Anchor>
+						<Anchor point="TOPRIGHT"><Offset x="-10" y="-132"/></Anchor>
 					</Anchors>
 				</FontString>
 			</Layer>
@@ -131,9 +151,14 @@
 					<Anchor point="TOPRIGHT"><Offset x="2" y="1"/></Anchor>
 				</Anchors>
 			</Button>
+			<Frame name="$parentBuildSelect" parentKey="buildSelect" inherits="UIDropDownMenuTemplate">
+				<Anchors>
+					<Anchor point="TOPLEFT"><Offset x="-2" y="-58"/></Anchor>
+				</Anchors>
+			</Frame>
 			<ScrollFrame name="$parentScroll" parentKey="scroll" inherits="UIPanelScrollFrameTemplate">
 				<Anchors>
-					<Anchor point="TOPLEFT"><Offset x="15" y="-70"/></Anchor>
+					<Anchor point="TOPLEFT"><Offset x="15" y="-150"/></Anchor>
 					<Anchor point="BOTTOMRIGHT"><Offset x="-35" y="70"/></Anchor>
 				</Anchors>
 

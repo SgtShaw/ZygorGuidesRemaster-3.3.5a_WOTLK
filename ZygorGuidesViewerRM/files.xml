@@ -14,6 +14,11 @@
 
 	<Script file="QuestAutoAccept.lua"/>
 
+	<Include file="ZygorTalentAdvisor\Localization\load.xml"/>
+	<Include file="ZygorTalentAdvisor\files.xml"/>
+	<Include file="ZygorTalentAdvisor\Builds\Autoload.xml"/>
+	<Script file="TalentAdvisorCompat.lua"/>
+
 	<Script file="Step.lua"/>
 	<Script file="Goal.lua"/>
 	<Include file="Data\data.xml"/>
