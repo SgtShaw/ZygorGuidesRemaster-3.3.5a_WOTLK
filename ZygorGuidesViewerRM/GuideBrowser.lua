@@ -542,6 +542,40 @@ local GUIDE_SMALL_ICON_COORDS = {
 	star = { GetIconTexCoord(1, 2, 4, 2) },
 }
 
+local FEATURED_BUCKET_ORDER = { "next", "progress", "level", "featured" }
+local FEATURED_BUCKET_LABELS = {
+	next = "Next Up",
+	progress = "In Progress",
+	level = "Around Your Level",
+	featured = "Featured Routes",
+}
+local FEATURED_CONFIDENCE_LABELS = {
+	strong = "Strong",
+	good = "Good",
+	fallback = "Fallback",
+}
+local FEATURED_CONFIDENCE_COLORS = {
+	strong = { 0.46, 0.86, 0.36, 0.95 },
+	good = { 0.98, 0.78, 0.34, 0.95 },
+	fallback = { 0.72, 0.74, 0.80, 0.90 },
+}
+
+local function ApplyActionRowStyle(row)
+	row.icon:Hide()
+	row.favButton:Hide()
+	row.text:ClearAllPoints()
+	row.text:SetPoint("LEFT", row, "LEFT", 14, 0)
+	row.text:SetPoint("RIGHT", row, "RIGHT", -28, 0)
+	row.text:SetTextColor(0.60, 0.84, 1.00, 1)
+	row.bg:Show()
+	row.bg:SetVertexColor(0.11, 0.16, 0.20, 0.78)
+	row.disclosure:Show()
+	row.disclosure:ClearAllPoints()
+	row.disclosure:SetPoint("RIGHT", row, "RIGHT", -10, 0)
+	row.disclosure:SetText(">")
+	row.disclosure:SetTextColor(0.60, 0.84, 1.00, 0.90)
+end
+
 function me:RefreshGuideManagerPanel(panel)
 	local f = panel or self.GuideManagerPanel
 	if not f then return end
@@ -573,6 +607,14 @@ function me:RefreshGuideManagerPanel(panel)
 	local shown = f.visibleRows or #f.rows
 	FauxScrollFrame_Update(f.scroll, #rows + blankRows, shown, rowHeight)
 	local off = FauxScrollFrame_GetOffset(f.scroll)
+	local maxoff = math.max(0, (#rows + blankRows) - shown)
+	if off > maxoff then
+		off = maxoff
+		FauxScrollFrame_SetOffset(f.scroll, off)
+		f.scroll:SetVerticalScroll(off * rowHeight)
+		local sbar = _G[f.scroll:GetName() .. "ScrollBar"]
+		if sbar and sbar.SetValue then sbar:SetValue(off * rowHeight) end
+	end
 
 	for i = 1, shown do
 		local row = f.rows[i]
@@ -586,7 +628,6 @@ function me:RefreshGuideManagerPanel(panel)
 			row.text:ClearAllPoints()
 			row.text:SetPoint("LEFT", row, "LEFT", baseX + 24, 0)
 			row.text:SetPoint("RIGHT", row, "RIGHT", -18, 0)
-			if row.meta then row.meta:Hide() end
 			row.icon:SetTexture(GUIDE_SMALL_ICON_FILE)
 			row.bg:Hide()
 			row.favButton:Hide()
@@ -614,14 +655,7 @@ function me:RefreshGuideManagerPanel(panel)
 				row.text:SetTextColor(1, 0.88, 0.25, 1)
 			elseif data.kind == "action" then
 				text = data.label
-				row.icon:Hide()
-				row.favButton:Hide()
-				row.text:ClearAllPoints()
-				row.text:SetPoint("LEFT", row, "LEFT", 12, 0)
-				row.text:SetPoint("RIGHT", row, "RIGHT", -18, 0)
-				row.text:SetTextColor(0.55, 0.82, 1.00, 1)
-				row.bg:Show()
-				row.bg:SetVertexColor(0.12, 0.17, 0.20, 0.75)
+				ApplyActionRowStyle(row)
 			else
 				text = data.label or ""
 				row.icon:SetTexCoord(unpack(GUIDE_SMALL_ICON_COORDS.guide))
@@ -645,9 +679,17 @@ function me:RefreshGuideManagerPanel(panel)
 				else
 					row.text:SetTextColor(0.9, 0.9, 0.9, 1)
 				end
+				if data.featuredbucket == "next" then
+					row.icon:SetTexCoord(unpack(GUIDE_SMALL_ICON_COORDS.star))
+					row.text:SetTextColor(1.00, 0.93, 0.55, 1.0)
+				end
 			end
 			row.text:SetText(text)
-			if data.kind == "header" then row.icon:Hide() else row.icon:Show() end
+			if data.kind == "folder" or data.kind == "guide" then
+				row.icon:Show()
+			else
+				row.icon:Hide()
+			end
 			row:Show()
 		else
 			row.data = nil
@@ -754,6 +796,14 @@ local function EnsureGuideManagerRows(self, panel, wanted)
 				end
 				if data.action == "clear_search" then
 					if panel.search and panel.search.SetText then panel.search:SetText("") end
+				elseif data.action == "reset_hidden_featured" then
+					if self.db and self.db.profile then
+						self.db.profile.guidebrowser_featured_hidden = {}
+					end
+					if self.db and self.db.char then
+						self.db.char.guidebrowser_featured_snooze = {}
+					end
+					self._featuredSessionHide = {}
 				elseif data.action == "go_home" then
 					if panel.ownerFrame and panel.ownerFrame.SetSection then panel.ownerFrame:SetSection("home") end
 				elseif data.action == "go_home_leveling" then
@@ -1121,6 +1171,34 @@ local function StripColorCodes(text)
 	return (text or ""):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
 end
 
+local function FormatReasonLines(text)
+	local raw = tostring(text or "")
+	if raw == "" then return "" end
+	if not strfind(raw, "|", 1, true) then return raw end
+	local out = {}
+	for part in raw:gmatch("[^|]+") do
+		local line = part:gsub("^%s+", ""):gsub("%s+$", "")
+		if line ~= "" then tinsert(out, line) end
+	end
+	if #out == 0 then return raw end
+	return table.concat(out, "\n")
+end
+
+local function ParseWhyGainFromContext(text)
+	local context = tostring(text or "")
+	local why = context:match("Why:%s*([^|]+)")
+	local gain = context:match("Gain:%s*(.+)$")
+	if why then why = why:gsub("^%s+", ""):gsub("%s+$", "") end
+	if gain then gain = gain:gsub("^%s+", ""):gsub("%s+$", "") end
+	return why or "", gain or ""
+end
+
+local function CountKeys(tbl)
+	local n = 0
+	for _ in pairs(tbl or {}) do n = n + 1 end
+	return n
+end
+
 local GUIDE_CATEGORY_ALIASES = {
 	leveling = "leveling", level = "leveling", levels = "leveling", questing = "leveling",
 	dungeon = "dungeons", dungeons = "dungeons", instance = "dungeons", instances = "dungeons",
@@ -1341,20 +1419,602 @@ local function BuildSpecialSectionRows(self, section, searchText)
 
 	if section == "featured" then
 		local list = self.registeredguides or {}
+		local playerLevel = tonumber(UnitLevel("player") or 1) or 1
+		local _,playerClassFile = UnitClass("player")
+		local _,playerRaceFile = UnitRace("player")
+		local playerClassToken = strlower((playerClassFile or ""):gsub("%s+", ""))
+		local playerRaceToken = strlower((playerRaceFile or ""):gsub("%s+", ""))
+		local currentGuide = self.CurrentGuide
+		local currentTitle = currentGuide and currentGuide.title or nil
+		local currentNext = currentGuide and currentGuide.next or nil
+		local currentStep = tonumber(self.CurrentStepNum or 1) or 1
+		local progressDB = self.db and self.db.char and self.db.char.guide_progress or {}
+		if self.db and self.db.profile then
+			self.db.profile.guidebrowser_featured_hidden = self.db.profile.guidebrowser_featured_hidden or {}
+		end
+		if self.db and self.db.char then
+			self.db.char.guidebrowser_featured_snooze = self.db.char.guidebrowser_featured_snooze or {}
+		end
+		self._featuredSessionHide = self._featuredSessionHide or {}
+		local legacyHiddenFeatured = (self.db and self.db.profile and self.db.profile.guidebrowser_featured_hidden) or {}
+		local featuredSnooze = (self.db and self.db.char and self.db.char.guidebrowser_featured_snooze) or {}
+		local featuredSessionHide = self._featuredSessionHide or {}
+		local nowEpoch = time()
+		local function IsSnoozed(title)
+			if not title or title == "" then return false end
+			if featuredSessionHide[title] then return true end
+			local untilTs = tonumber(featuredSnooze[title] or 0) or 0
+			if untilTs > nowEpoch then return true end
+			if untilTs > 0 and untilTs <= nowEpoch then featuredSnooze[title] = nil end
+			if legacyHiddenFeatured[title] then
+				-- Migrate legacy hidden state into a 24h snooze once.
+				featuredSnooze[title] = nowEpoch + (24 * 60 * 60)
+				legacyHiddenFeatured[title] = nil
+				return true
+			end
+			return false
+		end
+		local optEnableFallback = not (self.db and self.db.profile) or self.db.profile.guidebrowser_featured_enablefallback ~= false
+		local optHideRecentCompleted = not (self.db and self.db.profile) or self.db.profile.guidebrowser_featured_hiderecentcompleted ~= false
+		local optShowConfidence = not (self.db and self.db.profile) or self.db.profile.guidebrowser_featured_showconfidence ~= false
+		local bucketOrder = { next = 1, progress = 2, level = 3, featured = 4 }
+		local history = self.db and self.db.char and self.db.char.guides_history or {}
+		local currentParent = currentTitle and currentTitle:match("^(.*)\\[^\\]+$") or nil
+		local nextGuideExists = currentNext and self.GetGuideByTitle and self:GetGuideByTitle(currentNext) and true or false
+		local chainRank = {}
+		do
+			local curTitle = currentTitle
+			local depth = 0
+			local seen = {}
+			while curTitle and curTitle ~= "" and depth < 8 do
+				local curGuide = self.GetGuideByTitle and self:GetGuideByTitle(curTitle) or nil
+				local nxt = curGuide and curGuide.next or nil
+				if not nxt or nxt == "" or seen[nxt] then break end
+				seen[nxt] = true
+				depth = depth + 1
+				chainRank[nxt] = depth
+				curTitle = nxt
+			end
+		end
+		local recentRank = {}
+		do
+			local seen = {}
+			local rank = 0
+			for i = #history, 1, -1 do
+				local h = history[i]
+				local full = h and h.full
+				if full and not seen[full] then
+					seen[full] = true
+					rank = rank + 1
+					recentRank[full] = rank
+					if rank >= 40 then break end
+				end
+			end
+		end
+		local playerProfessions = {}
+		if GetProfessions and GetProfessionInfo then
+			local p1,p2,a1,a2,cooking,firstaid = GetProfessions()
+			local plist = {p1,p2,a1,a2,cooking,firstaid}
+			for _,pid in ipairs(plist) do
+				if pid then
+					local pname = GetProfessionInfo(pid)
+					if pname and pname ~= "" then
+						playerProfessions[strlower(pname)] = true
+					end
+				end
+			end
+		end
+		local CLASS_PATTERNS = {
+			{ token = "warrior", key = "warrior" },
+			{ token = "paladin", key = "paladin" },
+			{ token = "hunter", key = "hunter" },
+			{ token = "rogue", key = "rogue" },
+			{ token = "priest", key = "priest" },
+			{ token = "death knight", key = "deathknight" },
+			{ token = "deathknight", key = "deathknight" },
+			{ token = " dk ", key = "deathknight" },
+			{ token = "shaman", key = "shaman" },
+			{ token = "mage", key = "mage" },
+			{ token = "warlock", key = "warlock" },
+			{ token = "druid", key = "druid" },
+		}
+		local RACE_PATTERNS = {
+			{ token = "human", key = "human" },
+			{ token = "dwarf", key = "dwarf" },
+			{ token = "night elf", key = "nightelf" },
+			{ token = "gnome", key = "gnome" },
+			{ token = "draenei", key = "draenei" },
+			{ token = "orc", key = "orc" },
+			{ token = "undead", key = "scourge" },
+			{ token = "tauren", key = "tauren" },
+			{ token = "troll", key = "troll" },
+			{ token = "blood elf", key = "bloodelf" },
+		}
+		local PROF_PATTERNS = {
+			"alchemy", "blacksmithing", "enchanting", "engineering", "herbalism", "inscription",
+			"jewelcrafting", "leatherworking", "mining", "skinning", "tailoring", "cooking", "first aid", "fishing",
+		}
+		local function DetectAudience(text, patterns)
+			local found = {}
+			for _,p in ipairs(patterns) do
+				if strfind(text, p.token, 1, true) then
+					found[p.key] = true
+				end
+			end
+			return found
+		end
+		local function HasAnyKey(tbl)
+			for _ in pairs(tbl or {}) do return true end
+			return false
+		end
+		local function ProfMatch(text)
+			local detected = {}
+			for _,p in ipairs(PROF_PATTERNS) do
+				if strfind(text, p, 1, true) then
+					detected[p] = true
+				end
+			end
+			local hasDetected = HasAnyKey(detected)
+			if not hasDetected then return false,false end
+			for p,_ in pairs(detected) do
+				if playerProfessions[p] then return true,true end
+			end
+			return true,false
+		end
+
+		local function ParseLevelRange(text)
+			if not text or text == "" then return nil,nil end
+			local lo,hi = text:match("%((%d+)%s*%-%s*(%d+)%)")
+			if not lo or not hi then lo,hi = text:match("(%d+)%s*%-%s*(%d+)") end
+			lo,hi = tonumber(lo or 0), tonumber(hi or 0)
+			if lo and hi and lo > 0 and hi > 0 then
+				if lo > hi then lo,hi = hi,lo end
+				return lo,hi
+			end
+			return nil,nil
+		end
+		local inferredChainRank = {}
+		do
+			if currentTitle and currentTitle ~= "" and (not nextGuideExists) then
+				local curGuide = self.GetGuideByTitle and self:GetGuideByTitle(currentTitle) or nil
+				local curLabel = (curGuide and curGuide.title_short) or currentTitle
+				local clo,chi = ParseLevelRange((curLabel or "") .. " " .. currentTitle)
+				local currentMid = playerLevel
+				if clo and chi then currentMid = math.floor((clo + chi) / 2) end
+				local curParent = currentTitle:match("^(.*)\\[^\\]+$")
+				local pool = {}
+				for _,ig in ipairs(list or {}) do
+					local it = ig and ig.title
+					if it and it ~= "" and it ~= currentTitle then
+						local ipar = it:match("^(.*)\\[^\\]+$")
+						if curParent and ipar == curParent then
+							local ilabel = ig.title_short or it
+							local lo,hi = ParseLevelRange((ilabel or "") .. " " .. it)
+							local mid = lo and hi and math.floor((lo + hi) / 2) or currentMid
+							local ahead = (mid >= currentMid) and 0 or 1
+							tinsert(pool, { title = it, mid = mid, ahead = ahead, dist = math.abs(mid - currentMid) })
+						end
+					end
+				end
+				table.sort(pool, function(a,b)
+					if a.ahead ~= b.ahead then return a.ahead < b.ahead end
+					if a.dist ~= b.dist then return a.dist < b.dist end
+					return strlower(a.title or "") < strlower(b.title or "")
+				end)
+				for i,p in ipairs(pool) do
+					inferredChainRank[p.title] = i
+					if i >= 6 then break end
+				end
+			end
+		end
+
+		local candidates = {}
+		local function InferGuideGain(cat, title)
+			local t = strlower(title or "")
+			if strfind(t, "unlock", 1, true) or strfind(t, "attun", 1, true) then return "Unlock progression" end
+			if cat == "leveling" then return "XP progression" end
+			if cat == "dungeons" then return "Dungeon progression" end
+			if cat == "daily" then return "Daily rewards" end
+			if cat == "reputations" then return "Reputation gains" end
+			if cat == "professions" then return "Profession progression" end
+			if cat == "achievements" then return "Achievement progress" end
+			if strfind(t, "dungeon", 1, true) then return "Dungeon progression" end
+			if strfind(t, "daily", 1, true) then return "Daily rewards" end
+			if strfind(t, "reputation", 1, true) or strfind(t, " rep", 1, true) then return "Reputation gains" end
+			if strfind(t, "profession", 1, true) then return "Profession progression" end
+			if strfind(t, "achievement", 1, true) then return "Achievement progress" end
+			return "XP progression"
+		end
+		local function AddReason(reasons, reason)
+			if not reason or reason == "" then return end
+			for _,r in ipairs(reasons) do if r == reason then return end end
+			tinsert(reasons, reason)
+		end
+		local function ResolveGainType(cat, title)
+			local t = strlower(title or "")
+			if strfind(t, "unlock", 1, true) or strfind(t, "attun", 1, true) then return "unlock" end
+			if cat == "leveling" then return "xp" end
+			if cat == "dungeons" then return "dungeon" end
+			if cat == "daily" then return "daily" end
+			if cat == "reputations" then return "reputation" end
+			if cat == "professions" then return "profession" end
+			if cat == "achievements" then return "achievement" end
+			if strfind(t, "dungeon", 1, true) then return "dungeon" end
+			if strfind(t, "daily", 1, true) then return "daily" end
+			if strfind(t, "reputation", 1, true) or strfind(t, " rep", 1, true) then return "reputation" end
+			if strfind(t, "profession", 1, true) then return "profession" end
+			if strfind(t, "achievement", 1, true) then return "achievement" end
+			return "xp"
+		end
+		local function ConfidenceByScore(bucket, score)
+			if bucket == "next" or score >= 1030 then return "strong" end
+			if score >= 760 then return "good" end
+			return "fallback"
+		end
+		local function ComputeGuideProgress(guide, title, steps, remembered)
+			local complete = 0
+			if guide and guide.GetCompletion then
+				local ok, _, cur, total = pcall(function() return guide:GetCompletion() end)
+				if ok and total and total > 0 and cur then
+					complete = math.floor((cur / total) * 100 + 0.5)
+				end
+			end
+			if complete <= 0 and steps > 0 and currentTitle and title == currentTitle then
+				local stepnum = currentStep
+				if stepnum < 1 then stepnum = 1 end
+				if stepnum > (steps + 1) then stepnum = steps + 1 end
+				complete = math.floor(((stepnum - 1) / steps) * 100 + 0.5)
+			end
+			if complete <= 0 and steps > 0 and remembered and remembered > 0 then
+				local stepnum = remembered
+				if stepnum < 1 then stepnum = 1 end
+				if stepnum > (steps + 1) then stepnum = steps + 1 end
+				if currentTitle and title == currentTitle then
+					complete = math.floor(((stepnum - 1) / steps) * 100 + 0.5)
+				else
+					complete = math.floor((stepnum / steps) * 100 + 0.5)
+				end
+			end
+			if complete < 0 then complete = 0 end
+			if complete > 100 then complete = 100 end
+			return complete
+		end
+		local function OrdinalLabel(n)
+			n = tonumber(n or 1) or 1
+			if n % 100 >= 11 and n % 100 <= 13 then return tostring(n) .. "th Next" end
+			local d = n % 10
+			if d == 1 then return tostring(n) .. "st Next" end
+			if d == 2 then return tostring(n) .. "nd Next" end
+			if d == 3 then return tostring(n) .. "rd Next" end
+			return tostring(n) .. "th Next"
+		end
+
+		local keptCounts = { next = 0, progress = 0, level = 0, featured = 0 }
+		local fallbackByBucket = { next = {}, progress = {}, level = {}, featured = {} }
 		for _,g in ipairs(list) do
 			local title = g and g.title
 			if title and title ~= "" then
-				local gcat = InferGuideCategory(g, title, title)
-				local featured = (g.condition_suggested_raw and true) or (gcat == "leveling")
-				if featured and includeText((g.title_short or "") .. " " .. title) then
-					tinsert(rows, { kind = "guide", depth = 0, label = g.title_short or title, title = title })
+				local label = g.title_short or title
+				local searchHay = (label or "") .. " " .. title
+				if includeText(searchHay) then
+					local lowerHay = " " .. strlower(searchHay) .. " "
+					local classAudience = DetectAudience(lowerHay, CLASS_PATTERNS)
+					local raceAudience = DetectAudience(lowerHay, RACE_PATTERNS)
+					local hasClassAudience = HasAnyKey(classAudience)
+					local hasRaceAudience = HasAnyKey(raceAudience)
+					local classAudienceCount = CountKeys(classAudience)
+					local raceAudienceCount = CountKeys(raceAudience)
+					local classMismatch = hasClassAudience and (not classAudience[playerClassToken]) and classAudienceCount <= 2
+					local raceMismatch = hasRaceAudience and (not raceAudience[playerRaceToken]) and raceAudienceCount <= 1
+					local profTagged,profMatch = ProfMatch(lowerHay)
+
+					local cat = InferGuideCategory(g, title, title)
+					local featuredFlag = (g.condition_suggested_raw and true) or (cat == "leveling")
+					local lo,hi = ParseLevelRange(searchHay)
+					local steps = (g.steps and #g.steps) or 0
+					local remembered = nil
+					if self.GetRememberedGuideStep then
+						remembered = self:GetRememberedGuideStep(title)
+					end
+					if not remembered and progressDB and progressDB[title] and progressDB[title].step then
+						remembered = progressDB[title].step
+					end
+					remembered = tonumber(remembered or 0) or 0
+					local complete = ComputeGuideProgress(g, title, steps, remembered)
+					if complete >= 100 then
+						complete = 100
+					end
+					local inProgress = (steps > 0 and complete > 0 and complete < 100)
+					local recentlyCompleted = false
+					if optHideRecentCompleted and steps > 0 and remembered >= steps and (recentRank[title] and recentRank[title] <= 3) then
+						recentlyCompleted = true
+					end
+					local inLevelBand = false
+					local nearLevelBand = false
+					if lo and hi then
+						inLevelBand = (playerLevel >= lo - 2 and playerLevel <= hi + 2)
+						if not inLevelBand then
+							local dlo = math.abs(playerLevel - lo)
+							local dhi = math.abs(playerLevel - hi)
+							nearLevelBand = (math.min(dlo, dhi) <= 4)
+						end
+					end
+
+					local reasons = {}
+					local gain = InferGuideGain(cat, title)
+					local gainType = ResolveGainType(cat, title)
+					local isFavorite = self.IsGuideFavorite and self:IsGuideFavorite(title) or false
+					local parentPath = title:match("^(.*)\\[^\\]+$")
+					local sameParent = currentParent and parentPath and currentParent == parentPath
+					local recency = recentRank[title]
+					if recency and recency <= 5 then AddReason(reasons, "recently used") end
+					if complete < 100 then AddReason(reasons, "incomplete") end
+					if inLevelBand then AddReason(reasons, "your level range")
+					elseif nearLevelBand then AddReason(reasons, "near your level")
+					end
+					if hasClassAudience and not classMismatch then AddReason(reasons, "your class") end
+					if hasRaceAudience and not raceMismatch then AddReason(reasons, "your race") end
+					if profTagged and profMatch then AddReason(reasons, "your profession") end
+					if isFavorite then AddReason(reasons, "favorite") end
+
+					local bucket,score
+					local chainStep = nil
+					local keepForChain = false
+					if complete < 100 then
+						local rankInChain = chainRank[title]
+						if rankInChain and rankInChain >= 1 then
+							bucket = "next"
+							score = 1160 - ((rankInChain - 1) * 26)
+							chainStep = rankInChain
+							keepForChain = true
+							if rankInChain == 1 then
+								AddReason(reasons, "current chain")
+							else
+								AddReason(reasons, ("chain step +%d"):format(rankInChain))
+							end
+						elseif inferredChainRank[title] and inferredChainRank[title] >= 1 then
+							local ifallback = inferredChainRank[title]
+							bucket = "next"
+							score = 980 - ((ifallback - 1) * 18)
+							chainStep = ifallback
+							AddReason(reasons, "inferred continuation")
+						elseif currentNext and title == currentNext and nextGuideExists then
+							bucket = "next"
+							score = 1100
+							keepForChain = true
+							AddReason(reasons, "current chain")
+						elseif sameParent and title ~= currentTitle then
+							bucket = "next"
+							score = 1020
+							AddReason(reasons, "chapter continuation")
+						elseif currentTitle and title == currentTitle then
+							bucket = "progress"
+							score = 980
+							AddReason(reasons, "current chain")
+						elseif inProgress then
+							bucket = "progress"
+							score = 900 + math.max(0, math.min(100, complete))
+						elseif inLevelBand or nearLevelBand then
+							local distanceBonus = 0
+							if lo and hi then
+								if playerLevel < lo then distanceBonus = math.max(0, 40 - (lo - playerLevel) * 8)
+								elseif playerLevel > hi then distanceBonus = math.max(0, 40 - (playerLevel - hi) * 8)
+								else distanceBonus = 60 end
+							end
+							bucket = "level"
+							score = 760 + distanceBonus
+							AddReason(reasons, inLevelBand and "your level range" or "near your level")
+						elseif featuredFlag then
+							bucket = "featured"
+							score = 520
+						end
+					end
+
+					if bucket then
+						keepForChain = keepForChain or (currentTitle and title == currentTitle)
+						if IsSnoozed(title) then
+							bucket = nil
+						end
+						if (classMismatch or raceMismatch or (cat == "professions" and profTagged and not profMatch)) and not keepForChain then
+							bucket = nil
+						end
+						if recentlyCompleted and not keepForChain and not inProgress then
+							bucket = nil
+						end
+					end
+
+					local confidence = nil
+					if bucket then
+						if recency then
+							score = score + math.max(0, 22 - (recency * 3))
+						end
+						if lo and hi then
+							local levelDistance = 0
+							if playerLevel < lo then levelDistance = lo - playerLevel end
+							if playerLevel > hi then levelDistance = playerLevel - hi end
+							if levelDistance >= 10 then score = score - 110
+							elseif levelDistance >= 6 then score = score - 45
+							end
+						end
+						if isFavorite then
+							score = score + 30
+						end
+						confidence = ConfidenceByScore(bucket, score or 0)
+
+						local meta = ""
+						if bucket == "next" then
+							meta = OrdinalLabel((chainStep and chainStep > 0) and chainStep or 1)
+						elseif bucket == "progress" then
+							meta = ("%d%%"):format(complete)
+						elseif bucket == "level" then
+							if lo and hi then
+								meta = ("%d-%d"):format(lo, hi)
+							else
+								meta = ("~%d"):format(playerLevel)
+							end
+						else
+							meta = "Suggested"
+						end
+						if optShowConfidence then
+							meta = meta .. " | " .. (FEATURED_CONFIDENCE_LABELS[confidence] or "Good")
+						end
+						if #reasons == 0 then AddReason(reasons, "recommended") end
+						local reasonRank = {
+							["current chain"] = 1,
+							["inferred continuation"] = 2,
+							["chapter continuation"] = 3,
+							["your level range"] = 4,
+							["near your level"] = 5,
+							["your class"] = 6,
+							["your race"] = 7,
+							["your profession"] = 8,
+							["favorite"] = 9,
+							["recently used"] = 10,
+							["incomplete"] = 11,
+							["recommended"] = 12,
+						}
+						local ranked = {}
+						for _,r in ipairs(reasons) do
+							tinsert(ranked, { reason = r, rank = reasonRank[r] or 99 })
+						end
+						table.sort(ranked, function(a,b)
+							if a.rank ~= b.rank then return a.rank < b.rank end
+							return a.reason < b.reason
+						end)
+						local reasonText = (ranked[1] and ranked[1].reason) or "recommended"
+						if ranked[2] then reasonText = reasonText .. ", " .. ranked[2].reason end
+						local context = ("Why: %s | Gain: %s"):format(reasonText, gain)
+						local candidate = {
+							bucket = bucket,
+							score = score or 0,
+							label = label,
+							title = title,
+							complete = complete,
+							meta = meta,
+							context = context,
+							chainStep = chainStep,
+							confidence = confidence,
+							gaintype = gainType,
+							currentselected = (currentTitle and title == currentTitle) and true or false,
+						}
+						tinsert(candidates, candidate)
+						keptCounts[bucket] = (keptCounts[bucket] or 0) + 1
+					end
+
+					if not bucket and optEnableFallback then
+						-- Soft fallback pool for empty buckets: keep relevant near-misses.
+						local fbucket = nil
+						if recentlyCompleted then
+							fbucket = "progress"
+						end
+						if fbucket then
+							tinsert(fallbackByBucket[fbucket], {
+								bucket = fbucket,
+								score = 420,
+								label = label,
+								title = title,
+								complete = complete,
+								meta = "Suggested | " .. FEATURED_CONFIDENCE_LABELS.fallback,
+								context = "Why: other useful option | Gain: " .. gain,
+								chainStep = nil,
+								confidence = "fallback",
+								gaintype = gainType,
+								fallback = true,
+							})
+						end
+					end
 				end
 			end
-			if #rows >= 120 then break end
+		end
+		if currentTitle and currentTitle ~= "" then
+			local curGuide = self.GetGuideByTitle and self:GetGuideByTitle(currentTitle) or nil
+			local curLabel = (curGuide and curGuide.title_short) or currentTitle
+			local curHay = (curLabel or "") .. " " .. currentTitle
+			if includeText(curHay) then
+				local curGain = InferGuideGain(curGuide and InferGuideCategory(curGuide, currentTitle, currentTitle) or nil, currentTitle)
+				tinsert(candidates, {
+					bucket = "next",
+					score = 1250,
+					label = curLabel,
+					title = currentTitle,
+					complete = 0,
+					meta = "Current | " .. FEATURED_CONFIDENCE_LABELS.strong,
+					context = ("Why: current selection | Gain: %s"):format(curGain),
+					chainStep = 0,
+					confidence = "strong",
+					gaintype = ResolveGainType(curGuide and InferGuideCategory(curGuide, currentTitle, currentTitle) or nil, currentTitle),
+					currentselected = true,
+				})
+			end
+		end
+
+		do
+			local bestByTitle = {}
+			for _,c in ipairs(candidates) do
+				local prev = bestByTitle[c.title]
+				if not prev then
+					bestByTitle[c.title] = c
+				else
+					local po = bucketOrder[prev.bucket] or 99
+					local co = bucketOrder[c.bucket] or 99
+					if (co < po) or (co == po and (c.score or 0) > (prev.score or 0)) then
+						bestByTitle[c.title] = c
+					end
+				end
+			end
+			local deduped = {}
+			for _,c in pairs(bestByTitle) do tinsert(deduped, c) end
+			candidates = deduped
+		end
+		table.sort(candidates, function(a,b)
+			local ao = bucketOrder[a.bucket] or 99
+			local bo = bucketOrder[b.bucket] or 99
+			if ao ~= bo then return ao < bo end
+			if a.score ~= b.score then return a.score > b.score end
+			return strlower(a.label or a.title or "") < strlower(b.label or b.title or "")
+		end)
+		for _,b in ipairs(FEATURED_BUCKET_ORDER) do
+			if (keptCounts[b] or 0) == 0 and fallbackByBucket[b] and #fallbackByBucket[b] > 0 then
+				local addn = 0
+				for _,fc in ipairs(fallbackByBucket[b]) do
+					if not IsSnoozed(fc.title) then
+						tinsert(candidates, fc)
+						addn = addn + 1
+						if addn >= 3 then break end
+					end
+				end
+			end
+		end
+
+		local seenTitle = {}
+		local added = 0
+		for _,c in ipairs(candidates) do
+			if not seenTitle[c.title] then
+				seenTitle[c.title] = true
+				tinsert(rows, {
+					kind = "guide",
+					depth = 0,
+					label = c.label,
+					title = c.title,
+					meta = c.meta,
+					context = c.context,
+					featuredbucket = c.bucket,
+					chainStep = c.chainStep,
+					confidence = c.confidence,
+					gaintype = c.gaintype,
+					fallback = c.fallback,
+					currentselected = c.currentselected,
+				})
+				added = added + 1
+				if added >= 24 then break end
+			end
 		end
 		if #rows == 0 then
-			tinsert(rows, { kind = "header", depth = 0, label = "No featured guides match this filter." })
+			tinsert(rows, { kind = "header", depth = 0, label = "No featured suggestions match this filter." })
 			tinsert(rows, { kind = "action", depth = 0, label = "Clear search", action = "clear_search" })
+			if (featuredSnooze and next(featuredSnooze)) or (featuredSessionHide and next(featuredSessionHide)) or (legacyHiddenFeatured and next(legacyHiddenFeatured)) then
+				tinsert(rows, { kind = "action", depth = 0, label = "Reset snoozed suggestions", action = "reset_hidden_featured" })
+			end
 		end
 	end
 
@@ -2261,6 +2921,165 @@ local function EnsureGuideManagerStandaloneFrame(self)
 	scroll:SetPoint("TOPLEFT", list, "TOPLEFT", 0, 0)
 	scroll:SetPoint("BOTTOMRIGHT", list, "BOTTOMRIGHT", -20, 0)
 
+	local featuredPane = CreateFrame("Frame", nil, center)
+	featuredPane:SetPoint("TOPLEFT", headerLine, "BOTTOMLEFT", 0, -2)
+	featuredPane:SetPoint("BOTTOMRIGHT", center, "BOTTOMRIGHT", -2, 2)
+	featuredPane:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8x8" })
+	featuredPane:SetBackdropColor(0, 0, 0, 0)
+	featuredPane:Hide()
+	frame.featuredPane = featuredPane
+
+	local featuredCards = CreateFrame("Frame", nil, featuredPane)
+	featuredCards:SetPoint("TOPLEFT", featuredPane, "TOPLEFT", 2, -2)
+	featuredCards:SetPoint("TOPRIGHT", featuredPane, "TOPRIGHT", -2, -2)
+	featuredCards:SetHeight(172)
+	frame.featuredCards = featuredCards
+
+	frame.featuredCardButtons = {}
+	for i = 1, 4 do
+		local b = CreateFrame("Button", nil, featuredCards)
+		if i == 1 then
+			b:SetPoint("TOPLEFT", featuredCards, "TOPLEFT", 2, -2)
+		elseif i == 2 then
+			b:SetPoint("TOPLEFT", frame.featuredCardButtons[1], "TOPRIGHT", 6, 0)
+		elseif i == 3 then
+			b:SetPoint("TOPLEFT", frame.featuredCardButtons[1], "BOTTOMLEFT", 0, -6)
+		else
+			b:SetPoint("TOPLEFT", frame.featuredCardButtons[3], "TOPRIGHT", 6, 0)
+		end
+		b:SetWidth(272)
+		b:SetHeight(78)
+		b:SetBackdrop({
+			bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+			edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+			edgeSize = 12,
+			insets = { left = 2, right = 2, top = 2, bottom = 2 },
+		})
+		b:SetBackdropColor(0.10, 0.11, 0.13, 0.94)
+		b:SetBackdropBorderColor(0.26, 0.28, 0.33, 0.95)
+		b.bg = b:CreateTexture(nil, "BACKGROUND")
+		b.bg:SetAllPoints()
+		b.bg:SetTexture("Interface\\Buttons\\WHITE8x8")
+		b.bg:SetVertexColor(0.72, 0.76, 0.86, 0.02)
+		b.title = b:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+		b.title:SetPoint("TOPLEFT", b, "TOPLEFT", 8, -8)
+		b.title:SetPoint("TOPRIGHT", b, "TOPRIGHT", -8, -8)
+		b.title:SetJustifyH("LEFT")
+		b.count = b:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+		b.count:SetPoint("TOPLEFT", b.title, "BOTTOMLEFT", 0, -2)
+		b.count:SetPoint("TOPRIGHT", b, "TOPRIGHT", -8, -22)
+		b.count:SetJustifyH("LEFT")
+		b.preview = b:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+		b.preview:SetPoint("TOPLEFT", b.count, "BOTTOMLEFT", 0, -4)
+		b.preview:SetPoint("TOPRIGHT", b, "TOPRIGHT", -8, -38)
+		b.preview:SetJustifyH("LEFT")
+		b.preview:SetTextColor(0.72, 0.78, 0.88, 1)
+		b.preview:SetWordWrap(false)
+		b.preview:SetText("")
+		frame.featuredCardButtons[i] = b
+	end
+
+	local featuredRoadmapHeader = featuredPane:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+	featuredRoadmapHeader:SetPoint("TOPLEFT", featuredCards, "BOTTOMLEFT", 2, -8)
+	featuredRoadmapHeader:SetPoint("TOPRIGHT", featuredPane, "TOPRIGHT", -24, -8)
+	featuredRoadmapHeader:SetJustifyH("LEFT")
+	featuredRoadmapHeader:SetText("Roadmap")
+	frame.featuredRoadmapHeader = featuredRoadmapHeader
+
+	local featuredHelp = CreateFrame("Button", nil, featuredPane)
+	featuredHelp:SetSize(16, 16)
+	featuredHelp:SetPoint("TOPRIGHT", featuredPane, "TOPRIGHT", -2, -8)
+	featuredHelp.text = featuredHelp:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+	featuredHelp.text:SetAllPoints()
+	featuredHelp.text:SetText("?")
+	featuredHelp.text:SetTextColor(0.78, 0.88, 1.0, 1.0)
+	featuredHelp:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight")
+	featuredHelp:SetScript("OnEnter", function(btn)
+		GameTooltip:SetOwner(btn, "ANCHOR_RIGHT")
+		GameTooltip:ClearLines()
+		GameTooltip:AddLine("Featured suggestion controls", 1, 1, 1)
+		GameTooltip:AddLine("Click the X: snooze for 24 hours", 0.78, 0.88, 1.0)
+		GameTooltip:AddLine("Shift-click X: hide for this session", 0.78, 0.88, 1.0)
+		GameTooltip:AddLine("Press R or use reset in options to restore.", 0.78, 0.88, 1.0)
+		GameTooltip:Show()
+	end)
+	featuredHelp:SetScript("OnLeave", function() GameTooltip:Hide() end)
+	frame.featuredHelp = featuredHelp
+
+	local featuredRoadmap = CreateFrame("Frame", nil, featuredPane)
+	featuredRoadmap:SetPoint("TOPLEFT", featuredRoadmapHeader, "BOTTOMLEFT", 0, -4)
+	featuredRoadmap:SetPoint("BOTTOMRIGHT", featuredPane, "BOTTOMRIGHT", -2, 2)
+	featuredRoadmap:SetBackdrop({
+		bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+		edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+		edgeSize = 12,
+		insets = { left = 2, right = 2, top = 2, bottom = 2 },
+	})
+	featuredRoadmap:SetBackdropColor(0.08, 0.09, 0.11, 0.92)
+	featuredRoadmap:SetBackdropBorderColor(0.24, 0.26, 0.30, 0.94)
+	frame.featuredRoadmap = featuredRoadmap
+
+	frame.featuredRoadmapRows = {}
+	for i = 1, 7 do
+		local rb = CreateFrame("Button", nil, featuredRoadmap)
+		rb:SetHeight(44)
+		rb:SetPoint("TOPLEFT", featuredRoadmap, "TOPLEFT", 8, -8 - ((i - 1) * 45))
+		rb:SetPoint("RIGHT", featuredRoadmap, "RIGHT", -8, 0)
+		rb:SetBackdrop({
+			bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+			edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+			edgeSize = 12,
+			insets = { left = 2, right = 2, top = 2, bottom = 2 },
+		})
+		rb:SetBackdropColor(0, 0, 0, 0)
+		rb:SetBackdropBorderColor(0.24, 0.26, 0.30, 0.94)
+		rb.bg = rb:CreateTexture(nil, "BACKGROUND")
+		rb.bg:SetAllPoints()
+		rb.bg:SetTexture("Interface\\Buttons\\WHITE8x8")
+		rb.bg:SetVertexColor(0.80, 0.83, 0.92, 0.04)
+		rb.seq = rb:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+		rb.seq:SetPoint("TOPLEFT", rb, "TOPLEFT", 4, -5)
+		rb.seq:SetWidth(22)
+		rb.seq:SetJustifyH("CENTER")
+		rb.seq:Hide()
+		rb.gainIcon = rb:CreateTexture(nil, "ARTWORK")
+		rb.gainIcon:SetSize(12, 12)
+		rb.gainIcon:SetPoint("LEFT", rb, "LEFT", 28, 0)
+		rb.gainIcon:Hide()
+		rb.confDot = rb:CreateTexture(nil, "ARTWORK")
+		rb.confDot:SetSize(10, 10)
+		rb.confDot:SetTexture(RETAIL_GUIDE_ICONS_BIG)
+		rb.confDot:SetTexCoord(GetTabsIconTexCoord("misc"))
+		rb.confDot:SetVertexColor(0.72, 0.74, 0.80, 0.95)
+		rb.confDot:Hide()
+		rb.title = rb:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+		rb.title:SetPoint("TOPLEFT", rb, "TOPLEFT", 54, -6)
+		rb.title:SetJustifyH("LEFT")
+		rb.meta = rb:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+		rb.meta:SetPoint("TOPRIGHT", rb, "TOPRIGHT", -18, -5)
+		rb.meta:SetJustifyH("RIGHT")
+		rb.meta:SetTextColor(0.80, 0.80, 0.83, 1)
+		rb.title:SetPoint("TOPRIGHT", rb.meta, "TOPLEFT", -10, 0)
+		rb.confDot:SetPoint("RIGHT", rb.gainIcon, "LEFT", -4, 0)
+		rb.subtitle = rb:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+		rb.subtitle:SetPoint("TOPLEFT", rb.title, "BOTTOMLEFT", 0, -2)
+		rb.subtitle:SetPoint("TOPRIGHT", rb.meta, "BOTTOMLEFT", -10, -16)
+		rb.subtitle:SetJustifyH("LEFT")
+		rb.subtitle:SetTextColor(0.72, 0.78, 0.88, 1)
+		rb.subtitle:SetWordWrap(false)
+		rb.dismiss = CreateFrame("Button", nil, rb)
+		rb.dismiss:SetSize(14, 14)
+		rb.dismiss:SetPoint("TOPRIGHT", rb, "TOPRIGHT", -4, -20)
+		rb.dismiss.text = rb.dismiss:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+		rb.dismiss.text:SetAllPoints()
+		rb.dismiss.text:SetText("x")
+		rb.dismiss.text:SetTextColor(0.72, 0.72, 0.74, 0.85)
+		rb.dismiss:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight")
+		rb.dismiss:Hide()
+		rb:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight")
+		frame.featuredRoadmapRows[i] = rb
+	end
+
 	local guideImage = details:CreateTexture(nil, "ARTWORK")
 	guideImage:SetPoint("TOPLEFT", details, "TOPLEFT", 1, -1)
 	guideImage:SetPoint("TOPRIGHT", details, "TOPRIGHT", -1, -1)
@@ -2325,6 +3144,456 @@ local function EnsureGuideManagerStandaloneFrame(self)
 	local UpdateLeftCategoryCounts
 	local ApplyOptionsSearchFilter
 	local UpdateOptionsContext
+	local RenderFeaturedPane
+	local MoveFeaturedSelection
+	local SwitchFeaturedBucket
+	local DismissFeaturedSelection
+	local ResetHiddenFeatured
+	local FEATURED_GAIN_CATEGORY_BY_TYPE = {
+		xp = "leveling",
+		dungeon = "dungeons",
+		daily = "daily",
+		reputation = "reputations",
+		profession = "professions",
+		unlock = "misc",
+		achievement = "achievements",
+	}
+
+	RenderFeaturedPane = function()
+		if not (frame and frame.featuredPane) then return end
+		if self.db and self.db.profile then
+			self.db.profile.guidebrowser_featured_hidden = self.db.profile.guidebrowser_featured_hidden or {}
+		end
+		if self.db and self.db.char then
+			self.db.char.guidebrowser_featured_snooze = self.db.char.guidebrowser_featured_snooze or {}
+		end
+		self._featuredSessionHide = self._featuredSessionHide or {}
+		local hiddenFeatured = (self.db and self.db.profile and self.db.profile.guidebrowser_featured_hidden) or {}
+		local featuredSnooze = (self.db and self.db.char and self.db.char.guidebrowser_featured_snooze) or {}
+		local featuredSessionHide = self._featuredSessionHide or {}
+		local function HasAnySnooze()
+			if next(featuredSessionHide) or next(featuredSnooze) or next(hiddenFeatured) then return true end
+			return false
+		end
+		local rows = BuildSpecialSectionRows(self, "featured", leftSearch:GetText() or "")
+		local grouped = {}
+		local metaByTitle = {}
+		for _,bucket in ipairs(FEATURED_BUCKET_ORDER) do grouped[bucket] = {} end
+		for _,r in ipairs(rows or {}) do
+			if r and r.kind == "guide" and r.title and r.featuredbucket then
+				if grouped[r.featuredbucket] then
+					tinsert(grouped[r.featuredbucket], r)
+					metaByTitle[r.title] = {
+						context = r.context or "",
+						bucket = r.featuredbucket,
+						confidence = r.confidence,
+						meta = r.meta or "",
+					}
+				end
+			end
+		end
+		frame.featuredRowsByBucket = grouped
+		frame.featuredMetaByTitle = metaByTitle
+		local firstAvailable
+		for _,bucket in ipairs(FEATURED_BUCKET_ORDER) do
+			if grouped[bucket] and #grouped[bucket] > 0 then
+				firstAvailable = bucket
+				break
+			end
+		end
+		local lastBucket = self._featuredLastBucket
+		if not firstAvailable then
+			frame.featuredActiveBucket = nil
+		elseif lastBucket and grouped[lastBucket] and #grouped[lastBucket] > 0 and (not frame.featuredActiveBucket or not grouped[frame.featuredActiveBucket] or #grouped[frame.featuredActiveBucket] == 0) then
+			frame.featuredActiveBucket = lastBucket
+		elseif not frame.featuredActiveBucket or not grouped[frame.featuredActiveBucket] or #grouped[frame.featuredActiveBucket] == 0 then
+			frame.featuredActiveBucket = firstAvailable
+		end
+		if frame.featuredActiveBucket then
+			self._featuredLastBucket = frame.featuredActiveBucket
+		end
+
+		local searchText = (leftSearch and leftSearch.GetText and leftSearch:GetText()) or ""
+		local hasSearch = searchText and searchText ~= ""
+		local hasSnoozed = HasAnySnooze()
+		local cardIndex = 1
+		local function GetBucketPreview(bucket, data)
+			local first = data and data[1]
+			local title = first and (first.label or first.title) or ""
+			if bucket == "next" then
+				return (title ~= "" and ("Continue your chain: " .. title)) or "Continue your chain"
+			elseif bucket == "progress" then
+				return (title ~= "" and ("Resume: " .. title)) or "Resume in-progress guides"
+			elseif bucket == "level" then
+				return (title ~= "" and ("Start level-fit: " .. title)) or "Start level-fit guides"
+			end
+			return (title ~= "" and ("Optional route: " .. title)) or "Optional routes and extras"
+		end
+		for _,bucket in ipairs(FEATURED_BUCKET_ORDER) do
+			local data = grouped[bucket]
+			local card = frame.featuredCardButtons and frame.featuredCardButtons[cardIndex]
+			if card then
+				if data and #data > 0 then
+					card.bucket = bucket
+					card.title:SetText(FEATURED_BUCKET_LABELS[bucket] or bucket)
+					card.count:SetText(("%d guide%s"):format(#data, #data == 1 and "" or "s"))
+					card.preview:SetText(GetBucketPreview(bucket, data))
+					if frame.featuredActiveBucket == bucket then
+						card.bg:SetVertexColor(0.90, 0.93, 1.00, 0.11)
+						card:SetBackdropBorderColor(0.90, 0.76, 0.32, 0.96)
+					else
+						card.bg:SetVertexColor(0.72, 0.76, 0.86, 0.02)
+						card:SetBackdropBorderColor(0.26, 0.28, 0.33, 0.95)
+					end
+					card:SetScript("OnClick", function(btn)
+						frame.featuredActiveBucket = btn.bucket
+						self._featuredLastBucket = btn.bucket
+						RenderFeaturedPane()
+					end)
+					card:Show()
+					cardIndex = cardIndex + 1
+				end
+			end
+		end
+		for i = cardIndex, 4 do
+			if frame.featuredCardButtons and frame.featuredCardButtons[i] then
+				frame.featuredCardButtons[i]:Hide()
+			end
+		end
+		if cardIndex == 1 and frame.featuredCardButtons and frame.featuredCardButtons[1] then
+			local emptyCard = frame.featuredCardButtons[1]
+			emptyCard.bucket = nil
+			emptyCard.title:SetText("No Featured Suggestions")
+			emptyCard.count:SetText("0 guides")
+			if hasSearch then
+				emptyCard.preview:SetText("Clear search to restore suggestions")
+			elseif hasSnoozed then
+				emptyCard.preview:SetText("Reset snoozed suggestions to restore recommendations")
+			else
+				emptyCard.preview:SetText("Try Home to browse all categories")
+			end
+			emptyCard.bg:SetVertexColor(0.72, 0.76, 0.86, 0.02)
+			emptyCard:SetBackdropBorderColor(0.26, 0.28, 0.33, 0.95)
+			emptyCard:SetScript("OnClick", function()
+				if hasSearch and leftSearch and leftSearch.SetText then
+					leftSearch:SetText("")
+					RenderFeaturedPane()
+				elseif hasSnoozed then
+					ResetHiddenFeatured()
+				elseif frame.SetSection then
+					frame:SetSection("home")
+				end
+			end)
+			emptyCard:Show()
+		end
+		local activeBucket = frame.featuredActiveBucket
+		local activeRows = (activeBucket and grouped[activeBucket]) or {}
+		if #activeRows == 0 then
+			if hasSnoozed then
+				activeRows = {
+					{
+						title = "__reset_hidden__",
+						label = "Reset snoozed suggestions",
+						meta = "Action",
+						context = "Why: suggestions may be snoozed | Gain: restore recommendations",
+						gaintype = "unlock",
+						confidence = "fallback",
+					}
+				}
+			elseif hasSearch then
+				activeRows = {
+					{
+						title = "__clear_search__",
+						label = "Clear search to restore suggestions",
+						meta = "Action",
+						context = "Why: filter has no matches | Gain: see full recommendations",
+						gaintype = "xp",
+						confidence = "fallback",
+					}
+				}
+			else
+				activeRows = {
+					{
+						title = "__go_home__",
+						label = "Browse all guides from Home",
+						meta = "Action",
+						context = "Why: no suggestions in this bucket | Gain: full category access",
+						gaintype = "unlock",
+						confidence = "fallback",
+					}
+				}
+			end
+		end
+		local hasSelectedInActive = false
+		for _,rr in ipairs(activeRows) do
+			if treePanel.selectedGuideTitle and rr.title == treePanel.selectedGuideTitle then
+				hasSelectedInActive = true
+				break
+			end
+		end
+		if not hasSelectedInActive then
+			treePanel.selectedGuideTitle = nil
+		end
+		frame.featuredRoadmapHeader:SetText((FEATURED_BUCKET_LABELS[activeBucket] or "Roadmap") .. " Roadmap")
+		if #activeRows == 0 then
+			frame.featuredRoadmapHeader:SetText("Roadmap")
+		end
+
+		local firstTitle = nil
+		local function Trunc(text, maxlen)
+			local t = text or ""
+			if #t <= maxlen then return t end
+			return t:sub(1, maxlen - 3) .. "..."
+		end
+		local function TruncToWidth(fs, text, maxwidth)
+			local t = text or ""
+			if t == "" then return "" end
+			if not fs or not maxwidth or maxwidth <= 0 then return t end
+			fs:SetText(t)
+			if fs:GetStringWidth() <= maxwidth then return t end
+			local lo,hi = 1,#t
+			while lo < hi do
+				local mid = math.floor((lo + hi + 1) / 2)
+				local cand = t:sub(1, mid) .. "..."
+				fs:SetText(cand)
+				if fs:GetStringWidth() <= maxwidth then
+					lo = mid
+				else
+					hi = mid - 1
+				end
+			end
+			return t:sub(1, lo) .. "..."
+		end
+		local function ComputeTextMaxWidth(fs, metaFs, row, pad)
+			local padding = tonumber(pad or 10) or 10
+			if fs and metaFs and fs.GetLeft and metaFs.GetLeft then
+				local l = fs:GetLeft()
+				local r = metaFs:GetLeft()
+				if l and r and r > l then
+					return math.max(180, math.floor((r - l) - padding))
+				end
+			end
+			local rw = (row and row.GetWidth and row:GetWidth()) or 0
+			if (not rw or rw <= 10) and frame and frame.featuredRoadmap and frame.featuredRoadmap.GetWidth then
+				rw = (frame.featuredRoadmap:GetWidth() or 0) - 16
+			end
+			if not rw or rw <= 10 then rw = 640 end
+			return math.max(220, math.floor(rw - 120))
+		end
+		for i,rb in ipairs(frame.featuredRoadmapRows or {}) do
+			local rr = activeRows[i]
+			if rr then
+				if not firstTitle and rr.title and not strfind(rr.title, "__", 1, true) then firstTitle = rr.title end
+				rb.row = rr
+				rb.seq:Hide()
+				local iconCategory = FEATURED_GAIN_CATEGORY_BY_TYPE[rr.gaintype or "xp"] or "leveling"
+				rb.gainIcon:SetTexture(RETAIL_GUIDE_ICONS_BIG)
+				rb.gainIcon:SetTexCoord(GetTabsIconTexCoord(iconCategory))
+				rb.gainIcon:Show()
+				local confColor = FEATURED_CONFIDENCE_COLORS[rr.confidence or "fallback"] or FEATURED_CONFIDENCE_COLORS.fallback
+				rb.confDot:SetVertexColor(confColor[1], confColor[2], confColor[3], confColor[4])
+				rb.confDot:Show()
+				rb.meta:SetText(rr.meta or "")
+				local titleText = rr.label or rr.title or ""
+				local titleMax = ComputeTextMaxWidth(rb.title, rb.meta, rb, 10)
+				rb.title:SetText(TruncToWidth(rb.title, titleText, titleMax))
+				local subtitleText = FormatReasonLines(rr.context or "")
+				local subtitleMax = ComputeTextMaxWidth(rb.subtitle, rb.meta, rb, 10)
+				rb.subtitle:SetText(TruncToWidth(rb.subtitle, subtitleText, subtitleMax))
+				local selected = treePanel.selectedGuideTitle and treePanel.selectedGuideTitle == rr.title
+				if selected then
+					rb.bg:SetVertexColor(0.90, 0.93, 1.00, 0.12)
+					rb:SetBackdropBorderColor(0.90, 0.76, 0.32, 0.90)
+					rb.title:SetTextColor(1.0, 1.0, 1.0, 1.0)
+					rb.subtitle:SetTextColor(0.86, 0.90, 0.98, 1.0)
+				elseif rr.currentselected then
+					rb.bg:SetVertexColor(0.76, 0.90, 1.00, 0.13)
+					rb:SetBackdropBorderColor(0.54, 0.76, 0.98, 0.92)
+					rb.title:SetTextColor(0.92, 0.97, 1.0, 1.0)
+					rb.subtitle:SetTextColor(0.78, 0.88, 0.98, 1.0)
+				else
+					rb.bg:SetVertexColor(0.80, 0.83, 0.92, 0.04)
+					rb:SetBackdropBorderColor(0.24, 0.26, 0.30, 0.94)
+					rb.title:SetTextColor(0.90, 0.90, 0.92, 1.0)
+					rb.subtitle:SetTextColor(0.72, 0.78, 0.88, 1.0)
+				end
+				if (rr.title and strfind(rr.title, "__", 1, true)) or rr.currentselected then
+					rb.dismiss:Hide()
+				else
+					rb.dismiss:Show()
+					rb.dismiss:SetScript("OnClick", function(btn)
+						local row = btn:GetParent() and btn:GetParent().row
+						if not row or not row.title then return end
+						if IsShiftKeyDown() then
+							featuredSessionHide[row.title] = true
+						else
+							featuredSnooze[row.title] = time() + (24 * 60 * 60)
+						end
+						if hiddenFeatured then hiddenFeatured[row.title] = nil end
+						if treePanel.selectedGuideTitle == row.title then
+							treePanel.selectedGuideTitle = nil
+							if frame.SetSelectedGuide then frame:SetSelectedGuide(nil) end
+						end
+						RenderFeaturedPane()
+					end)
+					rb.dismiss:SetScript("OnEnter", function(btn)
+						GameTooltip:SetOwner(btn, "ANCHOR_RIGHT")
+						GameTooltip:ClearLines()
+						GameTooltip:AddLine("Snooze suggestion", 1, 1, 1)
+						GameTooltip:AddLine("Click: hide for 24 hours", 0.78, 0.88, 1.0)
+						GameTooltip:AddLine("Shift-click: hide for this session", 0.78, 0.88, 1.0)
+						GameTooltip:Show()
+					end)
+					rb.dismiss:SetScript("OnLeave", function()
+						GameTooltip:Hide()
+					end)
+				end
+				rb:SetScript("OnEnter", function(btn)
+					local row = btn.row
+					if not row then return end
+					GameTooltip:SetOwner(btn, "ANCHOR_RIGHT")
+					GameTooltip:ClearLines()
+					GameTooltip:AddLine(row.label or row.title or "Suggestion", 1, 1, 1)
+					if row.meta and row.meta ~= "" then
+						GameTooltip:AddLine(row.meta, 0.85, 0.85, 0.90)
+					end
+					local why,gain = ParseWhyGainFromContext(row.context or "")
+					if why ~= "" then
+						GameTooltip:AddLine("Why: " .. why, 0.72, 0.82, 0.95, true)
+					end
+					if gain ~= "" then
+						GameTooltip:AddLine("Gain: " .. gain, 0.78, 0.90, 0.76, true)
+					end
+					if row.confidence then
+						GameTooltip:AddLine("Confidence: " .. (FEATURED_CONFIDENCE_LABELS[row.confidence] or row.confidence), 0.78, 0.92, 1.0, true)
+					end
+					if row.chainStep and row.chainStep > 0 then
+						GameTooltip:AddLine("Chain: +" .. tostring(row.chainStep), 0.88, 0.88, 0.92, true)
+					end
+					if row.fallback then
+						GameTooltip:AddLine("Fallback recommendation", 0.92, 0.80, 0.52)
+					end
+					GameTooltip:Show()
+				end)
+				rb:SetScript("OnLeave", function()
+					GameTooltip:Hide()
+				end)
+				rb:SetScript("OnClick", function(btn)
+					local row = btn.row
+					if not row or not row.title then return end
+					if row.title == "__reset_hidden__" then
+						if self.db and self.db.profile then
+							self.db.profile.guidebrowser_featured_hidden = {}
+						end
+						if self.db and self.db.char then
+							self.db.char.guidebrowser_featured_snooze = {}
+						end
+						self._featuredSessionHide = {}
+						RenderFeaturedPane()
+						return
+					elseif row.title == "__clear_search__" then
+						if leftSearch and leftSearch.SetText then
+							leftSearch:SetText("")
+						end
+						RenderFeaturedPane()
+						return
+					elseif row.title == "__go_home__" then
+						if frame.SetSection then frame:SetSection("home") end
+						return
+					end
+					local wasSelected = (treePanel.selectedGuideTitle == row.title)
+					treePanel.selectedFolderPath = nil
+					treePanel.selectedGuideTitle = row.title
+					if frame.SetSelectedGuide then frame:SetSelectedGuide(row.title) end
+					if wasSelected then
+						self:SetGuide(row.title)
+						self:FocusStep(1)
+					end
+					RenderFeaturedPane()
+				end)
+				rb:Show()
+			else
+				rb.row = nil
+				rb.seq:Hide()
+				rb.gainIcon:Hide()
+				rb.confDot:Hide()
+				rb.dismiss:Hide()
+				rb:Hide()
+			end
+		end
+
+		if firstTitle and (not treePanel.selectedGuideTitle) then
+			treePanel.selectedGuideTitle = firstTitle
+			if frame.SetSelectedGuide then frame:SetSelectedGuide(firstTitle) end
+		end
+	end
+	frame.RenderFeaturedPane = function()
+		RenderFeaturedPane()
+	end
+
+	MoveFeaturedSelection = function(delta)
+		if frame.currentSection ~= "featured" then return end
+		local bucket = frame.featuredActiveBucket
+		if not bucket then return end
+		local rows = {}
+		for _,r in ipairs((frame.featuredRowsByBucket and frame.featuredRowsByBucket[bucket]) or {}) do
+			if r and r.title and r.title ~= "__reset_hidden__" then
+				tinsert(rows, r)
+			end
+		end
+		if #rows == 0 then return end
+		local idx = 1
+		for i,r in ipairs(rows) do
+			if treePanel.selectedGuideTitle and r.title == treePanel.selectedGuideTitle then idx = i break end
+		end
+		idx = idx + (delta or 0)
+		if idx < 1 then idx = 1 end
+		if idx > #rows then idx = #rows end
+		local pick = rows[idx]
+		if pick then
+			treePanel.selectedGuideTitle = pick.title
+			if frame.SetSelectedGuide then frame:SetSelectedGuide(pick.title) end
+			RenderFeaturedPane()
+		end
+	end
+	SwitchFeaturedBucket = function(delta)
+		if frame.currentSection ~= "featured" then return end
+		local cur = frame.featuredActiveBucket
+		local idx = 1
+		for i,b in ipairs(FEATURED_BUCKET_ORDER) do if b == cur then idx = i break end end
+		idx = idx + (delta or 0)
+		if idx < 1 then idx = #FEATURED_BUCKET_ORDER end
+		if idx > #FEATURED_BUCKET_ORDER then idx = 1 end
+		frame.featuredActiveBucket = FEATURED_BUCKET_ORDER[idx]
+		self._featuredLastBucket = frame.featuredActiveBucket
+		RenderFeaturedPane()
+	end
+	ResetHiddenFeatured = function()
+		if self.db and self.db.profile then
+			self.db.profile.guidebrowser_featured_hidden = {}
+		end
+		if self.db and self.db.char then
+			self.db.char.guidebrowser_featured_snooze = {}
+		end
+		self._featuredSessionHide = {}
+		RenderFeaturedPane()
+	end
+	DismissFeaturedSelection = function()
+		if frame.currentSection ~= "featured" then return end
+		local sel = treePanel.selectedGuideTitle
+		if not sel or sel == "__reset_hidden__" then return end
+		if self.CurrentGuide and self.CurrentGuide.title and sel == self.CurrentGuide.title then return end
+		if IsShiftKeyDown() then
+			self._featuredSessionHide = self._featuredSessionHide or {}
+			self._featuredSessionHide[sel] = true
+		elseif self.db and self.db.char then
+			self.db.char.guidebrowser_featured_snooze = self.db.char.guidebrowser_featured_snooze or {}
+			self.db.char.guidebrowser_featured_snooze[sel] = time() + (24 * 60 * 60)
+		end
+		treePanel.selectedGuideTitle = nil
+		if frame.SetSelectedGuide then frame:SetSelectedGuide(nil) end
+		RenderFeaturedPane()
+	end
 
 	scroll:SetScript("OnVerticalScroll", function(sf, offset)
 		FauxScrollFrame_OnVerticalScroll(sf, offset, treePanel.rowHeight or GUIDE_MANAGER_ROW_HEIGHT, function() self:RefreshGuideManagerPanel(treePanel) end)
@@ -2364,13 +3633,20 @@ local function EnsureGuideManagerStandaloneFrame(self)
 	leftSearch:SetScript("OnTextChanged", function()
 		self.db.profile.guidebrowsersearch = leftSearch:GetText() or ""
 		FauxScrollFrame_SetOffset(scroll, 0)
-		self:RefreshGuideManagerPanel(treePanel)
+		if frame.currentSection == "featured" and frame.RenderFeaturedPane then
+			frame:RenderFeaturedPane()
+		else
+			self:RefreshGuideManagerPanel(treePanel)
+		end
 		UpdateLeftCategoryCounts()
 	end)
 	optionsSearch:SetScript("OnTextChanged", function()
 		local visibleApp = ApplyOptionsSearchFilter()
 		if frame.currentSection == "options" and visibleApp and frame.currentOptionsApp ~= visibleApp and (not frame.leftOptionButtons[frame.currentOptionsApp] or not frame.leftOptionButtons[frame.currentOptionsApp]:IsShown()) then
 			frame.currentOptionsApp = visibleApp
+			if self and self.db and self.db.profile then
+				self.db.profile.guidebrowseroptionsapp = frame.currentOptionsApp
+			end
 			if frame.RenderOptionsApp then frame:RenderOptionsApp(frame.currentOptionsApp) end
 		end
 	end)
@@ -2490,7 +3766,15 @@ local function EnsureGuideManagerStandaloneFrame(self)
 		b.underline:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", 0, -2)
 		b.underline:SetHeight(2)
 		b.tabId = tab.id
-		b:SetScript("OnClick", function(btn) self:SelectGuideManagerSection(btn.tabId) end)
+		b:SetScript("OnClick", function(btn)
+			if btn.tabId == "home" then
+				frame.homeShowAll = true
+				if self.db and self.db.profile then
+					self.db.profile.guidebrowserhomeall = true
+				end
+			end
+			self:SelectGuideManagerSection(btn.tabId)
+		end)
 		b:SetScript("OnEnter", function(btn)
 			if frame.currentSection ~= btn.tabId and btn.bg then btn.bg:SetVertexColor(1, 1, 1, 0.06) end
 		end)
@@ -2531,7 +3815,15 @@ local function EnsureGuideManagerStandaloneFrame(self)
 		ApplyRetailFont(b.text, 16, "", false)
 		b.baseLabel = entry.label
 		b.categoryId = entry.id
-		b:SetScript("OnClick", function(btn) self:SelectGuideManagerCategory(btn.categoryId) end)
+		b:SetScript("OnClick", function(btn)
+			-- Category picks always route to Home + selected category.
+			frame.homeShowAll = false
+			if self.db and self.db.profile then
+				self.db.profile.guidebrowserhomeall = false
+			end
+			if frame.SetSection then frame:SetSection("home") end
+			if frame.SetCategory then frame:SetCategory(btn.categoryId) end
+		end)
 		b:SetScript("OnEnter", function(btn)
 			if frame.currentCategory ~= btn.categoryId and btn.bg then
 				btn.bg:SetVertexColor(1, 1, 1, 0.06)
@@ -2631,6 +3923,9 @@ local function EnsureGuideManagerStandaloneFrame(self)
 		b.order = i
 		b:SetScript("OnClick", function(btn)
 			frame.currentOptionsApp = btn.app
+			if self and self.db and self.db.profile then
+				self.db.profile.guidebrowseroptionsapp = btn.app
+			end
 			if frame.optionsTitle then
 				frame.optionsTitle:SetText(btn.label or "Options")
 			end
@@ -2876,7 +4171,37 @@ local function EnsureGuideManagerStandaloneFrame(self)
 			end
 		end
 		frame.detailTitle:SetText(guide.title_short or guide.title or sel)
-		frame.detailMeta:SetText(("Steps: %d\nAuthor: %s\nNext: %s"):format(steps, author, nextg))
+		local detailMeta = ("Steps: %d\nAuthor: %s\nNext: %s"):format(steps, author, nextg)
+		if frame.currentSection == "featured" then
+			local featuredMeta = frame.featuredMetaByTitle and frame.featuredMetaByTitle[guide.title]
+			if featuredMeta then
+				local context = type(featuredMeta) == "table" and (featuredMeta.context or "") or tostring(featuredMeta or "")
+				context = FormatReasonLines(context)
+				local bucket = type(featuredMeta) == "table" and featuredMeta.bucket or nil
+				local confidence = type(featuredMeta) == "table" and featuredMeta.confidence or nil
+				local extra = {}
+				if bucket and bucket ~= "" then
+					tinsert(extra, "Suggested from: " .. (FEATURED_BUCKET_LABELS[bucket] or bucket))
+				end
+				if confidence and confidence ~= "" then
+					tinsert(extra, "Confidence: " .. (FEATURED_CONFIDENCE_LABELS[confidence] or confidence))
+				end
+				local extraLine = (#extra > 0) and (table.concat(extra, "\n") .. "\n") or ""
+				if context ~= "" then
+					detailMeta = (context .. "\n" .. extraLine .. detailMeta)
+				else
+					detailMeta = (extraLine .. detailMeta)
+				end
+			elseif treePanel and treePanel.rowsData then
+				for _,row in ipairs(treePanel.rowsData) do
+					if row and row.kind == "guide" and row.title == guide.title and row.meta and row.meta ~= "" then
+						detailMeta = (row.meta .. "\n" .. detailMeta)
+						break
+					end
+				end
+			end
+		end
+		frame.detailMeta:SetText(detailMeta)
 		frame.detailImage:SetTexture(ResolveGuideHeroImage(guide, frame.currentCategory, frame.currentSection))
 		frame.detailProgressLabel:SetText(("Progress: %d%%"):format(complete))
 		local fillW = math.max(0, math.min(204, math.floor(204 * (complete / 100))))
@@ -2918,7 +4243,11 @@ local function EnsureGuideManagerStandaloneFrame(self)
 			local base = but.baseLabel or StripColorCodes(but.text:GetText())
 			but.text:SetText(base)
 		end
-		PaintCategoryState(frame.currentCategory or "leveling")
+		if frame.currentSection == "home" and frame.homeShowAll then
+			PaintCategoryState(nil)
+		else
+			PaintCategoryState(frame.currentCategory or "leveling")
+		end
 	end
 
 	local function PaintOptionsCategoryState(activeApp)
@@ -2959,7 +4288,11 @@ local function EnsureGuideManagerStandaloneFrame(self)
 		local parts = StringToPath(path)
 		local title = "Select a guide"
 		if section == "home" then
-			title = (#parts > 0 and parts[#parts]) or GetCategoryLabel(category)
+			if frame.homeShowAll then
+				title = (#parts > 0 and parts[#parts]) or "All Guides"
+			else
+				title = (#parts > 0 and parts[#parts]) or GetCategoryLabel(category)
+			end
 		elseif section == "current" then
 			title = (#parts > 0 and parts[#parts]) or "Current"
 		elseif section == "recent" then
@@ -3014,9 +4347,12 @@ local function EnsureGuideManagerStandaloneFrame(self)
 
 	local function SetSectionMode(section)
 		local isOptions = (section == "options")
+		local isFeatured = (section == "featured")
 		if isOptions then
 			center:Hide()
 			details:Hide()
+			list:Show()
+			if frame.featuredPane then frame.featuredPane:Hide() end
 			optionsPane:Show()
 			leftSearchLabel:Hide()
 			leftSearchBox:Hide()
@@ -3055,6 +4391,13 @@ local function EnsureGuideManagerStandaloneFrame(self)
 			center:Show()
 			details:Show()
 			optionsPane:Hide()
+			if isFeatured then
+				list:Hide()
+				if frame.featuredPane then frame.featuredPane:Show() end
+			else
+				list:Show()
+				if frame.featuredPane then frame.featuredPane:Hide() end
+			end
 			leftSearchLabel:Show()
 			leftSearchBox:Show()
 			leftOptionsTitle:Hide()
@@ -3083,6 +4426,9 @@ local function EnsureGuideManagerStandaloneFrame(self)
 		local section = frame.currentSection or "home"
 		local category = frame.currentCategory or "leveling"
 		treePanel.filterFn = CategoryFilterFor(category)
+		if section == "home" and frame.homeShowAll then
+			treePanel.filterFn = nil
+		end
 		treePanel.rowsBuilder = nil
 		treePanel.useDrilldown = (section == "home" or section == "current")
 		if section == "options" then
@@ -3150,6 +4496,13 @@ local function EnsureGuideManagerStandaloneFrame(self)
 
 	frame.SetSection = function(_, section)
 		section = section or "home"
+		if section == "home" then
+			if frame.homeShowAll == nil then frame.homeShowAll = true end
+			if frame.homeShowAll then
+				treePanel.browsePath = ""
+				if self.db and self.db.profile then self.db.profile.guidebrowserpath = "" end
+			end
+		end
 		frame.currentSection = section
 		self.db.profile.guidebrowsersection = section
 		PaintTopTabState(section)
@@ -3166,7 +4519,9 @@ local function EnsureGuideManagerStandaloneFrame(self)
 		elseif section == "recent" then
 			-- header is handled by UpdateCenterHeader
 		elseif section == "options" then
-			frame.currentOptionsApp = frame.currentOptionsApp or "ZygorGuidesViewer"
+			frame.currentOptionsApp = frame.currentOptionsApp
+				or (self.db and self.db.profile and self.db.profile.guidebrowseroptionsapp)
+				or "ZygorGuidesViewer"
 			local appLabel = "General"
 			local activeButton = frame.leftOptionButtons and frame.leftOptionButtons[frame.currentOptionsApp]
 			if activeButton and activeButton.label then appLabel = activeButton.label end
@@ -3180,13 +4535,21 @@ local function EnsureGuideManagerStandaloneFrame(self)
 			if section == "home" or section == "current" then
 				treePanel.selectedFolderPath = treePanel.browsePath or ""
 			end
-			self:RefreshGuideManagerPanel(treePanel)
+			if section == "featured" and frame.RenderFeaturedPane then
+				frame:RenderFeaturedPane()
+			else
+				self:RefreshGuideManagerPanel(treePanel)
+			end
 		end
 		UpdateDetails()
 	end
 
 	frame.SetCategory = function(_, category)
 		category = category or "leveling"
+		frame.homeShowAll = false
+		if self.db and self.db.profile then
+			self.db.profile.guidebrowserhomeall = false
+		end
 		frame.currentCategory = category
 		self.db.profile.guidebrowsercategory = category
 		UpdateLeftCategoryCounts()
@@ -3199,7 +4562,11 @@ local function EnsureGuideManagerStandaloneFrame(self)
 		FauxScrollFrame_SetOffset(treePanel.scroll, 0)
 		treePanel.selectedGuideTitle = nil
 		if frame.UpdateCenterHeader then frame:UpdateCenterHeader() end
-		self:RefreshGuideManagerPanel(treePanel)
+		if frame.currentSection == "featured" and frame.RenderFeaturedPane then
+			frame:RenderFeaturedPane()
+		else
+			self:RefreshGuideManagerPanel(treePanel)
+		end
 		UpdateDetails()
 	end
 
@@ -3224,16 +4591,49 @@ local function EnsureGuideManagerStandaloneFrame(self)
 		if optionsSearch then optionsSearch:SetText("") end
 		frame.currentCategory = self.db.profile.guidebrowsercategory or frame.currentCategory or "leveling"
 		frame.currentSection = self.db.profile.guidebrowsersection or frame.currentSection or "home"
+		frame.homeShowAll = (self.db and self.db.profile and self.db.profile.guidebrowserhomeall) and true or false
 		treePanel.browsePath = (self.db and self.db.profile and self.db.profile.guidebrowserpath) or ""
 		treePanel.selectedFolderPath = treePanel.browsePath
-		frame:SetCategory(frame.currentCategory or "leveling")
 		frame:SetSection(frame.currentSection or "home")
+		if not frame.homeShowAll then
+			frame:SetCategory(frame.currentCategory or "leveling")
+		else
+			UpdateLeftCategoryCounts()
+		end
 	end)
 	frame:EnableKeyboard(true)
 	frame:SetScript("OnKeyDown", function(_, key)
 		if key == "ESCAPE" then
 			frame:Hide()
 			return
+		end
+		if frame.currentSection == "featured" then
+			if key == "LEFT" then
+				SwitchFeaturedBucket(-1)
+				return
+			elseif key == "RIGHT" then
+				SwitchFeaturedBucket(1)
+				return
+			elseif key == "UP" then
+				MoveFeaturedSelection(-1)
+				return
+			elseif key == "DOWN" then
+				MoveFeaturedSelection(1)
+				return
+			elseif key == "DELETE" then
+				DismissFeaturedSelection()
+				return
+			elseif key == "R" or key == "r" then
+				ResetHiddenFeatured()
+				return
+			elseif key == "ENTER" then
+				local title = treePanel.selectedGuideTitle
+				if title and title ~= "" and title ~= "__reset_hidden__" then
+					self:SetGuide(title)
+					self:FocusStep(1)
+				end
+				return
+			end
 		end
 		if frame.currentSection == "options" then return end
 		if key == "UP" then
@@ -3284,9 +4684,10 @@ local function EnsureGuideManagerStandaloneFrame(self)
 			frame.optionsAceWidget = nil
 		end
 		self.db.profile.guidebrowsersearch = leftSearch:GetText() or self.db.profile.guidebrowsersearch
-		self.db.profile.guidebrowseroptionssearch = ""
+		self.db.profile.guidebrowseroptionsapp = frame.currentOptionsApp or self.db.profile.guidebrowseroptionsapp
 		self.db.profile.guidebrowsersection = frame.currentSection or self.db.profile.guidebrowsersection
 		self.db.profile.guidebrowsercategory = frame.currentCategory or self.db.profile.guidebrowsercategory
+		self.db.profile.guidebrowserhomeall = frame.homeShowAll and true or false
 	end)
 	frame:SetScript("OnUpdate", function(_, elapsed)
 		frame._detailRefreshElapsed = (frame._detailRefreshElapsed or 0) + (elapsed or 0)
@@ -3304,7 +4705,15 @@ end
 
 function me:SelectGuideManagerSection(section)
 	local frame = EnsureGuideManagerStandaloneFrame(self)
-	if frame and frame.SetSection then frame:SetSection(section) end
+	if frame and frame.SetSection then
+		if section == "home" then
+			frame.homeShowAll = true
+			if self.db and self.db.profile then
+				self.db.profile.guidebrowserhomeall = true
+			end
+		end
+		frame:SetSection(section)
+	end
 end
 
 function me:SelectGuideManagerCategory(category)

@@ -330,7 +330,8 @@ Go to <span class="disp_coords">12,34</span><br>
 			<dl>
 				<dt class="completable">Completable:</dt>
 				 <dd>When the player reaches the specified coordinates - or just the zone, if only that was given.<br>
-				 If <tt class="tag">goto</tt> is the only line in a step, or a step consists solely of <tt class="tag">goto</tt> lines, it is by default completeable. Incompletable otherwise. If completable, <tt class="tag">goto</tt> tags are by default "<a href="#tag_sticky"><tt class="tag">sticky</tt></a>".</dd>
+				 If <tt class="tag">goto</tt> is the only line in a step, or a step consists solely of <tt class="tag">goto</tt> lines, it is by default completeable. Incompletable otherwise. If completable, <tt class="tag">goto</tt> tags are by default "<a href="#tag_sticky"><tt class="tag">sticky</tt></a>".<br>
+				 Aliases supported: <tt class="tag">at</tt>, <tt class="tag">gotoontaxi</tt>, <tt class="tag">gotonpc</tt>, <tt class="tag">direct</tt>.</dd>
 				<dt>Parameters:</dt>
 				 <dd>
 				 <span class="params">map</span> - map name. Optional; it is assumed to be the last one used, or the one set by <a href="#stepopt_map"><tt class="stepopt">map</tt></a>, or the player's current zone.<br>
@@ -352,6 +353,88 @@ Go to <span class="disp_coords">12,34</span><br>
 				 Note: coordinates are always rounded to XX,YY for less cluttered display. Detection radius is not displayed.
 			</dl>
 		</dd>
+
+	<dt id="tag_path"><span class="tag">path</span> <span class="params">x,y x,y x,y ...</span> &nbsp; or &nbsp; <span class="params">path options</span></dt>
+		<dd>Defines a chained movement route. Each coordinate in the line is expanded into a sequence of <tt class="tag">goto</tt> goals, and the arrow automatically advances to the next point as each one is reached.</dd>
+		<dd>
+			<dl>
+				<dt class="completable">Completable:</dt>
+				<dd>Each generated point is completable exactly like <tt class="tag">goto</tt>.</dd>
+				<dt>Options:</dt>
+				<dd>
+					Options can be set on a standalone path line, for example: <tt>path follow loose;loop off;ants straight</tt>.<br>
+					Currently, <tt>loop on</tt>/<tt>loop off</tt> controls whether subsequent <tt class="tag">path</tt> coordinate lines return to the first point.
+				</dd>
+				<dt>Examples:</dt>
+				<dd><code>
+					path follow loose;loop off;ants straight<br>
+					path 42.4,66.2 33.6,59.4 28.1,54.5 |only if skill("Mining")&lt;75<br>
+					.'Unlock Darnassus |path Darnassus,25,55 |achieve 842/11
+				</code></dd>
+			</dl>
+		</dd>
+
+	<dt id="tag_loop"><span class="tag">loop</span> <span class="params">x,y x,y x,y ...</span></dt>
+		<dd>Same as <tt class="tag">path</tt>, but intended for repeated routing. It does not add an extra visible return point; repeat behavior should be controlled with <tt class="tag">until</tt>.</dd>
+		<dd>
+			<dl>
+				<dt>Example:</dt>
+				<dd><code>
+					loop 50.0,62.1 58.9,83.9 77.5,69.1 |only if skill("Mining")&gt;=350 and skill("Mining")&lt;450
+				</code></dd>
+			</dl>
+		</dd>
+
+	<dt id="tag_route"><span class="tag">route</span> <span class="params">map,x,y; x,y; x,y ...</span></dt>
+		<dd>Stable shorthand that expands into sequential <tt class="tag">goto</tt> goals. Use semicolons between points; map is optional after the first point.</dd>
+		<dd>Default completion radius for generated route/loop points is wider than plain <tt class="tag">goto</tt> (default: <tt>1.0</tt>). Override per point with <tt>x,y,dist</tt>.</dd>
+		<dd>
+			<dl>
+				<dt>Examples:</dt>
+				<dd><code>
+					route Elwynn Forest,42.4,66.2;39.4,58.2;35.6,53.4<br>
+					loop Elwynn Forest,42.4,66.2;39.4,58.2;35.6,53.4<br>
+					route Teldrassil,55,91;40,65;43,74 |achieve 842/6<br>
+					route Teldrassil,55,91@842/6;40,65@842/10;43,74@842/4
+				</code></dd>
+				<dt>Exploration Pattern:</dt>
+				<dd><code>
+					goto Teldrassil,40,65 |achieve 842/6<br>
+					goto Teldrassil,43,74 |achieve 842/4<br>
+					goto Teldrassil,54,68 |achieve 842/5
+				</code></dd>
+				<dd>Use <tt>@achievement/sub</tt> after a route point for per-point achievement gating.</dd>
+			</dl>
+		</dd>
+
+	<dt id="tag_label"><span class="tag">label</span> <span class="params">name</span></dt>
+		<dd>Marks the current step with a jump label. Use together with <tt class="tag">next</tt> to branch within the same guide.</dd>
+		<dd><code>
+			label "route_start"<br>
+			.' Redirect to farming section |next "route_start" |only if default
+		</code></dd>
+
+	<dt id="tag_nextjump"><span class="tag">next</span> <span class="params">label | +1 | -1 | guide title</span></dt>
+		<dd>Line-level jump destination. When the line is complete (or is a visible redirect line), the viewer jumps to the target label/step/guide.</dd>
+		<dd><code>
+			.' Click to continue |confirm |next "route_start"<br>
+			.' Return to menu |next "Ares' WotLK 3.3.5a Guides\\Professions\\Profession Hub"
+		</code></dd>
+
+	<dt id="tag_optional"><span class="tag">optional</span></dt>
+		<dd>Marks a line as optional in the step display.</dd>
+
+	<dt id="tag_important"><span class="tag">important</span></dt>
+		<dd>Marks a line as important in the step display.</dd>
+
+	<dt id="tag_confirm"><span class="tag">confirm</span></dt>
+		<dd>Makes the line a manual confirmation objective. Left-click the goal line to confirm it and continue.</dd>
+
+	<dt id="tag_until"><span class="tag">until</span> <span class="params">condition</span></dt>
+		<dd>Step-level repeat condition. If a step completes but this condition is false, the viewer restarts the same step instead of advancing.</dd>
+		<dd><code>
+			.' Repeat this route until Mining 400 |until skill("Mining")&gt;=400
+		</code></dd>
 
 	<dt id="tag_talk" class="tag">talk <span class="params">npc_name##id</span></dt>
 		<dd>Instructs the player to talk to an NPC.</dd>
@@ -865,6 +948,15 @@ Go to <span class="disp_coords">12,34</span><br>
 				The first line remains complete, even though the player no longer has the Battle-worn Sword (count shows 0/1).
 			</dl>
 		</dd>
+
+	<dt id="tag_stickystart" class="tag">stickystart</dt>
+		<dd>Begins a sticky scope. Following lines are treated as sticky until <tt class="tag">stickystop</tt> is reached.</dd>
+
+	<dt id="tag_stickystop" class="tag">stickystop</dt>
+		<dd>Ends a sticky scope started with <tt class="tag">stickystart</tt>.</dd>
+
+	<dt id="tag_stickyif" class="tag">stickyif <span class="params">condition</span></dt>
+		<dd>Makes step goals sticky only while the condition is true (evaluated at runtime).</dd>
 
 	<dt id="tag_future" class="tag">future</dt>
 		<dd>Signifies that if the line is linked to a quest, only mark it as complete when the quest is complete, but NOT mark it as impossible when the player is not on that quest (as would have been done otherwise).<br>

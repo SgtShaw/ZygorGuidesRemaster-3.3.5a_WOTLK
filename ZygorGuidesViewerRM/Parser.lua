@@ -60,6 +60,105 @@ function me:ParseMapXYDist(text)
 	return map,x,y,dist
 end
 
+local function ParsePathPoints(params)
+	local points = {}
+	if not params or params=="" then return points end
+	local i = 1
+	local len = #params
+	while i<=len do
+		local tail = params:sub(i)
+		local consumed = false
+
+		local a,b,x,y,_,dist = tail:find("^%s*([0-9%.]+)%s*,%s*([0-9%.]+)%s*(,%s*([0-9%.]+))?")
+		if a then
+			tinsert(points,{map=nil,x=tonumber(x),y=tonumber(y),dist=tonumber(dist) or 0.2})
+			i = i + b
+			consumed = true
+		end
+
+		if not consumed then
+			local ma,mb,map,mx,my,_,mdist = tail:find("^%s*([^,]+)%s*,%s*([0-9%.]+)%s*,%s*([0-9%.]+)%s*(,%s*([0-9%.]+))?")
+			if ma then
+				map = map and map:gsub("^%s+",""):gsub("%s+$","")
+				tinsert(points,{map=map,x=tonumber(mx),y=tonumber(my),dist=tonumber(mdist) or 0.2})
+				i = i + mb
+				consumed = true
+			end
+		end
+
+		if not consumed then
+			local na,nb = tail:find("^%s*[^%s]+")
+			if na then
+				i = i + nb
+			else
+				break
+			end
+		end
+	end
+	return points
+end
+
+local function ParseRoutePoints(params, basemap)
+	local points = {}
+	if not params or params=="" then return points end
+
+	local current_map = basemap
+	local has_semicolon = params:find(";",1,true) and true or false
+	if not has_semicolon then
+		return ParsePathPoints(params)
+	end
+
+	for raw in params:gmatch("([^;]+)") do
+		local token = raw:gsub("^%s+",""):gsub("%s+$","")
+		if token~="" then
+			local achievetag
+			local body,atag = token:match("^(.-)%s*@%s*([0-9/]+)%s*$")
+			if body and atag then
+				token = body:gsub("^%s+",""):gsub("%s+$","")
+				achievetag = atag
+			end
+			local explicit_dist = token:match(",%s*[0-9%.]+%s*,%s*[0-9%.]+%s*,%s*([0-9%.]+)%s*$") and true or false
+			local map,x,y,dist = me:ParseMapXYDist(token)
+			if map and BZL[map] then map=BZL[map] end
+			if map then current_map = map end
+			if x and y then
+				local achieveid,achievesub
+				if achievetag then
+					_,achieveid,achievesub = me:ParseID(achievetag)
+				end
+				tinsert(points,{
+					map = map or current_map,
+					x = x,
+					y = y,
+					dist = explicit_dist and dist or nil,
+					achieveid = achieveid,
+					achievesub = achievesub,
+				})
+			end
+		end
+	end
+	return points
+end
+
+local function ParsePathLoopFlag(params,current)
+	if not params then return current,false end
+	local p = params:lower()
+	if p:match("loop%s*off") then return false,true end
+	if p:match("loop%s*on") then return true,true end
+	if p:match("loop%s*;") or p:match("loop%s*$") or p:match("loop%s+") then
+		return true,true
+	end
+	return current,false
+end
+
+local function ParseLabelName(params)
+	if not params then return nil end
+	local label = params:gsub("^%s+",""):gsub("%s+$","")
+	label = label:gsub('^"(.-)"$',"%1")
+	if label=="" then return nil end
+	return label
+end
+
 function me:ParseID(str)
 	local name,id,nid,obj
 	name,id = str:match("(.*)##([0-9/]*)")
@@ -158,6 +257,10 @@ ZGV.ConditionEnv = {
 	skill = function(skill)
 		return ZGV:GetSkill(skill).level
 	end,
+	skillmax = function(skill)
+		local s = ZGV:GetSkill(skill)
+		return (s and (s.max or s.level)) or 0
+	end,
 }
 
 local function MakeCondition(cond,forcebool)
@@ -168,6 +271,27 @@ local function MakeCondition(cond,forcebool)
 	local fun,err = loadstring(s)
 	if fun then setfenv(fun,ZGV.ConditionEnv) end
 	return fun,err
+end
+
+local function NormalizeUntilCondition(cond)
+	if not cond then return cond end
+	local c = cond:gsub("^%s+",""):gsub("%s+$","")
+	local skillname,op,val = c:match("^skill%s+([%a%s]+)%s*([<>]=?)%s*(%d+)$")
+	if skillname and op and val then
+		skillname = skillname:gsub("^%s+",""):gsub("%s+$","")
+		return ('skill("%s")%s%s'):format(skillname,op,val)
+	end
+	local skillmaxname,op2,val2 = c:match("^skillmax%s+([%a%s]+)%s*([<>]=?)%s*(%d+)$")
+	if skillmaxname and op2 and val2 then
+		skillmaxname = skillmaxname:gsub("^%s+",""):gsub("%s+$","")
+		return ('skillmax("%s")%s%s'):format(skillmaxname,op2,val2)
+	end
+	local bare,op3,val3 = c:match("^([%a%s]+)%s*([<>]=?)%s*(%d+)$")
+	if bare and op3 and val3 then
+		bare = bare:gsub("^%s+",""):gsub("%s+$","")
+		return ('skill("%s")%s%s'):format(bare,op3,val3)
+	end
+	return c
 end
 
 local function ApplyIncludeVars(text,vars)
@@ -257,18 +381,63 @@ local function ExpandIncludes(text,parentvars,depth)
 	return table.concat(out,"\n")
 end
 
+local function MergeMultilinePathBlocks(text)
+	local lines = {}
+	for line in (text.."\n"):gmatch("(.-)\n") do
+		tinsert(lines,line)
+	end
+
+	local out = {}
+	local i = 1
+	while i<=#lines do
+		local line = lines[i]
+		local trimmed = line:gsub("^%s+",""):gsub("%s+$","")
+		local starts_path = trimmed:match("^path%s+")
+			or trimmed:match("^loop%s+")
+			or trimmed:match("^route%s+")
+			or trimmed:match("^|%s*path%s+")
+			or trimmed:match("^|%s*loop%s+")
+			or trimmed:match("^|%s*route%s+")
+
+		if starts_path then
+			local merged = line
+			local j = i + 1
+			while j<=#lines do
+				local t = lines[j]:gsub("^%s+",""):gsub("%s+$","")
+				if t=="" then break end
+				if t:match("^[%.']") or t:match("^|") or t:match("^step%s") or t:match("^#") then break end
+				-- Continuation row: "x,y;" or "map,x,y;" with optional distance.
+				if t:match("^[%w%s'_%-%.,]+;%s*$") and t:match("[0-9%.]+%s*,%s*[0-9%.]+") then
+					merged = merged .. t
+					j = j + 1
+				else
+					break
+				end
+			end
+			tinsert(out,merged)
+			i = j
+		else
+			tinsert(out,line)
+			i = i + 1
+		end
+	end
+
+	return table.concat(out,"\n")
+end
+
 --- parse ONE guide section into usable arrays.
 function me:ParseEntry(text)
 	if not text then return nil,"No text!",0 end
 	local expanded,includeerr = ExpandIncludes(text,nil,0)
 	if not expanded then return nil,includeerr,0 end
-	text = expanded
+	text = MergeMultilinePathBlocks(expanded)
 	local index = 1
 
 	local guide,step
 
 	local prevmap
 	local prevlevel = 0
+	local sticky_depth = 0
 
 	guide = { ["steps"] = {}, ["quests"] = {} }
 
@@ -314,6 +483,7 @@ function me:ParseEntry(text)
 
 		line = line .. "|"
 		local goal={}
+		local generated_goals=nil
 
 		local chunkcount=1
 
@@ -329,8 +499,9 @@ function me:ParseEntry(text)
 			-- guide parameters
 			if cmd=="defaultfor" then
 				guide[cmd]=params
-			elseif cmd=="next" then
-				guide[cmd]=params:gsub("\\\\","\\")
+			elseif cmd=="next" and chunkcount==1 and not step then
+				local gnext = params:gsub('^"(.-)"$',"%1")
+				guide[cmd]=gnext:gsub("\\\\","\\")
 			elseif cmd=="author" then
 				guide[cmd]=params
 			elseif cmd=="type" then
@@ -349,6 +520,12 @@ function me:ParseEntry(text)
 			--	guide[cmd]=params
 			elseif cmd=="startlevel" then
 				prevlevel=tonumber(params)
+			elseif cmd=="label" and not step then
+				-- Guard: ignore stray label tags before the first step.
+			elseif cmd=="keywords" or cmd=="class" or cmd=="spec" or cmd=="opt" or cmd=="meta" or cmd=="sugGroup"
+			or cmd=="defaultfor" or cmd=="grouprole" or cmd=="region" or cmd=="template" or cmd=="travelcfg"
+			or cmd=="travelfor" or cmd=="override" then
+				guide[cmd]=params
 
 			elseif cmd=="step" then
 				step = { goals = {}, map = prevmap, level = prevlevel, num = #guide.steps+1, parentGuide=guide }
@@ -360,9 +537,19 @@ function me:ParseEntry(text)
 			elseif cmd=="level" then
 				step[cmd]=params
 				prevlevel=tonumber(params)
+			elseif cmd=="label" then
+				local label = ParseLabelName(params)
+				if step and label then
+					step.label = label
+					guide.labels = guide.labels or {}
+					guide.labels[label] = step.num
+				end
 			elseif cmd=="title" then
 				step[cmd]=params
 				if chunkcount>1 then goal[cmd]=params end
+				if generated_goals and chunkcount>1 then
+					for _,g in ipairs(generated_goals) do g.title=params end
+				end
 			elseif cmd=="map" then
 				if BZL[params] then params=BZL[params] end
 				if step then step.map = params end
@@ -408,8 +595,8 @@ function me:ParseEntry(text)
 				goal.npc,goal.npcid = self:ParseID(params)
 				if not goal.npc and goal.npcid then goal.npc=tostring(goal.npcid) end
 				if not goal.npc then return nil,"no npc",linecount,chunk end
-			elseif cmd=="goto" or cmd=="at" then
-				goal.action = goal.action or cmd
+			elseif cmd=="goto" or cmd=="at" or cmd=="gotoontaxi" or cmd=="gotonpc" or cmd=="direct" then
+				goal.action = goal.action or "goto"
 				local map,x,y,dist = self:ParseMapXYDist(params)
 
 				if BZL[map] then map=BZL[map] end
@@ -438,6 +625,58 @@ function me:ParseEntry(text)
 					else
 						return nil,"'"..cmd.."' has no map parameter, neither has one been given before.",linecount,chunk
 					end
+				end
+			elseif cmd=="path" or cmd=="loop" or cmd=="route" then
+				if not step then return nil,"Path command before step",linecount,chunk end
+				step._pathopts = step._pathopts or {loop=false}
+				local loopval,foundloop = ParsePathLoopFlag(params,step._pathopts.loop)
+				if foundloop then step._pathopts.loop = loopval end
+
+				local points
+				if cmd=="route" or ((cmd=="loop" or cmd=="path") and params and params:find(";",1,true)) then
+					points = ParseRoutePoints(params,step.map or prevmap)
+				else
+					points = ParsePathPoints(params)
+				end
+				if #points>0 then
+					generated_goals = {}
+					local defaultdist = 0.2
+					if cmd=="route" or cmd=="loop" then
+						-- Route/loop should be more forgiving by default.
+						defaultdist = 1.0
+					end
+					for _,pt in ipairs(points) do
+						local map = pt.map or step.map or prevmap
+						if map and BZL[map] then map=BZL[map] end
+						if not map or map=="" then
+							local fallbackmap = GetRealZoneText and GetRealZoneText()
+							if fallbackmap and BZL[fallbackmap] then fallbackmap = BZL[fallbackmap] end
+							map = fallbackmap
+						end
+						if map then
+							step.map = map
+							prevmap = map
+						end
+						tinsert(generated_goals,{
+							action="goto",
+							map=map,
+							x=pt.x,
+							y=pt.y,
+							dist=pt.dist or defaultdist,
+							achieveid=pt.achieveid,
+							achievesub=pt.achievesub,
+							force_complete=true,
+						})
+					end
+					if goal.text and generated_goals[1] then
+						generated_goals[1].text = goal.text
+						if not goal.action then
+							goal.text = nil
+						end
+					end
+
+					-- Loop mode no longer injects a visible return point. Repetition is
+					-- driven by step reset logic (for example via |until ...).
 				end
 
 			elseif cmd=="kill" or cmd=="get" or cmd=="collect" or cmd=="goal" or cmd=="buy" then
@@ -532,8 +771,14 @@ function me:ParseEntry(text)
 				if type(goal.rep)=="string" then goal.rep=self.StandingNamesEngRev[goal.rep] end
 				if self.BFL[goal.faction] then goal.faction=self.BFL[goal.faction] end
 			elseif cmd=="achieve" then
-				goal.action = goal.action or cmd
-				_,goal.achieveid,goal.achievesub = self:ParseID(params)
+				if generated_goals and chunkcount>1 then
+					for _,g in ipairs(generated_goals) do
+						_,g.achieveid,g.achievesub = self:ParseID(params)
+					end
+				else
+					goal.action = goal.action or cmd
+					_,goal.achieveid,goal.achievesub = self:ParseID(params)
+				end
 			elseif cmd=="skill" or cmd=="skillmax" then
 				goal.action = goal.action or cmd
 				goal.skill,goal.skilllevel = params:match("^(.+),([0-9]+)$")
@@ -596,13 +841,18 @@ function me:ParseEntry(text)
 				local cond = params:match("^if%s+(.*)$")
 				if cond then
 					-- condition match
-					local subject = goal  if chunkcount==1 then subject=step end
-
 					local fun,err = MakeCondition(cond,true)
 					if not fun then return nil,err,linecount,chunk end
-
-					subject.condition_visible_raw=cond
-					subject.condition_visible=fun
+					if generated_goals and chunkcount>1 then
+						for _,g in ipairs(generated_goals) do
+							g.condition_visible_raw=cond
+							g.condition_visible=fun
+						end
+					else
+						local subject = goal  if chunkcount==1 then subject=step end
+						subject.condition_visible_raw=cond
+						subject.condition_visible=fun
+					end
 				else
 					-- race/class match
 					if goal.action or goal.text or chunkcount>1 then
@@ -614,19 +864,48 @@ function me:ParseEntry(text)
 						step.requirement=split(params,",")
 					end
 				end
+			elseif cmd=="until" then
+				if not step then return nil,"until before step",linecount,chunk end
+				local cond = NormalizeUntilCondition(params)
+				local fun,err = MakeCondition(cond,true)
+				if not fun then return nil,err,linecount,chunk end
+				step.condition_until_raw=cond
+				step.condition_until=fun
 
 			-- extra tags
 
 			elseif cmd=="autoscript" then
 				goal.autoscript = params
+			elseif cmd=="confirm" then
+				goal.action = goal.action or "confirm"
 			elseif cmd=="n" then
 				goal.force_nocomplete = true
 			elseif cmd=="c" then
 				goal.force_complete = true
 			elseif cmd=="noway" then
-				goal.force_noway = true
+				if generated_goals then
+					for _,g in ipairs(generated_goals) do g.force_noway=true end
+				else
+					goal.force_noway = true
+				end
 			elseif cmd=="sticky" then
-				goal.force_sticky = true
+				if generated_goals then
+					for _,g in ipairs(generated_goals) do g.force_sticky=true end
+				else
+					goal.force_sticky = true
+				end
+			elseif cmd=="stickyif" then
+				if not step then return nil,"stickyif before step",linecount,chunk end
+				local fun,err = MakeCondition(params,true)
+				if not fun then return nil,err,linecount,chunk end
+				step.condition_sticky_raw=params
+				step.condition_sticky=fun
+			elseif cmd=="stickystart" or cmd=="stickystop" then
+				if cmd=="stickystart" then
+					sticky_depth = sticky_depth + 1
+				elseif sticky_depth>0 then
+					sticky_depth = sticky_depth - 1
+				end
 			elseif cmd=="future" then
 				goal.future = true  -- if quest-related, then don't worry if the quest isn't in the log.
 			elseif cmd=="noobsolete" then
@@ -641,9 +920,17 @@ function me:ParseEntry(text)
 				if #guide.steps==0 then guide.daily=true end
 
 			elseif cmd=="tip" then
-				goal.tooltip = params
+				if generated_goals and chunkcount>1 then
+					for _,g in ipairs(generated_goals) do g.tooltip=params end
+				else
+					goal.tooltip = params
+				end
 			elseif cmd=="image" then
-				goal.image = params
+				if generated_goals and chunkcount>1 then
+					for _,g in ipairs(generated_goals) do g.image=params end
+				else
+					goal.image = params
+				end
 			elseif cmd=="quest" or cmd=="q" then
 				local first=params:match("^(.-),")
 				if first then params=first end
@@ -651,6 +938,56 @@ function me:ParseEntry(text)
 				if not goal.questid then return nil,"no questid in parameter",linecount,chunk end
 			elseif cmd=="or" then
 				goal.orlogic = params and tonumber(params) or 1
+			elseif cmd=="next" then
+				local nextdest = params:gsub('^"(.-)"$',"%1")
+				if nextdest=="" then nextdest="+1" end
+				nextdest = nextdest:gsub("\\\\","\\")
+				if generated_goals and chunkcount>1 then
+					for _,g in ipairs(generated_goals) do g.next = nextdest end
+				else
+					goal.next = nextdest
+				end
+				-- Fallback for runtimes/click paths where per-goal next may be lost:
+				-- remember a step-level jump target as well.
+				if step then step.next = nextdest end
+			elseif cmd=="optional" then
+				goal.optional=true
+			elseif cmd=="required" then
+				goal.optional=false
+			elseif cmd=="important" then
+				goal.important=true
+			elseif cmd=="icon" or cmd=="buttonicon" or cmd=="mapicon" then
+				local p = params and params:gsub("\\\\","\\") or params
+				if cmd=="icon" then
+					goal.icon=p
+				elseif cmd=="buttonicon" then
+					goal.buttonicon=p
+				elseif cmd=="mapicon" then
+					goal.mapicon=p
+				end
+			elseif cmd=="execute" or cmd=="macro" or cmd=="updatescript" then
+				goal.autoscript=params
+			elseif cmd=="condition_visible" then
+				local fun,err = MakeCondition(params,true)
+				if not fun then return nil,err,linecount,chunk end
+				goal.condition_visible_raw=params
+				goal.condition_visible=fun
+			elseif cmd=="condition_valid" or cmd=="condition_suggested" then
+				local fun,err = MakeCondition(params,true)
+				if not fun then return nil,err,linecount,chunk end
+				goal.condition_complete_raw=params
+				goal.condition_complete=fun
+			elseif cmd=="condition_valid_msg" or cmd=="condition_invalid" or cmd=="condition_end" or cmd=="condition_suggested_race"
+			or cmd=="debug" or cmd=="template" or cmd=="meta" or cmd=="keywords" or cmd=="opt" or cmd=="travelcfg" or cmd=="travelfor"
+			or cmd=="notinsticky" or cmd=="notravel" or cmd=="nowayinzone" or cmd=="autoacceptany" or cmd=="autoturninany"
+			or cmd=="noautoaccept" or cmd=="noautogossip" or cmd=="nohearth" or cmd=="nomodels" or cmd=="nomovieskip"
+			or cmd=="noordinal" or cmd=="blizztooltip" or cmd=="usebank" or cmd=="usename" or cmd=="mounts" or cmd=="pets"
+			or cmd=="pet" or cmd=="spec" or cmd=="class" or cmd=="grouprole" or cmd=="region" or cmd=="minizone"
+			or cmd=="model" or cmd=="modelnpc" or cmd=="modeldisplay" or cmd=="indoors" or cmd=="outdoors" or cmd=="sugGroup"
+			or cmd=="completion" or cmd=="achieveid" or cmd=="blockstart" or cmd=="blockend" or cmd=="override" or cmd=="more"
+			or cmd=="leechsteps" or cmd=="shared_origin" or cmd=="getquestonmap" or cmd=="showtext" then
+				-- Retail-only parser tags not yet fully supported by this runtime.
+				-- Parsed as no-op to avoid polluting the goal text list.
 			elseif cmd=="instant" then  -- when we HAVE to use the title, for instant-complete quests.
 				if goal.questid then ZGV.instantQuests[goal.questid]=true end
 				goal.usetitle=true
@@ -686,33 +1023,44 @@ function me:ParseEntry(text)
 			end
 		end
 
-		if #TableKeys(goal)>0 then
+		local function CommitGoal(parsedgoal)
+			if not parsedgoal or #TableKeys(parsedgoal)==0 then return true end
 			if not step then return nil,"What? Unknown data before first 'step' tag, or what?",linecount,line end
 
-			-- so there's something to record? go ahead.
+			setmetatable(parsedgoal,ZGV.GoalProto_mt)
 
-			setmetatable(goal,ZGV.GoalProto_mt)
-
-			if not goal.action and (goal.x or goal.map) then
-				goal.action = "goto"
+			if not parsedgoal.action and (parsedgoal.x or parsedgoal.map) then
+				parsedgoal.action = "goto"
 			end
 
-			if goal.questid and noobsoletequests[goal.questid] then
-				goal.noobsolete = true
+			if parsedgoal.questid and noobsoletequests[parsedgoal.questid] then
+				parsedgoal.noobsolete = true
 			end
 
+			parsedgoal.parentStep = step
+			parsedgoal.num = #step.goals+1
+			parsedgoal.indent = #indent
+			if sticky_depth>0 then parsedgoal.force_sticky = true end
 
-			goal.parentStep = step
-			goal.num = #step.goals+1
+			step.goals[#step.goals+1] = parsedgoal
 
-			step.goals[#step.goals+1] = goal
-
-			if (goal.action=="get" or goal.action=="kill" or goal.action=="goal") and not goal.questid and not goal.force_nocomplete then
+			if (parsedgoal.action=="get" or parsedgoal.action=="kill" or parsedgoal.action=="goal") and not parsedgoal.questid and not parsedgoal.force_nocomplete then
 				return nil,"Objective has no quest ID!",linecount,line
+			end
+			return true
+		end
+
+		if generated_goals then
+			for _,g in ipairs(generated_goals) do
+				local ok,err,a,b = CommitGoal(g)
+				if not ok then return nil,err,a,b end
 			end
 		end
 
-		if goal then goal.indent = #indent end
+		if #TableKeys(goal)>0 then
+			local ok,err,a,b = CommitGoal(goal)
+			if not ok then return nil,err,a,b end
+		end
 
 	end
 	return guide

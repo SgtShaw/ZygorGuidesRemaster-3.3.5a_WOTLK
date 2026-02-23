@@ -63,6 +63,7 @@ function Goal:IsCompleteable()
 	or self.action=="skill"
 	or self.action=="skillmax"
 	or self.action=="learn"
+	or self.action=="confirm"
 	 then return true end
 	if self.action=="goto" then
 		-- this one is tricky.
@@ -85,7 +86,11 @@ local goalstring_slain=QUEST_MONSTERS_KILLED:gsub(": .*","")
 -- second return: true = completable, false = incompletable
 function Goal:IsComplete()
 
-	if (self.force_sticky and ZGV.recentlyCompletedGoals[self]) or ZGV.recentlyStickiedGoals[self] then
+	local sticky_active = self.force_sticky
+	if not sticky_active and self.parentStep and self.parentStep.condition_sticky then
+		sticky_active = self.parentStep.condition_sticky() and true or false
+	end
+	if (sticky_active and ZGV.recentlyCompletedGoals[self]) or ZGV.recentlyStickiedGoals[self] then
 		return true,true,true
 	end
 
@@ -227,15 +232,71 @@ function Goal:IsComplete()
 		local zone = GetRealZoneText()
 		if self.map and zone~=self.map then return false,true end
 
+		local step = self.parentStep
+		local firstgoto
+		local self_is_firstgoto = false
+		if step and step.condition_until and step.goals then
+			for _,g in ipairs(step.goals) do
+				if g.action=="goto" and not g.force_noway and g:IsVisible() then
+					firstgoto = g
+					break
+				end
+			end
+			self_is_firstgoto = (firstgoto==self)
+			ZGV.stepFirstGotoReached = ZGV.stepFirstGotoReached or {}
+			if firstgoto and not self_is_firstgoto and not ZGV.stepFirstGotoReached[step] then
+				-- In repeating-until route steps, force each new cycle to begin by
+				-- re-reaching the first route point before later points can complete.
+				return false,true,0
+			end
+		end
+
+		local achieve_complete = nil
+		if self.achieveid then
+			local completed
+			if self.achievesub then
+				local desc,ctype
+				desc,ctype,completed = GetAchievementCriteriaInfo(self.achieveid,self.achievesub)
+			else
+				local id,name,points
+				id,name,points,completed = GetAchievementInfo(self.achieveid)
+			end
+			achieve_complete = completed and true or false
+			if achieve_complete then
+				if step and self_is_firstgoto then
+					ZGV.stepFirstGotoReached[step] = true
+				end
+				return true,true,1
+			end
+		end
+
 		if ZGV.recentlyVisitedCoords[self] then
+			if self.achieveid then
+				return false, true, 0.99
+			end
 			return true, true
 		end
 		if self.x then
 			local px,py = GetPlayerMapPosition("player")
+			-- WotLK map coords can be stale (0,0) until the map context is refreshed.
+			-- Refresh once so chained goto/path points can complete and advance.
+			if (not px or not py or (px==0 and py==0)) and SetMapToCurrentZone then
+				SetMapToCurrentZone()
+				px,py = GetPlayerMapPosition("player")
+			end
+			if not px or not py or (px==0 and py==0) then
+				return false, true
+			end
 			local gx,gy,dist = self.x/100,self.y/100,self.dist/100
 			local realdist2 = (px-gx)*(px-gx) + (py-gy)*(py-gy)
 			if realdist2<=dist*dist then
 				ZGV.recentlyVisitedCoords[self] = true
+				if step and self_is_firstgoto then
+					ZGV.stepFirstGotoReached[step] = true
+				end
+				if self.achieveid then
+					return false, true, 0.99
+				end
 				return true, true
 			else
 				local prog = 1-((realdist2-dist*dist)*500)
@@ -246,6 +307,9 @@ function Goal:IsComplete()
 		else
 			return true,true
 		end
+	elseif self.action=="confirm" then
+		local complete = ZGV.recentlyCompletedGoals[self] or ZGV.recentlyStickiedGoals[self]
+		return complete and true or false, true, complete and 1 or 0
 	elseif self.action=="hearth" then
 		return GetZoneText()==self.param or GetMinimapZoneText()==self.param or GetSubZoneText()==self.param, true
 	elseif self.action=="home" then
@@ -499,6 +563,17 @@ local function COLOR_QUEST(s) return "|cffbb99ff"..s.."|r" end
 local function COLOR_NPC(s) return "|cffaaffaa"..s.."|r" end
 local function COLOR_MONSTER(s) return "|cffffaaaa"..s.."|r" end
 local function COLOR_GOAL(s) return "|cffffcccc"..s.."|r" end
+local function ICON_TAG(path)
+	if not path or path=="" then return nil end
+	path = path:gsub("\\\\","\\")
+	if path:find("ObjectIcons") then
+		return "|T"..path..":14:14:0:0:256:256:0:32:0:32|t"
+	end
+	return "|T"..path..":14:14:0:0|t"
+end
+
+local ICON_IMPORTANT = "Interface\\GossipFrame\\AvailableQuestIcon"
+local ICON_OPTIONAL = "Interface\\GossipFrame\\DailyQuestIcon"
 
 function Goal:GetText(showcompleteness)
 	--if type(goal)=="number" then goal=self.CurrentStep.goals[goal] end
@@ -593,6 +668,31 @@ function Goal:GetText(showcompleteness)
 		text = L["stepgoal_skillmax"]:format(COLOR_ITEM(self.skill),self.skilllevel)
 	elseif self.action=="learn" then
 		text = L["stepgoal_learn"]:format(COLOR_ITEM(self.recipe))
+	end
+
+	local prefixes = {}
+	if self.important then
+		local tag = ICON_TAG(ICON_IMPORTANT)
+		if tag then prefixes[#prefixes+1] = tag end
+	end
+	if self.optional then
+		local tag = ICON_TAG(ICON_OPTIONAL)
+		if tag then prefixes[#prefixes+1] = tag end
+	end
+	if self.icon then
+		local tag = ICON_TAG(self.icon)
+		if tag then prefixes[#prefixes+1] = tag end
+	end
+	if self.buttonicon then
+		local tag = ICON_TAG(self.buttonicon)
+		if tag then prefixes[#prefixes+1] = tag end
+	end
+	if self.mapicon then
+		local tag = ICON_TAG(self.mapicon)
+		if tag then prefixes[#prefixes+1] = tag end
+	end
+	if #prefixes>0 then
+		text = table.concat(prefixes," ").." "..text
 	end
 
 	-- trickiness.

@@ -348,18 +348,19 @@ me.WaypointFunctions['internal'] = {
 			end
 			for k,goal in ipairs(goals) do
 				if not goal.force_noway then
+					local gmap = goal.map or (self.CurrentStep and self.CurrentStep.map) or GetRealZoneText()
 					local arrowTitle =
 						GetRemasterArrowTitle(self,goal,title)
 						or self.CurrentStep:GetTitle()
-						or (goal.map and goal.x and ("%s %d,%d"):format(goal.map,goal.x,goal.y))
+						or (gmap and goal.x and ("%s %d,%d"):format(gmap,goal.x,goal.y))
 						or L['waypoint_step']:format(self.CurrentStepNum)
-					local way = self.Pointer:SetWaypoint (nil,goal.map,goal.x,goal.y,{title=arrowTitle,goal=goal,onminimap="always",overworld=true})
+					local way = self.Pointer:SetWaypoint (nil,gmap,goal.x,goal.y,{title=arrowTitle,goal=goal,onminimap="always",overworld=true})
 					if way then
 						if not firstpoint then firstpoint=way end
 						lastpoint=way
 						table.insert(points,{goal=goal,way=way})
 					else
-						self:Print("Unable to create waypoint: "..goal.map.." "..goal.x.." "..goal.y)
+						self:Print("Unable to create waypoint: "..tostring(gmap).." "..tostring(goal.x).." "..tostring(goal.y))
 					end
 				end
 			end
@@ -440,11 +441,21 @@ for k,v in pairs(me.WaypointFunctions) do setmetatable (v,nilfuncs) end
 
 
 function me:SetWaypoint(...)
+	-- Safety fallback: if no external waypointer is active/ready, use internal arrow.
+	if (not self.ConnectedWaypointer) or self.db.profile.waypointaddon=="none" then
+		if self.WaypointFunctions and self.WaypointFunctions['internal'] and self.WaypointFunctions['internal'].isready(self) then
+			self.ConnectedWaypointer = self.WaypointFunctions['internal']
+		end
+	end
 	if not self.ConnectedWaypointer then return end
 	if ...~=false and self.db.profile.hidearrowwithguide and not ZGV.Frame:IsShown() then return end
 	if not self:IsWaypointAddonReady() then
-		self:Print("Waypoint addon '"..self.db.profile.waypointaddon.."' failed.")
-		return
+		if self.WaypointFunctions and self.WaypointFunctions['internal'] and self.WaypointFunctions['internal'].isready(self) then
+			self.ConnectedWaypointer = self.WaypointFunctions['internal']
+		else
+			self:Print("Waypoint addon '"..self.db.profile.waypointaddon.."' failed.")
+			return
+		end
 	end
 	self.ConnectedWaypointer.setwaypoint(self,...)
 end

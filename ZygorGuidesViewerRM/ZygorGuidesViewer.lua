@@ -1277,6 +1277,7 @@ function me:ClearRecentActivities()
 	self.recentlyCompletedGoals = {}
 	self.recentlyAcceptedQuests = {}
 	self.recentlyStickiedGoals = {}
+	self.stepFirstGotoReached = {}
 	self.recentGoalProgress = {}
 	self.recentCooldownsPulsing = {}
 	self.recentCooldownsStarted = {}
@@ -1449,6 +1450,41 @@ function me:TryToCompleteStep(force)
 
 	local completing = stepcomplete
 
+	local function TryJumpFromCurrentStep()
+		if not self.CurrentStep then return false end
+		for _,goal in ipairs(self.CurrentStep.goals) do
+			local nextdest = goal.next or self.CurrentStep.next
+			if nextdest and goal:IsVisible() then
+				local jumpnow = false
+				if goal:IsCompleteable() then
+					local complete = goal:IsComplete()
+					jumpnow = complete and true or false
+				else
+					jumpnow = true
+				end
+				if jumpnow then
+					local stepnum,guidename = self.CurrentStep:GetJumpDestination(nextdest)
+					if not guidename then return false end
+					if guidename~=self.CurrentGuideName then
+						if self:GetGuideByTitle(guidename) then
+							self:SetGuide(guidename,stepnum or 1)
+							return true
+						end
+						return false
+					end
+					if not stepnum then return false end
+					if stepnum<1 then stepnum=1 end
+					if stepnum>#self.CurrentGuide.steps then stepnum=#self.CurrentGuide.steps end
+					if stepnum~=self.CurrentStepNum then
+						self:FocusStep(stepnum)
+						return true
+					end
+				end
+			end
+		end
+		return false
+	end
+
 	-- smart skipping: treat impossible or skippable as completed
 	if (self.db.profile.skipimpossible and not steppossible and not stepmanual)
 	or (self.db.profile.skipobsolete and self.CurrentStep:IsObsolete())
@@ -1467,6 +1503,12 @@ function me:TryToCompleteStep(force)
 		self.LastSkip = 1
 	else
 		if completing then
+			if self.CurrentStep and self.CurrentStep.condition_until and not self.CurrentStep.condition_until() then
+				self:Debug("Repeating step "..self.CurrentStepNum.." until condition: "..tostring(self.CurrentStep.condition_until_raw))
+				self:FocusStep(self.CurrentStepNum)
+				return
+			end
+			if TryJumpFromCurrentStep() then return end
 			--self.recentlyCompletedQuests = {} -- forget it! We're skipping the step, already.
 			self:Debug("Skipping step: "..self.CurrentStepNum.." ("..(stepcomplete and "complete" or (steppossible and "possible?" or "impossible"))..")")
 
@@ -1515,6 +1557,9 @@ function me:TryToCompleteStep(force)
 	end
 
 	self:UpdateFrame()
+	-- Keep arrow target synced with sub-goal progression (e.g. chained goto/path points)
+	-- even when the step itself doesn't change.
+	self:SetWaypoint()
 
 	self.lasttriedstep = self.CurrentStep
 	self.lastwascompleted = stepcomplete
@@ -4520,7 +4565,64 @@ function me:GoalOnClick(goalframe,button)
 	self:Debug("goal clicked "..tostring(goal.num))
 	--local goal = self.CurrentStep.goals[num]
 	if button=="LeftButton" then
-		if goal.x and not goal.force_noway then
+		if goal.action=="confirm" then
+			self.recentlyStickiedGoals[goal]=true
+			self.pause=nil
+			self.LastSkip=1
+			-- Allow confirm+next jumps to fire immediately on click instead of
+			-- waiting for the autoskip tick.
+			local function TryGoalJump(g,force)
+				if not g or not g.parentStep or not g.parentStep.GetJumpDestination then return false end
+				local nextdest = g.next or g.parentStep.next
+				if not nextdest then return false end
+				if not g:IsVisible() then return false end
+				local jumpnow = false
+				if force then
+					jumpnow = true
+				elseif g:IsCompleteable() then
+					local complete = g:IsComplete()
+					jumpnow = complete and true or false
+				else
+					jumpnow = true
+				end
+				if not jumpnow then return false end
+
+				local stepnum,guidename = g.parentStep:GetJumpDestination(nextdest)
+				if not guidename then return false end
+				if guidename~=self.CurrentGuideName then
+					if self:GetGuideByTitle(guidename) then
+						self:SetGuide(guidename,stepnum or 1)
+						return true
+					end
+					return false
+				end
+				if not stepnum then return false end
+				if stepnum<1 then stepnum=1 end
+				if self.CurrentGuide and stepnum>#self.CurrentGuide.steps then stepnum=#self.CurrentGuide.steps end
+				if stepnum~=self.CurrentStepNum then
+					self:FocusStep(stepnum)
+					return true
+				end
+				return false
+			end
+
+			-- Prefer clicked goal jump.
+			if TryGoalJump(goal) then return end
+			-- Fallback: if user clicked another line in the same step, still honor
+			-- any completed visible next-goal in the step.
+			local step = goal.parentStep
+			if step and step.goals then
+				for _,g in ipairs(step.goals) do
+					if TryGoalJump(g) then return end
+				end
+				-- Last resort: confirm clicks are explicit user intent to advance.
+				-- If completion state is stale, still honor visible step-local next tags.
+				for _,g in ipairs(step.goals) do
+					if TryGoalJump(g,true) then return end
+				end
+			end
+			self:UpdateFrame()
+		elseif goal.x and not goal.force_noway then
 			self:SetWaypoint(goal.num)
 		elseif goal.questid then
 			--if InCombatLockdown() then return end

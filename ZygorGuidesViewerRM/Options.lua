@@ -25,6 +25,7 @@ function me:Options_RegisterDefaults()
 
 			guides_history = {},
 			guide_progress = {},
+			guidebrowser_featured_snooze = {},
 
 			RecipesKnown = {},
 		},
@@ -104,11 +105,17 @@ function me:Options_RegisterDefaults()
 			guidesinhistory = 5,
 			guidebrowserpath = "",
 			guidebrowsersearch = "",
+			guidebrowseroptionsapp = "ZygorGuidesViewer",
 			guidebrowserselectedguide = nil,
 			guidebrowserfolderpage = 1,
 			guidebrowserguidepage = 1,
 			guidebrowsertreepage = 1,
 			guidebrowsertreeexpanded = {},
+			guidebrowserhomeall = false,
+			guidebrowser_featured_enablefallback = true,
+			guidebrowser_featured_hiderecentcompleted = true,
+			guidebrowser_featured_showconfidence = true,
+			guidebrowser_featured_hidden = {},
 
 			waypointaddon = "internal",
 
@@ -313,6 +320,49 @@ function me:Options_DefineOptions()
 				step = 1,
 				bigStep = 1,
 				order=2.8
+			},
+			featured = {
+				name = "Featured Suggestions",
+				type = "group",
+				inline = true,
+				order = 2.85,
+				args = {
+					guidebrowser_featured_enablefallback = {
+						name = "Enable fallback suggestions",
+						desc = "When a Featured bucket has no direct matches, show a few useful fallback guides.",
+						type = "toggle",
+						order = 1,
+						get = Getter_Simple,
+						set = Setter_Simple,
+					},
+					guidebrowser_featured_hiderecentcompleted = {
+						name = "Hide recently completed guides",
+						desc = "Suppress very recently completed guides from smart Featured recommendations.",
+						type = "toggle",
+						order = 2,
+						get = Getter_Simple,
+						set = Setter_Simple,
+					},
+					guidebrowser_featured_showconfidence = {
+						name = "Show confidence labels",
+						desc = "Display Strong/Good/Fallback confidence markers in Featured rows.",
+						type = "toggle",
+						order = 3,
+						get = Getter_Simple,
+						set = Setter_Simple,
+					},
+					featured_resethidden = {
+						name = "Reset snoozed suggestions",
+						desc = "Restore any Featured suggestions snoozed with the dismiss button.",
+						type = "execute",
+						order = 4,
+						func = function()
+							self.db.profile.guidebrowser_featured_hidden = {}
+							self.db.char.guidebrowser_featured_snooze = {}
+							self._featuredSessionHide = {}
+						end,
+					},
+				},
 			},
 			window = {
 				name = L["opt_group_window"],

@@ -42,35 +42,25 @@ ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Kalimdor\\Exp
         .'Unlock Rut'theran Village|achieve 842/6|goto Teldrassil,55,91
         .'Begin in Darnassus|goto Darnassus|noway|c
     step //2
-        goto Darnassus,25,55
-        .'Unlock Darnassus|achieve 842/11
+        .'Unlock Darnassus|path Darnassus,25,55|achieve 842/11
     step //3
-        goto Teldrassil,40,65
-        .'Unlock Pools of Arlithrien|achieve 842/6
+        .'Unlock Pools of Arlithrien|path Teldrassil,40,65|achieve 842/6
     step //4
-        goto Teldrassil,43,74
-        .'Unlock Gnarlpine Hold|achieve 842/4
+        .'Unlock Gnarlpine Hold|path Teldrassil,43,74|achieve 842/4
     step //5
-        goto Teldrassil,54,68
-        .'Unlock Lake Al'Ameth|achieve 842/5
+        .'Unlock Lake Al'Ameth|path Teldrassil,54,68|achieve 842/5
     step //6
-        goto Teldrassil,66,57
-        .'Unlock Starbreeze Village|achieve 842/7
+        .'Unlock Starbreeze Village|path Teldrassil,66,57|achieve 842/7
     step //7
-        goto Teldrassil,60,43
-        .'Unlock Shadowglen|achieve 842/1
+        .'Unlock Shadowglen|path Teldrassil,60,43|achieve 842/1
     step //8
-        goto Teldrassil,55,58
-        .'Unlock Dolanaar|achieve 842/3
+        .'Unlock Dolanaar|path Teldrassil,55,58|achieve 842/3
     step //9
-        goto Teldrassil,46,51
-        .'Unlock Ban'ethil Hollow|achieve 842/2
+        .'Unlock Ban'ethil Hollow|path Teldrassil,46,51|achieve 842/2
     step //10
-        goto Teldrassil,42,40
-        .'Unlock Wellspring Lake|achieve 842/9
+        .'Unlock Wellspring Lake|path Teldrassil,42,40|achieve 842/9
     step //11
-        goto Teldrassil,38,30
-        .'Unlock The Oracle Glade|achieve 842/8
+        .'Unlock The Oracle Glade|path Teldrassil,38,30|achieve 842/8
     step //12
         .'Return to Darnassus|goto Darnassus|noway|c
     step //13

@@ -234,3 +234,45 @@ function Step:GetNextStep()
 		end
 	end
 end
+
+function Step:GetJumpDestination(target)
+	if not target then return nil,nil end
+	target = tostring(target):gsub("^%s+",""):gsub("%s+$","")
+	target = target:gsub('^"(.-)"$',"%1")
+	target = target:gsub("^'(.-)'$","%1")
+	if target=="" then target="+1" end
+
+	local guide = self.parentGuide
+	local guidename = (guide and (guide.title or guide.title_full or guide.title_short)) or ZGV.CurrentGuideName
+
+	local rel = target:match("^([+-]%d+)$")
+	if rel then
+		local stepnum = self.num + tonumber(rel)
+		return stepnum, guidename
+	end
+
+	local abs = target:match("^(%d+)$")
+	if abs then
+		return tonumber(abs), guidename
+	end
+
+	local jumpGuide,jumpLabel = target:match("^(.-)#(.+)$")
+	if jumpGuide and jumpGuide~="" then
+		local g = ZGV:GetGuideByTitle(jumpGuide)
+		local stepnum = 1
+		if g and jumpLabel and g.labels and g.labels[jumpLabel] then
+			stepnum = g.labels[jumpLabel]
+		end
+		return stepnum, jumpGuide
+	end
+
+	if target:find("\\") then
+		return 1, target
+	end
+
+	if guide.labels and guide.labels[target] then
+		return guide.labels[target], guidename
+	end
+
+	return nil,nil
+end
