@@ -203,6 +203,7 @@ This remaster focuses on UI/UX modernization, packaging quality, compatibility m
 ### New Guide + Options Menus
 ![options menu display](docs/images/options-menu-display.png)
 ![guide manager selection preview](docs/images/guide-manager-selection-preview.png)
+<img width="1248" height="845" alt="image" src="https://github.com/user-attachments/assets/6d66d7d6-67bc-4c52-bbb5-5cea38e5bbde" />
 
 ### New Pointer Arrow
 ![new pointer arrow](docs/images/new-arrow.gif)
@@ -217,4 +218,6 @@ This remaster focuses on UI/UX modernization, packaging quality, compatibility m
 <img width="637" height="197" alt="Waypoint and Route Display" src="https://github.com/user-attachments/assets/cd258eb1-ebb6-420d-9516-4abe9d75d88c" />
 <img width="443" height="687" alt="Talent Advisor Panel" src="https://github.com/user-attachments/assets/b3f2c2ef-2bef-4ca4-b033-37c314b151d5" />
 
-
+### New Route and Loop guide modes
+<img width="433" height="247" alt="image" src="https://github.com/user-attachments/assets/579b6acb-df5e-4f40-8ef3-7d6b33e1015d" />
+<img width="436" height="248" alt="image" src="https://github.com/user-attachments/assets/a845b881-2831-43e3-bd26-5287f9783d68" />
