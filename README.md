@@ -148,15 +148,20 @@ This addon is fully open source and can be inspected before use.
 
 ## 📜 Changelog
 
-### v3.0 (Revision 79)
+### v3.0 (Revision 82)
 
-- Remastered UI improvements
-- Packaging and installation cleanup
-- Expanded guide coverage
-- Localization key completion
-- Talent Advisor integrated into `ZygorGuidesViewerRM` (no separate addon install required)
-- Talent build selection persistence fixes across reload/restart
-- Wowhead talent URL/code parsing hardening for WotLK build imports
+- Added per-guide `realm` filtering support (parser + runtime guide visibility filtering).
+- Added featured guide suggestions and improved featured Guide Browser UI/UX.
+- Added a dedicated Featured home experience with bucketed recommendations (`next`, `progress`, `level`, `featured`) and roadmap cards.
+- Added Featured controls: snooze/dismiss, reset snoozed suggestions, fallback suggestions, hide-recently-completed, and confidence display options.
+- Expanded guide content with new files:
+  - `ZygorGuidesViewerRM/Guides/ExampleGuides.lua`
+  - `ZygorGuidesViewerRM/Guides/Gold/AresGoldRoutesWotLK.lua`
+  - `ZygorGuidesViewerRM/Guides/Professions/AresProfessionsWotLK.lua`
+- Updated additional guide content in `AresAchievementExploration.lua` and `AresDailiesAlliance.lua`.
+- Updated guide loading/registration (`Guides/Autoload.xml`) for new content.
+- Improved goal/step/parser/waypoint handling, including new `route` and `loop` parser support with `|until x`, plus related stability fixes.
+- Updated guide format documentation for new/expanded tags and filtering behavior.
 
 ## 📝 Notes
 
