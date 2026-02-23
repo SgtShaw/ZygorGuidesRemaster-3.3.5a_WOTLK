@@ -111,6 +111,12 @@ local function ParseRoutePoints(params, basemap)
 	for raw in params:gmatch("([^;]+)") do
 		local token = raw:gsub("^%s+",""):gsub("%s+$","")
 		if token~="" then
+			local pointtip
+			local bodytip,tiptext = token:match("^(.-)%s*|%s*tip%s+(.+)$")
+			if bodytip and tiptext then
+				token = bodytip:gsub("^%s+",""):gsub("%s+$","")
+				pointtip = tiptext:gsub("^%s+",""):gsub("%s+$","")
+			end
 			local achievetag
 			local body,atag = token:match("^(.-)%s*@%s*([0-9/]+)%s*$")
 			if body and atag then
@@ -133,6 +139,7 @@ local function ParseRoutePoints(params, basemap)
 					dist = explicit_dist and dist or nil,
 					achieveid = achieveid,
 					achievesub = achievesub,
+					tooltip = pointtip,
 				})
 			end
 		end
@@ -398,6 +405,9 @@ local function MergeMultilinePathBlocks(text)
 			or trimmed:match("^|%s*path%s+")
 			or trimmed:match("^|%s*loop%s+")
 			or trimmed:match("^|%s*route%s+")
+			or trimmed:match("|%s*path%s+")
+			or trimmed:match("|%s*loop%s+")
+			or trimmed:match("|%s*route%s+")
 
 		if starts_path then
 			local merged = line
@@ -406,8 +416,12 @@ local function MergeMultilinePathBlocks(text)
 				local t = lines[j]:gsub("^%s+",""):gsub("%s+$","")
 				if t=="" then break end
 				if t:match("^[%.']") or t:match("^|") or t:match("^step%s") or t:match("^#") then break end
-				-- Continuation row: "x,y;" or "map,x,y;" with optional distance.
-				if t:match("^[%w%s'_%-%.,]+;%s*$") and t:match("[0-9%.]+%s*,%s*[0-9%.]+") then
+				-- Continuation row: coordinate rows like:
+				-- "x,y;" / "map,x,y;" / optional dist / optional per-point "|tip ...",
+				-- with optional trailing ";".
+				local looks_coord_row = t:match("^[^,;]+,%s*[0-9%.]+%s*,%s*[0-9%.]+")
+					or t:match("^[0-9%.]+%s*,%s*[0-9%.]+")
+				if looks_coord_row then
 					merged = merged .. t
 					j = j + 1
 				else
@@ -484,6 +498,37 @@ function me:ParseEntry(text)
 		line = line .. "|"
 		local goal={}
 		local generated_goals=nil
+		local routectx=nil
+		local function AppendGeneratedRoutePoints(points_to_add)
+			if not generated_goals or not points_to_add then return end
+			for _,pt in ipairs(points_to_add) do
+				local map = pt.map or step.map or prevmap
+				if map and BZL[map] then map=BZL[map] end
+				if not map or map=="" then
+					local fallbackmap = GetRealZoneText and GetRealZoneText()
+					if fallbackmap and BZL[fallbackmap] then fallbackmap = BZL[fallbackmap] end
+					map = fallbackmap
+				end
+				if map then
+					step.map = map
+					prevmap = map
+				end
+				tinsert(generated_goals,{
+					action="goto",
+					map=map,
+					x=pt.x,
+					y=pt.y,
+					dist=pt.dist or (routectx and routectx.defaultdist) or 0.2,
+					achieveid=pt.achieveid,
+					achievesub=pt.achievesub,
+					tooltip=pt.tooltip,
+					routegroup=true,
+					routekind=(routectx and routectx.kind) or "route",
+					routeindex=#generated_goals+1,
+					force_complete=true,
+				})
+			end
+		end
 
 		local chunkcount=1
 
@@ -495,6 +540,11 @@ function me:ParseEntry(text)
 			--chunk = chunk:gsub("[%s	]+$","")
 
 			local cmd,params = chunk:match("([^%s]*)%s?(.*)")
+			if cmd and cmd~="" then
+				-- Be resilient to accidental dotted command tokens in chunks,
+				-- e.g. ".route"/"..route" after line edits.
+				cmd = cmd:gsub("^%.+","")
+			end
 
 			-- guide parameters
 			if cmd=="defaultfor" then
@@ -647,29 +697,8 @@ function me:ParseEntry(text)
 						-- Route/loop should be more forgiving by default.
 						defaultdist = 1.0
 					end
-					for _,pt in ipairs(points) do
-						local map = pt.map or step.map or prevmap
-						if map and BZL[map] then map=BZL[map] end
-						if not map or map=="" then
-							local fallbackmap = GetRealZoneText and GetRealZoneText()
-							if fallbackmap and BZL[fallbackmap] then fallbackmap = BZL[fallbackmap] end
-							map = fallbackmap
-						end
-						if map then
-							step.map = map
-							prevmap = map
-						end
-						tinsert(generated_goals,{
-							action="goto",
-							map=map,
-							x=pt.x,
-							y=pt.y,
-							dist=pt.dist or defaultdist,
-							achieveid=pt.achieveid,
-							achievesub=pt.achievesub,
-							force_complete=true,
-						})
-					end
+					routectx = { kind=cmd, defaultdist=defaultdist, pending_tips={}, saw_tailcoord=false }
+					AppendGeneratedRoutePoints(points)
 					if goal.text and generated_goals[1] then
 						generated_goals[1].text = goal.text
 						if not goal.action then
@@ -923,7 +952,32 @@ function me:ParseEntry(text)
 
 			elseif cmd=="tip" then
 				if generated_goals and chunkcount>1 then
-					for _,g in ipairs(generated_goals) do g.tooltip=params end
+					if routectx and #generated_goals>0 then
+						local tiptext = params or ""
+						local tailcoord
+						local body,tail = tiptext:match("^(.-);%s*(.-)%s*$")
+						if body and tail and tail~="" then
+							tiptext = body
+							tailcoord = tail
+						end
+						tiptext = tiptext:gsub("^%s+",""):gsub("%s+$","")
+
+						if tiptext~="" then
+							tinsert(routectx.pending_tips, tiptext)
+						end
+
+						if tailcoord and tailcoord~="" then
+							local extrapoints = ParseRoutePoints(tailcoord, step.map or prevmap)
+							AppendGeneratedRoutePoints(extrapoints)
+							routectx.saw_tailcoord = true
+						end
+					else
+						-- Shared tip for generated route/loop/path goals.
+						for _,g in ipairs(generated_goals) do g.routesharedtip = params end
+						if generated_goals[#generated_goals] then
+							generated_goals[#generated_goals].tooltip = params
+						end
+					end
 				else
 					goal.tooltip = params
 				end
@@ -995,6 +1049,19 @@ function me:ParseEntry(text)
 				goal.usetitle=true
 			elseif cmd=="killcount" then  -- use killcounter for non-quest mobs
 				goal.usekillcount=true
+			elseif generated_goals and routectx and chunkcount>1 then
+				-- Route/loop continuation fallback: parse extra coordinate chunks or tip-like
+				-- text chunks so they don't appear as plain comment goals.
+				local extrapoints = ParseRoutePoints(chunk, step.map or prevmap)
+				if #extrapoints>0 then
+					AppendGeneratedRoutePoints(extrapoints)
+				else
+					local tiptext = chunk:gsub("^tip%s+",""):gsub("^%s+",""):gsub("%s+$","")
+					tiptext = tiptext:gsub(";%s*$","")
+					if tiptext~="" then
+						tinsert(routectx.pending_tips, tiptext)
+					end
+				end
 			elseif #chunk>1 then -- text
 				-- snag coordinates for waypointing, with distance
 				local st,en,x,y,d
@@ -1022,6 +1089,25 @@ function me:ParseEntry(text)
 			chunkcount=chunkcount+1
 			if chunkcount>20 then
 				return nil,"More than 20 chunks in line",linecount,line
+			end
+		end
+
+		if generated_goals and routectx and routectx.pending_tips and #routectx.pending_tips>0 then
+			-- Tip mapping policy:
+			-- - one tip only, no tail-coordinate chaining: shared/final route tip
+			-- - multiple tips: map sequentially to generated route points
+			if #routectx.pending_tips==1 and not routectx.saw_tailcoord and #generated_goals>1 then
+				local shared = routectx.pending_tips[1]
+				for _,g in ipairs(generated_goals) do g.routesharedtip = shared end
+				if generated_goals[#generated_goals] then
+					generated_goals[#generated_goals].tooltip = shared
+				end
+			else
+				for i,tip in ipairs(routectx.pending_tips) do
+					if generated_goals[i] then
+						generated_goals[i].tooltip = tip
+					end
+				end
 			end
 		end
 

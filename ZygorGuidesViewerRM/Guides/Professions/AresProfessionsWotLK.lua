@@ -639,7 +639,8 @@ ZygorGuidesViewer:RegisterGuide("Ares' Dev Tests\\Syntax Integration (Temporary)
 		.' Map icon compatibility test. |mapicon Interface\\Minimap\\ObjectIcons
 	step
 		.' Path expansion smoke test. |important
-		route Elwynn Forest,42.4,66.2;39.4,58.2;35.6,53.4
+		' Follow the Route
+		..route Elwynn Forest,42.4,66.2;39.4,58.2;35.6,53.4 |tip This is test 1 step |tip This is a Test. |tip This route follows the road.
 	step
 		.' Loop expansion smoke test. Repeat until Mining >= 400. |important |until skill("Mining")>=400
 		loop Elwynn Forest,42.4,66.2;39.4,58.2;35.6,53.4

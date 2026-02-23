@@ -1976,20 +1976,45 @@ function me:UpdateFrame(full,onupdate)
 					if stepdata:AreRequirementsMet() or self.db.profile.showwrongsteps then
 						--#### insert goals
 
+						local routefocus = nil
+						if not self.db.profile.disablerouteloopstacking then
+							for _,rgoal in ipairs(stepdata.goals) do
+								if rgoal.routegroup and rgoal:GetStatus()~="hidden" then
+									routefocus = rgoal
+									if not rgoal:IsComplete() then break end
+								end
+							end
+						end
+
 						for i,goal in ipairs(stepdata.goals) do
 
 							if goal:GetStatus()~="hidden" then
+								if routefocus and goal.routegroup and goal~=routefocus then
+									-- Compact route/loop display: show only the current active point.
+								else
 								--steptext = steptext .. ("  "):rep(goal.indent or 0) .. goal:GetText() .. "|n"
 								local indent = ("  "):rep(goal.indent or 0)
 								--local goaltxt = goal:GetText(stepnum>=self.CurrentStepNum)
 								local goaltxt = goal:GetText(true)
+								local effective_tip = goal.tooltip
+								if routefocus and goal==routefocus and not self.db.profile.disablerouteloopstacking and goal.routesharedtip and not effective_tip then
+									effective_tip = goal.routesharedtip
+								end
+								goal._display_tooltip = effective_tip
+								if goal==routefocus and goal.action~="goto" then
+									local routeicon = "Interface\\AddOns\\ZygorGuidesViewerRM\\Arrows\\Midnight\\arrow.tga"
+									local loopicon = "Interface\\Buttons\\UI-RefreshButton"
+									local iconpath = (goal.routekind=="loop") and loopicon or routeicon
+									local rtag = " |T"..iconpath..":14:14:0:0|t"
+									goaltxt = goaltxt .. rtag
+								end
 								if goaltxt~="?" or (goal.action=="info") then
 									if goal.action=="info" then
 										frame.lines[line].label:SetFont(FONT,round(self.db.profile.fontsecsize))
 										frame.lines[line].label:SetText(indent.."|cffeeeecc"..goal.info.."|r")
 										frame.lines[line].goal = nil
 									else
-										local link = ((goal.tooltip and not self.db.profile.tooltipsbelow) or (goal.x and not self.db.profile.windowlocked) or goal.image) and " |cffdd44ff*|r" or ""
+										local link = ((effective_tip and not self.db.profile.tooltipsbelow) or (goal.x and not self.db.profile.windowlocked) or goal.image) and " |cffdd44ff*|r" or ""
 
 										frame.lines[line].label:SetFont(FONT,self.db.profile.fontsize)
 										frame.lines[line].label:SetText(indent..goaltxt..link)
@@ -1998,9 +2023,9 @@ function me:UpdateFrame(full,onupdate)
 									line=line+1
 									--frame.lines[line].label:SetMultilineIndent(1)
 
-									if self.db.profile.tooltipsbelow and goal.tooltip then
+									if self.db.profile.tooltipsbelow and effective_tip then
 										frame.lines[line].label:SetFont(FONT,round(self.db.profile.fontsecsize))
-										frame.lines[line].label:SetText(indent.."|cffeeeecc"..goal.tooltip.."|r")
+										frame.lines[line].label:SetText(indent.."|cffeeeecc"..effective_tip.."|r")
 										--frame.lines[line].label:SetMultilineIndent(1)
 										frame.lines[line].goal = nil
 										line=line+1
@@ -2018,6 +2043,7 @@ function me:UpdateFrame(full,onupdate)
 									line=line+1
 								end
 								--]]
+								end
 							end
 						end
 
@@ -2892,15 +2918,28 @@ function me:UpdateFrameCurrent()
 				end
 
 				local status,detail = goal:GetStatus()
+				local is_routegoal = goal.routegroup
+				local route_icon = (goal.routekind=="loop")
+					and "Interface\\AddOns\\ZygorGuidesViewerRM\\Skins\\route-marker-loop.tga"
+					or "Interface\\AddOns\\ZygorGuidesViewerRM\\Skins\\route-marker-arrowup.tga"
+				local function set_goal_icon(defaultIndex,desaturate)
+					if is_routegoal and status~="complete" then
+						icon:SetTexture(route_icon)
+						icon:SetTexCoord(0,1,0,1)
+					else
+						icon:SetTexture(ZGV.DIR.."\\Skin\\icons")
+						icon:SetIcon(defaultIndex)
+					end
+					icon:SetDesaturated(not not desaturate)
+				end
 
 				if status=="passive" then
 
 					if goal.action=="talk" then
-						icon:SetIcon(actionicon[goal.action])
+						set_goal_icon(actionicon[goal.action],false)
 					else
-						icon:SetIcon(1)
+						set_goal_icon(1,false)
 					end
-					icon:SetDesaturated(false)
 					back:SetVertexColor(0.0,0.0,0.0,0)
 
 				elseif status=="incomplete" then
@@ -2923,8 +2962,7 @@ function me:UpdateFrameCurrent()
 							self:Debug("Animating progress: "..goal:GetText())
 						end
 					end
-					icon:SetIcon(actionicon[goal.action])
-					icon:SetDesaturated(false)
+					set_goal_icon(actionicon[goal.action],false)
 					if anim_w2r:IsDone() or not anim_w2r:IsPlaying() then
 						back:SetVertexColor(r,g,b,a)
 					end
@@ -2942,8 +2980,7 @@ function me:UpdateFrameCurrent()
 						-- if a goal just completed, unpause.
 						self.pause=nil
 					end
-					icon:SetIcon(3)
-					icon:SetDesaturated(false)
+					set_goal_icon(3,false)
 					if anim_w2g:IsDone() or not anim_w2g:IsPlaying() then
 						back:SetVertexColor(fromRGBA(self:GetEffectiveGoalColors().goalbackcomplete))
 					end
@@ -2951,8 +2988,7 @@ function me:UpdateFrameCurrent()
 				elseif status=="impossible" then
 
 					--impossible!
-					icon:SetIcon(actionicon[goal.action])
-					icon:SetDesaturated(true)
+					set_goal_icon(actionicon[goal.action],true)
 					back:SetVertexColor(fromRGBA(self:GetEffectiveGoalColors().goalbackimpossible))
 
 				elseif status=="obsolete" then
@@ -2963,8 +2999,12 @@ function me:UpdateFrameCurrent()
 				
 				end
 
-				icon:SetWidth(self.db.profile.fontsize*1.4)
-				icon:SetHeight(self.db.profile.fontsize*1.4)
+				local iconsize = self.db.profile.fontsize*1.4
+				if goal.routegroup and goal.routekind=="loop" and status~="complete" then
+					iconsize = iconsize*0.82
+				end
+				icon:SetWidth(iconsize)
+				icon:SetHeight(iconsize)
 				if self.db.profile.goalbackgrounds then back:Show() else back:Hide() end
 				if self.db.profile.goalicons then icon:Show() icon:SetAlpha(1.0) else icon:Hide() end
 
@@ -4686,8 +4726,9 @@ function me:GoalOnEnter(goalframe)
 
 	local wayline,infoline,image
 
-	if goal.tooltip and not self.db.profile.tooltipsbelow then
-		infoline = "|cff00ff00"..goal.tooltip.."|r"
+	local tooltip = goal._display_tooltip or goal.tooltip
+	if tooltip and not self.db.profile.tooltipsbelow then
+		infoline = "|cff00ff00"..tooltip.."|r"
 	end
 	if goal.x and goal.y and goal.map then
 		-- if locked or force_noway, then no clicking, bare info.

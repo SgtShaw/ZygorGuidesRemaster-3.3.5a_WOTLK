@@ -62,6 +62,7 @@ function me:Options_RegisterDefaults()
 			framescale = 1.0,
 			fontsize = 10,
 			fontsecsize = 10,
+			disablerouteloopstacking = false,
 
 			--backcolor = {r=0.18,g=0.05,b=0.23,a=0.56},
 			backopacity = 0.3,
@@ -631,6 +632,14 @@ function me:Options_DefineOptions()
 						set = function(i,v) Setter_Simple(i,v)  self:UpdateFrame()  end,
 						width = "double",
 						order = 1.5,
+					},
+					disablerouteloopstacking = {
+						name = "Disable Route/Loop Stacking",
+						desc = "When enabled, route/loop steps show the full stacked list of all generated goto points.",
+						type = 'toggle',
+						set = function(i,v) Setter_Simple(i,v)  self:UpdateFrame()  end,
+						width = "double",
+						order = 1.6,
 					},
 					goalcolorize = {
 						name = L["opt_goalcolorize"],
