@@ -17,8 +17,7 @@ This project keeps the classic Zygor workflow while delivering a cleaner remaste
 
 ## 🔖 Version
 
-- 📦 Addon version: **3.0.79**
-- 🔢 Revision: ![Revision](https://img.shields.io/github/commit-activity/t/ErebusAres/ZygorGuidesRemaster-3.3.5a_WOTLK?label=Revision)
+- 📦 Version: ![Version](https://img.shields.io/github/commit-activity/t/ErebusAres/ZygorGuidesRemaster-3.3.5a_WOTLK?label=Version%203.0.&color=1f6feb)
 - 🎮 Intended client: **WotLK 3.3.5a / 12340**
 
 ## 🎯 Who This Is For

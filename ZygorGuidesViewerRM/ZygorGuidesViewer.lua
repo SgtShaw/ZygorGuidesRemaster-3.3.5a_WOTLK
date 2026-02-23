@@ -4979,7 +4979,54 @@ function me:RegisterInclude(name,data)
 	self.registered_includes[name] = data
 end
 
+function me:NormalizeRealmName(name)
+	if type(name) ~= "string" then return nil end
+	local normalized = name:gsub("^%s+",""):gsub("%s+$","")
+	if normalized == "" then return nil end
+	normalized = normalized:lower():gsub("[%s%-'`]+","")
+	if normalized == "" then return nil end
+	return normalized
+end
+
+function me:GuideRealmMatches(realmTag)
+	if type(realmTag) ~= "string" then return true end
+	realmTag = realmTag:gsub("^%s+",""):gsub("%s+$","")
+	if realmTag == "" then return true end
+
+	local playerRealm = self:NormalizeRealmName((GetRealmName and GetRealmName()) or "")
+	if not playerRealm then return true end
+
+	local hadToken = false
+	for token in realmTag:gmatch("([^,;|]+)") do
+		hadToken = true
+		local normalizedToken = self:NormalizeRealmName(token)
+		if normalizedToken and normalizedToken == playerRealm then
+			return true
+		end
+	end
+
+	-- Support plain single-value tags without separators.
+	if not hadToken then
+		local normalizedTag = self:NormalizeRealmName(realmTag)
+		return not normalizedTag or normalizedTag == playerRealm
+	end
+
+	return false
+end
+
 function me:RegisterGuide(title,data,extra)
+	local header
+	if type(data)=="string" and self.ParseHeader then
+		local ok,parsedHeader = pcall(self.ParseHeader,self,data)
+		if ok and type(parsedHeader)=="table" then
+			header = parsedHeader
+		end
+	end
+	local guideRealm = type(header)=="table" and header.realm or nil
+	if guideRealm and guideRealm ~= "" and not self:GuideRealmMatches(guideRealm) then
+		return
+	end
+
 	local group,tit = title:match("^(.*)\\+(.-)$")
 	if group then
 		group = FindGroup(self.registered_groups,group)
@@ -4987,7 +5034,7 @@ function me:RegisterGuide(title,data,extra)
 		group = self.registered_groups
 	end
 
-	local guide = {['title']=title,['title_short']=tit or title,['rawdata']=data,['extra']=extra}
+	local guide = {['title']=title,['title_short']=tit or title,['rawdata']=data,['extra']=extra,realm=guideRealm}
 
 	tinsert(group.guides,{full=title,short=tit or title,num=#self.registeredguides+1})
 	tinsert(self.registeredguides,guide)

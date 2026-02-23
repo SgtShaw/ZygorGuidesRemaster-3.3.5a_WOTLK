@@ -510,6 +510,8 @@ function me:ParseEntry(text)
 				guide[cmd]=params
 			elseif cmd=="faction" then
 				guide[cmd]=params
+			elseif cmd=="realm" then
+				guide[cmd]=params
 			elseif cmd=="subcategory" then
 				guide[cmd]=params
 			elseif cmd=="sortindex" then
