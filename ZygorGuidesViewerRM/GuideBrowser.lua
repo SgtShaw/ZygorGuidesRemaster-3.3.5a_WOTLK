@@ -661,7 +661,11 @@ function me:RefreshGuideManagerPanel(panel)
 				row.icon:SetTexCoord(unpack(GUIDE_SMALL_ICON_COORDS.guide))
 				local isFav = data.title and self:IsGuideFavorite(data.title) or false
 				local isSelected = (f.selectedGuideTitle and data.title == f.selectedGuideTitle)
-				row.favButton:SetShown(isFav or isSelected)
+				if isFav or isSelected then
+					row.favButton:Show()
+				else
+					row.favButton:Hide()
+				end
 				row.favButton:SetChecked(isFav)
 				if isFav then
 					row.favButton:GetNormalTexture():SetVertexColor(0.95, 0.95, 0.95, 1)
@@ -2467,7 +2471,9 @@ local function EnsureGuideManagerStandaloneFrame(self)
 	})
 	optionsPane:SetBackdropColor(0.08, 0.085, 0.10, 0.96)
 	optionsPane:SetBackdropBorderColor(0.24, 0.24, 0.28, 0.96)
-	optionsPane:SetClipsChildren(true)
+	if optionsPane.SetClipsChildren then
+		optionsPane:SetClipsChildren(true)
+	end
 	optionsPane:Hide()
 	frame.optionsPane = optionsPane
 
@@ -2516,7 +2522,9 @@ local function EnsureGuideManagerStandaloneFrame(self)
 	})
 	optionsContent:SetBackdropColor(0.08, 0.08, 0.08, 0.92)
 	optionsContent:SetBackdropBorderColor(0.26, 0.26, 0.26, 0.92)
-	optionsContent:SetClipsChildren(true)
+	if optionsContent.SetClipsChildren then
+		optionsContent:SetClipsChildren(true)
+	end
 	frame.optionsContent = optionsContent
 
 	local optionsDetail = CreateFrame("Frame", nil, optionsPane)

@@ -148,6 +148,14 @@ This addon is fully open source and can be inspected before use.
 
 ## 📜 Changelog
 
+### v3.0 (Revision 86)
+
+- Bumped addon version/revision to `3.0.86` / `86`.
+- Added Wrath 3.3.5a API compatibility handling in Guide Manager rendering:
+  - replaced `SetShown` usage with explicit `Show()` / `Hide()` calls for favorite button visibility.
+  - guarded `SetClipsChildren` calls so clients without that API no longer error.
+- Verified behavior on plain test installs without API-shim addons.
+
 ### v3.0 (Revision 82)
 
 - Added per-guide `realm` filtering support (parser + runtime guide visibility filtering).
