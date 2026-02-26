@@ -148,6 +148,11 @@ This addon is fully open source and can be inspected before use.
 
 ## 📜 Changelog
 
+### v3.0 (Revision 88)
+
+- Bumped addon version/revision to `3.0.88` / `88`.
+- Updated mining route content and faction split guide placement across the remastered profession guides.
+
 ### v3.0 (Revision 87)
 
 - Bumped addon version/revision to `3.0.87` / `87`.

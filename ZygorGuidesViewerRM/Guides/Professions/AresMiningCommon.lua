@@ -95,8 +95,8 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 
 		.' There is more Tin and Copper on the southern route, but you can use the northern route as an alternative if the zone is crowded.
 		.' The difference between them is not that big.
 	step
-		.' Southern route (preferred). Start at 45.6,35.7.
-		loop The Barrens,45.6,35.7;54.1,42.5;54.8,40.2;56.3,40.9;56.1,43.9;49.8,48.3;51.8,53.0;53.7,53.0;52.7,55.7;48.8,65.0;48.3,67.2;50.1,68.7;48.7,70.7;49.4,80.2;48.4,81.1;48.3,86.8;44.8,82.5;40.2,81.1;43.5,78.4;44.5,72.2;42.2,70.5;44.7,66.4;44.1,60.9;44.7,56.3;44.7,51.0;42.7,48.7;41.8,45.8;43.2,41.1;42.7,37.3 |until skill("Mining")>=125
+		.' Southern route (preferred). Start at 51.0,55.3.
+		loop The Barrens,51.0,55.3;48.8,58.0;43.1,59.3;40.6,51.2;38.2,50.8;38.6,55.7;35.2,54.5;35.8,48.3;31.9,49.8;30.3,47.1;27.7,48.7;28.1,41.5;25.9,39.9;23.8,41.9;21.7,39.3;22.0,33.3;18.6,32.2;18.1,36.8;15.1,32.7;12.1,34.3;10.8,31.8;11.0,38.0;16.9,41.9;12.5,36.0;13.8,30.6;13.0,24.4;12.0,20.3;13.4,13.5;19.3,22.3;19.9,26.3;22.9,24.4;24.8,27.3;33.1,29.4;35.3,27.7;36.2,31.0;38.6,30.8;41.0,40.1;44.3,38.4;55.1,46.5;55.9,49.3;58.8,50.6;60.6,46.5;63.0,46.7;63.2,51.6;67.2,50.2;72.7,54.3;78.4,50.4;85.2,55.1;78.7,61.9;88.6,63.0;88.2,69.7;88.9,77.3;86.6,82.9;81.7,89.7;77.9,89.1;74.8,92.2;69.3,89.5;66.8,86.4;68.2,78.6;69.9,69.7;66.8,62.7;57.7,56.3;53.8,53.6;44.4,36.7;27.4,51.1 |until skill("Mining")>=125 |tip Caves: NE 44.4,36.7 and SW 27.4,51.1.
 		#include "follow_path_mine"
 		skill Mining,125
 	step
@@ -133,44 +133,6 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 
 		.' Skip to full Mining 1-450 route |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 1-450 (WotLK Route)"
 ]])
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 125-175\\Arathi Highlands (Alliance)",[[
-	author wow-professions.com
-	type professions
-	startlevel 10
-	description Mine Iron, Tin, and Gold in Arathi Highlands to 175 (Alliance variant).
-	description This route is incomplete, untested, or placeholder and may contain errors.
-	step
-		'Requires Mining 125. Train Expert here if needed.
-		skill Mining,125
-		#include "trainer_Mining"
-		.skillmax Mining,225
-	step
-		loop Arathi Highlands,27.9,19.7;34.6,44.3;52.2,49.3;60.8,33.1;76.3,30.5;74.8,44.2;71.1,71.1;59.1,70.1;54.1,77.3;41.7,67.6;35.8,62.9;30.0,51.8;21.7,34.9;28.6,31.4 |until skill("Mining")>=175 |tip There are 4 caves marked on this route. Go to the end of each cave because not all veins are visible from cave entrances. Low-level players should skip all 4 caves, and low-level Alliance players should take a detour south of Hammerfall.
-		#include "follow_path_mine"
-		skill Mining,175
-	step
-		'Continue with Mining 175-245 zone selection. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 175-245 (Common)"
-]])
-
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 125-175\\Arathi Highlands (Horde)",[[
-	author wow-professions.com
-	type professions
-	startlevel 10
-	description Mine Iron, Tin, and Gold in Arathi Highlands to 175 (Horde variant).
-	description This route is incomplete, untested, or placeholder and may contain errors.
-	step
-		'Requires Mining 125. Train Expert here if needed.
-		skill Mining,125
-		#include "trainer_Mining"
-		.skillmax Mining,225
-	step
-		loop Arathi Highlands,27.9,19.7;34.6,44.3;52.2,49.3;60.8,33.1;76.3,30.5;74.8,44.2;71.1,71.1;59.1,70.1;54.1,77.3;41.7,67.6;35.8,62.9;30.0,51.8;21.7,34.9;28.6,31.4 |until skill("Mining")>=175 |tip There are 4 caves marked on this route. Go to the end of each cave because not all veins are visible from cave entrances. Low-level players should skip all 4 caves.
-		#include "follow_path_mine"
-		skill Mining,175
-	step
-		'Continue with Mining 175-245 zone selection. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 175-245 (Common)"
-]])
-
 ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 125-175\\Desolace",[[
 	author wow-professions.com
 	type professions
@@ -183,7 +145,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 
 		#include "trainer_Mining"
 		.skillmax Mining,225
 	step
-		loop Desolace,63.0,12.0;60.0,23.0;56.0,31.0;50.0,38.0;52.0,47.0;57.0,55.0;56.0,66.0;49.0,73.0;41.0,76.0;33.0,72.0;26.0,66.0;22.0,55.0;22.0,43.0;24.0,33.0;27.0,22.0;34.0,17.0;43.0,21.0;50.0,27.0;56.0,18.0 |until skill("Mining")>=175
+		loop Desolace,41.3,77.3;45.5,74.8;48.1,71.5;45.8,78.1;50.9,92.5;53.3,86.9;55.1,84.5;60.7,80.4;59.5,84.1;59.0,87.2;59.9,90.0;66.5,88.6;65.9,83.0;65.8,74.6;64.5,70.4;60.4,67.8;62.6,65.3;70.9,63.9;70.9,58.5;74.7,57.5;74.8,54.6;78.1,53.3;72.5,44.9;75.5,37.0;78.7,36.4;78.4,33.8;73.4,33.5;65.9,35.8;65.5,42.4;64.6,60.3;62.0,49.4;56.6,43.8;50.7,42.8;48.1,37.3;48.3,33.1;49.4,30.0;51.8,23.9;47.9,23.4;44.5,16.8;44.3,21.8;41.5,25.9;42.0,29.2;41.1,33.1;39.7,39.3;40.9,45.7;40.6,54.0;45.7,51.1;48.4,51.3;48.8,54.6;47.4,59.1;47.9,62.6;46.3,65.1;44.3,65.7;42.6,63.8;39.3,66.9;38.9,72.7;38.9,76.6 |until skill("Mining")>=175
 		#include "follow_path_mine"
 		skill Mining,175
 	step
