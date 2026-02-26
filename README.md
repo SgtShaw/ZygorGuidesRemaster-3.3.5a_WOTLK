@@ -148,6 +148,19 @@ This addon is fully open source and can be inspected before use.
 
 ## 📜 Changelog
 
+### v3.0 (Revision 87)
+
+- Bumped addon version/revision to `3.0.87` / `87`.
+- Expanded mining guide coverage with new staged hubs and route selectors:
+  - `65-125`, `125-175`, `175-245`, `245-275`, `275-300`.
+  - Burning Crusade Classic `300-350` with Hellfire `300-325` route split.
+  - Burning Crusade Classic `325-350` route split (Zangarmarsh and Terokkar flying/flightless).
+  - Wrath of the Lich King Classic `350-400` route split (Borean/Howling, flying/flightless).
+- Added faction-specific mining variants where applicable (including Arathi and Blasted Lands variants).
+- Updated guide flow so each tier routes into the next tier hub instead of jumping directly to `Mining 1-450`.
+- Added and refined multiple custom loop routes and in-guide cave/risk tips for starter and mid-tier mining zones.
+- Added explicit placeholder/untested disclaimers to in-progress mining route sets.
+
 ### v3.0 (Revision 86)
 
 - Bumped addon version/revision to `3.0.86` / `86`.
@@ -155,21 +168,6 @@ This addon is fully open source and can be inspected before use.
   - replaced `SetShown` usage with explicit `Show()` / `Hide()` calls for favorite button visibility.
   - guarded `SetClipsChildren` calls so clients without that API no longer error.
 - Verified behavior on plain test installs without API-shim addons.
-
-### v3.0 (Revision 82)
-
-- Added per-guide `realm` filtering support (parser + runtime guide visibility filtering).
-- Added featured guide suggestions and improved featured Guide Browser UI/UX.
-- Added a dedicated Featured home experience with bucketed recommendations (`next`, `progress`, `level`, `featured`) and roadmap cards.
-- Added Featured controls: snooze/dismiss, reset snoozed suggestions, fallback suggestions, hide-recently-completed, and confidence display options.
-- Expanded guide content with new files:
-  - `ZygorGuidesViewerRM/Guides/ExampleGuides.lua`
-  - `ZygorGuidesViewerRM/Guides/Gold/AresGoldRoutesWotLK.lua`
-  - `ZygorGuidesViewerRM/Guides/Professions/AresProfessionsWotLK.lua`
-- Updated additional guide content in `AresAchievementExploration.lua` and `AresDailiesAlliance.lua`.
-- Updated guide loading/registration (`Guides/Autoload.xml`) for new content.
-- Improved goal/step/parser/waypoint handling, including new `route` and `loop` parser support with `|until x`, plus related stability fixes.
-- Updated guide format documentation for new/expanded tags and filtering behavior.
 
 ## 📝 Notes
 

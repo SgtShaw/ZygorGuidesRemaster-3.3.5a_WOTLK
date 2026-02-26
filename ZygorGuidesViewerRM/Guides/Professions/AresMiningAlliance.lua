@@ -3,27 +3,20 @@ if not ZygorGuidesViewer then return end
 if UnitFactionGroup("player")~="Alliance" then return end
 
 ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 1-65 (Starter Hub)",[[
-	author ErebusAres
+	author wow-professions.com
 	type professions
 	startlevel 5
 	description Starter launcher for Alliance Mining 1-65 by race starting zone.
 	step
-		'Alliance starter segments (1-65):
-		.' Elwynn Forest (Human)
-		.' Dun Morogh (Dwarf/Gnome)
-		.' Darkshore (Night Elf)
-	step
-		'Open Elwynn Forest Mining 1-65. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 1-65\\Elwynn Forest"
-	step
-		'Open Dun Morogh Mining 1-65. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 1-65\\Dun Morogh"
-	step
-		'Open Darkshore Mining 1-65. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 1-65\\Darkshore"
-	step
-		'Back to Professions landing page. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Profession 1-450 Coverage Plan"
+		'Choose your Alliance 1-65 starter route:
+		.' Elwynn Forest (Human) |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 1-65\\Elwynn Forest"
+		.' Dun Morogh (Dwarf/Gnome) |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 1-65\\Dun Morogh"
+		.' Darkshore (Night Elf) |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 1-65\\Darkshore"
+		.' Back to Professions landing page |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Profession 1-450 Coverage Plan"
 ]])
 
 ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 1-65\\Elwynn Forest",[[
-	author ErebusAres
+	author wow-professions.com
 	type professions
 	startlevel 5
 	description Mining 1-65 starter segment for Elwynn Forest (Alliance/Human).
@@ -39,11 +32,11 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 
 		#include "follow_path_mine"
 		skill Mining,65
 	step
-		'Continue with Mining 1-450 route. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 1-450 (WotLK Route)"
+		'Continue with Mining 65-125 zone selection. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 65-125 (Common)"
 ]])
 
 ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 1-65\\Dun Morogh",[[
-	author ErebusAres
+	author wow-professions.com
 	type professions
 	startlevel 5
 	description Mining 1-65 starter segment for Dun Morogh (Alliance/Dwarf/Gnome).
@@ -66,11 +59,11 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 
 		#include "follow_path_mine"
 		skill Mining,65
 	step
-		'Continue with Mining 1-450 route. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 1-450 (WotLK Route)"
+		'Continue with Mining 65-125 zone selection. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 65-125 (Common)"
 ]])
 
 ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 1-65\\Darkshore",[[
-	author ErebusAres
+	author wow-professions.com
 	type professions
 	startlevel 5
 	description Mining 1-65 starter segment for Darkshore (Alliance/Night Elf).
@@ -81,9 +74,10 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 
 		#include "vendor_Mining"
 		.buy 1 Mining Pick##2901
 	step
-		loop Darkshore,39.1,31.2;43.0,36.9;46.5,44.3;42.9,53.2;40.3,60.6;40.5,69.2;45.3,76.8;52.0,77.6;58.2,71.4;57.8,62.9;54.5,55.2;52.0,46.0;48.5,37.9;44.7,30.9 |until skill("Mining")>=65
+		.' Start at Auberdine (38,44), then run this loop:
+		loop Darkshore,42,45;43,51;46,50;48,37;54,33;54,28;59,24;61,20;61,7;57,18;53,18;51,22;46,21;43,22;43,35;40,37 |until skill("Mining")>=65
 		#include "follow_path_mine"
 		skill Mining,65
 	step
-		'Continue with Mining 1-450 route. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 1-450 (WotLK Route)"
+		'Continue with Mining 65-125 zone selection. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 65-125 (Common)"
 ]])
