@@ -32,6 +32,8 @@
 	<Script file="Dungeons\ZygorGearHorde.lua"/>
 	<Script file="Professions\ZygorProfessionsCommon.lua"/>
 	<Script file="Professions\AresProfessionsWotLK.lua"/>
+	<Script file="Professions\AresProfessionsWotLKAlliance.lua"/>
+	<Script file="Professions\AresProfessionsWotLKHorde.lua"/>
 	<Script file="Gold\AresGoldRoutesWotLK.lua"/>
 	<Script file="Fun\AresFunQuestsAlliance.lua"/>
 	<Script file="PetsMounts\AresPetsMountsAlliance.lua"/>
