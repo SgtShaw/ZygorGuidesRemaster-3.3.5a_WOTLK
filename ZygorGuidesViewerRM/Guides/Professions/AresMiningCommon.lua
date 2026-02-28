@@ -1,7 +1,7 @@
 local ZygorGuidesViewer=ZygorGuidesViewer
 if not ZygorGuidesViewer then return end
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 65-125 (Common)",[[
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 65-125\\Common",[[
 	author wow-professions.com
 	type professions
 	startlevel 10
@@ -15,14 +15,15 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 
 		.skillmax Mining,150
 	step
 		'Choose your 65-125 route:
-		.' Hillsbrad Foothills |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 65-125\\Hillsbrad Foothills"
-		.' Redridge Mountains |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 65-125\\Redridge Mountains"
-		.' Ashenvale |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 65-125\\Ashenvale"
-		.' The Barrens |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 65-125\\The Barrens"
-		.' Skip to full Mining 1-450 route |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 1-450 (WotLK Route)"
+		.' Hillsbrad Foothills |confirm |next "WoW Professions Guides\\Mining\\Mining 65-125\\Hillsbrad Foothills"
+		.' Redridge Mountains |confirm |next "WoW Professions Guides\\Mining\\Mining 65-125\\Redridge Mountains"
+		.' Ashenvale |confirm |next "WoW Professions Guides\\Mining\\Mining 65-125\\Ashenvale"
+		.' The Barrens |confirm |next "WoW Professions Guides\\Mining\\Mining 65-125\\The Barrens"
+		.' Skip to Mining 125-175 zone selection |confirm |next "WoW Professions Guides\\Mining\\Mining 125-175\\Common"
+		.' Skip to full Mining 1-450 route |confirm |next "WoW Professions Guides\\Mining\\Mining 1-450 (WotLK Route)"
 ]])
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 65-125\\Hillsbrad Foothills",[[
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 65-125\\Hillsbrad Foothills",[[
 	author wow-professions.com
 	type professions
 	startlevel 10
@@ -39,10 +40,10 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 
 		#include "follow_path_mine"
 		skill Mining,125
 	step
-		'Continue with Mining 125-175 zone selection. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 125-175 (Common)"
+		'Continue with Mining 125-175 zone selection. |confirm |next "WoW Professions Guides\\Mining\\Mining 125-175\\Common"
 ]])
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 65-125\\Redridge Mountains",[[
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 65-125\\Redridge Mountains",[[
 	author wow-professions.com
 	type professions
 	startlevel 10
@@ -58,10 +59,10 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 
 		#include "follow_path_mine"
 		skill Mining,125
 	step
-		'Continue with Mining 125-175 zone selection. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 125-175 (Common)"
+		'Continue with Mining 125-175 zone selection. |confirm |next "WoW Professions Guides\\Mining\\Mining 125-175\\Common"
 ]])
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 65-125\\Ashenvale",[[
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 65-125\\Ashenvale",[[
 	author wow-professions.com
 	type professions
 	startlevel 10
@@ -77,10 +78,10 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 
 		#include "follow_path_mine"
 		skill Mining,125
 	step
-		'Continue with Mining 125-175 zone selection. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 125-175 (Common)"
+		'Continue with Mining 125-175 zone selection. |confirm |next "WoW Professions Guides\\Mining\\Mining 125-175\\Common"
 ]])
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 65-125\\The Barrens",[[
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 65-125\\The Barrens",[[
 	author wow-professions.com
 	type professions
 	startlevel 10
@@ -105,10 +106,10 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 
 		#include "follow_path_mine"
 		skill Mining,125
 	step
-		'Continue with Mining 125-175 zone selection. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 125-175 (Common)"
+		'Continue with Mining 125-175 zone selection. |confirm |next "WoW Professions Guides\\Mining\\Mining 125-175\\Common"
 ]])
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 125-175 (Common)",[[
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 125-175\\Common",[[
 	author wow-professions.com
 	type professions
 	startlevel 10
@@ -126,14 +127,55 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 
 		.' Gold Ore
 	step
 		'Choose your 125-175 route:
-		.' Arathi Highlands (Alliance) |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 125-175\\Arathi Highlands (Alliance)"
-		.' Arathi Highlands (Horde) |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 125-175\\Arathi Highlands (Horde)"
-		.' Desolace |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 125-175\\Desolace"
-		.' Thousand Needles |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 125-175\\Thousand Needles"
-		.' Skip to full Mining 1-450 route |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 1-450 (WotLK Route)"
+		.' Arathi Highlands (Alliance) |confirm |next "WoW Professions Guides\\Mining\\Mining 125-175\\Arathi Highlands (Alliance)"
+		.' Arathi Highlands (Horde) |confirm |next "WoW Professions Guides\\Mining\\Mining 125-175\\Arathi Highlands (Horde)"
+		.' Desolace |confirm |next "WoW Professions Guides\\Mining\\Mining 125-175\\Desolace"
+		.' Thousand Needles |confirm |next "WoW Professions Guides\\Mining\\Mining 125-175\\Thousand Needles"
+		.' Skip to Mining 175-245 zone selection |confirm |next "WoW Professions Guides\\Mining\\Mining 175-245\\Common"
+		.' Skip to full Mining 1-450 route |confirm |next "WoW Professions Guides\\Mining\\Mining 1-450 (WotLK Route)"
 ]])
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 125-175\\Desolace",[[
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 125-175\\Arathi Highlands (Alliance)",[[
+	author wow-professions.com
+	type professions
+	faction alliance
+	startlevel 10
+	description Mine Iron, Tin, and Gold in Arathi Highlands to 175 (Alliance variant).
+	description This route is incomplete, untested, or placeholder and may contain errors.
+	step
+		'Requires Mining 125. Train Expert here if needed.
+		skill Mining,125
+		#include "trainer_Mining"
+		.skillmax Mining,225
+	step
+		loop Arathi Highlands,49.1,51.1;53.3,36.7;50.0,38.7;47.6,37.5;34.6,43.9;53.8,77.1;69.2,74.8;81.1,35.4;39.7,43.0;38.9,47.0;35.7,41.8;42.5,34.0;39.2,26.8;31.1,20.0;27.6,19.3;29.8,31.3;24.1,27.8;24.1,33.6;20.2,33.2;23.5,44.3;30.5,51.7;31.6,56.2;32.7,61.8;34.0,64.9;37.5,57.7;39.2,61.8;39.7,68.8;41.8,72.1;42.7,76.4;52.0,76.7;54.2,73.8;55.1,66.6;62.1,72.1;64.6,65.9;65.5,73.2;70.4,71.1;72.5,60.8;71.2,48.6;80.0,39.1;79.3,34.0;77.1,32.1;76.2,29.0;65.6,27.4;63.9,31.9;59.5,32.5;59.8,41.6 |until skill("Mining")>=175 |tip Cave order west to east: 34.6,43.9; 53.8,77.1; 69.2,74.8; 81.1,35.4. Start from Refuge Pointe at 49.1,51.1 then 53.3,36.7. Low-level players should skip all 4 caves. Alliance detour near Hammerfall: 71.2,48.6 -> 65.6,27.4.
+		#include "follow_path_mine"
+		skill Mining,175
+	step
+		'Continue with Mining 175-245 zone selection. |confirm |next "WoW Professions Guides\\Mining\\Mining 175-245\\Common"
+]])
+
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 125-175\\Arathi Highlands (Horde)",[[
+	author wow-professions.com
+	type professions
+	faction horde
+	startlevel 10
+	description Mine Iron, Tin, and Gold in Arathi Highlands to 175 (Horde variant).
+	description This route is incomplete, untested, or placeholder and may contain errors.
+	step
+		'Requires Mining 125. Train Expert here if needed.
+		skill Mining,125
+		#include "trainer_Mining"
+		.skillmax Mining,225
+	step
+		loop Arathi Highlands,80.0,39.1;79.3,34.0;77.1,32.1;76.2,29.0;65.6,27.4;63.9,31.9;59.5,32.5;59.8,41.6;49.1,51.1;53.3,36.7;50.0,38.7;47.6,37.5;34.6,43.9;53.8,77.1;69.2,74.8;81.1,35.4;39.7,43.0;38.9,47.0;35.7,41.8;42.5,34.0;39.2,26.8;31.1,20.0;27.6,19.3;29.8,31.3;24.1,27.8;24.1,33.6;20.2,33.2;23.5,44.3;30.5,51.7;31.6,56.2;32.7,61.8;34.0,64.9;37.5,57.7;39.2,61.8;39.7,68.8;41.8,72.1;42.7,76.4;52.0,76.7;54.2,73.8;55.1,66.6;62.1,72.1;64.6,65.9;65.5,73.2;70.4,71.1;72.5,60.8;71.2,48.6 |until skill("Mining")>=175 |tip Cave order west to east: 34.6,43.9; 53.8,77.1; 69.2,74.8; 81.1,35.4. If you can fly into Hammerfall, start at 80.0,39.1 then 79.3,34.0. Low-level players should skip all 4 caves.
+		#include "follow_path_mine"
+		skill Mining,175
+	step
+		'Continue with Mining 175-245 zone selection. |confirm |next "WoW Professions Guides\\Mining\\Mining 175-245\\Common"
+]])
+
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 125-175\\Desolace",[[
 	author wow-professions.com
 	type professions
 	startlevel 10
@@ -149,10 +191,10 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 
 		#include "follow_path_mine"
 		skill Mining,175
 	step
-		'Continue with Mining 175-245 zone selection. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 175-245 (Common)"
+		'Continue with Mining 175-245 zone selection. |confirm |next "WoW Professions Guides\\Mining\\Mining 175-245\\Common"
 ]])
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 125-175\\Thousand Needles",[[
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 125-175\\Thousand Needles",[[
 	author wow-professions.com
 	type professions
 	startlevel 10
@@ -168,10 +210,10 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 
 		#include "follow_path_mine"
 		skill Mining,175
 	step
-		'Continue with Mining 175-245 zone selection. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 175-245 (Common)"
+		'Continue with Mining 175-245 zone selection. |confirm |next "WoW Professions Guides\\Mining\\Mining 175-245\\Common"
 ]])
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 175-245 (Common)",[[
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 175-245\\Common",[[
 	author wow-professions.com
 	type professions
 	startlevel 25
@@ -189,12 +231,13 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 
 		.' Truesilver Ore
 	step
 		'Choose your 175-245 route:
-		.' The Hinterlands |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 175-245\\The Hinterlands"
-		.' Tanaris |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 175-245\\Tanaris"
-		.' Skip to full Mining 1-450 route |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 1-450 (WotLK Route)"
+		.' The Hinterlands |confirm |next "WoW Professions Guides\\Mining\\Mining 175-245\\The Hinterlands"
+		.' Tanaris |confirm |next "WoW Professions Guides\\Mining\\Mining 175-245\\Tanaris"
+		.' Skip to Mining 245-275 zone selection |confirm |next "WoW Professions Guides\\Mining\\Mining 245-275\\Common"
+		.' Skip to full Mining 1-450 route |confirm |next "WoW Professions Guides\\Mining\\Mining 1-450 (WotLK Route)"
 ]])
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 175-245\\The Hinterlands",[[
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 175-245\\The Hinterlands",[[
 	author wow-professions.com
 	type professions
 	startlevel 25
@@ -210,10 +253,10 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 
 		#include "follow_path_mine"
 		skill Mining,245
 	step
-		'Continue with Mining 245-275 zone selection. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 245-275 (Common)"
+		'Continue with Mining 245-275 zone selection. |confirm |next "WoW Professions Guides\\Mining\\Mining 245-275\\Common"
 ]])
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 175-245\\Tanaris",[[
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 175-245\\Tanaris",[[
 	author wow-professions.com
 	type professions
 	startlevel 25
@@ -229,10 +272,10 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 
 		#include "follow_path_mine"
 		skill Mining,245
 	step
-		'Continue with Mining 245-275 zone selection. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 245-275 (Common)"
+		'Continue with Mining 245-275 zone selection. |confirm |next "WoW Professions Guides\\Mining\\Mining 245-275\\Common"
 ]])
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 245-275 (Common)",[[
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 245-275\\Common",[[
 	author wow-professions.com
 	type professions
 	startlevel 25
@@ -248,14 +291,15 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 
 		.' Thorium Ore
 	step
 		'Choose your 245-275 route:
-		.' Un'Goro Crater |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 245-275\\Un'Goro Crater"
-		.' Blasted Lands (Alliance) |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 245-275\\Blasted Lands (Alliance)"
-		.' Blasted Lands (Horde) |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 245-275\\Blasted Lands (Horde)"
-		.' Felwood |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 245-275\\Felwood"
-		.' Skip to full Mining 1-450 route |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 1-450 (WotLK Route)"
+		.' Un'Goro Crater |confirm |next "WoW Professions Guides\\Mining\\Mining 245-275\\Un'Goro Crater"
+		.' Blasted Lands (Alliance) |confirm |next "WoW Professions Guides\\Mining\\Mining 245-275\\Blasted Lands (Alliance)"
+		.' Blasted Lands (Horde) |confirm |next "WoW Professions Guides\\Mining\\Mining 245-275\\Blasted Lands (Horde)"
+		.' Felwood |confirm |next "WoW Professions Guides\\Mining\\Mining 245-275\\Felwood"
+		.' Skip to Mining 275-300 zone selection |confirm |next "WoW Professions Guides\\Mining\\Mining 275-300\\Common"
+		.' Skip to full Mining 1-450 route |confirm |next "WoW Professions Guides\\Mining\\Mining 1-450 (WotLK Route)"
 ]])
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 245-275\\Un'Goro Crater",[[
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 245-275\\Un'Goro Crater",[[
 	author wow-professions.com
 	type professions
 	startlevel 25
@@ -271,10 +315,10 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 
 		#include "follow_path_mine"
 		skill Mining,275
 	step
-		'Continue with Mining 275-300 zone selection. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 275-300 (Common)"
+		'Continue with Mining 275-300 zone selection. |confirm |next "WoW Professions Guides\\Mining\\Mining 275-300\\Common"
 ]])
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 245-275\\Blasted Lands (Alliance)",[[
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 245-275\\Blasted Lands (Alliance)",[[
 	author wow-professions.com
 	type professions
 	startlevel 25
@@ -290,10 +334,10 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 
 		#include "follow_path_mine"
 		skill Mining,275
 	step
-		'Continue with Mining 275-300 zone selection. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 275-300 (Common)"
+		'Continue with Mining 275-300 zone selection. |confirm |next "WoW Professions Guides\\Mining\\Mining 275-300\\Common"
 ]])
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 245-275\\Blasted Lands (Horde)",[[
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 245-275\\Blasted Lands (Horde)",[[
 	author wow-professions.com
 	type professions
 	startlevel 25
@@ -309,10 +353,10 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 
 		#include "follow_path_mine"
 		skill Mining,275
 	step
-		'Continue with Mining 275-300 zone selection. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 275-300 (Common)"
+		'Continue with Mining 275-300 zone selection. |confirm |next "WoW Professions Guides\\Mining\\Mining 275-300\\Common"
 ]])
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 245-275\\Felwood",[[
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 245-275\\Felwood",[[
 	author wow-professions.com
 	type professions
 	startlevel 25
@@ -328,10 +372,10 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 
 		#include "follow_path_mine"
 		skill Mining,275
 	step
-		'Continue with Mining 275-300 zone selection. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 275-300 (Common)"
+		'Continue with Mining 275-300 zone selection. |confirm |next "WoW Professions Guides\\Mining\\Mining 275-300\\Common"
 ]])
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 275-300 (Common)",[[
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 275-300\\Common",[[
 	author wow-professions.com
 	type professions
 	startlevel 25
@@ -348,14 +392,15 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 
 		'Now you can mine Rich Thorium Veins too.
 	step
 		'Choose your 275-300 route:
-		.' Un'Goro Crater |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 275-300\\Un'Goro Crater"
-		.' Eastern Plaguelands |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 275-300\\Eastern Plaguelands"
-		.' Winterspring |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 275-300\\Winterspring"
-		.' Burning Steppes |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 275-300\\Burning Steppes"
-		.' Skip to full Mining 1-450 route |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 1-450 (WotLK Route)"
+		.' Un'Goro Crater |confirm |next "WoW Professions Guides\\Mining\\Mining 275-300\\Un'Goro Crater"
+		.' Eastern Plaguelands |confirm |next "WoW Professions Guides\\Mining\\Mining 275-300\\Eastern Plaguelands"
+		.' Winterspring |confirm |next "WoW Professions Guides\\Mining\\Mining 275-300\\Winterspring"
+		.' Burning Steppes |confirm |next "WoW Professions Guides\\Mining\\Mining 275-300\\Burning Steppes"
+		.' Skip to Mining 300-350 zone selection |confirm |next "WoW Professions Guides\\Mining\\Mining 300-350\\BC Classic"
+		.' Skip to full Mining 1-450 route |confirm |next "WoW Professions Guides\\Mining\\Mining 1-450 (WotLK Route)"
 ]])
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 275-300\\Un'Goro Crater",[[
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 275-300\\Un'Goro Crater",[[
 	author wow-professions.com
 	type professions
 	startlevel 25
@@ -369,10 +414,10 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 
 		#include "follow_path_mine"
 		skill Mining,300
 	step
-		'Continue with Burning Crusade Classic Mining 300-350. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 300-350 (BC Classic)"
+		'Continue with Burning Crusade Classic Mining 300-350. |confirm |next "WoW Professions Guides\\Mining\\Mining 300-350\\BC Classic"
 ]])
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 275-300\\Eastern Plaguelands",[[
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 275-300\\Eastern Plaguelands",[[
 	author wow-professions.com
 	type professions
 	startlevel 25
@@ -386,10 +431,10 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 
 		#include "follow_path_mine"
 		skill Mining,300
 	step
-		'Continue with Burning Crusade Classic Mining 300-350. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 300-350 (BC Classic)"
+		'Continue with Burning Crusade Classic Mining 300-350. |confirm |next "WoW Professions Guides\\Mining\\Mining 300-350\\BC Classic"
 ]])
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 275-300\\Winterspring",[[
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 275-300\\Winterspring",[[
 	author wow-professions.com
 	type professions
 	startlevel 25
@@ -403,10 +448,10 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 
 		#include "follow_path_mine"
 		skill Mining,300
 	step
-		'Continue with Burning Crusade Classic Mining 300-350. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 300-350 (BC Classic)"
+		'Continue with Burning Crusade Classic Mining 300-350. |confirm |next "WoW Professions Guides\\Mining\\Mining 300-350\\BC Classic"
 ]])
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 275-300\\Burning Steppes",[[
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 275-300\\Burning Steppes",[[
 	author wow-professions.com
 	type professions
 	startlevel 25
@@ -420,10 +465,10 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 
 		#include "follow_path_mine"
 		skill Mining,300
 	step
-		'Continue with Burning Crusade Classic Mining 300-350. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 300-350 (BC Classic)"
+		'Continue with Burning Crusade Classic Mining 300-350. |confirm |next "WoW Professions Guides\\Mining\\Mining 300-350\\BC Classic"
 ]])
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 300-350 (BC Classic)",[[
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 300-350\\BC Classic",[[
 	author wow-professions.com
 	type professions
 	startlevel 40
@@ -441,12 +486,13 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 
 		.' If Hellfire is crowded or you don't have a flying mount, mine more Thorium in previous zones up to 325.
 	step
 		'Choose your 300-325 route in Hellfire Peninsula:
-		.' Route 1 |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 300-325\\Hellfire Peninsula (Route 1)"
-		.' Route 2 |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 300-325\\Hellfire Peninsula (Route 2)"
-		.' Skip to full Mining 1-450 route |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 1-450 (WotLK Route)"
+		.' Route 1 |confirm |next "WoW Professions Guides\\Mining\\Mining 300-325\\Hellfire Peninsula (Route 1)"
+		.' Route 2 |confirm |next "WoW Professions Guides\\Mining\\Mining 300-325\\Hellfire Peninsula (Route 2)"
+		.' Skip to Mining 325-350 zone selection |confirm |next "WoW Professions Guides\\Mining\\Mining 325-350\\BC Classic"
+		.' Skip to full Mining 1-450 route |confirm |next "WoW Professions Guides\\Mining\\Mining 1-450 (WotLK Route)"
 ]])
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 300-325\\Hellfire Peninsula (Route 1)",[[
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 300-325\\Hellfire Peninsula (Route 1)",[[
 	author wow-professions.com
 	type professions
 	startlevel 40
@@ -462,10 +508,10 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 
 		#include "follow_path_mine"
 		skill Mining,325
 	step
-		'Continue with Mining 325-350 zone selection. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 325-350 (BC Classic)"
+		'Continue with Mining 325-350 zone selection. |confirm |next "WoW Professions Guides\\Mining\\Mining 325-350\\BC Classic"
 ]])
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 300-325\\Hellfire Peninsula (Route 2)",[[
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 300-325\\Hellfire Peninsula (Route 2)",[[
 	author wow-professions.com
 	type professions
 	startlevel 40
@@ -481,10 +527,10 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 
 		#include "follow_path_mine"
 		skill Mining,325
 	step
-		'Continue with Mining 325-350 zone selection. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 325-350 (BC Classic)"
+		'Continue with Mining 325-350 zone selection. |confirm |next "WoW Professions Guides\\Mining\\Mining 325-350\\BC Classic"
 ]])
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 325-350 (BC Classic)",[[
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 325-350\\BC Classic",[[
 	author wow-professions.com
 	type professions
 	startlevel 40
@@ -498,13 +544,14 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 
 		.' They only spawn in flying-access areas (Skettis and the area above Shattrath), so this is not an issue for lower-level players.
 	step
 		'Choose your 325-350 route:
-		.' Zangarmarsh |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 325-350\\Zangarmarsh"
-		.' Terokkar Forest (Flying) |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 325-350\\Terokkar Forest (Flying)"
-		.' Terokkar Forest (Flightless) |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 325-350\\Terokkar Forest (Flightless)"
-		.' Skip to full Mining 1-450 route |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 1-450 (WotLK Route)"
+		.' Zangarmarsh |confirm |next "WoW Professions Guides\\Mining\\Mining 325-350\\Zangarmarsh"
+		.' Terokkar Forest (Flying) |confirm |next "WoW Professions Guides\\Mining\\Mining 325-350\\Terokkar Forest (Flying)"
+		.' Terokkar Forest (Flightless) |confirm |next "WoW Professions Guides\\Mining\\Mining 325-350\\Terokkar Forest (Flightless)"
+		.' Skip to Mining 350-400 zone selection |confirm |next "WoW Professions Guides\\Mining\\Mining 350-400\\WotLK Classic"
+		.' Skip to full Mining 1-450 route |confirm |next "WoW Professions Guides\\Mining\\Mining 1-450 (WotLK Route)"
 ]])
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 325-350\\Zangarmarsh",[[
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 325-350\\Zangarmarsh",[[
 	author wow-professions.com
 	type professions
 	startlevel 40
@@ -518,10 +565,10 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 
 		#include "follow_path_mine"
 		skill Mining,350
 	step
-		'Continue with WotLK Classic Mining 350-400. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 350-400 (WotLK Classic)"
+		'Continue with WotLK Classic Mining 350-400. |confirm |next "WoW Professions Guides\\Mining\\Mining 350-400\\WotLK Classic"
 ]])
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 325-350\\Terokkar Forest (Flying)",[[
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 325-350\\Terokkar Forest (Flying)",[[
 	author wow-professions.com
 	type professions
 	startlevel 40
@@ -535,10 +582,10 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 
 		#include "follow_path_mine"
 		skill Mining,350
 	step
-		'Continue with WotLK Classic Mining 350-400. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 350-400 (WotLK Classic)"
+		'Continue with WotLK Classic Mining 350-400. |confirm |next "WoW Professions Guides\\Mining\\Mining 350-400\\WotLK Classic"
 ]])
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 325-350\\Terokkar Forest (Flightless)",[[
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 325-350\\Terokkar Forest (Flightless)",[[
 	author wow-professions.com
 	type professions
 	startlevel 40
@@ -553,10 +600,10 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 
 		#include "follow_path_mine"
 		skill Mining,350
 	step
-		'Continue with WotLK Classic Mining 350-400. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 350-400 (WotLK Classic)"
+		'Continue with WotLK Classic Mining 350-400. |confirm |next "WoW Professions Guides\\Mining\\Mining 350-400\\WotLK Classic"
 ]])
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 350-400 (WotLK Classic)",[[
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 350-400\\WotLK Classic",[[
 	author wow-professions.com
 	type professions
 	startlevel 55
@@ -577,14 +624,14 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 
 		.' Lower-level players may want to skip some caves in Borean Tundra depending on level/gear.
 	step
 		'Choose your 350-400 route:
-		.' Borean Tundra |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 350-400\\Borean Tundra"
-		.' Howling Fjord |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 350-400\\Howling Fjord"
-		.' Borean Tundra (Flightless) |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 350-400\\Borean Tundra (Flightless)"
-		.' Howling Fjord (Flightless) |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 350-400\\Howling Fjord (Flightless)"
-		.' Skip to full Mining 1-450 route |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 1-450 (WotLK Route)"
+		.' Borean Tundra |confirm |next "WoW Professions Guides\\Mining\\Mining 350-400\\Borean Tundra"
+		.' Howling Fjord |confirm |next "WoW Professions Guides\\Mining\\Mining 350-400\\Howling Fjord"
+		.' Borean Tundra (Flightless) |confirm |next "WoW Professions Guides\\Mining\\Mining 350-400\\Borean Tundra (Flightless)"
+		.' Howling Fjord (Flightless) |confirm |next "WoW Professions Guides\\Mining\\Mining 350-400\\Howling Fjord (Flightless)"
+		.' Skip to full Mining 1-450 route |confirm |next "WoW Professions Guides\\Mining\\Mining 1-450 (WotLK Route)"
 ]])
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 350-400\\Borean Tundra",[[
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 350-400\\Borean Tundra",[[
 	author wow-professions.com
 	type professions
 	startlevel 55
@@ -599,10 +646,10 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 
 		#include "follow_path_mine"
 		skill Mining,400
 	step
-		'Continue with Mining 1-450 route. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 1-450 (WotLK Route)"
+		'Continue with Mining 1-450 route. |confirm |next "WoW Professions Guides\\Mining\\Mining 1-450 (WotLK Route)"
 ]])
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 350-400\\Howling Fjord",[[
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 350-400\\Howling Fjord",[[
 	author wow-professions.com
 	type professions
 	startlevel 55
@@ -617,10 +664,10 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 
 		#include "follow_path_mine"
 		skill Mining,400
 	step
-		'Continue with Mining 1-450 route. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 1-450 (WotLK Route)"
+		'Continue with Mining 1-450 route. |confirm |next "WoW Professions Guides\\Mining\\Mining 1-450 (WotLK Route)"
 ]])
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 350-400\\Borean Tundra (Flightless)",[[
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 350-400\\Borean Tundra (Flightless)",[[
 	author wow-professions.com
 	type professions
 	startlevel 55
@@ -635,10 +682,10 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 
 		#include "follow_path_mine"
 		skill Mining,400
 	step
-		'Continue with Mining 1-450 route. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 1-450 (WotLK Route)"
+		'Continue with Mining 1-450 route. |confirm |next "WoW Professions Guides\\Mining\\Mining 1-450 (WotLK Route)"
 ]])
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 350-400\\Howling Fjord (Flightless)",[[
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 350-400\\Howling Fjord (Flightless)",[[
 	author wow-professions.com
 	type professions
 	startlevel 55
@@ -653,5 +700,5 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 
 		#include "follow_path_mine"
 		skill Mining,400
 	step
-		'Continue with Mining 1-450 route. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 1-450 (WotLK Route)"
+		'Continue with Mining 1-450 route. |confirm |next "WoW Professions Guides\\Mining\\Mining 1-450 (WotLK Route)"
 ]])

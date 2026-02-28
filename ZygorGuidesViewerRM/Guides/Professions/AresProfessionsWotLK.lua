@@ -1,33 +1,33 @@
 local ZygorGuidesViewer=ZygorGuidesViewer
 if not ZygorGuidesViewer then return end
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Profession 1-450 Coverage Plan",[[
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Profession 1-450 Coverage Plan",[[
 	author ErebusAres
 	type professions
 	startlevel 5
 	description Quick launcher for Wrath profession routes in this pack.
 	description These guides are under development, untested, or may contain errors. Please report any issues you encounter!
 	step
-		'Open Mining 1-65 Starter Hub (split by faction/race starting zone). |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 1-65 (Starter Hub)"
+		'Open Mining 1-65 Starter Hub (split by faction/race starting zone). |confirm |next "WoW Professions Guides\\Mining\\Mining 1-65\\Starter Hub"
 	step
-		'Open Mining 1-450. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 1-450 (WotLK Route)"
+		'Open Mining 1-450. |confirm |next "WoW Professions Guides\\Mining\\Mining 1-450 (WotLK Route)"
 	step
-		'Open Herbalism 1-450. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Herbalism 1-450 (WotLK Route)"
+		'Open Herbalism 1-450. |confirm |next "WoW Professions Guides\\Herbalism\\Herbalism 1-450 (WotLK Route)"
 	step
-		'Open Skinning 1-450. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Skinning 1-450 (WotLK Route)"
+		'Open Skinning 1-450. |confirm |next "WoW Professions Guides\\Skinning\\Skinning 1-450 (WotLK Route)"
 	step
-		'Open Alchemy 1-450. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Alchemy 1-450 (WotLK Route)"
+		'Open Alchemy 1-450. |confirm |next "WoW Professions Guides\\Alchemy\\Alchemy 1-450 (WotLK Route)"
 	step
-		'Open Jewelcrafting 1-450. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Jewelcrafting 1-450 (WotLK Route)"
+		'Open Jewelcrafting 1-450. |confirm |next "WoW Professions Guides\\Jewelcrafting\\Jewelcrafting 1-450 (WotLK Route)"
 	step
-		'Open Blacksmithing 1-450. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Blacksmithing 1-450 (WotLK Route)"
+		'Open Blacksmithing 1-450. |confirm |next "WoW Professions Guides\\Blacksmithing\\Blacksmithing 1-450 (WotLK Route)"
 	step
-		'Open Engineering 1-450. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Engineering 1-450 (WotLK Route)"
+		'Open Engineering 1-450. |confirm |next "WoW Professions Guides\\Engineering\\Engineering 1-450 (WotLK Route)"
 	step
-		'Open Enchanting 1-450. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Enchanting 1-450 (WotLK Route)"
+		'Open Enchanting 1-450. |confirm |next "WoW Professions Guides\\Enchanting\\Enchanting 1-450 (WotLK Route)"
 ]])
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 1-450 (WotLK Route)",[[
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 1-450 (WotLK Route)",[[
 	author ErebusAres
 	type professions
 	startlevel 5
@@ -46,7 +46,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 
 		'Mining 1-375 Complete|condition true
 		'Mining 1-450 Complete|condition true
 	step
-		'Need a race/faction starter split for 1-65? Open the Mining starter hub. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 1-65 (Starter Hub)"
+		'Need a race/faction starter split for 1-65? Open the Mining starter hub. |confirm |next "WoW Professions Guides\\Mining\\Mining 1-65\\Starter Hub"
 	step
 		'Choose the nearest 1-65 starting route:
 		.' Use Dun Morogh if you're near Ironforge.
@@ -118,10 +118,10 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 
 	step
 		'Mining 1-450 complete. |condition skill("Mining")>=450
 	step
-		'Back to Professions landing page. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Profession 1-450 Coverage Plan"
+		'Back to Professions landing page. |confirm |next "WoW Professions Guides\\Profession 1-450 Coverage Plan"
 ]])
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Herbalism 1-450 (WotLK Route)",[[
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Herbalism\\Herbalism 1-450 (WotLK Route)",[[
 	author ErebusAres
 	type professions
 	startlevel 5
@@ -192,7 +192,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Herbali
 		'Herbalism 1-450 complete. |condition skill("Herbalism")>=450
 ]])
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Skinning 1-450 (WotLK Route)",[[
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Skinning\\Skinning 1-450 (WotLK Route)",[[
 	author ErebusAres
 	type professions
 	startlevel 5
@@ -261,7 +261,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Skinnin
 		'Skinning 1-450 complete. |condition skill("Skinning")>=450
 ]])
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Alchemy 1-450 (WotLK Route)",[[
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Alchemy\\Alchemy 1-450 (WotLK Route)",[[
 	author ErebusAres
 	type professions
 	startlevel 5
@@ -327,7 +327,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Alchemy
 		'Alchemy 1-450 complete. |condition skill("Alchemy")>=450
 ]])
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Jewelcrafting 1-450 (WotLK Route)",[[
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Jewelcrafting\\Jewelcrafting 1-450 (WotLK Route)",[[
 	author ErebusAres
 	type professions
 	startlevel 5
@@ -394,7 +394,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Jewelcr
 		'Jewelcrafting 1-450 complete. |condition skill("Jewelcrafting")>=450
 ]])
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Blacksmithing 1-450 (WotLK Route)",[[
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Blacksmithing\\Blacksmithing 1-450 (WotLK Route)",[[
 	author ErebusAres
 	type professions
 	startlevel 5
@@ -463,7 +463,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Blacksm
 		'Blacksmithing 1-450 complete. |condition skill("Blacksmithing")>=450
 ]])
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Engineering 1-450 (WotLK Route)",[[
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Engineering\\Engineering 1-450 (WotLK Route)",[[
 	author ErebusAres
 	type professions
 	startlevel 5
@@ -529,7 +529,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Enginee
 		'Engineering 1-450 complete. |condition skill("Engineering")>=450
 ]])
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Enchanting 1-450 (WotLK Route)",[[
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Enchanting\\Enchanting 1-450 (WotLK Route)",[[
 	author ErebusAres
 	type professions
 	startlevel 5
@@ -662,7 +662,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' Dev Tests\\Syntax Integration (Temporary)
 		loop Elwynn Forest,42.4,66.2;39.4,58.2;35.6,53.4
 	step
 		label "guide_jump"
-		.' Guide jump test: opens Mining guide. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 1-450 (WotLK Route)"
+		.' Guide jump test: opens Mining guide. |confirm |next "WoW Professions Guides\\Mining\\Mining 1-450 (WotLK Route)"
 	step
 		label "end"
 		.' Syntax integration test complete. You can delete this guide after validation.

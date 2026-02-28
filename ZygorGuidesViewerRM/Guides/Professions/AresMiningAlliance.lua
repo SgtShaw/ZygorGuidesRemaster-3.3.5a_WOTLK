@@ -2,20 +2,21 @@ local ZygorGuidesViewer=ZygorGuidesViewer
 if not ZygorGuidesViewer then return end
 if UnitFactionGroup("player")~="Alliance" then return end
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 1-65 (Starter Hub)",[[
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 1-65\\Starter Hub",[[
 	author wow-professions.com
 	type professions
 	startlevel 5
 	description Starter launcher for Alliance Mining 1-65 by race starting zone.
 	step
 		'Choose your Alliance 1-65 starter route:
-		.' Elwynn Forest (Human) |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 1-65\\Elwynn Forest"
-		.' Dun Morogh (Dwarf/Gnome) |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 1-65\\Dun Morogh"
-		.' Darkshore (Night Elf) |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 1-65\\Darkshore"
-		.' Back to Professions landing page |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Profession 1-450 Coverage Plan"
+		.' Elwynn Forest (Human) |confirm |next "WoW Professions Guides\\Mining\\Mining 1-65\\Elwynn Forest"
+		.' Dun Morogh (Dwarf/Gnome) |confirm |next "WoW Professions Guides\\Mining\\Mining 1-65\\Dun Morogh"
+		.' Darkshore (Night Elf) |confirm |next "WoW Professions Guides\\Mining\\Mining 1-65\\Darkshore"
+		.' Skip to Mining 65-125 zone selection |confirm |next "WoW Professions Guides\\Mining\\Mining 65-125\\Common"
+		.' Back to Professions landing page |confirm |next "WoW Professions Guides\\Profession 1-450 Coverage Plan"
 ]])
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 1-65\\Elwynn Forest",[[
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 1-65\\Elwynn Forest",[[
 	author wow-professions.com
 	type professions
 	startlevel 5
@@ -32,10 +33,10 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 
 		#include "follow_path_mine"
 		skill Mining,65
 	step
-		'Continue with Mining 65-125 zone selection. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 65-125 (Common)"
+		'Continue with Mining 65-125 zone selection. |confirm |next "WoW Professions Guides\\Mining\\Mining 65-125\\Common"
 ]])
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 1-65\\Dun Morogh",[[
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 1-65\\Dun Morogh",[[
 	author wow-professions.com
 	type professions
 	startlevel 5
@@ -59,10 +60,10 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 
 		#include "follow_path_mine"
 		skill Mining,65
 	step
-		'Continue with Mining 65-125 zone selection. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 65-125 (Common)"
+		'Continue with Mining 65-125 zone selection. |confirm |next "WoW Professions Guides\\Mining\\Mining 65-125\\Common"
 ]])
 
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 1-65\\Darkshore",[[
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 1-65\\Darkshore",[[
 	author wow-professions.com
 	type professions
 	startlevel 5
@@ -79,24 +80,5 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 
 		#include "follow_path_mine"
 		skill Mining,65
 	step
-		'Continue with Mining 65-125 zone selection. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 65-125 (Common)"
-]])
-
-ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Professions\\Mining 125-175\\Arathi Highlands (Alliance)",[[
-	author wow-professions.com
-	type professions
-	startlevel 10
-	description Mine Iron, Tin, and Gold in Arathi Highlands to 175 (Alliance variant).
-	description This route is incomplete, untested, or placeholder and may contain errors.
-	step
-		'Requires Mining 125. Train Expert here if needed.
-		skill Mining,125
-		#include "trainer_Mining"
-		.skillmax Mining,225
-	step
-		loop Arathi Highlands,49.1,51.1;53.3,36.7;50.0,38.7;47.6,37.5;34.6,43.9;53.8,77.1;69.2,74.8;81.1,35.4;39.7,43.0;38.9,47.0;35.7,41.8;42.5,34.0;39.2,26.8;31.1,20.0;27.6,19.3;29.8,31.3;24.1,27.8;24.1,33.6;20.2,33.2;23.5,44.3;30.5,51.7;31.6,56.2;32.7,61.8;34.0,64.9;37.5,57.7;39.2,61.8;39.7,68.8;41.8,72.1;42.7,76.4;52.0,76.7;54.2,73.8;55.1,66.6;62.1,72.1;64.6,65.9;65.5,73.2;70.4,71.1;72.5,60.8;71.2,48.6;80.0,39.1;79.3,34.0;77.1,32.1;76.2,29.0;65.6,27.4;63.9,31.9;59.5,32.5;59.8,41.6 |until skill("Mining")>=175 |tip Cave order west to east: 34.6,43.9; 53.8,77.1; 69.2,74.8; 81.1,35.4. Start from Refuge Pointe at 49.1,51.1 then 53.3,36.7. Low-level players should skip all 4 caves. Alliance detour near Hammerfall: 71.2,48.6 -> 65.6,27.4.
-		#include "follow_path_mine"
-		skill Mining,175
-	step
-		'Continue with Mining 175-245 zone selection. |confirm |next "Ares' WotLK 3.3.5a Guides\\Professions\\Mining 175-245 (Common)"
+		'Continue with Mining 65-125 zone selection. |confirm |next "WoW Professions Guides\\Mining\\Mining 65-125\\Common"
 ]])

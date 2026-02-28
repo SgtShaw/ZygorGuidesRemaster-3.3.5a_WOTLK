@@ -1067,18 +1067,18 @@ function me:ParseEntry(text)
 				local st,en,x,y,d
 				st,en = 1,1
 
-				st,en,x,y,d = params:find("([0-9%.]+),([0-9%.]+)(,([0-9%.]+))?",en)
+				st,en,x,y,d = params:find("([0-9]+%.?[0-9]*),([0-9]+%.?[0-9]*)(,([0-9]+%.?[0-9]*))?",en)
 				if not x then
 					-- without distance, perhaps?
 					d=0.2
-					st,en,x,y = params:find("([0-9%.]+),([0-9%.]+)",en)
+					st,en,x,y = params:find("([0-9]+%.?[0-9]*),([0-9]+%.?[0-9]*)",en)
 				end
 
 				if x and y then
 					goal.x = tonumber(x)
 					goal.y = tonumber(y)
 					goal.dist = tonumber(d)
-					params = params:sub(1,st-1) .. COLOR_LOC(L['coords']:format(x,y)) .. params:sub(en+1)
+					params = params:sub(1,st-1) .. COLOR_LOC(L['coords']:format(goal.x,goal.y)) .. params:sub(en+1)
 				end
 
 				if goal.x then goal.map = prevmap end
