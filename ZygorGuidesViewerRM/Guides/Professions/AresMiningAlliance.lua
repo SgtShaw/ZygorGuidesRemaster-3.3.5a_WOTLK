@@ -82,3 +82,96 @@ ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 1-65\\Da
 	step
 		'Continue with Mining 65-125 zone selection. |confirm |next "WoW Professions Guides\\Mining\\Mining 65-125\\Common"
 ]])
+
+ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining Route Selector",[[
+	author wow-professions.com
+	type professions
+	startlevel 5
+	description Full in-view selector for Alliance mining routes.
+	step
+		label "start"
+		'Choose an Alliance mining range:
+		.' Mining 1-65 |confirm |next "range_1_65"
+		.' Mining 65-125 |confirm |next "range_65_125"
+		.' Mining 125-175 |confirm |next "range_125_175"
+		.' Mining 175-245 |confirm |next "range_175_245"
+		.' Mining 245-275 |confirm |next "range_245_275"
+		.' Mining 275-300 |confirm |next "range_275_300"
+		.' Mining 300-325 |confirm |next "range_300_325"
+		.' Mining 325-350 |confirm |next "range_325_350"
+		.' Mining 350-400 |confirm |next "range_350_400"
+		.' Back to Professions landing page |confirm |next "WoW Professions Guides\\Profession 1-450 Coverage Plan"
+	step
+		label "range_1_65"
+		'Choose an Alliance 1-65 route:
+		.' Starter hub |confirm |next "WoW Professions Guides\\Mining\\Mining 1-65\\Starter Hub"
+		.' Elwynn Forest |confirm |next "WoW Professions Guides\\Mining\\Mining 1-65\\Elwynn Forest"
+		.' Dun Morogh |confirm |next "WoW Professions Guides\\Mining\\Mining 1-65\\Dun Morogh"
+		.' Darkshore |confirm |next "WoW Professions Guides\\Mining\\Mining 1-65\\Darkshore"
+		.' Back to range list |confirm |next "start"
+	step
+		label "range_65_125"
+		'Choose a 65-125 route:
+		.' Zone hub |confirm |next "WoW Professions Guides\\Mining\\Mining 65-125\\Common"
+		.' Hillsbrad Foothills |confirm |next "WoW Professions Guides\\Mining\\Mining 65-125\\Hillsbrad Foothills"
+		.' Redridge Mountains |confirm |next "WoW Professions Guides\\Mining\\Mining 65-125\\Redridge Mountains"
+		.' Ashenvale |confirm |next "WoW Professions Guides\\Mining\\Mining 65-125\\Ashenvale"
+		.' The Barrens |confirm |next "WoW Professions Guides\\Mining\\Mining 65-125\\The Barrens"
+		.' Back to range list |confirm |next "start"
+	step
+		label "range_125_175"
+		'Choose a 125-175 route:
+		.' Zone hub |confirm |next "WoW Professions Guides\\Mining\\Mining 125-175\\Common"
+		.' Arathi Highlands (Alliance) |confirm |next "WoW Professions Guides\\Mining\\Mining 125-175\\Arathi Highlands (Alliance)"
+		.' Desolace |confirm |next "WoW Professions Guides\\Mining\\Mining 125-175\\Desolace"
+		.' Thousand Needles |confirm |next "WoW Professions Guides\\Mining\\Mining 125-175\\Thousand Needles"
+		.' Back to range list |confirm |next "start"
+	step
+		label "range_175_245"
+		'Choose a 175-245 route:
+		.' Zone hub |confirm |next "WoW Professions Guides\\Mining\\Mining 175-245\\Common"
+		.' The Hinterlands |confirm |next "WoW Professions Guides\\Mining\\Mining 175-245\\The Hinterlands"
+		.' Tanaris |confirm |next "WoW Professions Guides\\Mining\\Mining 175-245\\Tanaris"
+		.' Back to range list |confirm |next "start"
+	step
+		label "range_245_275"
+		'Choose a 245-275 route:
+		.' Zone hub |confirm |next "WoW Professions Guides\\Mining\\Mining 245-275\\Common"
+		.' Un'Goro Crater |confirm |next "WoW Professions Guides\\Mining\\Mining 245-275\\Un'Goro Crater"
+		.' Blasted Lands (Alliance) |confirm |next "WoW Professions Guides\\Mining\\Mining 245-275\\Blasted Lands (Alliance)"
+		.' Felwood |confirm |next "WoW Professions Guides\\Mining\\Mining 245-275\\Felwood"
+		.' Back to range list |confirm |next "start"
+	step
+		label "range_275_300"
+		'Choose a 275-300 route:
+		.' Zone hub |confirm |next "WoW Professions Guides\\Mining\\Mining 275-300\\Common"
+		.' Un'Goro Crater |confirm |next "WoW Professions Guides\\Mining\\Mining 275-300\\Un'Goro Crater"
+		.' Eastern Plaguelands |confirm |next "WoW Professions Guides\\Mining\\Mining 275-300\\Eastern Plaguelands"
+		.' Winterspring |confirm |next "WoW Professions Guides\\Mining\\Mining 275-300\\Winterspring"
+		.' Burning Steppes |confirm |next "WoW Professions Guides\\Mining\\Mining 275-300\\Burning Steppes"
+		.' Back to range list |confirm |next "start"
+	step
+		label "range_300_325"
+		'Choose a 300-325 route:
+		.' Zone hub |confirm |next "WoW Professions Guides\\Mining\\Mining 300-350\\BC Classic"
+		.' Hellfire Peninsula (Route 1) |confirm |next "WoW Professions Guides\\Mining\\Mining 300-325\\Hellfire Peninsula (Route 1)"
+		.' Hellfire Peninsula (Route 2) |confirm |next "WoW Professions Guides\\Mining\\Mining 300-325\\Hellfire Peninsula (Route 2)"
+		.' Back to range list |confirm |next "start"
+	step
+		label "range_325_350"
+		'Choose a 325-350 route:
+		.' Zone hub |confirm |next "WoW Professions Guides\\Mining\\Mining 325-350\\BC Classic"
+		.' Zangarmarsh |confirm |next "WoW Professions Guides\\Mining\\Mining 325-350\\Zangarmarsh"
+		.' Terokkar Forest (Flying) |confirm |next "WoW Professions Guides\\Mining\\Mining 325-350\\Terokkar Forest (Flying)"
+		.' Terokkar Forest (Flightless) |confirm |next "WoW Professions Guides\\Mining\\Mining 325-350\\Terokkar Forest (Flightless)"
+		.' Back to range list |confirm |next "start"
+	step
+		label "range_350_400"
+		'Choose a 350-400 route:
+		.' Zone hub |confirm |next "WoW Professions Guides\\Mining\\Mining 350-400\\WotLK Classic"
+		.' Borean Tundra |confirm |next "WoW Professions Guides\\Mining\\Mining 350-400\\Borean Tundra"
+		.' Howling Fjord |confirm |next "WoW Professions Guides\\Mining\\Mining 350-400\\Howling Fjord"
+		.' Borean Tundra (Flightless) |confirm |next "WoW Professions Guides\\Mining\\Mining 350-400\\Borean Tundra (Flightless)"
+		.' Howling Fjord (Flightless) |confirm |next "WoW Professions Guides\\Mining\\Mining 350-400\\Howling Fjord (Flightless)"
+		.' Back to range list |confirm |next "start"
+]])

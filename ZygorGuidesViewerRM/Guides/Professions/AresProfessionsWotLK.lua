@@ -8,9 +8,7 @@ ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Profession 1-450 Covera
 	description Quick launcher for Wrath profession routes in this pack.
 	description These guides are under development, untested, or may contain errors. Please report any issues you encounter!
 	step
-		'Open Mining 1-65 Starter Hub (split by faction/race starting zone). |confirm |next "WoW Professions Guides\\Mining\\Mining 1-65\\Starter Hub"
-	step
-		'Open Mining 1-450. |confirm |next "WoW Professions Guides\\Mining\\Mining 1-450 (WotLK Route)"
+		'Open Mining route selector. |confirm |next "WoW Professions Guides\\Mining\\Mining Route Selector"
 	step
 		'Open Herbalism 1-450. |confirm |next "WoW Professions Guides\\Herbalism\\Herbalism 1-450 (WotLK Route)"
 	step
@@ -25,100 +23,6 @@ ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Profession 1-450 Covera
 		'Open Engineering 1-450. |confirm |next "WoW Professions Guides\\Engineering\\Engineering 1-450 (WotLK Route)"
 	step
 		'Open Enchanting 1-450. |confirm |next "WoW Professions Guides\\Enchanting\\Enchanting 1-450 (WotLK Route)"
-]])
-
-ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 1-450 (WotLK Route)",[[
-	author ErebusAres
-	type professions
-	startlevel 5
-	description Wrath mining route using existing trainer/vendor/path include logic. Route data adapted from community route datasets and repackaged for Ares guides.
-	step
-		'Train Mining and buy a Mining Pick.
-		#include "trainer_Mining"
-		.skillmax Mining,75
-		#include "vendor_Mining"
-		.buy 1 Mining Pick##2901
-	step
-		'Mining 1-75 Complete|condition true
-		'Mining 1-150 Complete|condition true
-		'Mining 1-225 Complete|condition true
-		'Mining 1-300 Complete|condition true
-		'Mining 1-375 Complete|condition true
-		'Mining 1-450 Complete|condition true
-	step
-		'Need a race/faction starter split for 1-65? Open the Mining starter hub. |confirm |next "WoW Professions Guides\\Mining\\Mining 1-65\\Starter Hub"
-	step
-		'Choose the nearest 1-65 starting route:
-		.' Use Dun Morogh if you're near Ironforge.
-		.' Use Elwynn Forest if you're near Stormwind.
-	step
-		.' Dun Morogh loop 1 (East route).
-		loop Dun Morogh,62,48;66,50;73,49;75,54;82,54;81,57;77,60;77,62;74,61;72,58;71,61;68,60;67,59;70,56;68,56;64,59;62,61;58,58;57,55;55,55;62,52 |until skill("Mining")>=65
-		.' Cave node at 70,56 can be dangerous at low level.
-		#include "follow_path_mine"
-		skill Mining,65
-	step
-		.' Dun Morogh loop 2 (West route).
-		loop Dun Morogh,44,30;38,30;37,33;35,31;31,36;28,35;29,39;28,45;25,45;25,50;26,56;29,55;30,57;32,58;31,53;36,48;35,42;40,40 |until skill("Mining")>=65
-		.' Cave node at 25,50 can be dangerous at low level.
-		#include "follow_path_mine"
-		skill Mining,65
-	step
-		loop Elwynn Forest,34,51;40,52;43,49;49,59;50,64;59,61;57,56;61,53;70,68;50,85;51,76;48,72;43,73;41,80;38,78;40,73;37,70;34,71;31,70;25,68;20,71;21,78;27,66;30,64;29,59;28,57;32,53 |until skill("Mining")>=65
-		.' Cave nodes at 61,53 and 41,80 can be dangerous at low level.
-		#include "follow_path_mine"
-		skill Mining,65
-	step
-		#include "trainer_Mining"
-		.skillmax Mining,150
-	step
-		loop Hillsbrad Foothills,28.6,31.1;39.3,37.2;56.5,34.2;58.2,16.0;73.3,25.4;74.7,39.1;63.6,56.0;66.8,65.9;52.0,58.3;39.9,65.5;27.0,59.7 |until skill("Mining")>=125
-		#include "follow_path_mine"
-		skill Mining,125
-	step
-		#include "trainer_Mining"
-		.skillmax Mining,225
-	step
-		loop Arathi Highlands,27.9,19.7;34.6,44.3;52.2,49.3;60.8,33.1;76.3,30.5;74.8,44.2;71.1,71.1;59.1,70.1;54.1,77.3;41.7,67.6;35.8,62.9;30.0,51.8;21.7,34.9;28.6,31.4 |until skill("Mining")>=175
-		#include "follow_path_mine"
-		skill Mining,175
-	step
-		loop The Hinterlands,46.3,35.8;53.6,38.1;67.8,42.1;75.5,55.4;61.3,55.9;52.7,56.7;44.8,70.4;39.2,62.6;32.3,76.1;35.6,64.3;28.1,68.7;23.5,59.1;33.5,44.6;44.3,43.3 |until skill("Mining")>=245
-		#include "follow_path_mine"
-		skill Mining,245
-	step
-		#include "trainer_Mining"
-		.skillmax Mining,300
-	step
-		loop Un'Goro Crater,42.8,18.5;50.4,32.0;56.7,22.9;63.6,17.6;71.4,26.5;74.1,39.5;76.1,59.6;68.2,68.1;60.6,68.6;62.2,83.7;44.9,86.9;53.7,66.3;36.3,47.5;43.0,29.8 |until skill("Mining")>=300
-		#include "follow_path_mine"
-		skill Mining,300
-	step
-		#include "trainer_Mining"
-		.skillmax Mining,375
-	step
-		loop Hellfire Peninsula,31.1,31.4;38.1,52.0;42.5,32.7;56.2,28.8;48.8,46.5;61.1,55.1;45.3,62.0;35.0,61.1;29.4,73.7;27.0,54.9;13.8,62.4;18.7,39.4;25.7,41.2 |until skill("Mining")>=325
-		#include "follow_path_mine"
-		skill Mining,325
-	step
-		loop Nagrand,28.2,18.0;37.3,29.8;43.5,21.0;65.1,36.6;76.3,62.9;68.2,81.9;43.8,77.2;28.9,81.0;34.1,65.5;37.5,44.4;29.8,51.8;15.3,49.8;25.9,31.5 |until skill("Mining")>=350
-		#include "follow_path_mine"
-		skill Mining,350
-	step
-		#include "trainer_Mining"
-		.skillmax Mining,450
-	step
-		loop Borean Tundra,43.8,10.0;59.1,15.1;61.1,22.1;79.3,23.8;83.3,47.2;68.1,30.6;61.7,46.8;55.1,64.7;38.1,70.5;32.6,50.3;49.1,38.4;47.2,22.6 |until skill("Mining")>=400
-		#include "follow_path_mine"
-		skill Mining,400
-	step
-		loop Sholazar Basin,41.1,19.4;69.0,41.7;78.3,49.1;73.4,69.6;68.5,77.5;53.5,64.0;50.9,88.5;37.5,66.3;21.1,85.7;22.7,50.5;30.6,36.2;56.9,40.3;35.1,30.9 |until skill("Mining")>=450
-		#include "follow_path_mine"
-		skill Mining,450
-	step
-		'Mining 1-450 complete. |condition skill("Mining")>=450
-	step
-		'Back to Professions landing page. |confirm |next "WoW Professions Guides\\Profession 1-450 Coverage Plan"
 ]])
 
 ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Herbalism\\Herbalism 1-450 (WotLK Route)",[[
@@ -662,8 +566,9 @@ ZygorGuidesViewer:RegisterGuide("Ares' Dev Tests\\Syntax Integration (Temporary)
 		loop Elwynn Forest,42.4,66.2;39.4,58.2;35.6,53.4
 	step
 		label "guide_jump"
-		.' Guide jump test: opens Mining guide. |confirm |next "WoW Professions Guides\\Mining\\Mining 1-450 (WotLK Route)"
+		.' Guide jump test: opens Mining selector. |confirm |next "WoW Professions Guides\\Mining\\Mining Route Selector"
 	step
 		label "end"
 		.' Syntax integration test complete. You can delete this guide after validation.
 ]])
+

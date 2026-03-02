@@ -1,4 +1,4 @@
-﻿# Zygor Guides Viewer Remaster
+# Zygor Guides Viewer Remaster
 
 Remastered Zygor Guides Viewer for **World of Warcraft: Wrath of the Lich King (WotLK) 3.3.5a (build 12340)**.
 
@@ -148,6 +148,11 @@ This addon is fully open source and can be inspected before use.
 
 ## 📜 Changelog
 
+### v3.0 (Revision 90)
+
+- Bumped addon version/revision to 3.0.90 / 90.
+- Updated mining guide routing, selector flow, and removed the legacy linear mining route.
+
 ### v3.0 (Revision 88)
 
 - Bumped addon version/revision to `3.0.88` / `88`.
@@ -232,3 +237,4 @@ This remaster focuses on UI/UX modernization, packaging quality, compatibility m
 ### New Route and Loop guide modes
 <img width="433" height="247" alt="image" src="https://github.com/user-attachments/assets/579b6acb-df5e-4f40-8ef3-7d6b33e1015d" />
 <img width="436" height="248" alt="image" src="https://github.com/user-attachments/assets/a845b881-2831-43e3-bd26-5287f9783d68" />
+

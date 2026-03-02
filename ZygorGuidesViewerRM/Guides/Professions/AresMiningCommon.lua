@@ -20,7 +20,7 @@ ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 65-125\\
 		.' Ashenvale |confirm |next "WoW Professions Guides\\Mining\\Mining 65-125\\Ashenvale"
 		.' The Barrens |confirm |next "WoW Professions Guides\\Mining\\Mining 65-125\\The Barrens"
 		.' Skip to Mining 125-175 zone selection |confirm |next "WoW Professions Guides\\Mining\\Mining 125-175\\Common"
-		.' Skip to full Mining 1-450 route |confirm |next "WoW Professions Guides\\Mining\\Mining 1-450 (WotLK Route)"
+		.' Open Mining route selector |confirm |next "WoW Professions Guides\\Mining\\Mining Route Selector"
 ]])
 
 ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 65-125\\Hillsbrad Foothills",[[
@@ -55,7 +55,8 @@ ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 65-125\\
 		#include "trainer_Mining"
 		.skillmax Mining,150
 	step
-		loop Redridge Mountains,54.5,45.2;60.7,43.7;68.7,47.2;72.9,53.4;64.1,52.4;64.7,61.9;51.8,75.3;64.3,78.2;65.1,73.6;70.4,72.0;74.2,82.3;78.3,67.4;78.2,64.2;85.3,61.1;85.8,51.0;82.6,47.2;80.7,36.9;75.6,36.7;75.5,39.2;73.3,40.6;50.7,39.8;49.3,40.2;49.8,23.7;45.7,20.2;47.9,10.7;37.8,8.7;35.1,10.8;37.4,16.1;47.1,26.2;41.9,37.6;32.5,21.9;26.8,22.5;25.1,29.9;23.5,34.7;20.6,34.3;23.3,36.3;37.1,40.2 |until skill("Mining")>=125 |tip Low level players should skip both caves and stick to the east side of Redridge. Mines: north 33.5,6.4 and west 20.4,26.8.
+		loop Redridge Mountains,54.5,45.2;60.7,43.7;68.7,47.2;72.9,53.4;64.1,52.4;64.7,61.9;51.8,75.3;64.3,78.2;65.1,73.6;70.4,72.0;74.2,82.3;78.3,67.4;78.2,64.2;85.3,61.1;85.8,51.0;82.6,47.2;80.7,36.9;75.6,36.7;75.5,39.2;73.3,40.6;50.7,39.8;49.3,40.2;49.8,23.7;45.7,20.2;47.9,10.7;37.8,8.7;35.1,10.8;37.4,16.1;47.1,26.2;41.9,37.6;32.5,21.9;26.8,22.5;25.1,29.9;23.5,34.7;20.6,34.3;23.3,36.3;37.1,40.2 |until skill("Mining")>=125 |tip Skip the caves if low level.
+		.' Caves located at: 33.5,6.4; 20.4,26.8
 		#include "follow_path_mine"
 		skill Mining,125
 	step
@@ -132,7 +133,7 @@ ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 125-175\
 		.' Desolace |confirm |next "WoW Professions Guides\\Mining\\Mining 125-175\\Desolace"
 		.' Thousand Needles |confirm |next "WoW Professions Guides\\Mining\\Mining 125-175\\Thousand Needles"
 		.' Skip to Mining 175-245 zone selection |confirm |next "WoW Professions Guides\\Mining\\Mining 175-245\\Common"
-		.' Skip to full Mining 1-450 route |confirm |next "WoW Professions Guides\\Mining\\Mining 1-450 (WotLK Route)"
+		.' Open Mining route selector |confirm |next "WoW Professions Guides\\Mining\\Mining Route Selector"
 ]])
 
 ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 125-175\\Arathi Highlands (Alliance)",[[
@@ -148,7 +149,10 @@ ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 125-175\
 		#include "trainer_Mining"
 		.skillmax Mining,225
 	step
-		loop Arathi Highlands,49.1,51.1;53.3,36.7;50.0,38.7;47.6,37.5;34.6,43.9;53.8,77.1;69.2,74.8;81.1,35.4;39.7,43.0;38.9,47.0;35.7,41.8;42.5,34.0;39.2,26.8;31.1,20.0;27.6,19.3;29.8,31.3;24.1,27.8;24.1,33.6;20.2,33.2;23.5,44.3;30.5,51.7;31.6,56.2;32.7,61.8;34.0,64.9;37.5,57.7;39.2,61.8;39.7,68.8;41.8,72.1;42.7,76.4;52.0,76.7;54.2,73.8;55.1,66.6;62.1,72.1;64.6,65.9;65.5,73.2;70.4,71.1;72.5,60.8;71.2,48.6;80.0,39.1;79.3,34.0;77.1,32.1;76.2,29.0;65.6,27.4;63.9,31.9;59.5,32.5;59.8,41.6 |until skill("Mining")>=175 |tip Cave order west to east: 34.6,43.9; 53.8,77.1; 69.2,74.8; 81.1,35.4. Start from Refuge Pointe at 49.1,51.1 then 53.3,36.7. Low-level players should skip all 4 caves. Alliance detour near Hammerfall: 71.2,48.6 -> 65.6,27.4.
+		loop Arathi Highlands,49.1,51.1;53.3,36.7;50.0,38.7;47.6,37.5;34.6,43.9;53.8,77.1;69.2,74.8;81.1,35.4;39.7,43.0;38.9,47.0;35.7,41.8;42.5,34.0;39.2,26.8;31.1,20.0;27.6,19.3;29.8,31.3;24.1,27.8;24.1,33.6;20.2,33.2;23.5,44.3;30.5,51.7;31.6,56.2;32.7,61.8;34.0,64.9;37.5,57.7;39.2,61.8;39.7,68.8;41.8,72.1;42.7,76.4;52.0,76.7;54.2,73.8;55.1,66.6;62.1,72.1;64.6,65.9;65.5,73.2;70.4,71.1;72.5,60.8;71.2,48.6;80.0,39.1;79.3,34.0;77.1,32.1;76.2,29.0;65.6,27.4;63.9,31.9;59.5,32.5;59.8,41.6 |until skill("Mining")>=175 |tip Skip the caves if low level.
+		.' Caves located at: 34.6,43.9; 53.8,77.1; 69.2,74.8; 81.1,35.4
+		.' Start from Refuge Pointe at: 49.1,51.1; 53.3,36.7
+		.' Alliance detour near Hammerfall: 71.2,48.6; 65.6,27.4
 		#include "follow_path_mine"
 		skill Mining,175
 	step
@@ -168,7 +172,9 @@ ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 125-175\
 		#include "trainer_Mining"
 		.skillmax Mining,225
 	step
-		loop Arathi Highlands,80.0,39.1;79.3,34.0;77.1,32.1;76.2,29.0;65.6,27.4;63.9,31.9;59.5,32.5;59.8,41.6;49.1,51.1;53.3,36.7;50.0,38.7;47.6,37.5;34.6,43.9;53.8,77.1;69.2,74.8;81.1,35.4;39.7,43.0;38.9,47.0;35.7,41.8;42.5,34.0;39.2,26.8;31.1,20.0;27.6,19.3;29.8,31.3;24.1,27.8;24.1,33.6;20.2,33.2;23.5,44.3;30.5,51.7;31.6,56.2;32.7,61.8;34.0,64.9;37.5,57.7;39.2,61.8;39.7,68.8;41.8,72.1;42.7,76.4;52.0,76.7;54.2,73.8;55.1,66.6;62.1,72.1;64.6,65.9;65.5,73.2;70.4,71.1;72.5,60.8;71.2,48.6 |until skill("Mining")>=175 |tip Cave order west to east: 34.6,43.9; 53.8,77.1; 69.2,74.8; 81.1,35.4. If you can fly into Hammerfall, start at 80.0,39.1 then 79.3,34.0. Low-level players should skip all 4 caves.
+		loop Arathi Highlands,80.0,39.1;79.3,34.0;77.1,32.1;76.2,29.0;65.6,27.4;63.9,31.9;59.5,32.5;59.8,41.6;49.1,51.1;53.3,36.7;50.0,38.7;47.6,37.5;34.6,43.9;53.8,77.1;69.2,74.8;81.1,35.4;39.7,43.0;38.9,47.0;35.7,41.8;42.5,34.0;39.2,26.8;31.1,20.0;27.6,19.3;29.8,31.3;24.1,27.8;24.1,33.6;20.2,33.2;23.5,44.3;30.5,51.7;31.6,56.2;32.7,61.8;34.0,64.9;37.5,57.7;39.2,61.8;39.7,68.8;41.8,72.1;42.7,76.4;52.0,76.7;54.2,73.8;55.1,66.6;62.1,72.1;64.6,65.9;65.5,73.2;70.4,71.1;72.5,60.8;71.2,48.6 |until skill("Mining")>=175 |tip Skip the caves if low level.
+		.' Caves located at: 34.6,43.9; 53.8,77.1; 69.2,74.8; 81.1,35.4
+		.' Start from Hammerfall if available: 80.0,39.1; 79.3,34.0
 		#include "follow_path_mine"
 		skill Mining,175
 	step
@@ -234,7 +240,7 @@ ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 175-245\
 		.' The Hinterlands |confirm |next "WoW Professions Guides\\Mining\\Mining 175-245\\The Hinterlands"
 		.' Tanaris |confirm |next "WoW Professions Guides\\Mining\\Mining 175-245\\Tanaris"
 		.' Skip to Mining 245-275 zone selection |confirm |next "WoW Professions Guides\\Mining\\Mining 245-275\\Common"
-		.' Skip to full Mining 1-450 route |confirm |next "WoW Professions Guides\\Mining\\Mining 1-450 (WotLK Route)"
+		.' Open Mining route selector |confirm |next "WoW Professions Guides\\Mining\\Mining Route Selector"
 ]])
 
 ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 175-245\\The Hinterlands",[[
@@ -249,7 +255,12 @@ ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 175-245\
 		#include "trainer_Mining"
 		.skillmax Mining,300
 	step
-		loop The Hinterlands,46.3,35.8;53.6,38.1;67.8,42.1;75.5,55.4;61.3,55.9;52.7,56.7;44.8,70.4;39.2,62.6;32.3,76.1;35.6,64.3;28.1,68.7;23.5,59.1;33.5,44.6;44.3,43.3 |until skill("Mining")>=245 |tip Low-level players should skip the northern red route because that area has level 62 elites. Lower-level players may also want to skip the cave marked on the map, depending on gear/class.
+		loop The Hinterlands,71.8,60.4;77.8,48.8;68.5,52.7;64.8,49.0;63.9,42.6;57.6,39.5;61.9,39.3;55.9,39.5;50.7,46.8;47.9,40.8;46.6,36.2;44.9,43.4;41.4,45.3;40.0,48.4;35.7,43.7;32.1,42.6;32.7,47.0;30.8,50.3;27.3,53.3;23.8,52.7;22.1,56.9;25.6,60.4;26.6,66.1;28.8,65.7;31.2,55.6;35.1,62.4;34.7,65.9;30.8,69.8;31.3,73.8;34.1,74.2;37.0,71.5;36.0,66.8;36.6,63.5;41.5,60.4;42.2,65.3;45.0,70.1;48.0,69.2;50.6,71.7;51.6,68.8;50.9,64.3;52.8,55.8;56.6,50.3;60.3,54.6;63.0,59.5;63.6,63.7;67.2,64.7;72.6,65.1;70.4,63.0 |until skill("Mining")>=245 |tip Start at 71.8,60.4, then 77.8,48.8; 68.5,52.7; 64.8,49.0. Cave at 57.6,39.5. White route shortcut: 61.9,39.3 -> 55.9,39.5.
+		#include "follow_path_mine"
+		skill Mining,245
+	step
+		.' Optional northern red route for higher-level characters. |only if level>=62
+		loop The Hinterlands,61.9,39.3;63.4,34.2;66.5,34.6;67.7,22.6;65.8,20.8;69.1,14.8;64.1,17.3;58.8,19.3;59.8,24.1;59.3,32.1;55.9,39.5 |only if level>=62 |tip The red route is best reserved for level 62+ due to elite mobs.
 		#include "follow_path_mine"
 		skill Mining,245
 	step
@@ -268,7 +279,8 @@ ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 175-245\
 		#include "trainer_Mining"
 		.skillmax Mining,300
 	step
-		loop Tanaris,50.0,28.0;63.0,22.0;68.0,29.0;67.0,40.0;60.0,49.0;53.0,58.0;45.0,63.0;36.0,63.0;30.0,56.0;29.0,46.0;32.0,36.0;39.0,30.0 |until skill("Mining")>=245 |tip Players below level 60 should skip the 4 caves marked on the map.
+		loop Tanaris,56.0,27.3;52.5,25.0;47.6,25.4;45.9,28.7;44.2,26.7;35.8,25.8;35.6,29.3;38.6,32.0;34.5,37.4;31.8,49.6;40.2,55.9;45.7,55.5;30.1,51.8;28.4,59.5;30.1,62.1;30.5,67.1;29.4,70.0;29.2,72.4;29.7,74.9;31.2,76.4;35.3,76.6;36.9,79.2;40.5,77.4;44.8,76.1;48.3,76.2;51.2,76.4;56.4,67.9;57.9,66.3;55.8,63.6;62.0,60.9;61.0,54.7;65.1,55.7;69.2,55.1;71.3,45.6;68.3,40.3;66.5,37.2;66.7,32.4;59.0,32.9 |until skill("Mining")>=245 |tip Skip the caves if low level.
+		.' Caves located at: 34.0,42.7; 33.1,48.1; 54.7,68.5; 53.7,75.1
 		#include "follow_path_mine"
 		skill Mining,245
 	step
@@ -296,7 +308,7 @@ ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 245-275\
 		.' Blasted Lands (Horde) |confirm |next "WoW Professions Guides\\Mining\\Mining 245-275\\Blasted Lands (Horde)"
 		.' Felwood |confirm |next "WoW Professions Guides\\Mining\\Mining 245-275\\Felwood"
 		.' Skip to Mining 275-300 zone selection |confirm |next "WoW Professions Guides\\Mining\\Mining 275-300\\Common"
-		.' Skip to full Mining 1-450 route |confirm |next "WoW Professions Guides\\Mining\\Mining 1-450 (WotLK Route)"
+		.' Open Mining route selector |confirm |next "WoW Professions Guides\\Mining\\Mining Route Selector"
 ]])
 
 ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 245-275\\Un'Goro Crater",[[
@@ -397,7 +409,7 @@ ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 275-300\
 		.' Winterspring |confirm |next "WoW Professions Guides\\Mining\\Mining 275-300\\Winterspring"
 		.' Burning Steppes |confirm |next "WoW Professions Guides\\Mining\\Mining 275-300\\Burning Steppes"
 		.' Skip to Mining 300-350 zone selection |confirm |next "WoW Professions Guides\\Mining\\Mining 300-350\\BC Classic"
-		.' Skip to full Mining 1-450 route |confirm |next "WoW Professions Guides\\Mining\\Mining 1-450 (WotLK Route)"
+		.' Open Mining route selector |confirm |next "WoW Professions Guides\\Mining\\Mining Route Selector"
 ]])
 
 ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 275-300\\Un'Goro Crater",[[
@@ -489,7 +501,7 @@ ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 300-350\
 		.' Route 1 |confirm |next "WoW Professions Guides\\Mining\\Mining 300-325\\Hellfire Peninsula (Route 1)"
 		.' Route 2 |confirm |next "WoW Professions Guides\\Mining\\Mining 300-325\\Hellfire Peninsula (Route 2)"
 		.' Skip to Mining 325-350 zone selection |confirm |next "WoW Professions Guides\\Mining\\Mining 325-350\\BC Classic"
-		.' Skip to full Mining 1-450 route |confirm |next "WoW Professions Guides\\Mining\\Mining 1-450 (WotLK Route)"
+		.' Open Mining route selector |confirm |next "WoW Professions Guides\\Mining\\Mining Route Selector"
 ]])
 
 ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 300-325\\Hellfire Peninsula (Route 1)",[[
@@ -548,7 +560,7 @@ ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 325-350\
 		.' Terokkar Forest (Flying) |confirm |next "WoW Professions Guides\\Mining\\Mining 325-350\\Terokkar Forest (Flying)"
 		.' Terokkar Forest (Flightless) |confirm |next "WoW Professions Guides\\Mining\\Mining 325-350\\Terokkar Forest (Flightless)"
 		.' Skip to Mining 350-400 zone selection |confirm |next "WoW Professions Guides\\Mining\\Mining 350-400\\WotLK Classic"
-		.' Skip to full Mining 1-450 route |confirm |next "WoW Professions Guides\\Mining\\Mining 1-450 (WotLK Route)"
+		.' Open Mining route selector |confirm |next "WoW Professions Guides\\Mining\\Mining Route Selector"
 ]])
 
 ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 325-350\\Zangarmarsh",[[
@@ -628,7 +640,7 @@ ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 350-400\
 		.' Howling Fjord |confirm |next "WoW Professions Guides\\Mining\\Mining 350-400\\Howling Fjord"
 		.' Borean Tundra (Flightless) |confirm |next "WoW Professions Guides\\Mining\\Mining 350-400\\Borean Tundra (Flightless)"
 		.' Howling Fjord (Flightless) |confirm |next "WoW Professions Guides\\Mining\\Mining 350-400\\Howling Fjord (Flightless)"
-		.' Skip to full Mining 1-450 route |confirm |next "WoW Professions Guides\\Mining\\Mining 1-450 (WotLK Route)"
+		.' Open Mining route selector |confirm |next "WoW Professions Guides\\Mining\\Mining Route Selector"
 ]])
 
 ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 350-400\\Borean Tundra",[[
@@ -646,7 +658,7 @@ ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 350-400\
 		#include "follow_path_mine"
 		skill Mining,400
 	step
-		'Continue with Mining 1-450 route. |confirm |next "WoW Professions Guides\\Mining\\Mining 1-450 (WotLK Route)"
+		'Open Mining route selector. |confirm |next "WoW Professions Guides\\Mining\\Mining Route Selector"
 ]])
 
 ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 350-400\\Howling Fjord",[[
@@ -664,7 +676,7 @@ ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 350-400\
 		#include "follow_path_mine"
 		skill Mining,400
 	step
-		'Continue with Mining 1-450 route. |confirm |next "WoW Professions Guides\\Mining\\Mining 1-450 (WotLK Route)"
+		'Open Mining route selector. |confirm |next "WoW Professions Guides\\Mining\\Mining Route Selector"
 ]])
 
 ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 350-400\\Borean Tundra (Flightless)",[[
@@ -682,7 +694,7 @@ ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 350-400\
 		#include "follow_path_mine"
 		skill Mining,400
 	step
-		'Continue with Mining 1-450 route. |confirm |next "WoW Professions Guides\\Mining\\Mining 1-450 (WotLK Route)"
+		'Open Mining route selector. |confirm |next "WoW Professions Guides\\Mining\\Mining Route Selector"
 ]])
 
 ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 350-400\\Howling Fjord (Flightless)",[[
@@ -700,5 +712,8 @@ ZygorGuidesViewer:RegisterGuide("WoW Professions Guides\\Mining\\Mining 350-400\
 		#include "follow_path_mine"
 		skill Mining,400
 	step
-		'Continue with Mining 1-450 route. |confirm |next "WoW Professions Guides\\Mining\\Mining 1-450 (WotLK Route)"
+		'Open Mining route selector. |confirm |next "WoW Professions Guides\\Mining\\Mining Route Selector"
 ]])
+
+
+

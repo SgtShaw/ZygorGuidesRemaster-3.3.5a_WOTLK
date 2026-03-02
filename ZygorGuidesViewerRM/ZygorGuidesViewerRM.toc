@@ -15,7 +15,7 @@
 ## X-eMail: zygor@zygorguides.com
 ## X-Website: http://zygorguides.com/
 ## X-License: GPL
-## Version: 3.0.89
+## Version: 3.0.90
 
 embeds.xml
 
@@ -26,3 +26,4 @@ files.xml
 
 Guides\Autoload.xml
 -
+

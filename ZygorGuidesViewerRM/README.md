@@ -2,8 +2,8 @@
 
 ## Version
 
-- Revision: `89`
-- Version: `3.0.89`
+- Revision: `90`
+- Version: `3.0.90`
 
 ## Talent Advisor Status
 
@@ -21,3 +21,4 @@
 ## Backups
 
 - The local `BACKUP` folder contains edit snapshots created during changes.
+
