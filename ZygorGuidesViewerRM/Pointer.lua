@@ -173,6 +173,51 @@ function Pointer:SetupCarboniteHooks()
 	self:CarbonitePruneManagedButtons()
 end
 
+function Pointer:EnsureQuestPOICompatPatch()
+	if self._questPOIPatched then return true end
+	local orig = _G.QuestPOI_HideButtons
+	if type(orig)~="function" then return false end
+
+	self._origQuestPOI_HideButtons = orig
+	_G.QuestPOI_HideButtons = function(parentName,buttonType,numButtons)
+		local ok = pcall(orig,parentName,buttonType,numButtons)
+		if ok then return end
+		if type(numButtons)~="number" or numButtons<1 then return end
+
+		-- Nil-safe fallback only when Blizzard's original function throws.
+		local buttonName = "poi"..tostring(parentName or "")..tostring(buttonType or "").."_"
+		for i=1,numButtons do
+			local poiButton = _G[buttonName..i]
+			if poiButton then
+				poiButton:Hide()
+			end
+		end
+	end
+
+	self._questPOIPatched = true
+	return true
+end
+
+function Pointer:SetupQuestPOICompatEvents()
+	if self:EnsureQuestPOICompatPatch() then return end
+	if self.QuestPOICompatEventFrame then return end
+
+	local ef = CreateFrame("Frame")
+	ef:RegisterEvent("ADDON_LOADED")
+	ef:RegisterEvent("PLAYER_LOGIN")
+	ef:SetScript("OnEvent", function(frame,event,addon)
+		if Pointer._questPOIPatched then
+			frame:UnregisterAllEvents()
+			return
+		end
+		if event=="ADDON_LOADED" and addon and addon~="Blizzard_WorldMap" then return end
+		if Pointer:EnsureQuestPOICompatPatch() then
+			frame:UnregisterAllEvents()
+		end
+	end)
+	self.QuestPOICompatEventFrame = ef
+end
+
 function Pointer:DetachMarkerFromCarboniteDock(markerFrame)
 	if not markerFrame then return end
 	local Nx = _G.Nx
@@ -613,6 +658,7 @@ function Pointer:Startup()
 	--ZGV.ScheduleRepeatingTimer(self,"FixMapLevel", 1.0)
 
 	Pointer.ready = true
+	self:SetupQuestPOICompatEvents()
 	self:SetupCarboniteHooks()
 	if not self.CarboniteCompatEventFrame then
 		local ef = CreateFrame("Frame")
