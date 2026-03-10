@@ -148,6 +148,11 @@ This addon is fully open source and can be inspected before use.
 
 ## 📜 Changelog
 
+### v3.0 (Revision 92)
+
+- Bumped addon version/revision to 3.0.92 / 92.
+- Updated Northrend exploration criteria coverage in Ares' achievement guides.
+
 ### v3.0 (Revision 91)
 
 - Bumped addon version/revision to 3.0.91 / 91.

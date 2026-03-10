@@ -1905,16 +1905,18 @@ ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Northrend\\Ex
     step //9
         .'Unlock Scourgeholme |achieve 1270/14|goto Icecrown,78.4,60.2
     step //10
-        .'Unlock The Broken Front |achieve 1270/4|goto Icecrown,69.2,64.4
+        .'Unlock Valley of Echoes |achieve 1270/9|goto Icecrown,79.5,69.2
     step //11
-        .'Unlock Ymirheim |achieve 1270/10|goto Icecrown,54.9,56.2
+        .'Unlock The Broken Front |achieve 1270/4|goto Icecrown,69.2,64.4
     step //12
-        .'Unlock The Conflagration |achieve 1270/11|goto Icecrown,43.6,56.5
+        .'Unlock Ymirheim |achieve 1270/10|goto Icecrown,54.9,56.2
     step //13
-        .'Unlock The Fleshwerks |achieve 1270/5|goto Icecrown,33.1,66.4
+        .'Unlock The Conflagration |achieve 1270/11|goto Icecrown,43.6,56.5
     step //14
-        .'Unlock Corp'rethar: The Horror Gate |achieve 1270/12|goto Icecrown,48.4,70.6
+        .'Unlock The Fleshwerks |achieve 1270/5|goto Icecrown,33.1,66.4
     step //15
+        .'Unlock Corp'rethar: The Horror Gate |achieve 1270/12|goto Icecrown,48.4,70.6
+    step //16
         .'Unlock Icecrown Citadel |achieve 1270/2|goto Icecrown,54.2,85.8
 ]])
 ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Northrend\\Explore Dragonblight",[[
@@ -1936,7 +1938,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Northrend\\Ex
     step //7
         .'Unlock Lake Indu'le |achieve 1265/2|goto Dragonblight,39.7,67.0
     step //8
-        .'Unlock Ruby Dragonshrine |achieve 1265/3|goto Dragonblight,47.3,48.7
+        .'Unlock Ruby Dragonshrine |achieve 1265/18|goto Dragonblight,47.3,48.7
     step //9
         .'Unlock Galakrond's Rest |achieve 1265/1|goto Dragonblight,54.9,32.7
     step //10
@@ -2106,7 +2108,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' Achievement Guides\\Explore Northrend\\Ex
     step //5
         .'Unlock Fort Wildervar |achieve 1263/12|goto Howling Fjord,60.7,12.8
     step //6
-        .'Unlock Giant's Run |achieve 1263/9|goto Howling Fjord,68.6,26.5
+        .'Unlock Giant's Run |achieve 1263/11|goto Howling Fjord,68.6,26.5
     step //7
         .'Unlock Vengeance Landing |achieve 1263/5|goto Howling Fjord,78.1,27.3
     step //8

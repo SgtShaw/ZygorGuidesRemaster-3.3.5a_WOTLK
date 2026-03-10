@@ -3,8 +3,15 @@
 	<!-- Autoloading of included guides. Add your Guide##.lua files here as you please. -->
 	<Script file="ZygorIncludesAlliance.lua"/>
 	<Script file="ZygorIncludesHorde.lua"/>
-	
+
+	<!--
+	Optional profile (OFF by default):
+	- Default recommendation for private servers is the TrinityCore-oriented leveling file below.
+	- If you have trouble following the recommended route, you can switch to the original unmodified Alliance file.
+	- To switch: comment out Leveling\ZygorGuidesAlliance.lua and uncomment Leveling_Original\ZygorGuidesAlliance.lua.
+	-->
 	<Script file="Leveling\ZygorGuidesAlliance.lua"/>
+	<!-- <Script file="Leveling_Original\ZygorGuidesAlliance.lua"/> -->
 	<Script file="Leveling\ZygorGuidesHorde.lua"/>
 	<Script file="Dailies\ZygorDailiesAlliance.lua"/>
 	<Script file="Dailies\ZygorDailiesHorde.lua"/>

@@ -2,8 +2,8 @@
 
 ## Version
 
-- Revision: `91`
-- Version: `3.0.91`
+- Revision: `92`
+- Version: `3.0.92`
 
 ## Talent Advisor Status
 
@@ -17,6 +17,13 @@
 2. If you still use Talent Advisor separately, install/manage it as a standalone addon/module.
 3. `/reload` is enough for Lua-only changes.
 4. Full relaunch is required when files/assets are added/removed.
+
+## Guide Profiles
+
+- Current default guide content is the remastered/TrinityCore-oriented profile for WotLK 3.3.5a private servers.
+- Optional fallback profile is available for Alliance leveling: `Guides\Leveling_Original\ZygorGuidesAlliance.lua`.
+- That fallback is original, unmodified content from classic Zygor guide sources and is intended only if the recommended profile is problematic for your route/session.
+- Keep fallback profile optional; do not use it as the primary default.
 
 ## Backups
 
