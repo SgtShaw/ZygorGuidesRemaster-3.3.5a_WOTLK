@@ -1469,6 +1469,14 @@ function me:Options_DefineOptions()
 			"Configure goal icon and interactive step presentation."
 		),
 	}
+
+	-- New Guide Viewer page split: keep step-specific controls on Step Display only.
+	if self.optionsdisplay and self.optionsdisplay.args then
+		self.optionsdisplay.args.step = nil
+		if self.optionsdisplay.args.window and self.optionsdisplay.args.window.args then
+			self.optionsdisplay.args.window.args.showcountsteps = nil
+		end
+	end
 	
 	--[[
 	self.optionsdata = {
