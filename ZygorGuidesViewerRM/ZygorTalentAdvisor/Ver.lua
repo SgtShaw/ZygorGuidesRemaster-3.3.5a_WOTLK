@@ -1,4 +1,4 @@
-ZygorTalentAdvisor.revision = tonumber(string.sub("$Revision: 93 $", 12, -3))
+ZygorTalentAdvisor.revision = tonumber(string.sub("$Revision: 95 $", 12, -3))
 ZygorTalentAdvisor.version = "3.0." .. ZygorTalentAdvisor.revision
 ZygorTalentAdvisor.date = string.sub("$Date: 2010-04-27 07:42:01 -0500 (Tue, 27 Apr 2010) $", 8, 17)
 --2010/04/27 14:40:08.52442

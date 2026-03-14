@@ -148,6 +148,15 @@ This addon is fully open source and can be inspected before use.
 
 ## 📜 Changelog
 
+### v3.0 (Revision 95)
+
+- Bumped addon version/revision to 3.0.95 / 95.
+- Fixed Step View toggle and quick menu step-count actions to use the correct Step Display option path.
+- Fixed quick `Window features` command routing (including auto-hide border) by remapping legacy `Display` command paths to the correct nested option paths.
+- Consolidated viewer/step presentation controls under Step Display and hid the separate Display page from Guide Manager/Blizzard options navigation.
+- Moved `Show steps` and `Window skin color` out of the inline `Window features` box in Step Display for cleaner layout behavior.
+- Increased Guide Manager frame width slightly to offset options-pane scrollbar width and improve settings layout room.
+
 ### v3.0 (Revision 92)
 
 - Bumped addon version/revision to 3.0.92 / 92.

@@ -425,7 +425,6 @@ function me:Options_DefineOptions()
 						      end,
 						order=1,
 					},
-					sep1 = {type="description",name="",order=2},
 					skin = {
 						name = L["opt_skin"],
 						desc = L["opt_skin_desc"],
@@ -477,7 +476,14 @@ function me:Options_DefineOptions()
 							self:UpdateLocking()
 							self:ScrollToCurrentStep()
 						      end,
-						order=2.05,
+						order=1.1,
+						width="normal",
+					},
+					sep_window_row1 = {
+						type = "description",
+						name = "",
+						order = 1.2,
+						width = "full",
 					},
 					opacitymain = {
 						name = L["opt_opacitymain"],
@@ -490,8 +496,8 @@ function me:Options_DefineOptions()
 						step = 0.01,
 						bigStep = 0.1,
 						--stepBasis = 0,
-						--width="double",
-						order=2.1,
+						order=2,
+						width="normal",
 					},
 					--[[
 					backcolor = {
@@ -514,7 +520,8 @@ function me:Options_DefineOptions()
 						isPercent = true,
 						step = 0.01,
 						bigStep = 0.1,
-						order = 2.2,
+						order = 2.1,
+						width = "normal",
 					},
 					hideborder = {
 						name = L["opt_hideborder"],
@@ -544,9 +551,15 @@ function me:Options_DefineOptions()
 								end
 							end
 						      end,
-						order=2.3,
+						order=2.2,
+						width="normal",
 					},
-					sep3 = {type="description",name="",order=3},
+					sep_window_row2 = {
+						type = "description",
+						name = "",
+						order = 2.3,
+						width = "full",
+					},
 					framescale = {
 						name = L["opt_framescale"],
 						desc = L["opt_framescale_desc"],
@@ -556,8 +569,9 @@ function me:Options_DefineOptions()
 						max = 2.0,
 						step = 0.1,
 						bigStep = 0.1,
-						order=3.1,
+						order=3,
 						isPercent = true,
+						width = "normal",
 					},
 					fontsize = {
 						name = L["opt_fontsize"],
@@ -568,7 +582,8 @@ function me:Options_DefineOptions()
 						max = 16,
 						step = 1,
 						bigStep = 1,
-						order=3.2,
+						order=3.1,
+						width="normal",
 					},
 					fontsecsize = {
 						name = L["opt_fontsecsize"],
@@ -579,15 +594,21 @@ function me:Options_DefineOptions()
 						max = 14,
 						step = 1,
 						bigStep = 1,
-						order=3.3,
+						order=3.2,
+						width="normal",
 					},
-					sep2 = {type="description",name="",order=4},
+					sep_window_row3 = {
+						type = "description",
+						name = "",
+						order = 3.3,
+						width = "full",
+					},
 					windowlocked = {
 						name = L['opt_windowlocked'],
 						desc = L['opt_windowlocked_desc'],
 						type = 'toggle',
 						set = function(i,v) Setter_Simple(i,v)  self:UpdateLocking()  end,
-						order=4.1,
+						order=4,
 					},
 					resizeup = {
 						name = L["opt_miniresizeup"],
@@ -601,7 +622,7 @@ function me:Options_DefineOptions()
 							self:AlignFrame()
 							-- THIS SUCKS.
 						      end,
-						order=4.2,
+						order=4.1,
 					},
 				}
 			},
@@ -1402,27 +1423,39 @@ function me:Options_DefineOptions()
 	-- Retail-style split pages built from existing options, so behavior stays identical.
 	self.optionsstepdisplay = {
 		name = "Step Display",
-		desc = "Step row layout, goal visuals, and step readability.",
+		desc = "Viewer and step presentation controls.",
 		type = "group",
-		order = 2.2,
+		order = 2.1,
 		handler = self,
 		get = Getter_Simple,
 		set = Setter_Simple,
-		args = BuildSplitOptionsArgs(self.optionsdisplay.args, {"step"}, "Configure how guide steps and goals are displayed."),
+		args = CloneOptionNode(self.optionsdisplay.args),
 	}
-	if self.optionsdisplay.args
-	and self.optionsdisplay.args.window
-	and self.optionsdisplay.args.window.args
-	and self.optionsdisplay.args.window.args.showcountsteps then
-		self.optionsstepdisplay.args.showcountsteps = CloneOptionNode(self.optionsdisplay.args.window.args.showcountsteps)
-		self.optionsstepdisplay.args.showcountsteps.order = 1.5
+	do
+		local stepArgs = self.optionsstepdisplay and self.optionsstepdisplay.args
+		local stepWindowArgs = stepArgs and stepArgs.window and stepArgs.window.args
+		if stepArgs and stepWindowArgs then
+			if stepWindowArgs.showcountsteps then
+				stepArgs.showcountsteps = CloneOptionNode(stepWindowArgs.showcountsteps)
+				stepArgs.showcountsteps.order = 2.2
+				stepArgs.showcountsteps.width = "normal"
+			end
+			if stepWindowArgs.skin then
+				stepArgs.skin = CloneOptionNode(stepWindowArgs.skin)
+				stepArgs.skin.order = 2.3
+				stepArgs.skin.width = "normal"
+			end
+			stepWindowArgs.showcountsteps = nil
+			stepWindowArgs.skin = nil
+			stepWindowArgs.sep_window_row1 = nil
+		end
 	end
 
 	self.optionstravelsystem = {
 		name = "Travel System",
 		desc = "Travel provider and core waypoint system behavior.",
 		type = "group",
-		order = 2.4,
+		order = 2.2,
 		handler = self,
 		get = Getter_Simple,
 		set = Setter_Simple,
@@ -1433,7 +1466,7 @@ function me:Options_DefineOptions()
 		name = "Maps & Waypoints",
 		desc = "Arrow visuals and minimap/map waypoint display.",
 		type = "group",
-		order = 2.5,
+		order = 2.3,
 		handler = self,
 		get = Getter_Simple,
 		set = Setter_Simple,
@@ -1444,7 +1477,7 @@ function me:Options_DefineOptions()
 		name = "Notifications",
 		desc = "Progress and completion flash cues.",
 		type = "group",
-		order = 2.6,
+		order = 2.4,
 		handler = self,
 		get = Getter_Simple,
 		set = Setter_Simple,
@@ -1459,7 +1492,7 @@ function me:Options_DefineOptions()
 		name = "Action Buttons",
 		desc = "Clickable goal/step interaction display behavior.",
 		type = "group",
-		order = 2.7,
+		order = 2.5,
 		handler = self,
 		get = Getter_Simple,
 		set = Setter_Simple,
@@ -1588,7 +1621,6 @@ function me:Options_SetupBlizConfig()
 	InterfaceOptionsFrame:GetRegions():SetTexture(0,0,0,0.9)
 	LibStub("AceConfigDialog-3.0"):SetDefaultSize("ZygorGuidesViewer", 600, 400)
 	local rootpanel = LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer", self.options.name)
-	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Display", self.optionsdisplay.name, self.options.name)
 	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-StepDisplay", self.optionsstepdisplay.name, self.options.name)
 	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Progress", self.optionsprogress.name, self.options.name);
 	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Travel", self.optionstravelsystem.name, self.options.name)
@@ -1724,5 +1756,28 @@ end
 
 
 function me:SetOption(cat,cmd)
+	-- Backward compatibility: step controls were split from Display into StepDisplay.
+	-- Keep legacy callers/macros working by remapping old command paths.
+	if cat=="Display" and type(cmd)=="string" then
+		local firstarg = cmd:match("^(%S+)")
+		if cmd:match("^showcountsteps") then
+			cat = "StepDisplay"
+		elseif cmd:match("^step%s+") then
+			cmd = cmd:gsub("^step%s+","",1)
+			cat = "StepDisplay"
+		elseif firstarg and ({
+			hideborder = true,
+			windowlocked = true,
+			resizeup = true,
+			skin = true,
+			opacitymain = true,
+			backopacity = true,
+			framescale = true,
+			fontsize = true,
+			fontsecsize = true,
+		})[firstarg] then
+			cmd = "window "..cmd
+		end
+	end
 	LibStub("AceConfigCmd-3.0").HandleCommand(self, "zygor", "ZygorGuidesViewer"..(cat~="" and "-"..cat or ""), cmd)
 end

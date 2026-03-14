@@ -1002,8 +1002,7 @@ local GUIDE_MANAGER_LEFT_MENU = {
 
 local GUIDE_MANAGER_OPTIONS_APPS = {
 	{ id = "general", label = "Guides", app = "ZygorGuidesViewer", desc = "Guide selection, active guide metadata, and core guide controls." },
-	{ id = "display", label = "Display", app = "ZygorGuidesViewer-Display", desc = "Viewer visuals, frame layout, fonts, and skin settings." },
-	{ id = "stepdisplay", label = "Step Display", app = "ZygorGuidesViewer-StepDisplay", desc = "Step rows, goal visuals, and step count presentation." },
+	{ id = "stepdisplay", label = "Step Display", app = "ZygorGuidesViewer-StepDisplay", desc = "Viewer visuals, frame layout, skin/fonts, and step row/goal display controls." },
 	{ id = "progress", label = "Progression", app = "ZygorGuidesViewer-Progress", desc = "Step progression behavior, skipping rules, and completion flow." },
 	{ id = "travel", label = "Travel System", app = "ZygorGuidesViewer-Travel", desc = "Waypoint provider selection and travel-system behavior." },
 	{ id = "map", label = "Maps & Waypoints", app = "ZygorGuidesViewer-Maps", desc = "Arrow style, minimap/map marker display, and waypoint visuals." },
@@ -2375,7 +2374,7 @@ local function EnsureGuideManagerStandaloneFrame(self)
 	if self.GuideManagerStandaloneFrame then return self.GuideManagerStandaloneFrame end
 
 	local frame = CreateFrame("Frame", "ZGVGuideManagerFrame", UIParent, "UIPanelDialogTemplate")
-	frame:SetWidth(1120)
+	frame:SetWidth(1144)
 	frame:SetHeight(760)
 	frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
 	frame:SetFrameStrata("DIALOG")

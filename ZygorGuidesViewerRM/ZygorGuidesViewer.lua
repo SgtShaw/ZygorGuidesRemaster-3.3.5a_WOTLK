@@ -855,7 +855,7 @@ function me:EnsureRemasterFrames()
 	miniButton:SetPoint("RIGHT", settingsButton, "LEFT", -6, 0)
 	miniButton:SetScript("OnClick", function(selfBtn, button)
 		if button == "LeftButton" then
-			ZygorGuidesViewer:SetOption("Display","showcountsteps "..(ZGV.db.profile.showallsteps and ZGV.db.profile.showcountsteps or 0))
+			ZygorGuidesViewer:SetOption("StepDisplay","showcountsteps "..(ZGV.db.profile.showallsteps and ZGV.db.profile.showcountsteps or 0))
 		else
 			ZygorGuidesViewer:OpenQuickSteps()
 		end
@@ -4942,32 +4942,32 @@ function me:OpenQuickSteps()
 		},
 		{
 			text=L["opt_showcountsteps_all"],
-			func=function() self:SetOption("Display","showcountsteps 0") end,
+			func=function() self:SetOption("StepDisplay","showcountsteps 0") end,
 			checked=function() return self.db.profile.showallsteps end,
 		},
 		{
 			text='1',
-			func=function() self:SetOption("Display","showcountsteps 1") end,
+			func=function() self:SetOption("StepDisplay","showcountsteps 1") end,
 			checked=function() return not self.db.profile.showallsteps and self.db.profile.showcountsteps==1 end,
 		},
 		{
 			text='2',
-			func=function() self:SetOption("Display","showcountsteps 2") end,
+			func=function() self:SetOption("StepDisplay","showcountsteps 2") end,
 			checked=function() return not self.db.profile.showallsteps and self.db.profile.showcountsteps==2 end,
 		},
 		{
 			text='3',
-			func=function() self:SetOption("Display","showcountsteps 3") end,
+			func=function() self:SetOption("StepDisplay","showcountsteps 3") end,
 			checked=function() return not self.db.profile.showallsteps and self.db.profile.showcountsteps==3 end,
 		},
 		{
 			text='4',
-			func=function() self:SetOption("Display","showcountsteps 4") end,
+			func=function() self:SetOption("StepDisplay","showcountsteps 4") end,
 			checked=function() return not self.db.profile.showallsteps and self.db.profile.showcountsteps==4 end,
 		},
 		{
 			text='5',
-			func=function() self:SetOption("Display","showcountsteps 5") end,
+			func=function() self:SetOption("StepDisplay","showcountsteps 5") end,
 			checked=function() return not self.db.profile.showallsteps and self.db.profile.showcountsteps==5 end,
 		},
 	}

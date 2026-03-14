@@ -569,7 +569,7 @@
 												<Scripts>
 													<OnClick>
 														if button=="LeftButton" then
-															ZygorGuidesViewer:SetOption("Display","showcountsteps "..(ZGV.db.profile.showallsteps and ZGV.db.profile.showcountsteps or 0))
+															ZygorGuidesViewer:SetOption("StepDisplay","showcountsteps "..(ZGV.db.profile.showallsteps and ZGV.db.profile.showcountsteps or 0))
 														else
 															ZygorGuidesViewer:OpenQuickSteps()
 														end
