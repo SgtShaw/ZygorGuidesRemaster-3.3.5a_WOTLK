@@ -733,7 +733,7 @@ function me:PlayTalented()
 			hint:SetPoint("LEFT",_G["PlayerTalentFrameTalent"..talent.."IconTexture"],"RIGHT",-14,5)
 			hint:SetWidth(32)
 			hint:SetHeight(32)
-			hint:SetTexture("Interface\\Addons\\ZygorTalentAdvisor\\Skin\\MrRipley_Hints")
+			hint:SetTexture("Interface\\AddOns\\ZygorGuidesViewerRM\\ZygorTalentAdvisor\\Skin\\MrRipley_Hints")
 			hint:SetDrawLayer("OVERLAY")
 		end
 

@@ -339,8 +339,8 @@
 				end
 			</OnClick>
 		</Scripts>
-		<NormalTexture file="Interface\Addons\ZygorTalentAdvisor\Skin\popout-button"/>
-		<PushedTexture file="Interface\Addons\ZygorTalentAdvisor\Skin\popout-button-pushed"/>
+		<NormalTexture file="Interface\AddOns\ZygorGuidesViewerRM\ZygorTalentAdvisor\Skin\popout-button"/>
+		<PushedTexture file="Interface\AddOns\ZygorGuidesViewerRM\ZygorTalentAdvisor\Skin\popout-button-pushed"/>
 		<HighlightTexture file="Interface\Buttons\UI-MicroButton-Hilight" alphaMode="ADD">
 			<TexCoords left="0" right="1" top="0.390625" bottom="0.96875"/>
 		</HighlightTexture>
