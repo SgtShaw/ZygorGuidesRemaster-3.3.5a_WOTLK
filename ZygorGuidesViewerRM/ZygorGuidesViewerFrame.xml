@@ -407,7 +407,7 @@
 									<OnEnter> print("title over") ZygorGuidesViewerFrame_Border_GuideButton_in:Play()</OnEnter>
 									<OnLeave> print("title out") ZygorGuidesViewerFrame_Border_GuideButton_out:Play()</OnLeave>
 									-->
-									<OnDragStart> if not ZygorGuidesViewer.db.profile["windowlocked"] then if button=='LeftButton' then ZygorGuidesViewerFrameMaster:StartMoving() ZygorGuidesViewer.framemoving=true else ZygorGuidesViewer:SetOption("Display","resizeup") end end </OnDragStart>
+									<OnDragStart> if not ZygorGuidesViewer.db.profile["windowlocked"] then if button=='LeftButton' then ZygorGuidesViewerFrameMaster:StartMoving() ZygorGuidesViewer.framemoving=true else ZygorGuidesViewer:ToggleResizeUp() end end </OnDragStart>
 									<OnDragStop> ZygorGuidesViewerFrameMaster:StopMovingOrSizing() ZygorGuidesViewer:AlignFrame() ZGV.framemoving=nil </OnDragStop>
 									<OnLoad> self:RegisterForDrag("LeftButton") </OnLoad>
 								</Scripts>
@@ -595,7 +595,7 @@
 												<HighlightTexture parentKey="htx" file="" alphaMode="ADD"><TexCoords left="0.250" right="0.375" top="0.500" bottom="0.750"/></HighlightTexture>
 												<Scripts>
 													<OnClick>
-														ZygorGuidesViewer:SetOption("Display","windowlocked")
+														ZygorGuidesViewer:ToggleWindowLock()
 														self:GetScript("OnEnter")(self)
 													</OnClick>
 													<OnEnter>

@@ -15,12 +15,12 @@ This project keeps the classic Zygor workflow while delivering a cleaner remaste
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/T6T01U9GMM)
 
-## 🔖 Version
+## Version
 
-- 📦 Version: ![Version](https://img.shields.io/github/commit-activity/t/ErebusAres/ZygorGuidesRemaster-3.3.5a_WOTLK?label=Version%203.0.&color=1f6feb)
-- 🎮 Intended client: **WotLK 3.3.5a / 12340**
+- Version: ![Version](https://img.shields.io/github/commit-activity/t/ErebusAres/ZygorGuidesRemaster-3.3.5a_WOTLK?label=Version%203.0.&color=1f6feb)
+- Intended client: **WotLK 3.3.5a / 12340**
 
-## 🎯 Who This Is For
+## Who This Is For
 
 This addon is intended for:
 
@@ -30,38 +30,38 @@ This addon is intended for:
 
 This project is primarily focused on **WotLK 3.3.5a**. Other clients may work, but support and testing are centered on 3.3.5a.
 
-## ⭐ What You Get
+## What You Get
 
-- 🗺️ Step-by-step leveling and quest progression guidance.
-- 🧭 Arrow and waypoint navigation while you play.
-- ✅ Structured objective flow (accept, complete, and turn-in).
-- 🎨 A cleaner, more readable viewer UI designed for long play sessions.
-- 🧠 Includes talent guidance via an integrated `ZygorTalentAdvisor` module inside `ZygorGuidesViewerRM`.
+- Step-by-step leveling and quest progression guidance.
+- Arrow and waypoint navigation while you play.
+- Structured objective flow (accept, complete, and turn-in).
+- A cleaner, more readable viewer UI designed for long play sessions.
+- Includes talent guidance via the bundled `ZygorTalentAdvisor` module inside `ZygorGuidesViewerRM`.
 
-## 🧱 What Stayed the Same
+## What Stayed the Same
 
 Core 3.3.5a-era behavior is preserved:
 
-- 📘 Guide parser and step engine.
-- 🧭 Map and waypoint workflow.
-- ⚙️ Legacy guide execution patterns.
-- 🧠 Base `ZygorTalentAdvisor` behavior and structure.
+- Guide parser and step engine.
+- Map and waypoint workflow.
+- Legacy guide execution patterns.
+- Base `ZygorTalentAdvisor` behavior and structure.
 
-## ✨ What's New in the Remaster
+## What's New in the Remaster
 
-- 🎨 Cleaner, retail-inspired UI shell for both guide browsing and options.
-- 🗂️ New standalone Guide Manager (Home / Featured / Current / Recent) with category sidebar, search, favorites, and folder-style tree behavior.
-- ⚙️ New in-app Options experience with categorized navigation, searchable pages, and improved layout consistency.
-- 🧭 Remastered waypoint arrow and objective text styling updates, including clearer action/title/distance presentation and distance color gradients.
-- ♿ Accessibility improvements including colorblind presets and simplified noun-color handling for better readability.
-- 🔧 Ongoing compatibility focus for 3.3.5a environments and expanded guide coverage where applicable.
+- Cleaner, retail-inspired UI shell for both guide browsing and options.
+- New standalone Guide Manager (Home / Featured / Current / Recent) with category sidebar, search, favorites, and folder-style tree behavior.
+- New in-app Options experience with categorized navigation, searchable pages, and improved layout consistency.
+- Remastered waypoint arrow and objective text styling updates, including clearer action/title/distance presentation and distance color gradients.
+- Accessibility improvements including colorblind presets and simplified noun-color handling for better readability.
+- Ongoing compatibility focus for 3.3.5a environments and expanded guide coverage where applicable.
 
-## 📦 Included Components
+## Included Components
 
 1. `ZygorGuidesViewerRM` - Remastered viewer and guide runtime.
-2. Integrated `ZygorTalentAdvisor` module - bundled inside `ZygorGuidesViewerRM`, based on original behavior, and expanded with additional guide content in this remaster.
+2. `ZygorTalentAdvisor` - bundled inside `ZygorGuidesViewerRM` and loaded as part of the addon package.
 
-## 🖱️ Key Controls
+## Key Controls
 
 - Minimap icon:
   - Left-click toggles the guide viewer.
@@ -73,9 +73,9 @@ Core 3.3.5a-era behavior is preserved:
   - Settings left-click opens quick settings.
   - Settings right-click opens Guide Manager options.
 
-## 🚀 Quick Install
+## Quick Install
 
-### 📦 Installation Overview
+### Installation Overview
 
 1. Download the ZIP.
 2. Extract to `Interface\AddOns\`.
@@ -96,7 +96,7 @@ Core 3.3.5a-era behavior is preserved:
    - `Interface\AddOns\ZygorGuidesViewerRM\ZygorGuidesViewerRM.toc`
 6. Launch the game and enable the addon.
 
-## ❓ Common Issues
+## Common Issues
 
 **Addon not showing in-game**
 
@@ -113,7 +113,19 @@ Core 3.3.5a-era behavior is preserved:
 - Some imported guides may not fully match 3.3.5a data.
 - See the Known Issues section below.
 
-## 🌍 Localization
+## Update Notes
+
+1. Install or update the `ZygorGuidesViewerRM` folder as a single addon package.
+2. `/reload` is usually enough for Lua-only changes.
+3. A full relaunch is safer when files, XML includes, assets, or bundled modules change.
+
+## Guide Profiles
+
+- Current default guide content is the remastered, TrinityCore-oriented profile for WotLK 3.3.5a private servers.
+- An optional Alliance fallback profile exists at `Guides\Leveling_Original\ZygorGuidesAlliance.lua`.
+- That fallback is original, unmodified classic Zygor content and should only be used if the remastered default route is problematic for a specific session.
+
+## Localization
 
 Localization key coverage is complete across shipped locales (`Main` + `NPCs`) with placeholder and format-consistency checks.
 
@@ -126,7 +138,11 @@ Current focus is community QA review:
 
 Localization was largely AI-assisted and should be treated as needing community review until native-speaker QA confirms quality.
 
-## 🤝 Support Wanted (Localization QA)
+### Community Credits
+
+- `mikki33` for providing Russian localization changes and review updates.
+
+## Support Wanted (Localization QA)
 
 If you can validate translations in-game, your help is very welcome.
 
@@ -138,7 +154,7 @@ Please report:
 - incorrect NPC names,
 - encoding artifacts.
 
-## 🔒 Safety and Trust
+## Safety and Trust
 
 This addon is fully open source and can be inspected before use.
 
@@ -146,12 +162,20 @@ This addon is fully open source and can be inspected before use.
 - You can review all files and changes directly in this repository.
 - A VirusTotal scan of the download link is provided for transparency.
 
-## 📜 Changelog
+## Changelog
+
+### v3.0 (Revision 97)
+
+- Bumped addon version/revision to 3.0.97 / 97.
+- Fixed `Lock Window` persistence by adding the missing saved profile default.
+- Fixed minimap button dragging so it stays anchored to the minimap edge and saves its position by angle across reloads.
+- Fixed quick viewer controls that were sending `unknown argument` chat errors for `Lock Window`, `Auto-hide Border`, `Resize Up`, and `Hide In Combat`.
 
 ### v3.0 (Revision 96)
 
 - Bumped addon version/revision to 3.0.96 / 96.
-- Localized the Guide Browser and embedded options shell UI across all shipped locale files, with explicit provisional keys for every locale and Russian translations for the new browser surface.
+- Localized the Guide Browser and embedded options shell UI across all shipped locale files, with explicit provisional keys for every locale.
+- Merged Russian localization updates and expanded ruRU coverage for the new browser surface.
 
 ### v3.0 (Revision 95)
 
@@ -172,39 +196,13 @@ This addon is fully open source and can be inspected before use.
 - Bumped addon version/revision to 3.0.91 / 91.
 - Updated mining guide routing, selector flow, and removed the legacy linear mining route.
 
-### v3.0 (Revision 88)
-
-- Bumped addon version/revision to `3.0.88` / `88`.
-- Updated mining route content and faction split guide placement across the remastered profession guides.
-
-### v3.0 (Revision 87)
-
-- Bumped addon version/revision to `3.0.87` / `87`.
-- Expanded mining guide coverage with new staged hubs and route selectors:
-  - `65-125`, `125-175`, `175-245`, `245-275`, `275-300`.
-  - Burning Crusade Classic `300-350` with Hellfire `300-325` route split.
-  - Burning Crusade Classic `325-350` route split (Zangarmarsh and Terokkar flying/flightless).
-  - Wrath of the Lich King Classic `350-400` route split (Borean/Howling, flying/flightless).
-- Added faction-specific mining variants where applicable (including Arathi and Blasted Lands variants).
-- Updated guide flow so each tier routes into the next tier hub instead of jumping directly to `Mining 1-450`.
-- Added and refined multiple custom loop routes and in-guide cave/risk tips for starter and mid-tier mining zones.
-- Added explicit placeholder/untested disclaimers to in-progress mining route sets.
-
-### v3.0 (Revision 86)
-
-- Bumped addon version/revision to `3.0.86` / `86`.
-- Added Wrath 3.3.5a API compatibility handling in Guide Manager rendering:
-  - replaced `SetShown` usage with explicit `Show()` / `Hide()` calls for favorite button visibility.
-  - guarded `SetClipsChildren` calls so clients without that API no longer error.
-- Verified behavior on plain test installs without API-shim addons.
-
-## 📝 Notes
+## Notes
 
 - Intended target client is **WotLK 3.3.5a (12340)**.
 - It may work on other versions, but compatibility is not guaranteed.
-- Talent Advisor is integrated into `ZygorGuidesViewerRM` and no longer requires a separate `ZygorTalentAdvisor` addon folder.
+- `ZygorTalentAdvisor` is bundled and loaded from within `ZygorGuidesViewerRM`.
 
-## ⚠️ Known Issues
+## Known Issues
 
 - Arrow scale/position drift:
   - On some setups, changing Waypoint Arrow Scale can shift the arrow position unexpectedly.
@@ -214,7 +212,7 @@ This addon is fully open source and can be inspected before use.
 - Some imported guides may be incomplete or not fully aligned to 3.3.5a data.
 - If a guide behaves incorrectly, disable it in `ZygorGuidesViewerRM/Guides/Autoload.xml` and report it.
 
-## ❔ Q&A
+## Q&A
 
 **Is this remaster free?**
 
@@ -228,32 +226,38 @@ Use the main repository download link in this README.
 
 Not always. Use other sites/downloads at your own risk.
 
-## 🙏 Credits
+## Credits
 
 Original Zygor Guides concept and content belong to the original creators.
 
 This remaster focuses on UI/UX modernization, packaging quality, compatibility maintenance, and localization completion for the 3.3.5a player community.
 
-## 🖼️ Example Images
+## Example Images
+
 ### New Guide + Options Menus
+
 ![options menu display](docs/images/options-menu-display.png)
 ![guide manager selection preview](docs/images/guide-manager-selection-preview.png)
 <img width="1248" height="845" alt="image" src="https://github.com/user-attachments/assets/6d66d7d6-67bc-4c52-bbb5-5cea38e5bbde" />
 
 ### New Pointer Arrow
+
 ![new pointer arrow](docs/images/new-arrow.gif)
+
 ### ... With Colorblind Options
+
 ![colorblind deuteran](docs/images/new-arrow-deuteran.gif)
 ![colorblind protan](docs/images/new-arrow-protan.gif)
 ![colorblind tritan](docs/images/new-arrow-tritan.gif)
 
 ### New And Legacy Looks
+
 <img width="436" height="264" alt="Viewer Step Flow" src="https://github.com/user-attachments/assets/f0dddbf0-7bfa-4b95-a250-0692c7690921" />
 <img width="586" height="260" alt="Guide Window Layout" src="https://github.com/user-attachments/assets/e6b85c9c-8835-4e49-96b1-608ad9944b0f" />
 <img width="637" height="197" alt="Waypoint and Route Display" src="https://github.com/user-attachments/assets/cd258eb1-ebb6-420d-9516-4abe9d75d88c" />
 <img width="443" height="687" alt="Talent Advisor Panel" src="https://github.com/user-attachments/assets/b3f2c2ef-2bef-4ca4-b033-37c314b151d5" />
 
 ### New Route and Loop guide modes
+
 <img width="433" height="247" alt="image" src="https://github.com/user-attachments/assets/579b6acb-df5e-4f40-8ef3-7d6b33e1015d" />
 <img width="436" height="248" alt="image" src="https://github.com/user-attachments/assets/a845b881-2831-43e3-bd26-5287f9783d68" />
-

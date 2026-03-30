@@ -43,11 +43,13 @@
 				end
 			end
 			</OnClick>
-			<OnDragStart> this:StartMoving() </OnDragStart>
-			<OnDragStop> this:StopMovingOrSizing() </OnDragStop>
+			<OnDragStart> ZygorGuidesViewer:StartMapButtonDrag(self) </OnDragStart>
+			<OnDragStop> ZygorGuidesViewer:StopMapButtonDrag(self) </OnDragStop>
+			<OnUpdate> ZygorGuidesViewer:UpdateMapButtonDrag(self) </OnUpdate>
 			<OnLoad>
 				self:RegisterForClicks("LeftButtonUp","RightButtonUp")
 				self:RegisterForDrag("LeftButton")
+				ZygorGuidesViewer:ApplyMapButtonPosition()
 				</OnLoad>
 			<OnEnter>
 				GameTooltip:SetOwner(this, "BOTTOMLEFT")

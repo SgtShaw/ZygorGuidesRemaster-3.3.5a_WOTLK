@@ -93,6 +93,19 @@ ZGV.MIN_STEP_HEIGHT=15
 
 local FONT = STANDARD_TEXT_FONT
 --ZGV.BUTTONS_INLINE=true
+local cos, sin, rad, deg = math.cos, math.sin, math.rad, math.deg
+local atan2 = math.atan2
+local MAPBUTTON_RADIUS = 78
+local MAPBUTTON_DEFAULT_ANGLE = 225
+
+local function NormalizeDegrees(angle)
+	angle = tonumber(angle) or MAPBUTTON_DEFAULT_ANGLE
+	angle = angle % 360
+	if angle < 0 then
+		angle = angle + 360
+	end
+	return angle
+end
 
 local function copyBackdrop(backdrop)
 	if type(backdrop) ~= "table" then
@@ -884,7 +897,7 @@ function me:EnsureRemasterFrames()
 	styleCompositeButton(lockButton, "Unlocked-Lock-WithBG")
 	lockButton:SetPoint("RIGHT", miniButton, "LEFT", -6, 0)
 	lockButton:SetScript("OnClick", function()
-		ZygorGuidesViewer:SetOption("Display","windowlocked")
+		ZygorGuidesViewer:ToggleWindowLock()
 	end)
 	lockButton:SetScript("OnEnter", function(selfBtn)
 		GameTooltip:SetOwner(selfBtn, "ANCHOR_TOPRIGHT")
@@ -1075,6 +1088,7 @@ function me:OnEnable()
 
 	if self.db.profile["visible"] then self:ToggleFrame() end
 
+	self:ApplyMapButtonPosition()
 	ZygorGuidesViewerMapIcon:Show()
 
 	self:UpdateMapButton()
@@ -3436,6 +3450,7 @@ function me:UpdateSkin()
 	ZygorGuidesViewerMapIcon.ntx:SetTexture(SKINDIR.."\\zglogo")
 	ZygorGuidesViewerMapIcon.ptx:SetTexture(SKINDIR.."\\zglogo")
 	ZygorGuidesViewerMapIcon.htx:SetTexture(SKINDIR.."\\zglogo")
+	self:ApplyMapButtonPosition()
 
 	ZygorGuidesViewerFrame_Border_Top:SetTexture(SKINDIR.."\\leavesofsteel_top")
 	if ZygorGuidesViewerFrame_Border_Flash_Top then
@@ -4874,6 +4889,66 @@ function me:OpenGuideMenu()
 	end
 end
 
+function me:ToggleWindowLock()
+	if not (self.db and self.db.profile) then return end
+	self.db.profile.windowlocked = not self.db.profile.windowlocked
+	self:UpdateLocking()
+end
+
+function me:SetHideBorder(value)
+	if not (self.db and self.db.profile) then return end
+	local v = not not value
+	self.db.profile.hideborder = v
+	ZGV.borderfadedout = nil
+	if self.RefreshAutoHideBorderState then
+		self:RefreshAutoHideBorderState()
+	end
+	if not v then
+		if ZygorGuidesViewerFrame_Border then
+			ZygorGuidesViewerFrame_Border:Show()
+			ZygorGuidesViewerFrame_Border:SetAlpha(ZGV.db.profile.opacitymain or 1.0)
+		end
+		if ZygorGuidesViewerFrame_Skipper and ZygorGuidesViewerFrame_Skipper.mustbevisible then
+			ZygorGuidesViewerFrame_Skipper:Show()
+			ZygorGuidesViewerFrame_Skipper:SetAlpha(ZGV.db.profile.opacitymain or 1.0)
+		end
+	end
+end
+
+function me:ToggleHideBorder()
+	self:SetHideBorder(not (self.db and self.db.profile and self.db.profile.hideborder))
+end
+
+function me:SetResizeUp(value)
+	if not (self.db and self.db.profile) then return end
+	self.db.profile.resizeup = not not value
+	self:ReanchorFrame()
+	self:Debug("size up? "..tostring(self.db.profile.resizeup))
+	self:AlignFrame()
+end
+
+function me:ToggleResizeUp()
+	self:SetResizeUp(not (self.db and self.db.profile and self.db.profile.resizeup))
+end
+
+function me:SetHideInCombat(value)
+	if not (self.db and self.db.profile) then return end
+	self.db.profile.hideincombat = not not value
+	if self.db.profile.hideincombat and InCombatLockdown and InCombatLockdown() then
+		if self.Frame and self.Frame:IsVisible() then
+			UIFrameFadeOut(self.Frame,0.5,1.0,0.0)
+			self.hiddenincombat = true
+		end
+	elseif not self.db.profile.hideincombat and self.hiddenincombat and self.Frame then
+		UIFrameFadeIn(self.Frame,0.5,0.0,1.0)
+		self.hiddenincombat = nil
+	end
+end
+
+function me:ToggleHideInCombat()
+	self:SetHideInCombat(not (self.db and self.db.profile and self.db.profile.hideincombat))
+end
+
 function me:OpenQuickMenu(anchor)
 	local menu = {
 		--[[
@@ -4887,7 +4962,7 @@ function me:OpenQuickMenu(anchor)
 			tooltipTitle = L['opt_hideborder'],
 			tooltipText = L["opt_hideborder_desc"],
 			checked = function() return self.db.profile.hideborder end,
-			func = function() self:SetOption("Display","hideborder") end,
+			func = function() self:ToggleHideBorder() end,
 			keepShownOnClick = true,
 		},
 		{
@@ -4895,13 +4970,13 @@ function me:OpenQuickMenu(anchor)
 			tooltipTitle = L['opt_windowlocked'],
 			tooltipText = L['opt_windowlocked_desc'],
 			checked = function()  return self.db.profile.windowlocked end,
-			func = function()  self:SetOption("Display","windowlocked")  end,
+			func = function()  self:ToggleWindowLock()  end,
 			keepShownOnClick = true,
 		},
 		{
 			text = L['opt_miniresizeup'],
 			tooltipTitle = L['opt_miniresizeup'],
-			func = function() self:SetOption("Display","resizeup") end,
+			func = function() self:ToggleResizeUp() end,
 			checked = function() return self.db.profile.resizeup end,
 			keepShownOnClick = true,
 		},
@@ -4910,7 +4985,7 @@ function me:OpenQuickMenu(anchor)
 			tooltipTitle = L['opt_hideincombat'],
 			tooltipText = L['opt_hideincombat_desc'],
 			checked = function()  return self.db.profile.hideincombat  end,
-			func = function()  self:SetOption("Display","hideincombat")  end,
+			func = function()  self:ToggleHideInCombat()  end,
 			keepShownOnClick = true,
 		},
 		--[[
@@ -5245,7 +5320,62 @@ end
 --]]
 
 function me:UpdateMapButton()
+	self:ApplyMapButtonPosition()
 	if self.db.profile.showmapbutton then ZygorGuidesViewerMapIcon:Show() else ZygorGuidesViewerMapIcon:Hide() end
+end
+
+function me:GetMapButtonAngle()
+	if self.db and self.db.profile then
+		return NormalizeDegrees(self.db.profile.mapbuttonangle)
+	end
+	return MAPBUTTON_DEFAULT_ANGLE
+end
+
+function me:ApplyMapButtonPosition(angle)
+	if not ZygorGuidesViewerMapIcon or not Minimap then return end
+	angle = NormalizeDegrees(angle or self:GetMapButtonAngle())
+	local x = cos(rad(angle)) * MAPBUTTON_RADIUS
+	local y = sin(rad(angle)) * MAPBUTTON_RADIUS
+	ZygorGuidesViewerMapIcon:ClearAllPoints()
+	ZygorGuidesViewerMapIcon:SetPoint("CENTER", Minimap, "CENTER", x, y)
+end
+
+function me:SetMapButtonAngle(angle)
+	angle = NormalizeDegrees(angle)
+	if self.db and self.db.profile then
+		self.db.profile.mapbuttonangle = angle
+	end
+	self:ApplyMapButtonPosition(angle)
+end
+
+function me:StartMapButtonDrag(button)
+	if not button then return end
+	button.isDragging = true
+	self:UpdateMapButtonDrag(button)
+end
+
+function me:UpdateMapButtonDrag(button)
+	button = button or ZygorGuidesViewerMapIcon
+	if not button or not button.isDragging or not Minimap then return end
+	local minimapX, minimapY = Minimap:GetCenter()
+	if not minimapX or not minimapY then return end
+	local cursorX, cursorY = GetCursorPosition()
+	local scale = UIParent:GetEffectiveScale()
+	cursorX = cursorX / scale
+	cursorY = cursorY / scale
+	local dx = cursorX - minimapX
+	local dy = cursorY - minimapY
+	if dx == 0 and dy == 0 then return end
+	local angle = deg(atan2(dy, dx))
+	self:SetMapButtonAngle(angle)
+end
+
+function me:StopMapButtonDrag(button)
+	button = button or ZygorGuidesViewerMapIcon
+	if not button then return end
+	self:UpdateMapButtonDrag(button)
+	button.isDragging = nil
+	self:ApplyMapButtonPosition()
 end
 
 function me:GetGuides()

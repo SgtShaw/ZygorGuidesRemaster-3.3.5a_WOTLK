@@ -42,6 +42,7 @@ function me:Options_RegisterDefaults()
 			skipimpossible = false,
 
 			showmapbutton = true,
+			mapbuttonangle = 225,
 			hideincombat = false,
 
 			-- convenience
@@ -56,6 +57,7 @@ function me:Options_RegisterDefaults()
 			remastercolor = "dark",
 			skincolors={text={0.90,0.92,0.98},back={0.08,0.09,0.12}},
 			showallsteps = false,
+			windowlocked = false,
 			hideborder = false,
 			hidestepborders = false,
 			showcountsteps = 1,
@@ -1759,6 +1761,19 @@ function me:SetOption(cat,cmd)
 	-- Backward compatibility: step controls were split from Display into StepDisplay.
 	-- Keep legacy callers/macros working by remapping old command paths.
 	if cat=="Display" and type(cmd)=="string" then
+		if cmd=="hideborder" and self.ToggleHideBorder then
+			self:ToggleHideBorder()
+			return
+		elseif cmd=="windowlocked" and self.ToggleWindowLock then
+			self:ToggleWindowLock()
+			return
+		elseif cmd=="resizeup" and self.ToggleResizeUp then
+			self:ToggleResizeUp()
+			return
+		elseif cmd=="hideincombat" and self.ToggleHideInCombat then
+			self:ToggleHideInCombat()
+			return
+		end
 		local firstarg = cmd:match("^(%S+)")
 		if cmd:match("^showcountsteps") then
 			cat = "StepDisplay"
