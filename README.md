@@ -148,6 +148,11 @@ This addon is fully open source and can be inspected before use.
 
 ## 📜 Changelog
 
+### v3.0 (Revision 96)
+
+- Bumped addon version/revision to 3.0.96 / 96.
+- Localized the Guide Browser and embedded options shell UI across all shipped locale files, with explicit provisional keys for every locale and Russian translations for the new browser surface.
+
 ### v3.0 (Revision 95)
 
 - Bumped addon version/revision to 3.0.95 / 95.

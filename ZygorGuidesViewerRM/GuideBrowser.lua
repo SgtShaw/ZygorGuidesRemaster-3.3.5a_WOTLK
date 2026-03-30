@@ -1,6 +1,7 @@
 local me = ZygorGuidesViewer
 if not me then return end
 
+local L = me.L
 local tinsert = tinsert
 local tremove = tremove
 local pairs = pairs
@@ -12,6 +13,14 @@ local strmatch = string.match
 local wipe = wipe
 
 local GetNodeByPath
+
+local function LT(key, ...)
+	local text = (L and L[key]) or key
+	if select("#", ...) > 0 then
+		return text:format(...)
+	end
+	return text
+end
 
 local function SplitGuideTitle(title)
 	local parts = {}
@@ -87,7 +96,7 @@ end
 
 function me:GetGuideBrowserPathDisplay()
 	local p = StringToPath(self:GetGuideBrowserPath())
-	if PathIsRoot(p) then return "Root" end
+	if PathIsRoot(p) then return LT("gb_root") end
 	return table.concat(p, " > ")
 end
 
@@ -198,7 +207,7 @@ local function EnsureGuideBrowserFrame(self)
 
 	local titleObj = _G[f:GetName() .. "Title"]
 	if titleObj and titleObj.SetText then
-		titleObj:SetText("Guide Browser")
+		titleObj:SetText(LT("gb_window_title"))
 	end
 
 	local close = CreateFrame("Button", nil, f, "UIPanelCloseButton")
@@ -212,7 +221,7 @@ local function EnsureGuideBrowserFrame(self)
 
 	local searchLabel = f:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
 	searchLabel:SetPoint("TOPLEFT", f, "TOPLEFT", 16, -56)
-	searchLabel:SetText("Search")
+	searchLabel:SetText(LT("gb_search"))
 
 	local search = CreateFrame("EditBox", nil, f, "InputBoxTemplate")
 	search:SetAutoFocus(false)
@@ -224,11 +233,11 @@ local function EnsureGuideBrowserFrame(self)
 
 	local leftHeader = f:CreateFontString(nil, "ARTWORK", "GameFontNormal")
 	leftHeader:SetPoint("TOPLEFT", f, "TOPLEFT", 16, -84)
-	leftHeader:SetText("Folders")
+	leftHeader:SetText(LT("gb_folders"))
 
 	local rightHeader = f:CreateFontString(nil, "ARTWORK", "GameFontNormal")
 	rightHeader:SetPoint("TOPLEFT", f, "TOPLEFT", 300, -84)
-	rightHeader:SetText("Guides")
+	rightHeader:SetText(LT("gb_guides"))
 
 	local left = CreateFrame("Frame", nil, f)
 	left:SetPoint("TOPLEFT", f, "TOPLEFT", 16, -102)
@@ -284,14 +293,14 @@ local function EnsureGuideBrowserFrame(self)
 	load:SetWidth(130)
 	load:SetHeight(22)
 	load:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -16, 16)
-	load:SetText("Load Guide")
+	load:SetText(LT("gb_load_guide"))
 	f.loadButton = load
 
 	local legacy = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
 	legacy:SetWidth(180)
 	legacy:SetHeight(22)
 	legacy:SetPoint("RIGHT", load, "LEFT", -8, 0)
-	legacy:SetText("Open Legacy Picker")
+	legacy:SetText(LT("gb_open_legacy"))
 	f.legacyButton = legacy
 
 	self.GuideBrowserFrame = f
@@ -311,8 +320,8 @@ local function UpdateGuideBrowser(self)
 		node = tree
 	end
 
-	local breadcrumb = (#path > 0) and table.concat(path, "  >  ") or "Root"
-	f.breadcrumb:SetText("Path: " .. breadcrumb)
+	local breadcrumb = (#path > 0) and table.concat(path, "  >  ") or LT("gb_root")
+	f.breadcrumb:SetText(LT("gb_path_format", breadcrumb))
 
 	local folders = {}
 	if #path > 0 then tinsert(folders, { label = "..", isUp = true }) end
@@ -427,7 +436,7 @@ function me:OpenGuideBrowser()
 		f:Hide()
 	end)
 	f.legacyButton:SetScript("OnClick", function()
-		InterfaceOptionsFrame_OpenToCategory(self.options and self.options.name or "Zygor Guides Viewer Remastered")
+		InterfaceOptionsFrame_OpenToCategory(self.options and self.options.name or LT("gb_addon_title"))
 	end)
 	f:SetScript("OnHide", function()
 		if self.db and self.db.profile then
@@ -544,15 +553,15 @@ local GUIDE_SMALL_ICON_COORDS = {
 
 local FEATURED_BUCKET_ORDER = { "next", "progress", "level", "featured" }
 local FEATURED_BUCKET_LABELS = {
-	next = "Next Up",
-	progress = "In Progress",
-	level = "Around Your Level",
-	featured = "Featured Routes",
+	next = LT("gb_featured_bucket_next"),
+	progress = LT("gb_featured_bucket_progress"),
+	level = LT("gb_featured_bucket_level"),
+	featured = LT("gb_featured_bucket_featured"),
 }
 local FEATURED_CONFIDENCE_LABELS = {
-	strong = "Strong",
-	good = "Good",
-	fallback = "Fallback",
+	strong = LT("gb_featured_confidence_strong"),
+	good = LT("gb_featured_confidence_good"),
+	fallback = LT("gb_featured_confidence_fallback"),
 }
 local FEATURED_CONFIDENCE_COLORS = {
 	strong = { 0.46, 0.86, 0.36, 0.95 },
@@ -592,13 +601,13 @@ function me:RefreshGuideManagerPanel(panel)
 		local hasSearch = ((f.search and f.search:GetText()) or "") ~= ""
 		if hasSearch then
 			rows = {
-				{ kind = "header", depth = 0, label = "No guides match this search." },
-				{ kind = "action", depth = 0, label = "Clear search", action = "clear_search" },
+				{ kind = "header", depth = 0, label = LT("gb_empty_no_guides_search") },
+				{ kind = "action", depth = 0, label = LT("gb_action_clear_search"), action = "clear_search" },
 			}
 		else
 			rows = {
-				{ kind = "header", depth = 0, label = "No guides in this category." },
-				{ kind = "action", depth = 0, label = "Show all categories", action = "go_home_leveling" },
+				{ kind = "header", depth = 0, label = LT("gb_empty_no_guides_category") },
+				{ kind = "action", depth = 0, label = LT("gb_action_show_all_categories"), action = "go_home_leveling" },
 			}
 		end
 	end
@@ -870,7 +879,7 @@ function me:SetupGuideManagerInlinePanel(parentPanel)
 
 	local searchLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
 	searchLabel:SetPoint("TOPLEFT", panel, "TOPLEFT", 8, -5)
-	searchLabel:SetText("Search")
+	searchLabel:SetText(LT("gb_search"))
 
 	local search = CreateFrame("EditBox", "ZGVGuideManagerSearchBox", panel, "InputBoxTemplate")
 	search:SetAutoFocus(false)
@@ -975,43 +984,43 @@ function me:OpenGuideManagerOptions()
 		frame:SetSection("options")
 		return
 	end
-	InterfaceOptionsFrame_OpenToCategory((self.options and self.options.name) or "Zygor Guides Viewer Remastered")
+	InterfaceOptionsFrame_OpenToCategory((self.options and self.options.name) or LT("gb_addon_title"))
 end
 
 local GUIDE_MANAGER_TOP_TABS = {
-	{ id = "home", label = "Home" },
-	{ id = "featured", label = "Featured" },
-	{ id = "current", label = "Current" },
-	{ id = "recent", label = "Recent" },
+	{ id = "home", label = LT("gb_tab_home") },
+	{ id = "featured", label = LT("gb_tab_featured") },
+	{ id = "current", label = LT("gb_tab_current") },
+	{ id = "recent", label = LT("gb_tab_recent") },
 }
 
 local GUIDE_MANAGER_LEFT_MENU = {
-	{ id = "leveling", label = "Leveling", icon = "Interface\\Icons\\INV_Misc_Book_11", keywords = { "leveling", "levels" } },
-	{ id = "dungeons", label = "Dungeons", icon = "Interface\\Icons\\INV_Misc_GroupNeedMore", keywords = { "dungeon", "dungeons", "instance" } },
-	{ id = "daily", label = "Daily", icon = "Interface\\Icons\\Achievement_Daily_5", keywords = { "daily", "dailies" } },
-	{ id = "events", label = "Events", icon = "Interface\\Icons\\INV_Misc_Ticket_Tarot_Lunacy", keywords = { "event", "events", "holiday" } },
-	{ id = "reputations", label = "Reputations", icon = "Interface\\Icons\\INV_Misc_Note_01", keywords = { "reputation", "reputations" } },
-	{ id = "gold", label = "Gold", icon = "Interface\\Icons\\INV_Misc_Coin_02", keywords = { "gold", "farm", "farming" } },
-	{ id = "professions", label = "Professions", icon = "Interface\\Icons\\Trade_BlackSmithing", keywords = { "profession", "professions", "cooking", "fishing", "first aid" } },
-	{ id = "petsmounts", label = "Pets & Mounts", icon = "Interface\\Icons\\Ability_Mount_RidingHorse", keywords = { "pet", "pets", "mount", "mounts" } },
-	{ id = "titles", label = "Titles", icon = "Interface\\Icons\\INV_Inscription_ScrollOfWisdom_01", keywords = { "title", "titles" } },
-	{ id = "achievements", label = "Achievements", icon = "Interface\\Icons\\Achievement_Quests_Completed_08", keywords = { "achievement", "achievements" } },
-	{ id = "misc", label = "Misc", icon = "Interface\\Icons\\INV_Misc_Note_06", keywords = nil },
-	{ id = "favorites", label = "Favorites", icon = "Interface\\Icons\\Ability_Hunter_MasterMarksman", keywords = { "favorite", "favourite" } },
+	{ id = "leveling", label = LT("gb_cat_leveling"), icon = "Interface\\Icons\\INV_Misc_Book_11", keywords = { "leveling", "levels" } },
+	{ id = "dungeons", label = LT("gb_cat_dungeons"), icon = "Interface\\Icons\\INV_Misc_GroupNeedMore", keywords = { "dungeon", "dungeons", "instance" } },
+	{ id = "daily", label = LT("gb_cat_daily"), icon = "Interface\\Icons\\Achievement_Daily_5", keywords = { "daily", "dailies" } },
+	{ id = "events", label = LT("gb_cat_events"), icon = "Interface\\Icons\\INV_Misc_Ticket_Tarot_Lunacy", keywords = { "event", "events", "holiday" } },
+	{ id = "reputations", label = LT("gb_cat_reputations"), icon = "Interface\\Icons\\INV_Misc_Note_01", keywords = { "reputation", "reputations" } },
+	{ id = "gold", label = LT("gb_cat_gold"), icon = "Interface\\Icons\\INV_Misc_Coin_02", keywords = { "gold", "farm", "farming" } },
+	{ id = "professions", label = LT("gb_cat_professions"), icon = "Interface\\Icons\\Trade_BlackSmithing", keywords = { "profession", "professions", "cooking", "fishing", "first aid" } },
+	{ id = "petsmounts", label = LT("gb_cat_petsmounts"), icon = "Interface\\Icons\\Ability_Mount_RidingHorse", keywords = { "pet", "pets", "mount", "mounts" } },
+	{ id = "titles", label = LT("gb_cat_titles"), icon = "Interface\\Icons\\INV_Inscription_ScrollOfWisdom_01", keywords = { "title", "titles" } },
+	{ id = "achievements", label = LT("gb_cat_achievements"), icon = "Interface\\Icons\\Achievement_Quests_Completed_08", keywords = { "achievement", "achievements" } },
+	{ id = "misc", label = LT("gb_cat_misc"), icon = "Interface\\Icons\\INV_Misc_Note_06", keywords = nil },
+	{ id = "favorites", label = LT("gb_cat_favorites"), icon = "Interface\\Icons\\Ability_Hunter_MasterMarksman", keywords = { "favorite", "favourite" } },
 }
 
 local GUIDE_MANAGER_OPTIONS_APPS = {
-	{ id = "general", label = "Guides", app = "ZygorGuidesViewer", desc = "Guide selection, active guide metadata, and core guide controls." },
-	{ id = "stepdisplay", label = "Step Display", app = "ZygorGuidesViewer-StepDisplay", desc = "Viewer visuals, frame layout, skin/fonts, and step row/goal display controls." },
-	{ id = "progress", label = "Progression", app = "ZygorGuidesViewer-Progress", desc = "Step progression behavior, skipping rules, and completion flow." },
-	{ id = "travel", label = "Travel System", app = "ZygorGuidesViewer-Travel", desc = "Waypoint provider selection and travel-system behavior." },
-	{ id = "map", label = "Maps & Waypoints", app = "ZygorGuidesViewer-Maps", desc = "Arrow style, minimap/map marker display, and waypoint visuals." },
-	{ id = "notifications", label = "Notifications", app = "ZygorGuidesViewer-Notifications", desc = "Progress/completion flash and attention cues." },
-	{ id = "actionbuttons", label = "Action Buttons", app = "ZygorGuidesViewer-ActionButtons", desc = "Clickable step/goal interaction display behavior." },
-	{ id = "convenience", label = "Questing", app = "ZygorGuidesViewer-Conv", desc = "Auto accept/turn-in and quality-of-life quest helpers." },
-	{ id = "accessibility", label = "Accessibility", app = "ZygorGuidesViewer-Accessibility", desc = "Color visibility and readability options for improved accessibility." },
-	{ id = "profile", label = "Profiles", app = "ZygorGuidesViewer-Profile", desc = "Per-character/global profile management and copy/reset tools." },
-	{ id = "about", label = "About", app = "ZygorGuidesViewer-About", desc = "Version, support, and diagnostics/bug-report tools." },
+	{ id = "general", label = LT("gb_opt_guides"), app = "ZygorGuidesViewer", desc = LT("gb_opt_desc_guides") },
+	{ id = "stepdisplay", label = LT("gb_opt_stepdisplay"), app = "ZygorGuidesViewer-StepDisplay", desc = LT("gb_opt_desc_stepdisplay") },
+	{ id = "progress", label = LT("gb_opt_progress"), app = "ZygorGuidesViewer-Progress", desc = LT("gb_opt_desc_progress") },
+	{ id = "travel", label = LT("gb_opt_travel"), app = "ZygorGuidesViewer-Travel", desc = LT("gb_opt_desc_travel") },
+	{ id = "map", label = LT("gb_opt_map"), app = "ZygorGuidesViewer-Maps", desc = LT("gb_opt_desc_map") },
+	{ id = "notifications", label = LT("gb_opt_notifications"), app = "ZygorGuidesViewer-Notifications", desc = LT("gb_opt_desc_notifications") },
+	{ id = "actionbuttons", label = LT("gb_opt_actionbuttons"), app = "ZygorGuidesViewer-ActionButtons", desc = LT("gb_opt_desc_actionbuttons") },
+	{ id = "convenience", label = LT("gb_opt_convenience"), app = "ZygorGuidesViewer-Conv", desc = LT("gb_opt_desc_convenience") },
+	{ id = "accessibility", label = LT("gb_opt_accessibility"), app = "ZygorGuidesViewer-Accessibility", desc = LT("gb_opt_desc_accessibility") },
+	{ id = "profile", label = LT("gb_opt_profile"), app = "ZygorGuidesViewer-Profile", desc = LT("gb_opt_desc_profile") },
+	{ id = "about", label = LT("gb_opt_about"), app = "ZygorGuidesViewer-About", desc = LT("gb_opt_desc_about") },
 }
 
 local GUIDE_MANAGER_OPTIONS_ICONS = {
@@ -1036,7 +1045,7 @@ local function BuildGuideManagerOptionsApps(self)
 		tinsert(apps, opt)
 	end
 	if self and self.db and self.db.profile and self.db.profile.debug then
-		tinsert(apps, { id = "debug", label = "Advanced", app = "ZygorGuidesViewer-Debug", desc = "Debug tools, diagnostics, and developer-facing controls." })
+		tinsert(apps, { id = "debug", label = LT("gb_opt_advanced"), app = "ZygorGuidesViewer-Debug", desc = LT("gb_opt_desc_advanced") })
 	end
 	return apps
 end
@@ -1046,9 +1055,9 @@ local function GetOptionsAppMeta(appName)
 		if opt.app == appName then return opt end
 	end
 	if appName == "ZygorGuidesViewer-Debug" then
-		return { label = "Advanced", desc = "Debug tools, diagnostics, and developer-facing controls." }
+		return { label = LT("gb_opt_advanced"), desc = LT("gb_opt_desc_advanced") }
 	end
-	return { label = "General", desc = "General settings." }
+	return { label = LT("gb_opt_general"), desc = LT("gb_opt_desc_general") }
 end
 
 local function BuildOptionsTableSearchText(tbl, out)
@@ -1189,10 +1198,17 @@ end
 
 local function ParseWhyGainFromContext(text)
 	local context = tostring(text or "")
-	local why = context:match("Why:%s*([^|]+)")
-	local gain = context:match("Gain:%s*(.+)$")
-	if why then why = why:gsub("^%s+", ""):gsub("%s+$", "") end
-	if gain then gain = gain:gsub("^%s+", ""):gsub("%s+$", "") end
+	local whyPrefix = LT("gb_meta_why_prefix")
+	local gainPrefix = LT("gb_meta_gain_prefix")
+	local why, gain = "", ""
+	for part in context:gmatch("[^|]+") do
+		local line = part:gsub("^%s+", ""):gsub("%s+$", "")
+		if line:sub(1, #whyPrefix) == whyPrefix then
+			why = line:sub(#whyPrefix + 1):gsub("^%s+", ""):gsub("%s+$", "")
+		elseif line:sub(1, #gainPrefix) == gainPrefix then
+			gain = line:sub(#gainPrefix + 1):gsub("^%s+", ""):gsub("%s+$", "")
+		end
+	end
 	return why or "", gain or ""
 end
 
@@ -1364,8 +1380,8 @@ local function BuildSpecialSectionRows(self, section, searchText)
 			end
 		end
 		if #rows == 0 then
-			tinsert(rows, { kind = "header", depth = 0, label = "No current guide loaded." })
-			tinsert(rows, { kind = "action", depth = 0, label = "Go to Home", action = "go_home" })
+			tinsert(rows, { kind = "header", depth = 0, label = LT("gb_empty_no_current_guide") })
+			tinsert(rows, { kind = "action", depth = 0, label = LT("gb_action_go_home"), action = "go_home" })
 		end
 		return rows
 	end
@@ -1381,7 +1397,7 @@ local function BuildSpecialSectionRows(self, section, searchText)
 			if full and not seen[full] then
 				seen[full] = true
 				local label = h.short or full
-				local group = (full:match("^([^\\]+)\\") or "Other")
+				local group = (full:match("^([^\\]+)\\") or LT("gb_other"))
 				local txt = label .. " " .. full .. " " .. group
 				if includeText(txt) then
 					if not grouped[group] then
@@ -1414,8 +1430,8 @@ local function BuildSpecialSectionRows(self, section, searchText)
 			end
 		end
 		if #rows == 0 then
-			tinsert(rows, { kind = "header", depth = 0, label = "No recent guides yet." })
-			tinsert(rows, { kind = "action", depth = 0, label = "Open Home", action = "go_home" })
+			tinsert(rows, { kind = "header", depth = 0, label = LT("gb_empty_no_recent_guides") })
+			tinsert(rows, { kind = "action", depth = 0, label = LT("gb_action_open_home"), action = "go_home" })
 		end
 		return rows
 	end
@@ -1750,15 +1766,15 @@ local function BuildSpecialSectionRows(self, section, searchText)
 					local parentPath = title:match("^(.*)\\[^\\]+$")
 					local sameParent = currentParent and parentPath and currentParent == parentPath
 					local recency = recentRank[title]
-					if recency and recency <= 5 then AddReason(reasons, "recently used") end
-					if complete < 100 then AddReason(reasons, "incomplete") end
-					if inLevelBand then AddReason(reasons, "your level range")
-					elseif nearLevelBand then AddReason(reasons, "near your level")
+					if recency and recency <= 5 then AddReason(reasons, LT("gb_reason_recently_used")) end
+					if complete < 100 then AddReason(reasons, LT("gb_reason_incomplete")) end
+					if inLevelBand then AddReason(reasons, LT("gb_reason_your_level_range"))
+					elseif nearLevelBand then AddReason(reasons, LT("gb_reason_near_your_level"))
 					end
-					if hasClassAudience and not classMismatch then AddReason(reasons, "your class") end
-					if hasRaceAudience and not raceMismatch then AddReason(reasons, "your race") end
-					if profTagged and profMatch then AddReason(reasons, "your profession") end
-					if isFavorite then AddReason(reasons, "favorite") end
+					if hasClassAudience and not classMismatch then AddReason(reasons, LT("gb_reason_your_class")) end
+					if hasRaceAudience and not raceMismatch then AddReason(reasons, LT("gb_reason_your_race")) end
+					if profTagged and profMatch then AddReason(reasons, LT("gb_reason_your_profession")) end
+					if isFavorite then AddReason(reasons, LT("gb_reason_favorite")) end
 
 					local bucket,score
 					local chainStep = nil
@@ -1771,29 +1787,29 @@ local function BuildSpecialSectionRows(self, section, searchText)
 							chainStep = rankInChain
 							keepForChain = true
 							if rankInChain == 1 then
-								AddReason(reasons, "current chain")
+								AddReason(reasons, LT("gb_reason_current_chain"))
 							else
-								AddReason(reasons, ("chain step +%d"):format(rankInChain))
+								AddReason(reasons, LT("gb_reason_chain_step_format", rankInChain))
 							end
 						elseif inferredChainRank[title] and inferredChainRank[title] >= 1 then
 							local ifallback = inferredChainRank[title]
 							bucket = "next"
 							score = 980 - ((ifallback - 1) * 18)
 							chainStep = ifallback
-							AddReason(reasons, "inferred continuation")
+							AddReason(reasons, LT("gb_reason_inferred_continuation"))
 						elseif currentNext and title == currentNext and nextGuideExists then
 							bucket = "next"
 							score = 1100
 							keepForChain = true
-							AddReason(reasons, "current chain")
+							AddReason(reasons, LT("gb_reason_current_chain"))
 						elseif sameParent and title ~= currentTitle then
 							bucket = "next"
 							score = 1020
-							AddReason(reasons, "chapter continuation")
+							AddReason(reasons, LT("gb_reason_chapter_continuation"))
 						elseif currentTitle and title == currentTitle then
 							bucket = "progress"
 							score = 980
-							AddReason(reasons, "current chain")
+							AddReason(reasons, LT("gb_reason_current_chain"))
 						elseif inProgress then
 							bucket = "progress"
 							score = 900 + math.max(0, math.min(100, complete))
@@ -1806,7 +1822,7 @@ local function BuildSpecialSectionRows(self, section, searchText)
 							end
 							bucket = "level"
 							score = 760 + distanceBonus
-							AddReason(reasons, inLevelBand and "your level range" or "near your level")
+							AddReason(reasons, inLevelBand and LT("gb_reason_your_level_range") or LT("gb_reason_near_your_level"))
 						elseif featuredFlag then
 							bucket = "featured"
 							score = 520
@@ -1856,12 +1872,12 @@ local function BuildSpecialSectionRows(self, section, searchText)
 								meta = ("~%d"):format(playerLevel)
 							end
 						else
-							meta = "Suggested"
+							meta = LT("gb_meta_suggested")
 						end
 						if optShowConfidence then
-							meta = meta .. " | " .. (FEATURED_CONFIDENCE_LABELS[confidence] or "Good")
+							meta = meta .. " | " .. (FEATURED_CONFIDENCE_LABELS[confidence] or LT("gb_featured_confidence_good"))
 						end
-						if #reasons == 0 then AddReason(reasons, "recommended") end
+						if #reasons == 0 then AddReason(reasons, LT("gb_meta_recommended")) end
 						local reasonRank = {
 							["current chain"] = 1,
 							["inferred continuation"] = 2,
@@ -1884,9 +1900,9 @@ local function BuildSpecialSectionRows(self, section, searchText)
 							if a.rank ~= b.rank then return a.rank < b.rank end
 							return a.reason < b.reason
 						end)
-						local reasonText = (ranked[1] and ranked[1].reason) or "recommended"
+						local reasonText = (ranked[1] and ranked[1].reason) or LT("gb_meta_recommended")
 						if ranked[2] then reasonText = reasonText .. ", " .. ranked[2].reason end
-						local context = ("Why: %s | Gain: %s"):format(reasonText, gain)
+						local context = LT("gb_meta_why_prefix") .. reasonText .. " | " .. LT("gb_meta_gain_prefix") .. gain
 						local candidate = {
 							bucket = bucket,
 							score = score or 0,
@@ -1917,8 +1933,8 @@ local function BuildSpecialSectionRows(self, section, searchText)
 								label = label,
 								title = title,
 								complete = complete,
-								meta = "Suggested | " .. FEATURED_CONFIDENCE_LABELS.fallback,
-								context = "Why: other useful option | Gain: " .. gain,
+								meta = LT("gb_meta_suggested") .. " | " .. FEATURED_CONFIDENCE_LABELS.fallback,
+								context = LT("gb_meta_why_prefix") .. LT("gb_meta_other_useful_option") .. " | " .. LT("gb_meta_gain_prefix") .. gain,
 								chainStep = nil,
 								confidence = "fallback",
 								gaintype = gainType,
@@ -1941,8 +1957,8 @@ local function BuildSpecialSectionRows(self, section, searchText)
 					label = curLabel,
 					title = currentTitle,
 					complete = 0,
-					meta = "Current | " .. FEATURED_CONFIDENCE_LABELS.strong,
-					context = ("Why: current selection | Gain: %s"):format(curGain),
+					meta = LT("gb_meta_current") .. " | " .. FEATURED_CONFIDENCE_LABELS.strong,
+					context = LT("gb_meta_why_prefix") .. LT("gb_meta_current_selection") .. " | " .. LT("gb_meta_gain_prefix") .. curGain,
 					chainStep = 0,
 					confidence = "strong",
 					gaintype = ResolveGainType(curGuide and InferGuideCategory(curGuide, currentTitle, currentTitle) or nil, currentTitle),
@@ -2013,10 +2029,10 @@ local function BuildSpecialSectionRows(self, section, searchText)
 			end
 		end
 		if #rows == 0 then
-			tinsert(rows, { kind = "header", depth = 0, label = "No featured suggestions match this filter." })
-			tinsert(rows, { kind = "action", depth = 0, label = "Clear search", action = "clear_search" })
+			tinsert(rows, { kind = "header", depth = 0, label = LT("gb_empty_no_featured_match") })
+			tinsert(rows, { kind = "action", depth = 0, label = LT("gb_action_clear_search"), action = "clear_search" })
 			if (featuredSnooze and next(featuredSnooze)) or (featuredSessionHide and next(featuredSessionHide)) or (legacyHiddenFeatured and next(legacyHiddenFeatured)) then
-				tinsert(rows, { kind = "action", depth = 0, label = "Reset snoozed suggestions", action = "reset_hidden_featured" })
+				tinsert(rows, { kind = "action", depth = 0, label = LT("gb_action_reset_snoozed"), action = "reset_hidden_featured" })
 			end
 		end
 	end
@@ -2028,7 +2044,7 @@ local function BuildCurrentSectionRows(self, searchText)
 	local rows = {}
 	local g = self.CurrentGuide
 	if not (g and g.title and g.title ~= "") then
-		tinsert(rows, { kind = "header", depth = 0, label = "No current guide loaded" })
+		tinsert(rows, { kind = "header", depth = 0, label = LT("gb_empty_no_current_guide_short") })
 		return rows
 	end
 
@@ -2388,7 +2404,7 @@ local function EnsureGuideManagerStandaloneFrame(self)
 
 	local titleObj = _G[frame:GetName() .. "Title"]
 	if titleObj and titleObj.SetText then
-		titleObj:SetText("Zygor Guides Viewer Remastered")
+		titleObj:SetText(LT("gb_addon_title"))
 	end
 	if titleObj then
 		titleObj:SetTextColor(0.87, 0.89, 0.93)
@@ -2478,7 +2494,7 @@ local function EnsureGuideManagerStandaloneFrame(self)
 
 	local optionsTitle = optionsPane:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
 	optionsTitle:SetPoint("TOPLEFT", optionsPane, "TOPLEFT", 10, -10)
-	optionsTitle:SetText("Options")
+	optionsTitle:SetText(LT("gb_tab_options"))
 	ApplyRetailFont(optionsTitle, 20, "", true)
 	frame.optionsTitle = optionsTitle
 
@@ -2543,7 +2559,7 @@ local function EnsureGuideManagerStandaloneFrame(self)
 	optionsDetailTitle:SetPoint("TOPLEFT", optionsDetail, "TOPLEFT", 10, -10)
 	optionsDetailTitle:SetPoint("TOPRIGHT", optionsDetail, "TOPRIGHT", -10, -10)
 	optionsDetailTitle:SetJustifyH("LEFT")
-	optionsDetailTitle:SetText("Viewer")
+	optionsDetailTitle:SetText(LT("gb_title_viewer"))
 	ApplyRetailFont(optionsDetailTitle, 14, "", true)
 	frame.optionsDetailTitle = optionsDetailTitle
 
@@ -2554,7 +2570,7 @@ local function EnsureGuideManagerStandaloneFrame(self)
 	optionsDetailBody:SetWidth(218)
 	optionsDetailBody:SetWordWrap(true)
 	optionsDetailBody:SetNonSpaceWrap(true)
-	optionsDetailBody:SetText("Core viewer behavior, guide loading, and basic addon controls.")
+	optionsDetailBody:SetText(LT("gb_options_viewer_desc"))
 	ApplyRetailFont(optionsDetailBody, 12, "", false)
 	frame.optionsDetailBody = optionsDetailBody
 
@@ -2572,7 +2588,7 @@ local function EnsureGuideManagerStandaloneFrame(self)
 	optionsDetailHint:SetWidth(218)
 	optionsDetailHint:SetWordWrap(true)
 	optionsDetailHint:SetNonSpaceWrap(true)
-	optionsDetailHint:SetText("Tip:\nUse search on the left to quickly find a settings page.")
+	optionsDetailHint:SetText(LT("gb_hint_search_settings"))
 	ApplyRetailFont(optionsDetailHint, 12, "", false)
 	frame.optionsDetailHint = optionsDetailHint
 
@@ -2592,7 +2608,7 @@ local function EnsureGuideManagerStandaloneFrame(self)
 	local optionsBackButton = CreateFrame("Button", nil, optionsFooter, "UIPanelButtonTemplate")
 	optionsBackButton:SetSize(120, 22)
 	optionsBackButton:SetPoint("LEFT", optionsFooter, "LEFT", 0, 0)
-	optionsBackButton:SetText("Back to Guides")
+	optionsBackButton:SetText(LT("gb_action_back_to_guides"))
 	optionsBackButton:SetScript("OnClick", function()
 		self:SelectGuideManagerSection("home")
 	end)
@@ -2601,7 +2617,7 @@ local function EnsureGuideManagerStandaloneFrame(self)
 	local optionsFullButton = CreateFrame("Button", nil, optionsFooter, "UIPanelButtonTemplate")
 	optionsFullButton:SetSize(120, 22)
 	optionsFullButton:SetPoint("RIGHT", optionsFooter, "RIGHT", 0, 0)
-	optionsFullButton:SetText("Open Full Options")
+	optionsFullButton:SetText(LT("gb_action_open_full_options"))
 	optionsFullButton:SetScript("OnClick", function()
 		self:OpenOptions()
 	end)
@@ -2657,7 +2673,7 @@ local function EnsureGuideManagerStandaloneFrame(self)
 	sectionTitle:SetPoint("LEFT", headerBack, "RIGHT", 4, 0)
 	sectionTitle:SetPoint("RIGHT", centerHeader, "RIGHT", -20, 0)
 	sectionTitle:SetJustifyH("LEFT")
-	sectionTitle:SetText("Select a guide")
+	sectionTitle:SetText(LT("gb_select_guide"))
 	ApplyRetailFont(sectionTitle, 15, "", true)
 	frame.sectionTitle = sectionTitle
 
@@ -2709,9 +2725,9 @@ local function EnsureGuideManagerStandaloneFrame(self)
 		local panel = frame.treePanel
 		if not panel then return end
 		local menu = {
-			{ text = "Navigation", isTitle = true, notCheckable = true },
+			{ text = LT("gb_nav_navigation"), isTitle = true, notCheckable = true },
 			{
-				text = "Back",
+				text = LT("gb_nav_back"),
 				notCheckable = true,
 				disabled = ((panel.browsePath or "") == ""),
 				func = function()
@@ -2726,7 +2742,7 @@ local function EnsureGuideManagerStandaloneFrame(self)
 				end,
 			},
 			{
-				text = "Reset to Category Root",
+				text = LT("gb_nav_reset_to_root"),
 				notCheckable = true,
 				func = function()
 					panel.browsePath = ""
@@ -2736,7 +2752,7 @@ local function EnsureGuideManagerStandaloneFrame(self)
 				end,
 			},
 			{
-				text = "Go to Current Guide Folder",
+				text = LT("gb_action_go_current_folder"),
 				notCheckable = true,
 				disabled = not (self.CurrentGuide and self.CurrentGuide.title),
 				func = function()
@@ -2773,12 +2789,12 @@ local function EnsureGuideManagerStandaloneFrame(self)
 
 	local leftSearchLabel = left:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
 	leftSearchLabel:SetPoint("TOPLEFT", left, "TOPLEFT", 10, -12)
-	leftSearchLabel:SetText("Search")
+	leftSearchLabel:SetText(LT("gb_search"))
 	ApplyRetailFont(leftSearchLabel, 13, "", true)
 
 	local leftOptionsTitle = left:CreateFontString(nil, "ARTWORK", "GameFontNormal")
 	leftOptionsTitle:SetPoint("TOPLEFT", left, "TOPLEFT", 10, -12)
-	leftOptionsTitle:SetText("|cffdfe3ebOptions|r")
+	leftOptionsTitle:SetText("|cffdfe3eb" .. LT("gb_tab_options") .. "|r")
 	ApplyRetailFont(leftOptionsTitle, 14, "", true)
 	leftOptionsTitle:Hide()
 
@@ -2786,7 +2802,7 @@ local function EnsureGuideManagerStandaloneFrame(self)
 	leftOptionsHint:SetPoint("TOPLEFT", leftOptionsTitle, "BOTTOMLEFT", 0, -2)
 	leftOptionsHint:SetPoint("TOPRIGHT", left, "TOPRIGHT", -10, -14)
 	leftOptionsHint:SetJustifyH("LEFT")
-	leftOptionsHint:SetText("Select a settings page")
+	leftOptionsHint:SetText(LT("gb_select_settings_page"))
 	ApplyRetailFont(leftOptionsHint, 12, "", false)
 	leftOptionsHint:Hide()
 
@@ -2806,7 +2822,7 @@ local function EnsureGuideManagerStandaloneFrame(self)
 
 	local optionsSearchLabel = leftOptionsPanel:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
 	optionsSearchLabel:SetPoint("TOPLEFT", leftOptionsPanel, "TOPLEFT", 8, -8)
-	optionsSearchLabel:SetText("Search")
+	optionsSearchLabel:SetText(LT("gb_search"))
 	optionsSearchLabel:Hide()
 	frame.optionsSearchLabel = optionsSearchLabel
 
@@ -2888,7 +2904,7 @@ local function EnsureGuideManagerStandaloneFrame(self)
 	currentCardTitle:SetPoint("TOPLEFT", currentCard, "TOPLEFT", 8, -8)
 	currentCardTitle:SetPoint("TOPRIGHT", currentCard, "TOPRIGHT", -210, -8)
 	currentCardTitle:SetJustifyH("LEFT")
-	currentCardTitle:SetText("Current Guide")
+	currentCardTitle:SetText(LT("gb_current_guide"))
 	frame.currentGuideCardTitle = currentCardTitle
 
 	local currentCardMeta = currentCard:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
@@ -2901,19 +2917,19 @@ local function EnsureGuideManagerStandaloneFrame(self)
 	local currentResume = CreateFrame("Button", nil, currentCard, "UIPanelButtonTemplate")
 	currentResume:SetSize(64, 20)
 	currentResume:SetPoint("TOPRIGHT", currentCard, "TOPRIGHT", -8, -8)
-	currentResume:SetText("Resume")
+	currentResume:SetText(LT("gb_action_resume"))
 	frame.currentGuideResume = currentResume
 
 	local currentRestart = CreateFrame("Button", nil, currentCard, "UIPanelButtonTemplate")
 	currentRestart:SetSize(64, 20)
 	currentRestart:SetPoint("TOPRIGHT", currentResume, "BOTTOMRIGHT", 0, -4)
-	currentRestart:SetText("Restart")
+	currentRestart:SetText(LT("gb_action_restart"))
 	frame.currentGuideRestart = currentRestart
 
 	local currentOpen = CreateFrame("Button", nil, currentCard, "UIPanelButtonTemplate")
 	currentOpen:SetSize(64, 20)
 	currentOpen:SetPoint("RIGHT", currentRestart, "LEFT", -4, 0)
-	currentOpen:SetText("Current")
+	currentOpen:SetText(LT("gb_tab_current"))
 	frame.currentGuideOpen = currentOpen
 
 	local list = CreateFrame("Frame", nil, center)
@@ -2990,7 +3006,7 @@ local function EnsureGuideManagerStandaloneFrame(self)
 	featuredRoadmapHeader:SetPoint("TOPLEFT", featuredCards, "BOTTOMLEFT", 2, -8)
 	featuredRoadmapHeader:SetPoint("TOPRIGHT", featuredPane, "TOPRIGHT", -24, -8)
 	featuredRoadmapHeader:SetJustifyH("LEFT")
-	featuredRoadmapHeader:SetText("Roadmap")
+	featuredRoadmapHeader:SetText(LT("gb_roadmap"))
 	frame.featuredRoadmapHeader = featuredRoadmapHeader
 
 	local featuredHelp = CreateFrame("Button", nil, featuredPane)
@@ -3004,10 +3020,10 @@ local function EnsureGuideManagerStandaloneFrame(self)
 	featuredHelp:SetScript("OnEnter", function(btn)
 		GameTooltip:SetOwner(btn, "ANCHOR_RIGHT")
 		GameTooltip:ClearLines()
-		GameTooltip:AddLine("Featured suggestion controls", 1, 1, 1)
-		GameTooltip:AddLine("Click the X: snooze for 24 hours", 0.78, 0.88, 1.0)
-		GameTooltip:AddLine("Shift-click X: hide for this session", 0.78, 0.88, 1.0)
-		GameTooltip:AddLine("Press R or use reset in options to restore.", 0.78, 0.88, 1.0)
+		GameTooltip:AddLine(LT("gb_tooltip_featured_controls"), 1, 1, 1)
+		GameTooltip:AddLine(LT("gb_tooltip_featured_click"), 0.78, 0.88, 1.0)
+		GameTooltip:AddLine(LT("gb_tooltip_featured_shift_click"), 0.78, 0.88, 1.0)
+		GameTooltip:AddLine(LT("gb_tooltip_featured_restore"), 0.78, 0.88, 1.0)
 		GameTooltip:Show()
 	end)
 	featuredHelp:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -3099,7 +3115,7 @@ local function EnsureGuideManagerStandaloneFrame(self)
 	detailTitle:SetPoint("TOPLEFT", guideImage, "BOTTOMLEFT", 8, -10)
 	detailTitle:SetPoint("TOPRIGHT", details, "TOPRIGHT", -10, -10)
 	detailTitle:SetJustifyH("LEFT")
-	detailTitle:SetText("No guide selected")
+	detailTitle:SetText(LT("gb_no_guide_selected"))
 	frame.detailTitle = detailTitle
 
 	local detailMeta = details:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
@@ -3114,7 +3130,7 @@ local function EnsureGuideManagerStandaloneFrame(self)
 	detailProgressLabel:SetPoint("TOPLEFT", detailMeta, "BOTTOMLEFT", 0, -12)
 	detailProgressLabel:SetPoint("TOPRIGHT", details, "TOPRIGHT", -10, -12)
 	detailProgressLabel:SetJustifyH("LEFT")
-	detailProgressLabel:SetText("Progress: 0%")
+	detailProgressLabel:SetText(LT("gb_progress_format", 0))
 	frame.detailProgressLabel = detailProgressLabel
 
 	local detailProgressBg = details:CreateTexture(nil, "BORDER")
@@ -3228,13 +3244,13 @@ local function EnsureGuideManagerStandaloneFrame(self)
 			local first = data and data[1]
 			local title = first and (first.label or first.title) or ""
 			if bucket == "next" then
-				return (title ~= "" and ("Continue your chain: " .. title)) or "Continue your chain"
+				return (title ~= "" and LT("gb_bucket_preview_next_with_title", title)) or LT("gb_bucket_preview_next")
 			elseif bucket == "progress" then
-				return (title ~= "" and ("Resume: " .. title)) or "Resume in-progress guides"
+				return (title ~= "" and LT("gb_bucket_preview_progress_with_title", title)) or LT("gb_bucket_preview_progress")
 			elseif bucket == "level" then
-				return (title ~= "" and ("Start level-fit: " .. title)) or "Start level-fit guides"
+				return (title ~= "" and LT("gb_bucket_preview_level_with_title", title)) or LT("gb_bucket_preview_level")
 			end
-			return (title ~= "" and ("Optional route: " .. title)) or "Optional routes and extras"
+			return (title ~= "" and LT("gb_bucket_preview_featured_with_title", title)) or LT("gb_bucket_preview_featured")
 		end
 		for _,bucket in ipairs(FEATURED_BUCKET_ORDER) do
 			local data = grouped[bucket]
@@ -3243,7 +3259,7 @@ local function EnsureGuideManagerStandaloneFrame(self)
 				if data and #data > 0 then
 					card.bucket = bucket
 					card.title:SetText(FEATURED_BUCKET_LABELS[bucket] or bucket)
-					card.count:SetText(("%d guide%s"):format(#data, #data == 1 and "" or "s"))
+					card.count:SetText(LT("gb_guides_count_format", #data))
 					card.preview:SetText(GetBucketPreview(bucket, data))
 					if frame.featuredActiveBucket == bucket then
 						card.bg:SetVertexColor(0.90, 0.93, 1.00, 0.11)
@@ -3270,14 +3286,14 @@ local function EnsureGuideManagerStandaloneFrame(self)
 		if cardIndex == 1 and frame.featuredCardButtons and frame.featuredCardButtons[1] then
 			local emptyCard = frame.featuredCardButtons[1]
 			emptyCard.bucket = nil
-			emptyCard.title:SetText("No Featured Suggestions")
-			emptyCard.count:SetText("0 guides")
+			emptyCard.title:SetText(LT("gb_empty_no_featured_suggestions"))
+			emptyCard.count:SetText(LT("gb_guides_count_format", 0))
 			if hasSearch then
-				emptyCard.preview:SetText("Clear search to restore suggestions")
+				emptyCard.preview:SetText(LT("gb_action_clear_search_restore"))
 			elseif hasSnoozed then
-				emptyCard.preview:SetText("Reset snoozed suggestions to restore recommendations")
+				emptyCard.preview:SetText(LT("gb_action_reset_snoozed_restore"))
 			else
-				emptyCard.preview:SetText("Try Home to browse all categories")
+				emptyCard.preview:SetText(LT("gb_action_try_home"))
 			end
 			emptyCard.bg:SetVertexColor(0.72, 0.76, 0.86, 0.02)
 			emptyCard:SetBackdropBorderColor(0.26, 0.28, 0.33, 0.95)
@@ -3300,9 +3316,9 @@ local function EnsureGuideManagerStandaloneFrame(self)
 				activeRows = {
 					{
 						title = "__reset_hidden__",
-						label = "Reset snoozed suggestions",
-						meta = "Action",
-						context = "Why: suggestions may be snoozed | Gain: restore recommendations",
+						label = LT("gb_action_reset_snoozed"),
+						meta = LT("gb_meta_action"),
+						context = LT("gb_meta_why_prefix") .. LT("gb_meta_suggestions_snoozed") .. " | " .. LT("gb_meta_gain_prefix") .. LT("gb_meta_restore_recommendations"),
 						gaintype = "unlock",
 						confidence = "fallback",
 					}
@@ -3311,9 +3327,9 @@ local function EnsureGuideManagerStandaloneFrame(self)
 				activeRows = {
 					{
 						title = "__clear_search__",
-						label = "Clear search to restore suggestions",
-						meta = "Action",
-						context = "Why: filter has no matches | Gain: see full recommendations",
+						label = LT("gb_action_clear_search_restore"),
+						meta = LT("gb_meta_action"),
+						context = LT("gb_meta_why_prefix") .. LT("gb_meta_filter_no_matches") .. " | " .. LT("gb_meta_gain_prefix") .. LT("gb_meta_see_full_recommendations"),
 						gaintype = "xp",
 						confidence = "fallback",
 					}
@@ -3322,9 +3338,9 @@ local function EnsureGuideManagerStandaloneFrame(self)
 				activeRows = {
 					{
 						title = "__go_home__",
-						label = "Browse all guides from Home",
-						meta = "Action",
-						context = "Why: no suggestions in this bucket | Gain: full category access",
+						label = LT("gb_action_browse_all_from_home"),
+						meta = LT("gb_meta_action"),
+						context = LT("gb_meta_why_prefix") .. LT("gb_meta_no_bucket_suggestions") .. " | " .. LT("gb_meta_gain_prefix") .. LT("gb_meta_full_category_access"),
 						gaintype = "unlock",
 						confidence = "fallback",
 					}
@@ -3341,9 +3357,9 @@ local function EnsureGuideManagerStandaloneFrame(self)
 		if not hasSelectedInActive then
 			treePanel.selectedGuideTitle = nil
 		end
-		frame.featuredRoadmapHeader:SetText((FEATURED_BUCKET_LABELS[activeBucket] or "Roadmap") .. " Roadmap")
+		frame.featuredRoadmapHeader:SetText(LT("gb_roadmap_bucket_format", FEATURED_BUCKET_LABELS[activeBucket] or LT("gb_roadmap")))
 		if #activeRows == 0 then
-			frame.featuredRoadmapHeader:SetText("Roadmap")
+			frame.featuredRoadmapHeader:SetText(LT("gb_roadmap"))
 		end
 
 		local firstTitle = nil
@@ -3446,9 +3462,9 @@ local function EnsureGuideManagerStandaloneFrame(self)
 					rb.dismiss:SetScript("OnEnter", function(btn)
 						GameTooltip:SetOwner(btn, "ANCHOR_RIGHT")
 						GameTooltip:ClearLines()
-						GameTooltip:AddLine("Snooze suggestion", 1, 1, 1)
-						GameTooltip:AddLine("Click: hide for 24 hours", 0.78, 0.88, 1.0)
-						GameTooltip:AddLine("Shift-click: hide for this session", 0.78, 0.88, 1.0)
+						GameTooltip:AddLine(LT("gb_tooltip_snooze"), 1, 1, 1)
+						GameTooltip:AddLine(LT("gb_tooltip_snooze_click"), 0.78, 0.88, 1.0)
+						GameTooltip:AddLine(LT("gb_tooltip_snooze_shift_click"), 0.78, 0.88, 1.0)
 						GameTooltip:Show()
 					end)
 					rb.dismiss:SetScript("OnLeave", function()
@@ -3460,25 +3476,25 @@ local function EnsureGuideManagerStandaloneFrame(self)
 					if not row then return end
 					GameTooltip:SetOwner(btn, "ANCHOR_RIGHT")
 					GameTooltip:ClearLines()
-					GameTooltip:AddLine(row.label or row.title or "Suggestion", 1, 1, 1)
+					GameTooltip:AddLine(row.label or row.title or LT("gb_meta_suggestion"), 1, 1, 1)
 					if row.meta and row.meta ~= "" then
 						GameTooltip:AddLine(row.meta, 0.85, 0.85, 0.90)
 					end
 					local why,gain = ParseWhyGainFromContext(row.context or "")
 					if why ~= "" then
-						GameTooltip:AddLine("Why: " .. why, 0.72, 0.82, 0.95, true)
+						GameTooltip:AddLine(LT("gb_tooltip_why_prefix") .. why, 0.72, 0.82, 0.95, true)
 					end
 					if gain ~= "" then
-						GameTooltip:AddLine("Gain: " .. gain, 0.78, 0.90, 0.76, true)
+						GameTooltip:AddLine(LT("gb_tooltip_gain_prefix") .. gain, 0.78, 0.90, 0.76, true)
 					end
 					if row.confidence then
-						GameTooltip:AddLine("Confidence: " .. (FEATURED_CONFIDENCE_LABELS[row.confidence] or row.confidence), 0.78, 0.92, 1.0, true)
+						GameTooltip:AddLine(LT("gb_tooltip_confidence_prefix") .. (FEATURED_CONFIDENCE_LABELS[row.confidence] or row.confidence), 0.78, 0.92, 1.0, true)
 					end
 					if row.chainStep and row.chainStep > 0 then
-						GameTooltip:AddLine("Chain: +" .. tostring(row.chainStep), 0.88, 0.88, 0.92, true)
+						GameTooltip:AddLine(LT("gb_tooltip_chain_prefix") .. "+" .. tostring(row.chainStep), 0.88, 0.88, 0.92, true)
 					end
 					if row.fallback then
-						GameTooltip:AddLine("Fallback recommendation", 0.92, 0.80, 0.52)
+						GameTooltip:AddLine(LT("gb_tooltip_fallback_recommendation"), 0.92, 0.80, 0.52)
 					end
 					GameTooltip:Show()
 				end)
@@ -3881,7 +3897,7 @@ local function EnsureGuideManagerStandaloneFrame(self)
 	optionsLeftButton.text:SetPoint("LEFT", optionsLeftButton.icon, "RIGHT", 6, 0)
 	optionsLeftButton.text:SetPoint("RIGHT", optionsLeftButton, "RIGHT", -2, 0)
 	optionsLeftButton.text:SetJustifyH("LEFT")
-	optionsLeftButton.text:SetText("Options")
+	optionsLeftButton.text:SetText(LT("gb_tab_options"))
 	ApplyRetailFont(optionsLeftButton.text, 15, "", false)
 	optionsLeftButton:SetScript("OnClick", function() self:SelectGuideManagerSection("options") end)
 	optionsLeftButton:SetScript("OnEnter", function(btn)
@@ -3934,7 +3950,7 @@ local function EnsureGuideManagerStandaloneFrame(self)
 				self.db.profile.guidebrowseroptionsapp = btn.app
 			end
 			if frame.optionsTitle then
-				frame.optionsTitle:SetText(btn.label or "Options")
+				frame.optionsTitle:SetText(btn.label or LT("gb_tab_options"))
 			end
 			for app,but in pairs(frame.leftOptionButtons or {}) do
 				if app == btn.app then
@@ -3985,7 +4001,7 @@ local function EnsureGuideManagerStandaloneFrame(self)
 		frame.optionsFallback:Hide()
 
 		if not (ACD and AceGUI) then
-			frame.optionsFallback:SetText("Embedded options unavailable. Click Options again to open Blizzard Interface Options.")
+			frame.optionsFallback:SetText(LT("gb_options_fallback_embed_unavailable"))
 			frame.optionsFallback:Show()
 			return
 		end
@@ -4007,7 +4023,7 @@ local function EnsureGuideManagerStandaloneFrame(self)
 		local scroll = CreateFirstSupported("ScrollFrame-Z", "ScrollFrame")
 		local host = CreateFirstSupported("SimpleGroup-Z", "SimpleGroup")
 		if not (root and scroll and host) then
-			frame.optionsFallback:SetText("Embedded options unavailable. Missing AceGUI embed widgets.")
+			frame.optionsFallback:SetText(LT("gb_options_fallback_missing_widgets"))
 			frame.optionsFallback:Show()
 			return
 		end
@@ -4045,7 +4061,7 @@ local function EnsureGuideManagerStandaloneFrame(self)
 				frame.optionsAceWidgetRoot = nil
 				frame.optionsAceWidget = nil
 			end
-			frame.optionsFallback:SetText("Could not render embedded options: " .. tostring(err))
+			frame.optionsFallback:SetText(LT("gb_options_fallback_render_error", tostring(err)))
 			frame.optionsFallback:Show()
 		else
 			local function RefreshOptionsScroll()
@@ -4081,8 +4097,8 @@ local function EnsureGuideManagerStandaloneFrame(self)
 		local show = (section == "home" and category ~= "favorites" and g and g.title)
 		if show then
 			local step = self.CurrentStepNum or 1
-			currentCardTitle:SetText(g.title_short or g.title or "Current Guide")
-			currentCardMeta:SetText(("Step %d / %d  |  %s"):format(step, (g.steps and #g.steps) or 0, GetGuideLastUsedText(self, g.title)))
+			currentCardTitle:SetText(g.title_short or g.title or LT("gb_current_guide"))
+			currentCardMeta:SetText(LT("gb_current_meta_format", step, (g.steps and #g.steps) or 0, GetGuideLastUsedText(self, g.title)))
 			currentCard:Show()
 			currentResume:SetEnabled(true)
 			currentRestart:SetEnabled(true)
@@ -4127,20 +4143,20 @@ local function EnsureGuideManagerStandaloneFrame(self)
 				local parts = SplitGuideTitle(folderPath)
 				local label = parts[#parts] or folderPath
 				frame.detailTitle:SetText(label)
-				frame.detailMeta:SetText(("Folder: %s"):format(folderPath))
+				frame.detailMeta:SetText(LT("gb_folder_format", folderPath))
 				frame.detailImage:SetTexture(image)
 			else
-				frame.detailTitle:SetText("No guide selected")
-				frame.detailMeta:SetText("Select a guide from the list.")
+				frame.detailTitle:SetText(LT("gb_no_guide_selected"))
+				frame.detailMeta:SetText(LT("gb_select_guide_from_list"))
 				frame.detailImage:SetTexture(ResolveGuideHeroImageFromText("", frame.currentCategory, frame.currentSection))
 			end
-			frame.detailProgressLabel:SetText("Progress: 0%")
+			frame.detailProgressLabel:SetText(LT("gb_progress_format", 0))
 			frame.detailProgressFill:SetWidth(0)
 			return
 		end
 		local steps = (guide.steps and #guide.steps) or 0
-		local author = guide.author or "unknown"
-		local nextg = guide.next or "none"
+		local author = guide.author or LT("gb_unknown")
+		local nextg = guide.next or LT("gb_none")
 		local complete = 0
 		if guide.GetCompletion then
 			local ok, _, cur, total = pcall(function() return guide:GetCompletion() end)
@@ -4178,7 +4194,7 @@ local function EnsureGuideManagerStandaloneFrame(self)
 			end
 		end
 		frame.detailTitle:SetText(guide.title_short or guide.title or sel)
-		local detailMeta = ("Steps: %d\nAuthor: %s\nNext: %s"):format(steps, author, nextg)
+		local detailMeta = LT("gb_detail_meta_format", steps, author, nextg)
 		if frame.currentSection == "featured" then
 			local featuredMeta = frame.featuredMetaByTitle and frame.featuredMetaByTitle[guide.title]
 			if featuredMeta then
@@ -4188,10 +4204,10 @@ local function EnsureGuideManagerStandaloneFrame(self)
 				local confidence = type(featuredMeta) == "table" and featuredMeta.confidence or nil
 				local extra = {}
 				if bucket and bucket ~= "" then
-					tinsert(extra, "Suggested from: " .. (FEATURED_BUCKET_LABELS[bucket] or bucket))
+					tinsert(extra, LT("gb_meta_suggested_from", FEATURED_BUCKET_LABELS[bucket] or bucket))
 				end
 				if confidence and confidence ~= "" then
-					tinsert(extra, "Confidence: " .. (FEATURED_CONFIDENCE_LABELS[confidence] or confidence))
+					tinsert(extra, LT("gb_meta_confidence", FEATURED_CONFIDENCE_LABELS[confidence] or confidence))
 				end
 				local extraLine = (#extra > 0) and (table.concat(extra, "\n") .. "\n") or ""
 				if context ~= "" then
@@ -4210,7 +4226,7 @@ local function EnsureGuideManagerStandaloneFrame(self)
 		end
 		frame.detailMeta:SetText(detailMeta)
 		frame.detailImage:SetTexture(ResolveGuideHeroImage(guide, frame.currentCategory, frame.currentSection))
-		frame.detailProgressLabel:SetText(("Progress: %d%%"):format(complete))
+		frame.detailProgressLabel:SetText(LT("gb_progress_format", complete))
 		local fillW = math.max(0, math.min(204, math.floor(204 * (complete / 100))))
 		frame.detailProgressFill:SetWidth(fillW)
 	end
@@ -4273,10 +4289,10 @@ local function EnsureGuideManagerStandaloneFrame(self)
 
 	UpdateOptionsContext = function(appName)
 		local meta = GetOptionsAppMeta(appName)
-		if frame.optionsDetailTitle then frame.optionsDetailTitle:SetText(meta.label or "General") end
-		if frame.optionsDetailBody then frame.optionsDetailBody:SetText(meta.desc or "General settings.") end
+		if frame.optionsDetailTitle then frame.optionsDetailTitle:SetText(meta.label or LT("gb_opt_general")) end
+		if frame.optionsDetailBody then frame.optionsDetailBody:SetText(meta.desc or LT("gb_opt_desc_general")) end
 		if frame.optionsDetailHint then
-			frame.optionsDetailHint:SetText("Tip:\nSearch on the left filters options pages.\nUse Open Full Options for the full Blizzard panel view.")
+			frame.optionsDetailHint:SetText(LT("gb_hint_options_filter"))
 		end
 	end
 
@@ -4284,7 +4300,7 @@ local function EnsureGuideManagerStandaloneFrame(self)
 		for _,c in ipairs(GUIDE_MANAGER_LEFT_MENU or {}) do
 			if c.id == categoryId then return c.label end
 		end
-		return "Guides"
+		return LT("gb_opt_guides")
 	end
 
 	frame.UpdateCenterHeader = function()
@@ -4293,21 +4309,21 @@ local function EnsureGuideManagerStandaloneFrame(self)
 		local category = frame.currentCategory or "leveling"
 		local path = treePanel.browsePath or ""
 		local parts = StringToPath(path)
-		local title = "Select a guide"
+		local title = LT("gb_select_guide")
 		if section == "home" then
 			if frame.homeShowAll then
-				title = (#parts > 0 and parts[#parts]) or "All Guides"
+				title = (#parts > 0 and parts[#parts]) or LT("gb_all_guides")
 			else
 				title = (#parts > 0 and parts[#parts]) or GetCategoryLabel(category)
 			end
 		elseif section == "current" then
-			title = (#parts > 0 and parts[#parts]) or "Current"
+			title = (#parts > 0 and parts[#parts]) or LT("gb_tab_current")
 		elseif section == "recent" then
-			title = "Recent"
+			title = LT("gb_tab_recent")
 		elseif section == "featured" then
-			title = "Featured"
+			title = LT("gb_tab_featured")
 		elseif section == "options" then
-			title = "Options"
+			title = LT("gb_tab_options")
 		end
 		frame.sectionTitle:SetText(title)
 
@@ -4380,7 +4396,7 @@ local function EnsureGuideManagerStandaloneFrame(self)
 				frame.leftOptionsButton.sel:SetAlpha(1.0)
 			end
 			if frame.leftOptionsButton and frame.leftOptionsButton.text then
-				frame.leftOptionsButton.text:SetText("|cffdfe3ebOptions|r")
+				frame.leftOptionsButton.text:SetText("|cffdfe3eb" .. LT("gb_tab_options") .. "|r")
 			end
 		else
 			local ACD = LibStub and LibStub("AceConfigDialog-3.0", true)
@@ -4424,7 +4440,7 @@ local function EnsureGuideManagerStandaloneFrame(self)
 				frame.leftOptionsButton.sel:SetAlpha(0.0)
 			end
 			if frame.leftOptionsButton and frame.leftOptionsButton.text then
-				frame.leftOptionsButton.text:SetText("Options")
+				frame.leftOptionsButton.text:SetText(LT("gb_tab_options"))
 			end
 		end
 	end
@@ -4459,8 +4475,8 @@ local function EnsureGuideManagerStandaloneFrame(self)
 					end
 				end
 				if #rows == 0 then
-					tinsert(rows, { kind = "header", depth = 0, label = "No favorite guides yet." })
-					tinsert(rows, { kind = "action", depth = 0, label = "Go to Home", action = "go_home_leveling" })
+					tinsert(rows, { kind = "header", depth = 0, label = LT("gb_empty_no_favorites") })
+					tinsert(rows, { kind = "action", depth = 0, label = LT("gb_action_go_home"), action = "go_home_leveling" })
 				end
 				return rows
 			end
@@ -4529,7 +4545,7 @@ local function EnsureGuideManagerStandaloneFrame(self)
 			frame.currentOptionsApp = frame.currentOptionsApp
 				or (self.db and self.db.profile and self.db.profile.guidebrowseroptionsapp)
 				or "ZygorGuidesViewer"
-			local appLabel = "General"
+			local appLabel = LT("gb_opt_general")
 			local activeButton = frame.leftOptionButtons and frame.leftOptionButtons[frame.currentOptionsApp]
 			if activeButton and activeButton.label then appLabel = activeButton.label end
 			frame.optionsTitle:SetText(appLabel)

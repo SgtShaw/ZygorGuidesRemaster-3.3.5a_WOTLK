@@ -2,8 +2,8 @@
 
 ## Version
 
-- Revision: `95`
-- Version: `3.0.95`
+- Revision: `96`
+- Version: `3.0.96`
 
 ## Talent Advisor Status
 
