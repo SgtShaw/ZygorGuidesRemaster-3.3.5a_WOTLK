@@ -499,9 +499,9 @@ function me:UpdateRemasterHeader()
 	end
 	if not title or title == "" then
 		if self.CurrentGuide then
-			title = "Zygor Guides"
+			title = L["frame_title_default"]
 		else
-			title = "No Guide Selected"
+			title = L["gb_no_guide_selected"]
 		end
 	end
 	fitRemasterHeaderTitle(title or "")
@@ -733,7 +733,7 @@ function me:EnsureRemasterFrames()
 	end
 
 	local guideButton = CreateFrame("Button", "ZGVRemasterGuideButton", toolbar)
-	styleButton(guideButton, "Guides", 70, 20)
+	styleButton(guideButton, L["frame_tab_guides"], 70, 20)
 	guideButton:SetPoint("LEFT", toolbar, "LEFT", 8, 0)
 	guideButton:SetScript("OnClick", function(selfBtn, button)
 		if button == "RightButton" then
@@ -753,9 +753,9 @@ function me:EnsureRemasterFrames()
 	guideButton:RegisterForClicks("LeftButtonUp","RightButtonUp")
 	guideButton:SetScript("OnEnter", function(selfBtn)
 		GameTooltip:SetOwner(selfBtn, "ANCHOR_TOPRIGHT")
-		GameTooltip:SetText("Guides")
-		GameTooltip:AddLine(tipClick("to open guide menu"))
-		GameTooltip:AddLine(tipRight("to open guide manager"))
+		GameTooltip:SetText(L["frame_toolbar_guides"])
+		GameTooltip:AddLine(tipClick(L["frame_toolbar_guides_click"]))
+		GameTooltip:AddLine(tipRight(L["frame_toolbar_guides_right"]))
 		GameTooltip:Show()
 	end)
 	guideButton:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -825,8 +825,8 @@ function me:EnsureRemasterFrames()
 	end)
 	closeButton:SetScript("OnEnter", function(selfBtn)
 		GameTooltip:SetOwner(selfBtn, "ANCHOR_TOPRIGHT")
-		GameTooltip:SetText("Close")
-		GameTooltip:AddLine(tipClick("to close"))
+		GameTooltip:SetText(L["frame_toolbar_close"])
+		GameTooltip:AddLine(tipClick(L["frame_toolbar_close_click"]))
 		GameTooltip:Show()
 	end)
 	closeButton:SetScript("OnLeave", function()
@@ -852,9 +852,9 @@ function me:EnsureRemasterFrames()
 	settingsButton:RegisterForClicks("LeftButtonUp", "RightButtonUp")
 	settingsButton:SetScript("OnEnter", function(selfBtn)
 		GameTooltip:SetOwner(selfBtn, "ANCHOR_TOPRIGHT")
-		GameTooltip:SetText("Settings")
-		GameTooltip:AddLine(tipClick("for quick menu"))
-		GameTooltip:AddLine(tipRight("to open guide manager options"))
+		GameTooltip:SetText(L["frame_toolbar_settings"])
+		GameTooltip:AddLine(tipClick(L["frame_toolbar_settings_click"]))
+		GameTooltip:AddLine(tipRight(L["frame_toolbar_settings_right"]))
 		GameTooltip:Show()
 	end)
 	settingsButton:SetScript("OnLeave", function()
@@ -876,14 +876,14 @@ function me:EnsureRemasterFrames()
 	miniButton:RegisterForClicks("LeftButtonUp", "RightButtonUp")
 	miniButton:SetScript("OnEnter", function(selfBtn)
 		GameTooltip:SetOwner(selfBtn, "ANCHOR_TOPRIGHT")
-		GameTooltip:SetText("Step View")
+		GameTooltip:SetText(L["frame_toolbar_stepview"])
 		if ZGV and ZGV.db and ZGV.db.profile then
 			if ZGV.db.profile.showallsteps then
-				GameTooltip:AddLine(tipClick("to show only |cffffffff"..tostring(ZGV.db.profile.showcountsteps or 1).."|r"))
+				GameTooltip:AddLine(tipClick(L["frame_toolbar_stepview_showonly"]:format(tostring(ZGV.db.profile.showcountsteps or 1))))
 			else
-				GameTooltip:AddLine(tipClick("to show all"))
+				GameTooltip:AddLine(tipClick(L["frame_toolbar_stepview_showall"]))
 			end
-			GameTooltip:AddLine(tipRight("to set number of steps"))
+			GameTooltip:AddLine(tipRight(L["frame_toolbar_stepview_setcount"]))
 		end
 		GameTooltip:Show()
 	end)
@@ -902,11 +902,11 @@ function me:EnsureRemasterFrames()
 	lockButton:SetScript("OnEnter", function(selfBtn)
 		GameTooltip:SetOwner(selfBtn, "ANCHOR_TOPRIGHT")
 		if ZygorGuidesViewer.db.profile["windowlocked"] then
-			GameTooltip:SetText("Unlock Window")
-			GameTooltip:AddLine(tipClick("to unlock"))
+			GameTooltip:SetText(L["frame_toolbar_unlock"])
+			GameTooltip:AddLine(tipClick(L["frame_toolbar_unlock_click"]))
 		else
-			GameTooltip:SetText("Lock Window")
-			GameTooltip:AddLine(tipClick("to lock"))
+			GameTooltip:SetText(L["frame_toolbar_lock"])
+			GameTooltip:AddLine(tipClick(L["frame_toolbar_lock_click"]))
 		end
 		GameTooltip:Show()
 	end)
@@ -5286,7 +5286,7 @@ function me:ParseGuides()
 
 		local tab1 = self.Frame.Border.Gears.Tab1
 		tab1:SetPoint("LEFT",self.Frame.Border,"TOPLEFT",65,-12)
-		tab1:SetText("Guides")
+		tab1:SetText(L["frame_tab_guides"])
 		tab1:SetNormalFontObject(ZGVFTabFont)
 		--PanelTemplates_TabResize(self.Tab1,0);
 		--_G[self.Tab1:GetName().."HighlightTexture"]:SetWidth(self.Tab1:GetTextWidth() + 20);
@@ -5295,7 +5295,7 @@ function me:ParseGuides()
 
 		local tab2 = self.Frame.Border.Gears.Tab2
 		tab2:SetPoint("LEFT",tab1,"RIGHT")
-		tab2:SetText("Spots")
+		tab2:SetText(L["frame_tab_spots"])
 		tab2:SetNormalFontObject(ZGVFTabFont)
 		--ZGVFrameTab2Text:SetText("Spots")
 		--PanelTemplates_TabResize(self.Tab2,0);

@@ -140,7 +140,7 @@ Localization was largely AI-assisted and should be treated as needing community 
 
 ### Community Credits
 
-- `mikki33` for providing Russian localization changes and review updates.
+- [`mikki33`](https://github.com/mikki33) for providing Russian localization changes and review updates.
 
 ## Support Wanted (Localization QA)
 
@@ -163,6 +163,14 @@ This addon is fully open source and can be inspected before use.
 - A VirusTotal scan of the download link is provided for transparency.
 
 ## Changelog
+
+### v3.0 (Revision 98)
+
+- Bumped addon version/revision to 3.0.98 / 98.
+- Completed a broader localization cleanup across the remastered Guide Manager, embedded options, and viewer toolbar/tooltip surfaces.
+- Added and wired the missing localization keys for options text, map/waypoint labels, step-view controls, and mini-frame button/tab labels across all shipped locale files.
+- Expanded `ruRU` coverage for the remaining untranslated settings/tooltips and replaced a substantial set of placeholder-English Guide Browser strings in the non-English locale packs with best-effort translations.
+- Narrowed Guide Manager keyboard capture so browsing shortcuts stay available without blocking built-in game screenshot behavior or interfering with active search/edit fields.
 
 ### v3.0 (Revision 97)
 

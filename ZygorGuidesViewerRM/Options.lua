@@ -239,7 +239,7 @@ function me:Options_DefineOptions()
 			guide = {
 				order = 2.2,
 				type = "select",
-				name = "Legacy Guide Dropdown",
+				name = L["opt_legacyguideddropdown"],
 				values = function() return ZGV:GetGuides() end,
 				get = "GetCurrentGuideNum",
 				set = function(info,i) self:SetGuide(i) self:FocusStep(1) end,
@@ -325,38 +325,38 @@ function me:Options_DefineOptions()
 				order=2.8
 			},
 			featured = {
-				name = "Featured Suggestions",
+				name = L["opt_featured_header"],
 				type = "group",
 				inline = true,
 				order = 2.85,
 				args = {
 					guidebrowser_featured_enablefallback = {
-						name = "Enable fallback suggestions",
-						desc = "When a Featured bucket has no direct matches, show a few useful fallback guides.",
+						name = L["opt_featured_enablefallback"],
+						desc = L["opt_featured_enablefallback_desc"],
 						type = "toggle",
 						order = 1,
 						get = Getter_Simple,
 						set = Setter_Simple,
 					},
 					guidebrowser_featured_hiderecentcompleted = {
-						name = "Hide recently completed guides",
-						desc = "Suppress very recently completed guides from smart Featured recommendations.",
+						name = L["opt_featured_hiderecentcompleted"],
+						desc = L["opt_featured_hiderecentcompleted_desc"],
 						type = "toggle",
 						order = 2,
 						get = Getter_Simple,
 						set = Setter_Simple,
 					},
 					guidebrowser_featured_showconfidence = {
-						name = "Show confidence labels",
-						desc = "Display Strong/Good/Fallback confidence markers in Featured rows.",
+						name = L["opt_featured_showconfidence"],
+						desc = L["opt_featured_showconfidence_desc"],
 						type = "toggle",
 						order = 3,
 						get = Getter_Simple,
 						set = Setter_Simple,
 					},
 					featured_resethidden = {
-						name = "Reset snoozed suggestions",
-						desc = "Restore any Featured suggestions snoozed with the dismiss button.",
+						name = L["opt_featured_resethidden"],
+						desc = L["opt_featured_resethidden_desc"],
 						type = "execute",
 						order = 4,
 						func = function()
@@ -657,8 +657,8 @@ function me:Options_DefineOptions()
 						order = 1.5,
 					},
 					disablerouteloopstacking = {
-						name = "Disable Route/Loop Stacking",
-						desc = "When enabled, route/loop steps show the full stacked list of all generated goto points.",
+						name = L["opt_disablerouteloopstacking"],
+						desc = L["opt_disablerouteloopstacking_desc"],
 						type = 'toggle',
 						set = function(i,v) Setter_Simple(i,v)  self:UpdateFrame()  end,
 						width = "double",
@@ -981,8 +981,8 @@ function me:Options_DefineOptions()
 	}
 
 	self.optionsaccessibility = {
-		name = "Accessibility",
-		desc = "Color visibility and readability options.",
+		name = L["gb_opt_accessibility"],
+		desc = L["gb_opt_desc_accessibility"],
 		type = 'group',
 		order = 3.6,
 		handler = self,
@@ -992,19 +992,19 @@ function me:Options_DefineOptions()
 			desc = {
 				order = 1,
 				type = "description",
-				name = "Adjust visual accessibility options for color and text clarity.",
+				name = L["opt_accessibility_intro"],
 			},
 			colorblindmode = {
-				name = "Colorblind Mode",
-				desc = "Override guide, arrow, and distance colors with colorblind-friendly palettes. Also forces simplified arrow noun colors with optimized contrast.",
+				name = L["opt_colorblindmode"],
+				desc = L["opt_colorblindmode_desc"],
 				type = "select",
 				values = {
-					[1] = "Off",
-					[2] = "Protanopia",
-					[3] = "Deuteranopia",
-					[4] = "Tritanopia",
-					[5] = "Global",
-					[6] = "Custom",
+					[1] = L["opt_colorblindmode_off"],
+					[2] = L["opt_colorblindmode_protanopia"],
+					[3] = L["opt_colorblindmode_deuteranopia"],
+					[4] = L["opt_colorblindmode_tritanopia"],
+					[5] = L["opt_colorblindmode_global"],
+					[6] = L["opt_colorblindmode_custom"],
 				},
 				width = "normal",
 				get = function()
@@ -1035,7 +1035,7 @@ function me:Options_DefineOptions()
 				order = 2.05,
 			},
 			arrowcolorcustom_far = {
-				name = "Far",
+				name = L["opt_arrowcolor_far"],
 				type = "color",
 				disabled = function() return self.db.profile.colorblindmode ~= "custom" end,
 				get = function()
@@ -1050,7 +1050,7 @@ function me:Options_DefineOptions()
 				order = 2.1,
 			},
 			arrowcolorcustom_mid = {
-				name = "Mid",
+				name = L["opt_arrowcolor_mid"],
 				type = "color",
 				disabled = function() return self.db.profile.colorblindmode ~= "custom" end,
 				get = function()
@@ -1065,7 +1065,7 @@ function me:Options_DefineOptions()
 				order = 2.2,
 			},
 			arrowcolorcustom_near = {
-				name = "Near",
+				name = L["opt_arrowcolor_near"],
 				type = "color",
 				disabled = function() return self.db.profile.colorblindmode ~= "custom" end,
 				get = function()
@@ -1080,8 +1080,8 @@ function me:Options_DefineOptions()
 				order = 2.3,
 			},
 			simplifyarrownouncolors = {
-				name = "Simplified Arrow Noun Colors",
-				desc = "Use one noun color on remastered arrow text. Coordinates remain gold. Auto-forced by Colorblind Mode.",
+				name = L["opt_simplifyarrownouncolors"],
+				desc = L["opt_simplifyarrownouncolors_desc"],
 				type = "toggle",
 				width = "full",
 				disabled = function()
@@ -1098,8 +1098,8 @@ function me:Options_DefineOptions()
 	}
 
 	self.optionsabout = {
-		name = "About",
-		desc = "Version, support, and diagnostics.",
+		name = L["gb_opt_about"],
+		desc = L["gb_opt_desc_about"],
 		type = "group",
 		order = 4.8,
 		handler = self,
@@ -1109,7 +1109,7 @@ function me:Options_DefineOptions()
 			desc = {
 				order = 1,
 				type = "description",
-				name = "Zygor Guides Viewer Remastered for WoTLK 3.3.5a",
+				name = L["opt_about_heading"],
 			},
 			version = {
 				order = 1.1,
@@ -1130,7 +1130,7 @@ function me:Options_DefineOptions()
 			sep1 = {
 				order = 2,
 				type = "header",
-				name = "Support",
+				name = L["opt_about_support"],
 			},
 			report = {
 				name = L["opt_report"],
@@ -1143,7 +1143,7 @@ function me:Options_DefineOptions()
 			diag = {
 				order = 3,
 				type = "description",
-				name = "Tip: `/zygor status` and `/zygor debug` help with troubleshooting.",
+				name = L["opt_about_diag"],
 				width = "full",
 			},
 		},
@@ -1190,8 +1190,8 @@ function me:Options_DefineOptions()
 				width="double",
 			},
 			minicons = {
-				name = "Show minimap icons",
-				desc = "Show icons on the minimap",
+				name = L["opt_showminimapicons"],
+				desc = L["opt_showminimapicons_desc"],
 				type = 'toggle',
 				get = "IsShowingMinimapIcons",
 				set = "ToggleShowingMinimapIcons",
@@ -1200,8 +1200,8 @@ function me:Options_DefineOptions()
 				width="double",
 			},
 			transparency = {
-				name = "Icon alpha",
-				desc = "Alpha transparency of map note icons",
+				name = L["opt_iconalpha"],
+				desc = L["opt_iconalpha_desc"],
 				type = 'range',
 				min = 0.1,
 				max = 1,
@@ -1214,8 +1214,8 @@ function me:Options_DefineOptions()
 				order = 4
 			},
 			scale = {
-				name = "Icon size",
-				desc = "Size of the icons on the map",
+				name = L["opt_iconsize"],
+				desc = L["opt_iconsize_desc"],
 				type = 'range',
 				min = 0.5,
 				max = 2,
@@ -1235,8 +1235,8 @@ function me:Options_DefineOptions()
 				disabled = function() return self.db.profile.waypointaddon~="internal" end,
 				args = {
 					arrowshow = {
-						name = "Show Arrow",
-						desc = "Show or hide the internal waypoint arrow.",
+						name = L["opt_arrowshow"],
+						desc = L["opt_arrowshow_desc"],
 						type = "toggle",
 						width = "full",
 						order = 10.05,
@@ -1281,8 +1281,8 @@ function me:Options_DefineOptions()
 						desc = L["opt_arrowcolordir_desc"],
 						type = "select",
 						values = {
-							[1] = "Direction",
-							[2] = "Distance",
+							[1] = L["opt_arrowcolormode_direction"],
+							[2] = L["opt_arrowcolormode_distance"],
 						},
 						get = function()
 							local mode = self.db.profile.arrowcolormode
@@ -1325,13 +1325,13 @@ function me:Options_DefineOptions()
 						order = 10.21
 					},
 					arrowoutlinemode = {
-						name = "Arrow Text Outline",
-						desc = "Choose outline strength for waypoint arrow text.",
+						name = L["opt_arrowtextoutline"],
+						desc = L["opt_arrowtextoutline_desc"],
 						type = "select",
 						values = {
-							[1] = "Default",
-							[2] = "Strong",
-							[3] = "Reduced",
+							[1] = L["opt_arrowtextoutline_default"],
+							[2] = L["opt_arrowtextoutline_strong"],
+							[3] = L["opt_arrowtextoutline_reduced"],
 						},
 						get = function()
 							local m = self.db.profile.arrowoutlinemode
@@ -1354,8 +1354,8 @@ function me:Options_DefineOptions()
 						order = 10.215,
 					},
 					remasterpointeronlegacy = {
-						name = "Use Remastered Pointer on Legacy Skins",
-						desc = "When enabled, legacy skins use the remastered waypoint arrow style.",
+						name = L["opt_remasterpointeronlegacy"],
+						desc = L["opt_remasterpointeronlegacy_desc"],
 						type = "toggle",
 						width = "full",
 						set = function(i,v)
@@ -1404,16 +1404,16 @@ function me:Options_DefineOptions()
 				}
 			},
 			resetarrowposition = {
-				name = "Reset Arrow Position",
-				desc = "Reset the waypoint arrow to retail default position.",
+				name = L["opt_resetarrowposition"],
+				desc = L["opt_resetarrowposition_desc"],
 				type = "execute",
 				func = function() ResetArrowPosition() end,
 				disabled = function() return self.db.profile.waypointaddon~="internal" end,
 				order = 98.9,
 			},
 			foglightdebug = {
-				name = "(Debug) Check foglight",
-				desc = "Check foglighting for the current map",
+				name = L["opt_foglightdebug"],
+				desc = L["opt_foglightdebug_desc"],
 				type = 'execute',
 				func = function() ZGV.Foglight:DebugMap() end,
 				order = 99,
@@ -1424,8 +1424,8 @@ function me:Options_DefineOptions()
 
 	-- Retail-style split pages built from existing options, so behavior stays identical.
 	self.optionsstepdisplay = {
-		name = "Step Display",
-		desc = "Viewer and step presentation controls.",
+		name = L["gb_opt_stepdisplay"],
+		desc = L["gb_opt_desc_stepdisplay"],
 		type = "group",
 		order = 2.1,
 		handler = self,
@@ -1454,30 +1454,30 @@ function me:Options_DefineOptions()
 	end
 
 	self.optionstravelsystem = {
-		name = "Travel System",
-		desc = "Travel provider and core waypoint system behavior.",
+		name = L["gb_opt_travel"],
+		desc = L["gb_opt_desc_travel"],
 		type = "group",
 		order = 2.2,
 		handler = self,
 		get = Getter_Simple,
 		set = Setter_Simple,
-		args = BuildSplitOptionsArgs(self.optionsmap.args, {"waypoints","hidearrowwithguide"}, "Choose how travel and waypoint providers are handled."),
+		args = BuildSplitOptionsArgs(self.optionsmap.args, {"waypoints","hidearrowwithguide"}, L["opt_travelsystem_intro"]),
 	}
 
 	self.optionsmapswaypoints = {
-		name = "Maps & Waypoints",
-		desc = "Arrow visuals and minimap/map waypoint display.",
+		name = L["gb_opt_map"],
+		desc = L["gb_opt_desc_map"],
 		type = "group",
 		order = 2.3,
 		handler = self,
 		get = Getter_Simple,
 		set = Setter_Simple,
-		args = BuildSplitOptionsArgs(self.optionsmap.args, {"minicons","transparency","scale","_internal","resetarrowposition"}, "Configure map markers and internal arrow visuals."),
+		args = BuildSplitOptionsArgs(self.optionsmap.args, {"minicons","transparency","scale","_internal","resetarrowposition"}, L["opt_mapswaypoints_intro"]),
 	}
 
 	self.optionsnotifications = {
-		name = "Notifications",
-		desc = "Progress and completion flash cues.",
+		name = L["gb_opt_notifications"],
+		desc = L["gb_opt_desc_notifications"],
 		type = "group",
 		order = 2.4,
 		handler = self,
@@ -1486,13 +1486,13 @@ function me:Options_DefineOptions()
 		args = BuildSplitOptionsArgs(
 			(self.optionsdisplay.args and self.optionsdisplay.args.step and self.optionsdisplay.args.step.args) or {},
 			{"goalupdateflash","goalcompletionflash","flashborder"},
-			"Configure visual notification cues while progressing through steps."
+			L["opt_notifications_intro"]
 		),
 	}
 
 	self.optionsactionbuttons = {
-		name = "Action Buttons",
-		desc = "Clickable goal/step interaction display behavior.",
+		name = L["gb_opt_actionbuttons"],
+		desc = L["gb_opt_desc_actionbuttons"],
 		type = "group",
 		order = 2.5,
 		handler = self,
@@ -1501,7 +1501,7 @@ function me:Options_DefineOptions()
 		args = BuildSplitOptionsArgs(
 			(self.optionsdisplay.args and self.optionsdisplay.args.step and self.optionsdisplay.args.step.args) or {},
 			{"stepnumbers","goalicons","tooltipsbelow"},
-			"Configure goal icon and interactive step presentation."
+			L["opt_actionbuttons_intro"]
 		),
 	}
 

@@ -4624,60 +4624,88 @@ local function EnsureGuideManagerStandaloneFrame(self)
 			UpdateLeftCategoryCounts()
 		end
 	end)
-	frame:EnableKeyboard(true)
-	frame:SetScript("OnKeyDown", function(_, key)
+
+	local function IsGuideManagerTextInputFocused()
+		local focus = GetCurrentKeyBoardFocus and GetCurrentKeyBoardFocus() or nil
+		return focus and (
+			focus == leftSearch
+			or focus == optionsSearch
+		) and focus or nil
+	end
+
+	local function LoadSelectedGuideFromManager(allowResetHidden)
+		local title = treePanel.selectedGuideTitle
+		if not title or title == "" then return false end
+		if not allowResetHidden and title == "__reset_hidden__" then return false end
+		self:SetGuide(title)
+		self:FocusStep(1)
+		return true
+	end
+
+	local function HandleGuideManagerGlobalKey(key)
+		if key == "PRINTSCREEN" or key == "SYSRQ" then
+			if Screenshot then Screenshot() end
+			return true
+		end
+
+		local focusedInput = IsGuideManagerTextInputFocused()
 		if key == "ESCAPE" then
-			frame:Hide()
-			return
-		end
-		if frame.currentSection == "featured" then
-			if key == "LEFT" then
-				SwitchFeaturedBucket(-1)
-				return
-			elseif key == "RIGHT" then
-				SwitchFeaturedBucket(1)
-				return
-			elseif key == "UP" then
-				MoveFeaturedSelection(-1)
-				return
-			elseif key == "DOWN" then
-				MoveFeaturedSelection(1)
-				return
-			elseif key == "DELETE" then
-				DismissFeaturedSelection()
-				return
-			elseif key == "R" or key == "r" then
-				ResetHiddenFeatured()
-				return
-			elseif key == "ENTER" then
-				local title = treePanel.selectedGuideTitle
-				if title and title ~= "" and title ~= "__reset_hidden__" then
-					self:SetGuide(title)
-					self:FocusStep(1)
-				end
-				return
+			if focusedInput and focusedInput.ClearFocus then
+				focusedInput:ClearFocus()
+			else
+				frame:Hide()
 			end
+			return true
 		end
-		if frame.currentSection == "options" then return end
+
+		if focusedInput then
+			return true
+		end
+
+		return false
+	end
+
+	local function HandleGuideManagerFeaturedKey(key)
+		if key == "LEFT" then
+			SwitchFeaturedBucket(-1)
+			return true
+		elseif key == "RIGHT" then
+			SwitchFeaturedBucket(1)
+			return true
+		elseif key == "UP" then
+			MoveFeaturedSelection(-1)
+			return true
+		elseif key == "DOWN" then
+			MoveFeaturedSelection(1)
+			return true
+		elseif key == "DELETE" then
+			DismissFeaturedSelection()
+			return true
+		elseif key == "R" or key == "r" then
+			ResetHiddenFeatured()
+			return true
+		elseif key == "ENTER" then
+			return LoadSelectedGuideFromManager(false)
+		end
+
+		return false
+	end
+
+	local function HandleGuideManagerTreeKey(key)
 		if key == "UP" then
 			MoveGuideSelection(-1)
-			return
+			return true
 		elseif key == "DOWN" then
 			MoveGuideSelection(1)
-			return
+			return true
 		elseif key == "ENTER" then
-			local title = treePanel.selectedGuideTitle
-			if title and title ~= "" then
-				self:SetGuide(title)
-				self:FocusStep(1)
-			end
-			return
+			return LoadSelectedGuideFromManager(true)
 		elseif key == "RIGHT" then
 			ExpandCollapseBySelection("expand")
-			return
+			return true
 		elseif key == "LEFT" then
 			ExpandCollapseBySelection("collapse")
-			return
+			return true
 		elseif key == "BACKSPACE" then
 			local expanded = self.db.profile.guidebrowsertreeexpanded or {}
 			local longestPath
@@ -4690,8 +4718,22 @@ local function EnsureGuideManagerStandaloneFrame(self)
 				expanded[longestPath] = false
 				self:RefreshGuideManagerPanel(treePanel)
 			end
-			return
+			return true
 		end
+
+		return false
+	end
+
+	frame:EnableKeyboard(true)
+	frame:SetScript("OnKeyDown", function(_, key)
+		if HandleGuideManagerGlobalKey(key) then return end
+
+		if frame.currentSection == "featured" then
+			if HandleGuideManagerFeaturedKey(key) then return end
+		end
+
+		if frame.currentSection == "options" then return end
+		HandleGuideManagerTreeKey(key)
 	end)
 	frame:SetScript("OnHide", function()
 		local ACD = LibStub and LibStub("AceConfigDialog-3.0", true)
