@@ -18,7 +18,7 @@ local COLOR_GOAL_GOAL = "|cffffcccc"
 
 ZygorGuidesViewer_L("Main", "ruRU", function() return {
 	["name"] = "|cffffff88Z|cffffee66y|cffffdd44g|cffffcc22o|cffffbb00r |cffffaa00Guides Viewer|r",
-	["name_plain"] = "Prosmotrshchik gaydov Zygor",
+	["name_plain"] = "Zygor Guides Viewer",
 	["desc"] = "Основные настройки Zygor Guides Viewer %s.|n",
 
 	['welcome_guides'] = "Загружено %d гайдов.",
@@ -26,7 +26,7 @@ ZygorGuidesViewer_L("Main", "ruRU", function() return {
 	["opt_guide"] = "Выберите гайд:",
 	["opt_guide_steps"] = "Шагов: %d",
 	["opt_guide_author"] = "Автор: %s",
-	["opt_guide_next"] = "Следующий в серии: %s",
+	["opt_guide_next"] = "Следующий гайд: %s",
 
 	["opt_report"] = "Сообщить об ошибке в шаге",
 	["opt_report_desc"] = "Создать отчет об ошибке с данными текущего шага. Скопируйте и отправьте авторам гайда.",
@@ -38,7 +38,7 @@ ZygorGuidesViewer_L("Main", "ruRU", function() return {
 	
 	--["opt_group_main"] = "Main window settings",
 	["opt_opacitymain"] = "Прозрачность",
-	["opt_opacitymain_desc"] = "Прозрачность главного окна.",
+	["opt_opacitymain_desc"] = "Прозрачность основного окна.",
 	["opt_framescale"] = "Масштаб",
 	["opt_framescale_desc"] = "Изменение размера окна под ваши предпочтения.",
 	["opt_fontsize"] = "Масштаб текста",
@@ -168,12 +168,12 @@ ZygorGuidesViewer_L("Main", "ruRU", function() return {
 
 
 	["report_title"] = "Нажмите Ctrl+C, чтобы скопировать отчет.|nЗатем отправьте его автору |cffffffff%s|r|nна адрес |cffffffff%s|r.",
-	["report_notitle"] = "|cffff8888(гайд без названия?)|r",
+	["report_notitle"] = "|cffff8888(неизвестный гайд)|r",
 	["report_noauthor"] = "|cffff8888(адрес недоступен)|r",
 
 
-	["opt_mapbutton"] = "Показывать кнопку у миникарты",
-	["opt_mapbutton_desc"] = "Показывать кнопку Zygor Guides Viewer рядом с миникартой",
+	["opt_mapbutton"] = "Показывать кнопку у мини-карты",
+	["opt_mapbutton_desc"] = "Показывать кнопку Zygor Guides Viewer у мини-карты",
 
 	["minimap_tooltip"] = COLOR_TIP_MOUSE.."ЛКМ|r: показать/скрыть окно гайда|n"..COLOR_TIP_MOUSE.."ПКМ|r: настройки|n",
 
@@ -547,7 +547,7 @@ ZygorGuidesViewer_L("Main", "ruRU", function() return {
 	["opt_resetwindow"] = "Сбросить окно",
 	["opt_resetwindow_desc"] = "Если окно вне экрана, эта кнопка вернет его в центр.",
 	["opt_trackchains"] = "Учитывать цепочки квестов",
-	["opt_trackchains_desc"] = "Помечать шаги принятия квеста как недоступные, если предыдущий квест не завершен.\n\nБаза цепочек включает \"свободные цеопчки\", поэтому иногда принятие может быть не доступным, хотя квест все еще можно звзять.",
+	["opt_trackchains_desc"] = "Помечать шаги принятия квестов как недоступные, если предыдущий квест не завершен.\n\nБаза цепочек включает \"свободные цепочки\" — задания, которые следуют друг за другом, но не требуют строгого порядка выполнения, поэтому иногда шаг принятия квеста может отображаться как недоступный, хотя квест все еще можно взять.",
 	["opt_guidesinhistory"] = "Количество недавних гайдов",
 	["opt_guidesinhistory_desc"] = "Показывать столько недавно использованных гайдов.",
 	["opt_skin_remaster"] = "|cffc7d9ffRemaster (по умолчанию)",
@@ -586,7 +586,7 @@ ZygorGuidesViewer_L("Main", "ruRU", function() return {
 	["opt_group_gold"] = "Гайды по золоту",
 	["opt_group_gold_desc"] = "Эти настройки управляют отображением шагов фарма золота и точками ресурсов.",
 	["opt_gold_detectiondist"] = "Дистанция обнаружения",
-	["opt_gold_detectiondist_desc"] = "Дистанция, не которой учитываются ближайшие точки гайда по золоту.",
+	["opt_gold_detectiondist_desc"] = "Дистанция, на которой учитываются ближайшие точки гайда по золоту.",
 	["opt_gold_reqmode"] = "Режим требований",
 	["opt_gold_reqmode_desc"] = "Выберите, какие типы точек учитывать.",
 	["opt_gold_reqmode_all"] = "Все",
@@ -596,8 +596,9 @@ ZygorGuidesViewer_L("Main", "ruRU", function() return {
 	["gold_missing_nospotsinrange"] = "Подходящие точки в радиусе не найдены.",
 	["gold_header_ore"] = "Места с рудой:",
 	["gold_header_herb"] = "Травы:",
-	["gold_header_skin"] = "Скины:",
-	["gold_header_drop"] = "Добыча с |cffffdddd%s|r:",
+	["gold_header_skin"] = "Шкуры:",
+	["gold_header_drop"] = "Падает с |cffffdddd%s|r:",
+	["gold_header_vendor"] = "Покупка:",
 	["opt_group_convenience"] = "Дополнительные функции",
 	["opt_group_convenience_desc"] = "Разные полезные опции.",
 	["opt_autoaccept"] = "Авто-принятие квестов",
@@ -612,10 +613,10 @@ ZygorGuidesViewer_L("Main", "ruRU", function() return {
 	["opt_analyzereps_desc"] = "Анализирует текущие репутации и помечает неактивные репутационные шаги как устаревшие.",
 	["opt_mapcoords"] = "Показывать координаты на карте",
 	["opt_mapcoords_desc"] = "Показывать координаты игрока и курсора в окне карты.",
-	["pointer_corpselabel1"] = "Бывыший ты",
-	["pointer_corpselabel2"] = "Кто научился убегать...",
+	["pointer_corpselabel1"] = "Бывший ты",
+	["pointer_corpselabel2"] = "Не убежал...",
 	["pointer_corpselabel3"] = "Взял слишком много на себя, да?",
-	["pointer_corpselabel4"] = "Король ведра - сюда",
+	["pointer_corpselabel4"] = "Отбросил копыта",
 	["pointer_corpselabel5"] = "Лучше не думать о цене ремонта.",
 	["haman$"] = "hamans",
 	["(%a)man$"] = "%1men",

@@ -164,6 +164,13 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
+### v3.0 (Revision 99)
+
+- Bumped addon version/revision to 3.0.99 / 99.
+- Reviewed an additional `ruRU.lua` submission, validated it as localization-only, and selectively merged the safe wording improvements instead of replacing the file wholesale.
+- Cleaned up several `ruRU` strings further, including product naming, quest-chain wording, minimap/gold labels, and a few typo fixes.
+- Added `mikki33`'s GitHub profile link to the community credits.
+
 ### v3.0 (Revision 98)
 
 - Bumped addon version/revision to 3.0.98 / 98.
@@ -193,16 +200,6 @@ This addon is fully open source and can be inspected before use.
 - Consolidated viewer/step presentation controls under Step Display and hid the separate Display page from Guide Manager/Blizzard options navigation.
 - Moved `Show steps` and `Window skin color` out of the inline `Window features` box in Step Display for cleaner layout behavior.
 - Increased Guide Manager frame width slightly to offset options-pane scrollbar width and improve settings layout room.
-
-### v3.0 (Revision 92)
-
-- Bumped addon version/revision to 3.0.92 / 92.
-- Updated Northrend exploration criteria coverage in Ares' achievement guides.
-
-### v3.0 (Revision 91)
-
-- Bumped addon version/revision to 3.0.91 / 91.
-- Updated mining guide routing, selector flow, and removed the legacy linear mining route.
 
 ## Notes
 
