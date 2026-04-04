@@ -4795,3 +4795,18 @@ function me:ToggleGuideManagerFrame(section)
 		frame:Show()
 	end
 end
+
+function me:OpenGuideManagerStepDisplay()
+	local frame = EnsureGuideManagerStandaloneFrame(self)
+	if self.db and self.db.profile then
+		self.db.profile.guidebrowseroptionsapp = "ZygorGuidesViewer-StepDisplay"
+	end
+	if frame then
+		frame.currentOptionsApp = "ZygorGuidesViewer-StepDisplay"
+	end
+	if frame and not frame:IsShown() then
+		frame:Show()
+	end
+	self:SelectGuideManagerSection("options")
+	self:SelectGuideManagerCategory("stepdisplay")
+end

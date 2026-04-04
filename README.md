@@ -164,6 +164,14 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
+### v3.0 (Revision 101)
+
+- Bumped addon version/revision to 3.0.101 / 101.
+- Fixed follow-up regressions from the Action Buttons release, including Wrath client compatibility issues that could be masked by `!!!ClassicAPI`.
+- Restored the unexplored-area display toggle to the map settings surface and tightened remaster single-step viewer sizing to reduce wasted instruction space.
+- Corrected the remaster step-view button behavior so it opens the addon Step Display options instead of forcing the viewer into the wrong layout mode.
+- Synced additional Guide Manager and remaster viewer fixes for step display routing and related option navigation.
+
 ### v3.0 (Revision 100)
 
 - Bumped addon version/revision to 3.0.100 / 100.
@@ -192,12 +200,6 @@ This addon is fully open source and can be inspected before use.
 - Fixed `Lock Window` persistence by adding the missing saved profile default.
 - Fixed minimap button dragging so it stays anchored to the minimap edge and saves its position by angle across reloads.
 - Fixed quick viewer controls that were sending `unknown argument` chat errors for `Lock Window`, `Auto-hide Border`, `Resize Up`, and `Hide In Combat`.
-
-### v3.0 (Revision 96)
-
-- Bumped addon version/revision to 3.0.96 / 96.
-- Localized the Guide Browser and embedded options shell UI across all shipped locale files, with explicit provisional keys for every locale.
-- Merged Russian localization updates and expanded ruRU coverage for the new browser surface.
 ## Notes
 
 - Intended target client is **WotLK 3.3.5a (12340)**.
@@ -263,4 +265,5 @@ This remaster focuses on UI/UX modernization, packaging quality, compatibility m
 
 <img width="433" height="247" alt="image" src="https://github.com/user-attachments/assets/579b6acb-df5e-4f40-8ef3-7d6b33e1015d" />
 <img width="436" height="248" alt="image" src="https://github.com/user-attachments/assets/a845b881-2831-43e3-bd26-5287f9783d68" />
+
 

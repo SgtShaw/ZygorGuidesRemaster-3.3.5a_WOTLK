@@ -46,6 +46,23 @@ BINDING_NAME_ZYGORGUIDES_NEXT = L["binding_next"]
 local _,_,_,ver = GetBuildInfo()
 local WotLK = (ver>=30000)
 
+do
+	local probe = CreateFrame and CreateFrame("Frame")
+	local frameIndex = probe and getmetatable(probe) and getmetatable(probe).__index
+	if frameIndex and not frameIndex.SetShown then
+		frameIndex.SetShown = function(self, shown)
+			if shown then self:Show() else self:Hide() end
+		end
+	end
+	local cooldown = probe and CreateFrame and CreateFrame("Cooldown", nil, probe, "CooldownFrameTemplate")
+	local cooldownIndex = cooldown and getmetatable(cooldown) and getmetatable(cooldown).__index
+	if cooldownIndex and not cooldownIndex.SetDrawSwipe then
+		cooldownIndex.SetDrawSwipe = function() end
+	end
+	if cooldown and cooldown.Hide then cooldown:Hide() end
+	if probe and probe.Hide then probe:Hide() end
+end
+
 
 local BZ = LibStub("LibBabble-Zone-3.0")
 local BZL = BZ:GetUnstrictLookupTable()
@@ -591,7 +608,13 @@ if not me.ActionButtons_Refresh then
 		local locked = self.db.profile.actionbuttonbar_locked
 		bar:EnableMouse(not locked)
 		bar:SetMovable(not locked)
-		bar.close:SetShown(true)
+		if bar.close then
+			if locked then
+				bar.close:Hide()
+			else
+				bar.close:Show()
+			end
+		end
 	end
 
 	function me:ActionButtons_CreateBar()
@@ -667,7 +690,9 @@ if not me.ActionButtons_Refresh then
 			button.overlay:SetFrameLevel(button:GetFrameLevel() + 1)
 			button.overlay.icon = button.overlay:CreateTexture(nil, "BACKGROUND")
 			button.overlay.cooldown = CreateFrame("Cooldown", nil, button.overlay, "CooldownFrameTemplate")
-			button.overlay.cooldown:SetDrawSwipe(true)
+			if button.overlay.cooldown.SetDrawSwipe then
+				button.overlay.cooldown:SetDrawSwipe(true)
+			end
 			button.overlay.cooldown:SetAllPoints(button.overlay)
 			button:SetScript("OnEnter", function(self) me:ShowActionButtonTooltip(self) end)
 			button:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -1599,8 +1624,14 @@ function me:EnsureRemasterFrames()
 	styleCompositeButton(miniButton, "Menu-WithBG")
 	miniButton:SetPoint("RIGHT", settingsButton, "LEFT", -6, 0)
 	miniButton:SetScript("OnClick", function(selfBtn, button)
-		if button == "LeftButton" then
-			ZygorGuidesViewer:SetOption("StepDisplay","showcountsteps "..(ZGV.db.profile.showallsteps and ZGV.db.profile.showcountsteps or 0))
+		if button == "RightButton" then
+			if ZygorGuidesViewer.OpenGuideManagerStepDisplay then
+				ZygorGuidesViewer:OpenGuideManagerStepDisplay()
+			elseif ZygorGuidesViewer.OpenStepDisplayOptions then
+				ZygorGuidesViewer:OpenStepDisplayOptions()
+			else
+				InterfaceOptionsFrame_OpenToCategory((ZygorGuidesViewer.optionsstepdisplay and ZygorGuidesViewer.optionsstepdisplay.name) or "Step Display")
+			end
 		else
 			ZygorGuidesViewer:OpenQuickSteps()
 		end
@@ -1609,14 +1640,8 @@ function me:EnsureRemasterFrames()
 	miniButton:SetScript("OnEnter", function(selfBtn)
 		GameTooltip:SetOwner(selfBtn, "ANCHOR_TOPRIGHT")
 		GameTooltip:SetText(L["frame_toolbar_stepview"])
-		if ZGV and ZGV.db and ZGV.db.profile then
-			if ZGV.db.profile.showallsteps then
-				GameTooltip:AddLine(tipClick(L["frame_toolbar_stepview_showonly"]:format(tostring(ZGV.db.profile.showcountsteps or 1))))
-			else
-				GameTooltip:AddLine(tipClick(L["frame_toolbar_stepview_showall"]))
-			end
-			GameTooltip:AddLine(tipRight(L["frame_toolbar_stepview_setcount"]))
-		end
+		GameTooltip:AddLine(tipClick(L["frame_toolbar_stepview_setcount"]))
+		GameTooltip:AddLine(tipRight(L["frame_toolbar_settings_right"]))
 		GameTooltip:Show()
 	end)
 	miniButton:SetScript("OnLeave", function()
@@ -2077,7 +2102,7 @@ function me:FocusStep(num,quiet)
 		self:UpdateCooldowns()
 
 		self:UpdateCartographerExport()
-		self:SetWaypoint()
+		self:RefreshCurrentWaypoint()
 	end
 	--self:UpdateMinimapArrow(true)
 
@@ -2495,6 +2520,42 @@ function me:SetDisplayMode(mode)
 	self:UpdateFrame(true)
 end
 
+function me:RefreshCurrentWaypoint()
+	if not self.CurrentStep then return end
+	self:SetWaypoint()
+	if self.Pointer and self.Pointer.UpdateWaypoints then
+		self.Pointer:UpdateWaypoints()
+	end
+end
+
+function me:ToggleStepViewMode()
+	if not (self.db and self.db.profile) then return end
+	if self.db.profile.showallsteps then
+		self.db.profile.showallsteps = false
+		if not self.db.profile.showcountsteps or self.db.profile.showcountsteps < 1 then
+			self.db.profile.showcountsteps = 1
+		end
+		if ZygorGuidesViewerFrameScrollScrollBar then
+			ZygorGuidesViewerFrameScrollScrollBar:SetValue(1)
+		end
+	else
+		self.db.profile.showallsteps = true
+		if self.Frame and self.Frame.GetHeight then
+			local h = self.Frame:GetHeight()
+			if h and h > (MIN_HEIGHT or 0) then
+				self.db.profile.fullheight = h
+			end
+		end
+	end
+	self.stepchanged = true
+	self:UpdateFrame(true)
+	self:AlignFrame()
+	self:UpdateLocking()
+	self:ScrollToCurrentStep()
+	self:ResizeFrame()
+	self:RefreshCurrentWaypoint()
+end
+
 local Tpi=6.2832
 local cardinals = {"N","NW","W","SW","S","SE","E","NE","N"}
 local function GetCardinalDirName(angle)
@@ -2531,6 +2592,9 @@ function me:UpdateFrame(full,onupdate)
 		LayoutRemasterFrames(remasterFrames, self.db and self.db.profile and self.db.profile.resizeup)
 		if ZygorGuidesViewerFrameScroll and remasterFrames and remasterFrames.content then
 			ZygorGuidesViewerFrameScroll:SetParent(remasterFrames.content)
+			ZygorGuidesViewerFrameScroll:ClearAllPoints()
+			ZygorGuidesViewerFrameScroll:SetPoint("TOPLEFT", remasterFrames.content, "TOPLEFT", 0, -2)
+			ZygorGuidesViewerFrameScroll:SetPoint("BOTTOMRIGHT", remasterFrames.content, "BOTTOMRIGHT", -2, 2)
 			ZygorGuidesViewerFrameScroll:SetFrameLevel(remasterFrames.content:GetFrameLevel() + 2)
 			ZygorGuidesViewerFrameScroll:Show()
 		end
@@ -2644,8 +2708,12 @@ function me:UpdateFrame(full,onupdate)
 
 			if self.db.profile.skin == "remaster" and ZygorGuidesViewerFrameScrollChild and ZygorGuidesViewerFrameScroll then
 				local sw = ZygorGuidesViewerFrameScroll:GetWidth() or 0
-				if sw > 60 and (ZygorGuidesViewerFrameScrollChild:GetWidth() or 0) < 50 then
-					ZygorGuidesViewerFrameScrollChild:SetWidth(sw - 24)
+				if sw > 20 then
+					local scrollbarPad = self.db.profile.showallsteps and 39 or 20
+					local desiredWidth = math.max(sw - scrollbarPad, 1)
+					if math.abs((ZygorGuidesViewerFrameScrollChild:GetWidth() or 0) - desiredWidth) > 1 then
+						ZygorGuidesViewerFrameScrollChild:SetWidth(desiredWidth)
+					end
 				end
 			end
 
@@ -4866,7 +4934,7 @@ function me:ResizeFrame()
 		if ZygorGuidesViewerFrame and not ZygorGuidesViewerFrame:IsShown() then
 			return
 		end
-		local minHeight = 160
+		local minHeight = 130
 		if self.db.profile.displaymode == "guide" and not self.db.profile.showallsteps then
 			local height = 0
 			local count = self.db.profile.showcountsteps or 1
@@ -4878,15 +4946,15 @@ function me:ResizeFrame()
 					height = height + step:GetHeight()
 				end
 			end
-			local extra = 40
+			local extra = 32
 			if self.RemasterFrames and self.RemasterFrames.header and self.RemasterFrames.toolbar then
 				local headerh = self.RemasterFrames.header:GetHeight() or 34
 				local toolbarh = self.RemasterFrames.toolbar:GetHeight() or 28
 				local topPad = 6
 				local headerToToolbar = 6
-				local toolbarToContent = 10
-				local contentBottom = 8
-				local scrollPad = 20
+				local toolbarToContent = 8
+				local contentBottom = 6
+				local scrollPad = 6
 				extra = headerh + toolbarh + topPad + headerToToolbar + toolbarToContent + contentBottom + scrollPad
 			end
 			height = height + extra
@@ -4894,6 +4962,13 @@ function me:ResizeFrame()
 			if height < minHeight then height = minHeight end
 			if ZygorGuidesViewerFrame then
 				ZygorGuidesViewerFrame:SetHeight(height)
+			end
+		elseif self.db.profile.showallsteps or self.db.profile.displaymode=="gold" then
+			local targetHeight = self.db.profile.fullheight or ZygorGuidesViewerFrame:GetHeight() or minHeight
+			if targetHeight < MIN_HEIGHT then targetHeight = MIN_HEIGHT end
+			if targetHeight < minHeight then targetHeight = minHeight end
+			if ZygorGuidesViewerFrame then
+				ZygorGuidesViewerFrame:SetHeight(targetHeight)
 			end
 		else
 			if ZygorGuidesViewerFrame and ZygorGuidesViewerFrame:GetHeight() < minHeight then

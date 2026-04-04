@@ -1481,7 +1481,7 @@ function me:Options_DefineOptions()
 		handler = self,
 		get = Getter_Simple,
 		set = Setter_Simple,
-		args = BuildSplitOptionsArgs(self.optionsmap.args, {"minicons","transparency","scale","_internal","resetarrowposition"}, L["opt_mapswaypoints_intro"]),
+		args = BuildSplitOptionsArgs(self.optionsmap.args, {"minicons","transparency","scale","foglight","_internal","resetarrowposition"}, L["opt_mapswaypoints_intro"]),
 	}
 
 	self.optionsnotifications = {
@@ -1735,20 +1735,31 @@ function me:Options_SetupBlizConfig()
 	InterfaceOptionsFrame:GetRegions():SetTexture(0,0,0,0.9)
 	LibStub("AceConfigDialog-3.0"):SetDefaultSize("ZygorGuidesViewer", 600, 400)
 	local rootpanel = LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer", self.options.name)
-	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-StepDisplay", self.optionsstepdisplay.name, self.options.name)
-	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Progress", self.optionsprogress.name, self.options.name);
-	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Travel", self.optionstravelsystem.name, self.options.name)
-	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Maps", self.optionsmapswaypoints.name, self.options.name)
-	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Notifications", self.optionsnotifications.name, self.options.name)
-	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-ActionButtons", self.optionsactionbuttons.name, self.options.name)
-	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Conv", self.optionsconv.name, self.options.name)
-	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Accessibility", self.optionsaccessibility.name, self.options.name)
-	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-About", self.optionsabout.name, self.options.name)
+	self.blizRootPanel = rootpanel
+	self.blizStepDisplayPanel = LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-StepDisplay", self.optionsstepdisplay.name, self.options.name)
+	self.blizProgressPanel = LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Progress", self.optionsprogress.name, self.options.name);
+	self.blizTravelPanel = LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Travel", self.optionstravelsystem.name, self.options.name)
+	self.blizMapsPanel = LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Maps", self.optionsmapswaypoints.name, self.options.name)
+	self.blizNotificationsPanel = LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Notifications", self.optionsnotifications.name, self.options.name)
+	self.blizActionButtonsPanel = LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-ActionButtons", self.optionsactionbuttons.name, self.options.name)
+	self.blizConvPanel = LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Conv", self.optionsconv.name, self.options.name)
+	self.blizAccessibilityPanel = LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Accessibility", self.optionsaccessibility.name, self.options.name)
+	self.blizAboutPanel = LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-About", self.optionsabout.name, self.options.name)
 	if (self.db.profile.debug) then
-		LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Debug", self.optionsdebug.name, self.options.name)
+		self.blizDebugPanel = LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Debug", self.optionsdebug.name, self.options.name)
 	end
 	--LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Data", self.optionsdata.name, self.options.name)
-	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Profile", self.optionsprofile.name, self.options.name)
+	self.blizProfilePanel = LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Profile", self.optionsprofile.name, self.options.name)
+end
+
+function me:OpenStepDisplayOptions()
+	local panel = self.blizStepDisplayPanel
+	if panel then
+		InterfaceOptionsFrame_OpenToCategory(panel)
+		InterfaceOptionsFrame_OpenToCategory(panel)
+		return
+	end
+	InterfaceOptionsFrame_OpenToCategory((self.optionsstepdisplay and self.optionsstepdisplay.name) or "Step Display")
 end
 
 
