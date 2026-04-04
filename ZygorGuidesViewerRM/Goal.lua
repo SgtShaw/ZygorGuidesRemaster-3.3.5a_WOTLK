@@ -409,6 +409,9 @@ function FindPetActionInfo(action)
 end
 
 function Goal:IsActionable()
+	if ZGV.GetGoalActionSpec then
+		return ZGV:GetGoalActionSpec(self) and true or false
+	end
 	return ((self.useitemid or self.useitem) and GetItemCount(self.useitemid or self.useitem)>0)
 	    or (self.castspell and IsUsableSpell(self.castspell))
 	    or (self.petaction and FindPetActionInfo(self.petaction))

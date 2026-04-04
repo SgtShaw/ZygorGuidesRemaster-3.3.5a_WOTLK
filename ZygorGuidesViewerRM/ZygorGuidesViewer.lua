@@ -98,6 +98,738 @@ local atan2 = math.atan2
 local MAPBUTTON_RADIUS = 78
 local MAPBUTTON_DEFAULT_ANGLE = 225
 
+if not me.ActionButtons_Refresh then
+	local ACTION_BAR_MAX_BUTTONS = 5
+	local ACTION_BAR_SIZE = 28
+	local ACTION_BAR_PADDING = 3
+	local ACTION_BAR_CLOSE_SIZE = 18
+	local ACTION_BAR_DEFAULT_ICON = "Interface\\Icons\\INV_Misc_QuestionMark"
+	local ACTION_BAR_CUSTOM_ICONS = ZGV.DIR.."\\Skins\\actionbar"
+	local TALK_ICON = { file = ZGV.DIR.."\\Skin\\icons", coords = {12/16 + 0.006,13/16 - 0.006,0.08,0.92}, inset = -2, crop = 0.00 }
+	local KILL_ICON = { file = ACTION_BAR_CUSTOM_ICONS, coords = {1/8,2/8,0,1}, inset = 2, crop = 0.02 }
+	local SCRIPT_ICON = { file = ACTION_BAR_CUSTOM_ICONS, coords = {3/8,4/8,0,1}, inset = 2, crop = 0.02 }
+	local ACTION_BAR_SNAP_Y = 5
+	local ACTION_BAR_SNAP_THRESHOLD_X = 80
+	local ACTION_BAR_SNAP_THRESHOLD_Y = 60
+	local ACTION_BAR_BASE_SCALE = 0.8
+
+	local function AB_WipeAttrs(button)
+		if not button then return end
+		button:SetAttribute("type", nil)
+		button:SetAttribute("type1", nil)
+		button:SetAttribute("spell", nil)
+		button:SetAttribute("spell1", nil)
+		button:SetAttribute("item", nil)
+		button:SetAttribute("item1", nil)
+		button:SetAttribute("macrotext", nil)
+		button:SetAttribute("macro", nil)
+		button:SetAttribute("macrotext1", nil)
+		button.spellid = nil
+		button.itemid = nil
+		button.actionSpec = nil
+	end
+
+	local function AB_SafeName(name)
+		if not name then return nil end
+		name = tostring(name):gsub("\"", "")
+		name = name:gsub("\r", " "):gsub("\n", " ")
+		name = name:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
+		return name
+	end
+
+	local function AB_GetSpellIcon(goal)
+		return select(3, GetSpellInfo(goal.castspellid or goal.castspell)) or "Interface\\Icons\\Spell_Nature_FaerieFire"
+	end
+
+	local function AB_GetItemIcon(goal)
+		return select(10, GetItemInfo(goal.useitemid or goal.useitem)) or "Interface\\Icons\\INV_Misc_Bag_08"
+	end
+
+	local function AB_GetMacroIcon(goal)
+		if goal.macro then
+			return select(2, GetMacroInfo(goal.macro))
+		end
+		return ACTION_BAR_DEFAULT_ICON
+	end
+
+	local function AB_ApplyIcon(texture, icon)
+		if not texture then return end
+		if type(icon) == "table" then
+			texture:SetTexture(icon.file)
+			if icon.coords then texture:SetTexCoord(unpack(icon.coords)) else texture:SetTexCoord(0,1,0,1) end
+		else
+			texture:SetTexture(icon or ACTION_BAR_DEFAULT_ICON)
+			texture:SetTexCoord(0, 1, 0, 1)
+		end
+	end
+
+	local function AB_ApplyBarIcon(texture, icon)
+		if not texture then return end
+		local inset = (type(icon) == "table" and icon.inset) or 3
+		texture:ClearAllPoints()
+		texture:SetPoint("TOPLEFT", texture:GetParent(), "TOPLEFT", inset, -inset)
+		texture:SetPoint("BOTTOMRIGHT", texture:GetParent(), "BOTTOMRIGHT", -inset, inset)
+		if type(icon) == "table" then
+			texture:SetTexture(icon.file)
+			if icon.coords then
+				local l, r, t, b = unpack(icon.coords)
+				local crop = icon.crop or 0.03
+				local xinset = (r - l) * crop
+				local yinset = (b - t) * crop
+				texture:SetTexCoord(l + xinset, r - xinset, t + yinset, b - yinset)
+			else
+				texture:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+			end
+		else
+			texture:SetTexture(icon or ACTION_BAR_DEFAULT_ICON)
+			texture:SetTexCoord(0.12, 0.88, 0.12, 0.88)
+		end
+	end
+
+	local function AB_BuildTargetMacro(name)
+		if not name then return end
+		local lines = {
+			"/cleartarget [dead][noexists]",
+			"/targetexact " .. name,
+			"/target [noexists] " .. name,
+		}
+		return table.concat(lines, "\n")
+	end
+
+	function me:GetGoalActionTargetName(goal)
+		if not goal then return end
+		if goal.npcid then
+			local npc = self:GetTranslatedNPC(goal.npcid)
+			if npc then return AB_SafeName(npc) end
+		end
+		if goal.targetid then
+			local target = self:GetTranslatedNPC(goal.targetid)
+			if target then return AB_SafeName(target) end
+		end
+		if goal.npc then return AB_SafeName(goal.npc) end
+		if goal.target then return AB_SafeName(goal.target) end
+	end
+
+	function me:ActionButtonCanMark()
+		if InCombatLockdown() or not UnitExists("target") then return false end
+		return true
+	end
+
+	function me:ActionButtonMarkTarget(marker)
+		if not self.db or not self.db.profile or not self.db.profile.actionbutton_enablemarkers then return false, "disabled" end
+		if not marker then return false, "nomarker" end
+		if not UnitExists("target") then
+			if self.Debug then self:Debug("ActionButtons: marker skipped, no target selected.") end
+			return false, "notarget"
+		end
+		if not self:ActionButtonCanMark() then
+			if self.Debug then self:Debug("ActionButtons: marker skipped, invalid target state or combat lockdown.") end
+			return false, "unavailable"
+		end
+		if GetRaidTargetIndex and GetRaidTargetIndex("target") == marker then
+			return true, "already"
+		end
+		SetRaidTarget("target", marker)
+		return true
+	end
+
+	function me:ActionButtons_MarkSpecTarget(spec)
+		if not spec or not spec.marker then return false, "nomarker" end
+		if not spec.target or not UnitExists("target") then return false, "notarget" end
+		local targetName = UnitName("target")
+		if targetName ~= spec.target then return false, "wrongtarget" end
+		return self:ActionButtonMarkTarget(spec.marker)
+	end
+
+	function me:ActionButtons_HandlePostClick(button)
+		if not button then return end
+		local spec = button.actionSpec
+		if not spec or (spec.kind ~= "talk" and spec.kind ~= "kill") or not spec.marker then return end
+		self:ActionButtons_MarkSpecTarget(spec)
+		if self.ScheduleTimer then
+			self:ScheduleTimer(function()
+				if button and button.actionSpec == spec then
+					me:ActionButtons_MarkSpecTarget(spec)
+				end
+			end, 0.08)
+			self:ScheduleTimer(function()
+				if button and button.actionSpec == spec then
+					me:ActionButtons_MarkSpecTarget(spec)
+				end
+			end, 0.20)
+		end
+	end
+
+	function me:GetGoalActionSpec(goal)
+		if not goal then return end
+
+		if (goal.useitemid or goal.useitem) and GetItemCount(goal.useitemid or goal.useitem) > 0 then
+			return { kind = "item", type = "item", item = goal.useitemid and ("item:" .. goal.useitemid) or goal.useitem, itemid = goal.useitemid, icon = AB_GetItemIcon(goal), tooltip = "item", signature = "item:" .. tostring(goal.useitemid or goal.useitem) }
+		end
+
+		if goal.castspell and IsUsableSpell(goal.castspell) then
+			return { kind = "spell", type = "spell", spell = goal.castspell, spellid = goal.castspellid, icon = AB_GetSpellIcon(goal), tooltip = "spell", signature = "spell:" .. tostring(goal.castspellid or goal.castspell) }
+		end
+
+		if goal.petaction then
+			local num, name, subtext, tex = FindPetActionInfo(goal.petaction)
+			if num then
+				return { kind = "petaction", type = "macro", macrotext = "/click PetActionButton" .. num, icon = tex or ACTION_BAR_DEFAULT_ICON, petaction = num, tooltip = "petaction", tooltipName = name, tooltipSubtext = subtext, signature = "petaction:" .. tostring(num) }
+			end
+		end
+
+		if goal.script then
+			return { kind = "script", type = "macro", macro = "ZygorGuidesMacro" .. goal.num, icon = SCRIPT_ICON, tooltip = "script", signature = "script:" .. tostring(goal.num), fallbackicon = AB_GetMacroIcon(goal) }
+		end
+
+		if goal.action == "talk" then
+			local target = self:GetGoalActionTargetName(goal)
+			local macrotext = AB_BuildTargetMacro(target)
+			if macrotext then
+				return { kind = "talk", type = "macro", macrotext = macrotext, icon = TALK_ICON, target = target, marker = 4, tooltip = "talk", signature = "talk:" .. tostring(goal.npcid or target) }
+			end
+		end
+
+		if goal.action == "kill" then
+			local target = self:GetGoalActionTargetName(goal)
+			local macrotext = AB_BuildTargetMacro(target)
+			if macrotext then
+				return { kind = "kill", type = "macro", macrotext = macrotext, icon = KILL_ICON, target = target, marker = 8, tooltip = "kill", signature = "kill:" .. tostring(goal.targetid or target) }
+			end
+		end
+	end
+
+	function me:ShowActionButtonTooltip(button)
+		if not button or not button.actionSpec then return end
+		local spec = button.actionSpec
+		if button:GetTop() and button:GetTop() > (UIParent:GetHeight() / 2) then
+			GameTooltip:SetOwner(button, "ANCHOR_BOTTOM")
+		else
+			GameTooltip:SetOwner(button, "ANCHOR_TOP")
+		end
+
+		if spec.tooltip == "item" then
+			local link = select(2, GetItemInfo(spec.itemid or button.itemid))
+			if link then
+				GameTooltip:SetHyperlink(link)
+				GameTooltip:Show()
+				return
+			end
+		end
+
+		if spec.tooltip == "spell" then
+			GameTooltip:SetSpellByID(spec.spellid or button.spellid)
+			GameTooltip:Show()
+			return
+		end
+
+		GameTooltip:AddLine(spec.label or L["actionbutton_bar_title_locked"])
+		if spec.tooltip == "talk" and spec.target then GameTooltip:AddLine(L["actionbutton_tooltip_talk"]:format(spec.target), 1, 1, 1, true) end
+		if spec.tooltip == "kill" and spec.target then GameTooltip:AddLine(L["actionbutton_tooltip_kill"]:format(spec.target), 1, 1, 1, true) end
+		if spec.tooltip == "script" then GameTooltip:AddLine(L["actionbutton_tooltip_script"], 1, 1, 1, true) end
+		if spec.tooltip == "petaction" then
+			GameTooltip:AddLine(L["actionbutton_tooltip_petaction"], 1, 1, 1, true)
+			if spec.tooltipName then GameTooltip:AddLine(spec.tooltipName, 0.8, 0.8, 0.8) end
+			if spec.tooltipSubtext then GameTooltip:AddLine(spec.tooltipSubtext, 0.7, 0.7, 0.7) end
+		end
+		GameTooltip:Show()
+	end
+
+	function me:ApplyInlineActionSpec(spec, action, petaction, actname)
+		local icon = _G[actname .. "ActionIcon"]
+		local peticon = _G[actname .. "PetActionIcon"]
+
+		AB_WipeAttrs(action)
+		action:Hide()
+		petaction:Hide()
+		if not spec then return false end
+
+		if spec.kind == "petaction" then
+			AB_WipeAttrs(petaction)
+			petaction:SetID(spec.petaction)
+			petaction.tooltipName = spec.tooltipName
+			petaction.tooltipSubtext = spec.tooltipSubtext
+			petaction.actionSpec = spec
+			if peticon then peticon:SetTexture(spec.icon or ACTION_BAR_DEFAULT_ICON) end
+			return "petaction"
+		end
+
+		action:SetAttribute("type1", spec.type)
+		if spec.type == "spell" then
+			action:SetAttribute("spell1", spec.spell)
+			action.spellid = spec.spellid or spec.spell
+		elseif spec.type == "item" then
+			action:SetAttribute("item1", spec.item)
+			action.itemid = spec.itemid
+		elseif spec.type == "macro" then
+			if spec.macrotext then action:SetAttribute("macrotext1", spec.macrotext) end
+			if spec.macro then action:SetAttribute("macro", spec.macro) end
+		end
+
+		action.actionSpec = spec
+		if icon then AB_ApplyIcon(icon, spec.icon or spec.fallbackicon or ACTION_BAR_DEFAULT_ICON) end
+		return "action"
+	end
+
+	function me:GetCurrentStepActionSpecs()
+		local specs, seen = {}, {}
+		local stepframe = self.CurrentStepframeNum and self.stepframes and self.stepframes[self.CurrentStepframeNum]
+		if not self.CurrentStep then return specs end
+		if stepframe and stepframe.lines then
+			for i = 1, 20 do
+				local line = stepframe.lines[i]
+				local goal = line and line.goal
+				local spec = goal and self:GetGoalActionSpec(goal)
+				if spec then
+					spec.goal = goal
+					spec.label = goal:GetText() or goal.action or spec.kind
+					if spec.kind == "talk" or spec.kind == "kill" then
+						if not seen[spec.signature] then
+							seen[spec.signature] = true
+							specs[#specs + 1] = spec
+						end
+					else
+						specs[#specs + 1] = spec
+					end
+					if #specs >= ACTION_BAR_MAX_BUTTONS then break end
+				end
+			end
+		end
+		return specs
+	end
+
+	function me:ActionButtons_SaveAnchor()
+		local bar = self.ActionButtonBar
+		if not bar or not self.db or not self.db.profile then return end
+		if bar.snapped then
+			self.db.profile.actionbuttonbar_anchor = { snapped = true, custom = true }
+			return
+		end
+		local point, _, relPoint, x, y = bar:GetPoint(1)
+		self.db.profile.actionbuttonbar_anchor = { point = point, relPoint = relPoint, x = x, y = y, custom = true, snapped = bar.snapped }
+	end
+
+	function me:ActionButtons_GetSnapFrame()
+		if self.RemasterFrames and self.RemasterFrames.root then
+			return self.RemasterFrames.root
+		end
+		return self.Frame or ZygorGuidesViewerFrame
+	end
+
+	function me:ActionButtons_GetSnapSide()
+		return (self.db and self.db.profile and self.db.profile.actionbuttonbar_pinside) or "top"
+	end
+
+	function me:ActionButtons_AnchorToViewer(bar, frame)
+		if not bar then return end
+		frame = frame or self:ActionButtons_GetSnapFrame()
+		if not frame then
+			bar.snapped = false
+			bar:SetPoint("CENTER", UIParent, "CENTER", 0, -180)
+			return
+		end
+		bar.snapped = true
+		local side = self:ActionButtons_GetSnapSide()
+		if side == "bottom" then
+			bar:SetPoint("TOPLEFT", frame, "BOTTOMLEFT", 0, -10)
+		elseif side == "left" then
+			bar:SetPoint("TOPRIGHT", frame, "TOPLEFT", -10, 0)
+		elseif side == "right" then
+			bar:SetPoint("TOPLEFT", frame, "TOPRIGHT", 10, 0)
+		else
+			bar:SetPoint("BOTTOMLEFT", frame, "TOPLEFT", 0, 10)
+		end
+	end
+
+	function me:ActionButtons_IsNearSnap(frame, viewer)
+		if not frame or not viewer then return false end
+		local ssc = frame:GetEffectiveScale()
+		local zsc = viewer:GetEffectiveScale()
+		local left = (frame:GetLeft() or 0) * ssc
+		local right = (frame:GetRight() or 0) * ssc
+		local top = (frame:GetTop() or 0) * ssc
+		local bottom = (frame:GetBottom() or 0) * ssc
+		local viewerLeft = (viewer:GetLeft() or 0) * zsc
+		local viewerRight = (viewer:GetRight() or 0) * zsc
+		local viewerTop = (viewer:GetTop() or 0) * zsc
+		local viewerBottom = (viewer:GetBottom() or 0) * zsc
+		local centerX = (left + right) / 2
+		local centerY = (top + bottom) / 2
+		local viewerCenterX = (viewerLeft + viewerRight) / 2
+		local viewerCenterY = (viewerTop + viewerBottom) / 2
+		local withinViewerWidth = centerX >= (viewerLeft - ACTION_BAR_SNAP_THRESHOLD_X) and centerX <= (viewerRight + ACTION_BAR_SNAP_THRESHOLD_X)
+		local withinViewerHeight = centerY >= (viewerBottom - ACTION_BAR_SNAP_THRESHOLD_Y) and centerY <= (viewerTop + ACTION_BAR_SNAP_THRESHOLD_Y)
+		local side = self:ActionButtons_GetSnapSide()
+		if side == "bottom" then
+			return withinViewerWidth and centerY <= viewerCenterY and math.abs(top - (viewerBottom - 10 * zsc)) <= ACTION_BAR_SNAP_THRESHOLD_Y
+		elseif side == "left" then
+			return withinViewerHeight and centerX <= viewerCenterX and math.abs(right - (viewerLeft - 10 * zsc)) <= ACTION_BAR_SNAP_THRESHOLD_X
+		elseif side == "right" then
+			return withinViewerHeight and centerX >= viewerCenterX and math.abs(left - (viewerRight + 10 * zsc)) <= ACTION_BAR_SNAP_THRESHOLD_X
+		else
+			return withinViewerWidth and centerY >= viewerCenterY and math.abs(bottom - (viewerTop + 10 * zsc)) <= ACTION_BAR_SNAP_THRESHOLD_Y
+		end
+	end
+
+	function me:ActionButtons_IsOverViewer(frame, viewer)
+		if not frame or not viewer then return false end
+		local ssc = frame:GetEffectiveScale()
+		local zsc = viewer:GetEffectiveScale()
+		local left = (frame:GetLeft() or 0) * ssc
+		local right = (frame:GetRight() or 0) * ssc
+		local top = (frame:GetTop() or 0) * ssc
+		local bottom = (frame:GetBottom() or 0) * ssc
+		local viewerLeft = (viewer:GetLeft() or 0) * zsc
+		local viewerRight = (viewer:GetRight() or 0) * zsc
+		local viewerTop = (viewer:GetTop() or 0) * zsc
+		local viewerBottom = (viewer:GetBottom() or 0) * zsc
+		return right >= viewerLeft and left <= viewerRight and top >= viewerBottom and bottom <= viewerTop
+	end
+
+	function me:ActionButtons_SnapNow(frame, viewer)
+		if not frame or not viewer then return false end
+		frame.snapped = self:ActionButtons_IsOverViewer(frame, viewer) or self:ActionButtons_IsNearSnap(frame, viewer)
+		if frame.snapped then
+			frame:ClearAllPoints()
+			self:ActionButtons_AnchorToViewer(frame, viewer)
+		end
+		self:ActionButtons_SaveAnchor()
+		return frame.snapped
+	end
+
+	function me:ActionButtons_PrepareForDrag(frame)
+		if not frame then return end
+		local ssc = frame:GetEffectiveScale()
+		local left = (frame:GetLeft() or 0) * ssc
+		local bottom = (frame:GetBottom() or 0) * ssc
+		frame:ClearAllPoints()
+		frame:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", left / ssc, bottom / ssc)
+	end
+
+	function me:ActionButtons_BeginDrag(frame)
+		if not frame then return end
+		local ssc = frame:GetEffectiveScale()
+		local left = (frame:GetLeft() or 0) * ssc
+		local bottom = (frame:GetBottom() or 0) * ssc
+		local cx, cy = GetCursorPosition()
+		frame.dragCursorOffsetX = cx - left
+		frame.dragCursorOffsetY = cy - bottom
+		frame.draggingManual = true
+	end
+
+	function me:ActionButtons_UpdateManualDrag(frame)
+		if not frame or not frame.draggingManual then return end
+		local ssc = frame:GetEffectiveScale()
+		local cx, cy = GetCursorPosition()
+		local left = cx - (frame.dragCursorOffsetX or 0)
+		local bottom = cy - (frame.dragCursorOffsetY or 0)
+		frame:ClearAllPoints()
+		frame:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", left / ssc, bottom / ssc)
+	end
+
+	function me:ActionButtons_EndDrag(frame)
+		if not frame then return end
+		frame.draggingManual = nil
+		frame.dragCursorOffsetX = nil
+		frame.dragCursorOffsetY = nil
+	end
+
+	function me:ActionButtons_ApplyAnchor()
+		local bar = self.ActionButtonBar
+		if not bar then return end
+		local anchor = self.db.profile.actionbuttonbar_anchor
+		bar:ClearAllPoints()
+		if anchor and anchor.custom then
+			bar.snapped = not not anchor.snapped
+			if bar.snapped then
+				self:ActionButtons_AnchorToViewer(bar)
+			else
+				bar:SetPoint(anchor.point or "CENTER", UIParent, anchor.relPoint or "CENTER", anchor.x or 0, anchor.y or 0)
+			end
+			return
+		end
+		self:ActionButtons_AnchorToViewer(bar)
+	end
+
+	function me:ActionButtons_Layout()
+		local bar = self.ActionButtonBar
+		if not bar then return end
+		local profile = self.db.profile
+		local size = profile.actionbuttonbar_size or ACTION_BAR_SIZE
+		local spacing = profile.actionbuttonbar_spacing or ACTION_BAR_PADDING
+		local shown = 0
+		for i, button in ipairs(bar.buttons) do
+			button:SetWidth(size) button:SetHeight(size)
+			button:ClearAllPoints()
+			button.overlay:ClearAllPoints()
+			button.overlay:SetPoint("TOPLEFT", button, "TOPLEFT", 0, 0)
+			button.overlay:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", 0, 0)
+			button.overlay.icon:ClearAllPoints()
+			button.overlay.icon:SetPoint("TOPLEFT", button.overlay, "TOPLEFT", 3, -3)
+			button.overlay.icon:SetPoint("BOTTOMRIGHT", button.overlay, "BOTTOMRIGHT", -3, 3)
+			button.overlay.cooldown:ClearAllPoints()
+			button.overlay.cooldown:SetPoint("TOPLEFT", button.overlay.icon, "TOPLEFT", 3, -3)
+			button.overlay.cooldown:SetPoint("BOTTOMRIGHT", button.overlay.icon, "BOTTOMRIGHT", -3, 3)
+			if i == 1 then
+				button:SetPoint("TOPLEFT", bar, "TOPLEFT", ACTION_BAR_PADDING, -ACTION_BAR_PADDING)
+			else
+				button:SetPoint("LEFT", bar.buttons[i - 1], "RIGHT", spacing, 0)
+			end
+			if button:IsShown() then shown = shown + 1 end
+		end
+		if shown == 0 then shown = 1 end
+		bar:SetScale((profile.actionbuttonbar_scale or 1) * ACTION_BAR_BASE_SCALE)
+		bar:SetWidth((shown * size) + ((shown - 1) * spacing) + ACTION_BAR_PADDING * 2 + 25)
+		bar:SetHeight(size + ACTION_BAR_PADDING * 2)
+		bar.close:ClearAllPoints()
+		bar.close:SetPoint("TOPRIGHT", bar, "TOPRIGHT", -4, -4)
+	end
+
+	function me:ActionButtons_UpdateDragState()
+		local bar = self.ActionButtonBar
+		if not bar then return end
+		local locked = self.db.profile.actionbuttonbar_locked
+		bar:EnableMouse(not locked)
+		bar:SetMovable(not locked)
+		bar.close:SetShown(true)
+	end
+
+	function me:ActionButtons_CreateBar()
+		if self.ActionButtonBar then return self.ActionButtonBar end
+		local bar = CreateFrame("Frame", "ZygorGuidesViewerActionButtonBar", UIParent)
+		bar:SetMovable(true)
+		bar:SetClampedToScreen(true)
+		bar:SetFrameStrata("LOW")
+		bar:SetFrameLevel(10)
+		bar:SetBackdrop({
+			bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+			edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+			tile = false,
+			edgeSize = 12,
+			insets = { left = 2, right = 2, top = 2, bottom = 2 },
+		})
+		bar:SetBackdropColor(0, 0, 0, 0.92)
+		bar:SetBackdropBorderColor(0.35, 0.35, 0.35, 0.95)
+		bar:SetScript("OnDragStart", function(frame)
+			if not me.db.profile.actionbuttonbar_locked then
+				frame.snapped = false
+				frame:SetClampedToScreen(false)
+				me:ActionButtons_PrepareForDrag(frame)
+				me:ActionButtons_BeginDrag(frame)
+			end
+		end)
+		bar:SetScript("OnDragStop", function(frame)
+			me:ActionButtons_EndDrag(frame)
+			frame:SetClampedToScreen(true)
+			local viewer = me:ActionButtons_GetSnapFrame()
+			me:ActionButtons_SnapNow(frame, viewer)
+		end)
+		bar:SetScript("OnUpdate", function(frame)
+			if me.db.profile.actionbuttonbar_locked or InCombatLockdown() then return end
+			if frame.draggingManual then
+				me:ActionButtons_UpdateManualDrag(frame)
+				return
+			end
+			if me.framemoving and frame.snapped and not frame:IsDragging() then
+				me:ActionButtons_ApplyAnchor()
+			end
+		end)
+		bar:RegisterForDrag("LeftButton")
+		bar.close = CreateFrame("Button", nil, bar)
+		bar.close:SetWidth(ACTION_BAR_CLOSE_SIZE)
+		bar.close:SetHeight(ACTION_BAR_CLOSE_SIZE)
+		bar.close:SetNormalTexture("Interface\\Buttons\\WHITE8x8")
+		bar.close:SetPushedTexture("Interface\\Buttons\\WHITE8x8")
+		bar.close:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
+		bar.close:GetNormalTexture():SetVertexColor(0.08, 0.08, 0.08, 1)
+		bar.close:GetPushedTexture():SetVertexColor(0.14, 0.14, 0.14, 1)
+		bar.close.x = bar.close:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+		bar.close.x:SetPoint("CENTER", 0, 0)
+		bar.close.x:SetText("x")
+		bar.close.x:SetTextColor(1, 1, 1, 0.95)
+		bar.close:SetScript("OnClick", function()
+			me.db.profile.actionbuttonbar_enabled = false
+			LibStub("AceConfigRegistry-3.0"):NotifyChange("ZygorGuidesViewer")
+			me:ActionButtons_Refresh(true)
+		end)
+		bar.buttons = {}
+		for i = 1, ACTION_BAR_MAX_BUTTONS do
+			local button = CreateFrame("CheckButton", "ZygorGuidesViewerActionButton" .. i, bar, "SecureActionButtonTemplate")
+			button:RegisterForClicks("AnyUp")
+			button:SetNormalTexture("Interface\\Buttons\\UI-Quickslot2")
+			button:SetPushedTexture("Interface\\Buttons\\UI-Quickslot-Depress")
+			button:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
+			button:SetCheckedTexture(nil)
+			button:SetPushedTextOffset(0, 0)
+			button.overlay = CreateFrame("Frame", nil, button)
+			button.overlay:EnableMouse(false)
+			button.overlay:SetAllPoints(button)
+			button.overlay:SetFrameLevel(button:GetFrameLevel() + 1)
+			button.overlay.icon = button.overlay:CreateTexture(nil, "BACKGROUND")
+			button.overlay.cooldown = CreateFrame("Cooldown", nil, button.overlay, "CooldownFrameTemplate")
+			button.overlay.cooldown:SetDrawSwipe(true)
+			button.overlay.cooldown:SetAllPoints(button.overlay)
+			button:SetScript("OnEnter", function(self) me:ShowActionButtonTooltip(self) end)
+			button:SetScript("OnLeave", function() GameTooltip:Hide() end)
+			button:SetScript("PostClick", function(self) me:ActionButtons_HandlePostClick(self) end)
+			bar.buttons[i] = button
+		end
+		self.ActionButtonBar = bar
+		self:ActionButtons_ApplyAnchor()
+		self:ActionButtons_UpdateDragState()
+		return bar
+	end
+
+	function me:ActionButtons_ApplyButtonSpec(button, spec)
+		AB_WipeAttrs(button)
+		button.overlay.cooldown:Hide()
+		if not spec then button.overlay:Hide() button:Hide() return end
+		button:SetAttribute("type", spec.type)
+		if spec.type == "spell" then
+			button:SetAttribute("spell", spec.spell)
+			button.spellid = spec.spellid or spec.spell
+		elseif spec.type == "item" then
+			button:SetAttribute("item", spec.item)
+			button.itemid = spec.itemid
+		elseif spec.type == "macro" then
+			if spec.macrotext then button:SetAttribute("macrotext", spec.macrotext) end
+			if spec.macro then button:SetAttribute("macro", spec.macro) end
+		end
+		button.actionSpec = spec
+		AB_ApplyBarIcon(button.overlay.icon, spec.icon or spec.fallbackicon or ACTION_BAR_DEFAULT_ICON)
+		button.overlay:Show()
+		button:Show()
+	end
+
+	function me:ActionButtons_UpdateCooldowns()
+		local bar = self.ActionButtonBar
+		if not bar then return end
+		for _, button in ipairs(bar.buttons) do
+			local spec = button.actionSpec
+			if spec and spec.kind == "spell" then
+				local start, dur, en = GetSpellCooldown(spec.spellid or spec.spell)
+				CooldownFrame_SetTimer(button.overlay.cooldown, start, dur, en)
+				if start and start > 0 then button.overlay.cooldown:Show() else button.overlay.cooldown:Hide() end
+			elseif spec and spec.kind == "item" then
+				local start, dur, en = GetItemCooldown(spec.itemid or spec.item)
+				CooldownFrame_SetTimer(button.overlay.cooldown, start, dur, en)
+				if start and start > 0 then button.overlay.cooldown:Show() else button.overlay.cooldown:Hide() end
+			else
+				button.overlay.cooldown:Hide()
+			end
+		end
+	end
+
+	function me:ActionButtons_Refresh(force)
+		if not self.db or not self.db.profile or not self.db.profile.actionbuttonbar_enabled then
+			if self.ActionButtonBar then self.ActionButtonBar:Hide() end
+			return
+		end
+		if InCombatLockdown() and not force then
+			self.actionButtonsRefreshPending = true
+			return
+		end
+		self.actionButtonsRefreshPending = nil
+		local bar = self:ActionButtons_CreateBar()
+		local specs = self:GetCurrentStepActionSpecs()
+		for i = 1, ACTION_BAR_MAX_BUTTONS do
+			self:ActionButtons_ApplyButtonSpec(bar.buttons[i], specs[i])
+		end
+		local shouldShow = (not self.db.profile.actionbuttonbar_onlywhenneeded) or (#specs > 0)
+		self:ActionButtons_ApplyAnchor()
+		self:ActionButtons_Layout()
+		self:ActionButtons_UpdateDragState()
+		if shouldShow then
+			bar:Show()
+			self:ActionButtons_UpdateCooldowns()
+		else
+			bar:Hide()
+		end
+	end
+
+	function me:ActionButtons_ClickBinding(index)
+		local bar = self.ActionButtonBar
+		local button = bar and bar.buttons and bar.buttons[index]
+		if button and button:IsVisible() then button:Click() end
+	end
+
+	function me:ActionButtons_ResetAnchor()
+		if not self.db or not self.db.profile then return end
+		self.db.profile.actionbuttonbar_anchor = { snapped = true, custom = true }
+	end
+
+	function me:ActionButtons_ValidateProfile()
+		if not self.db or not self.db.profile then return end
+		local profile = self.db.profile
+		local validSides = { top = true, bottom = true, left = true, right = true }
+		local validPoints = {
+			TOPLEFT = true, TOP = true, TOPRIGHT = true,
+			LEFT = true, CENTER = true, RIGHT = true,
+			BOTTOMLEFT = true, BOTTOM = true, BOTTOMRIGHT = true,
+		}
+
+		if not validSides[profile.actionbuttonbar_pinside] then
+			profile.actionbuttonbar_pinside = "top"
+		end
+
+		profile.actionbuttonbar_scale = tonumber(profile.actionbuttonbar_scale) or 1
+		if profile.actionbuttonbar_scale < 0.5 then profile.actionbuttonbar_scale = 0.5 end
+		if profile.actionbuttonbar_scale > 2 then profile.actionbuttonbar_scale = 2 end
+
+		profile.actionbuttonbar_size = tonumber(profile.actionbuttonbar_size) or ACTION_BAR_SIZE
+		if profile.actionbuttonbar_size < 24 then profile.actionbuttonbar_size = 24 end
+		if profile.actionbuttonbar_size > 64 then profile.actionbuttonbar_size = 64 end
+
+		profile.actionbuttonbar_spacing = tonumber(profile.actionbuttonbar_spacing) or ACTION_BAR_PADDING
+		if profile.actionbuttonbar_spacing < 0 then profile.actionbuttonbar_spacing = 0 end
+		if profile.actionbuttonbar_spacing > 20 then profile.actionbuttonbar_spacing = 20 end
+
+		local anchor = profile.actionbuttonbar_anchor
+		if type(anchor) ~= "table" then
+			self:ActionButtons_ResetAnchor()
+			return
+		end
+
+		local isOldDefault = anchor.point == "CENTER" and anchor.relPoint == "CENTER" and tonumber(anchor.x) == 0 and tonumber(anchor.y) == -180
+		if isOldDefault then
+			self:ActionButtons_ResetAnchor()
+			return
+		end
+
+		if anchor.snapped == nil then
+			anchor.snapped = false
+		end
+		if anchor.custom == nil then
+			anchor.custom = true
+		end
+
+		if anchor.snapped then
+			profile.actionbuttonbar_anchor = { snapped = true, custom = true }
+			return
+		end
+
+		if not validPoints[anchor.point] or not validPoints[anchor.relPoint] then
+			self:ActionButtons_ResetAnchor()
+			return
+		end
+
+		anchor.x = tonumber(anchor.x)
+		anchor.y = tonumber(anchor.y)
+		if not anchor.x or not anchor.y then
+			self:ActionButtons_ResetAnchor()
+		end
+	end
+
+	function me:ActionButtons_ApplyProfile()
+		if not self.db or not self.db.profile then return end
+		self:ActionButtons_ValidateProfile()
+		self:ActionButtons_CreateBar()
+		self:ActionButtons_ApplyAnchor()
+		self:ActionButtons_UpdateDragState()
+		self:ActionButtons_Refresh(true)
+	end
+end
+
 local function NormalizeDegrees(angle)
 	angle = tonumber(angle) or MAPBUTTON_DEFAULT_ANGLE
 	angle = angle % 360
@@ -1093,6 +1825,9 @@ function me:OnEnable()
 
 	self:UpdateMapButton()
 	self:UpdateSkin()
+	if self.ActionButtons_ApplyProfile then
+		self:ActionButtons_ApplyProfile()
+	end
 
 	self:Debug("enabled")
 
@@ -1134,6 +1869,7 @@ function me:OnDisable()
 
 	ZygorGuidesViewerMapIcon:Hide()
 	self.Frame:Hide()
+	if self.ActionButtonBar then self.ActionButtonBar:Hide() end
 end
 
 
@@ -1724,6 +2460,9 @@ function me:UpdateCooldowns()
 		else
 			cooldown:Hide()
 		end
+	end
+	if self.ActionButtons_UpdateCooldowns then
+		self:ActionButtons_UpdateCooldowns()
 	end
 end
 
@@ -2698,6 +3437,9 @@ function me:ClearFrameCurrent()
 		petaction:Hide()
 		cooldown:Hide()
 	end
+	if self.ActionButtons_Refresh then
+		self:ActionButtons_Refresh(true)
+	end
 end
 
 local actionicon={
@@ -2823,53 +3565,73 @@ function me:UpdateFrameCurrent()
 						--	cooldown:Show()
 						--self:Debug("showing cooldown "..i)
 						local vis
+						local spec
+						if self.GetGoalActionSpec then
+							spec = self:GetGoalActionSpec(goal)
+						end
 
 						if not self.BUTTONS_INLINE then
 							action:Raise() --SetFrameLevel(ZygorGuidesViewerFrame:GetFrameLevel()+10)
 							petaction:Raise() --petaction:Raise()--SetFrameLevel(ZygorGuidesViewerFrame:GetFrameLevel()+10)
 						end
 
-						if goal.castspell and goal.castspellid then
+						if spec and self.ApplyInlineActionSpec then
+							vis = self:ApplyInlineActionSpec(spec, action, petaction, actname)
+							if vis == "petaction" then
+								petaction:SetParent(line)
+								petaction:SetFrameStrata(line:GetFrameStrata())
+								petaction:SetFrameLevel(line:GetFrameLevel() + 10)
+								petaction:Show()
+								petaction:ClearAllPoints()
+								petaction:SetPoint("TOPLEFT", line, "TOPLEFT", 0, 0)
+								petaction:SetScale(1)
+								vis = nil
+							elseif vis == "action" then
+								action:SetParent(line)
+								action:SetFrameStrata(line:GetFrameStrata())
+								action:SetFrameLevel(line:GetFrameLevel() + 10)
+								action:ClearAllPoints()
+								action:SetPoint("TOPLEFT", line, "TOPLEFT", 0, 0)
+								action:SetScale(1)
+								vis = true
+							end
+						elseif goal.castspell and goal.castspellid then
 							action:SetAttribute("type1","spell")
 							action:SetAttribute("spell1",goal.castspell)
 							action.spellid = goal.castspellid
 							_G[actname.."ActionIcon"]:SetTexture(select(3, GetSpellInfo(goal.castspellid or goal.castspell)) or "Interface\\Icons\\Spell_Nature_FaerieFire")
-							--action:SetScript("OnClick",function(self) PetActionButton_OnClick(self,"LeftButton") end)
 							vis=true
-							--	local start,dur,en = GetSpellCooldown(goal.castspellid or goal.castspell)
-							--DoCooldown(cooldown,start,dur,en)
-
 						elseif goal.useitem or goal.useitemid then
 							action:SetAttribute("type1","item")
 							action:SetAttribute("item1",goal.useitemid and "item:"..goal.useitemid  or  goal.useitem)
 							_G[actname.."ActionIcon"]:SetTexture(select(10, GetItemInfo(goal.useitemid or goal.useitem)) or "Interface\\Icons\\INV_Misc_Bag_08")
 							vis=true
-							--local start,dur,en = GetItemCooldown(goal.useitemid or goal.useitem)
-							--DoCooldown(cooldown,start,dur,en)
-
 						elseif goal.script then
 							action:SetAttribute("type1","macro")
 							action:SetAttribute("macro","ZygorGuidesMacro"..goal.num)
 							_G[actname.."ActionIcon"]:SetTexture(select(2,GetMacroInfo(goal.macro)))
 							vis=true
-
 						elseif goal.petaction then
 							local num,name,subtext,tex = FindPetActionInfo(goal.petaction)
 							if num then
 								petaction:SetID(num)
 								petaction.tooltipName=name
 								petaction.tooltipSubtext=subtext
-								--action:SetScript("OnClick",function(self) PetActionButton_OnClick(self,"LeftButton") end)
 								_G[actname.."PetActionIcon"]:SetTexture(tex)
+								petaction:SetParent(line)
+								petaction:SetFrameStrata(line:GetFrameStrata())
+								petaction:SetFrameLevel(line:GetFrameLevel() + 10)
 								petaction:Show()
 								petaction:ClearAllPoints()
-								petaction:SetPoint("CENTER",UIParent,"BOTTOMLEFT",icon:GetLeft()+8,icon:GetBottom()+8)
-								petaction:SetScale(self.db.profile.framescale)
+								petaction:SetPoint("TOPLEFT", line, "TOPLEFT", 0, 0)
+								petaction:SetScale(1)
 							else
 								petaction:Hide()
 							end
 						else
-							error("IsActionable but no item/spell!")
+							action:Hide()
+							petaction:Hide()
+							cooldown:Hide()
 							--[[
 							if not InCombatLockdown() then
 								action:Hide()
@@ -2880,16 +3642,13 @@ function me:UpdateFrameCurrent()
 
 						if vis then
 							action:Show()
-							action:SetScale(self.db.profile.framescale)
-							if self.BUTTONS_INLINE then
-								action:SetParent(clicker)
-								action:ClearAllPoints()
-								action:SetPoint("CENTER",clicker,"LEFT",8,0)
-								self.actionsvisible = true
-							else
-								action:ClearAllPoints()
-								action:SetPoint("CENTER",UIParent,"BOTTOMLEFT",(icon:GetLeft() or 0) +8,(icon:GetBottom() or 0)+8)
-							end
+							action:SetParent(line)
+							action:SetFrameStrata(line:GetFrameStrata())
+							action:SetFrameLevel(line:GetFrameLevel() + 10)
+							action:SetScale(1)
+							action:ClearAllPoints()
+							action:SetPoint("TOPLEFT", line, "TOPLEFT", 0, 0)
+							self.actionsvisible = true
 						end
 
 						--cooldown:Show()
@@ -3093,6 +3852,9 @@ function me:UpdateFrameCurrent()
 			ZygorGuidesViewerFrame_ActiveStep:SetPoint("TOPRIGHT",ZygorGuidesViewerFrameScrollChild,"TOPRIGHT",0,-STEP_SPACING)
 		end
 		--]]
+		if self.ActionButtons_Refresh then
+			self:ActionButtons_Refresh()
+		end
 	end
 end
 
@@ -4447,6 +5209,9 @@ function me:PLAYER_REGEN_ENABLED()
 	if self.CurrentStep then self.CurrentStep:PrepareCompletion() end
 	self:UpdateFrameCurrent()
 	self:UpdateCooldowns()
+	if self.ActionButtons_Refresh then
+		self:ActionButtons_Refresh(true)
+	end
 	if self.hiddenincombat then
 		UIFrameFadeIn(self.Frame,0.5,0.0,1.0)
 	end

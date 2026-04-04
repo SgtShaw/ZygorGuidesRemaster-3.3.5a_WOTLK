@@ -164,6 +164,13 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
+### v3.0 (Revision 100)
+
+- Bumped addon version/revision to 3.0.100 / 100.
+- Added the Action Buttons update for current-step actions, including clickable `talk`/`kill` targeting alongside existing `use`, `cast`, `script`, and `petaction` support.
+- Added action bar pin-side control, reset-position control, and safer saved-variable validation/reset handling for stale Action Button profile data.
+- Expanded Action Button localization support across the shipped locale files for the new pin-side and reset-position options.
+
 ### v3.0 (Revision 99)
 
 - Bumped addon version/revision to 3.0.99 / 99.
@@ -191,16 +198,6 @@ This addon is fully open source and can be inspected before use.
 - Bumped addon version/revision to 3.0.96 / 96.
 - Localized the Guide Browser and embedded options shell UI across all shipped locale files, with explicit provisional keys for every locale.
 - Merged Russian localization updates and expanded ruRU coverage for the new browser surface.
-
-### v3.0 (Revision 95)
-
-- Bumped addon version/revision to 3.0.95 / 95.
-- Fixed Step View toggle and quick menu step-count actions to use the correct Step Display option path.
-- Fixed quick `Window features` command routing (including auto-hide border) by remapping legacy `Display` command paths to the correct nested option paths.
-- Consolidated viewer/step presentation controls under Step Display and hid the separate Display page from Guide Manager/Blizzard options navigation.
-- Moved `Show steps` and `Window skin color` out of the inline `Window features` box in Step Display for cleaner layout behavior.
-- Increased Guide Manager frame width slightly to offset options-pane scrollbar width and improve settings layout room.
-
 ## Notes
 
 - Intended target client is **WotLK 3.3.5a (12340)**.
@@ -266,3 +263,4 @@ This remaster focuses on UI/UX modernization, packaging quality, compatibility m
 
 <img width="433" height="247" alt="image" src="https://github.com/user-attachments/assets/579b6acb-df5e-4f40-8ef3-7d6b33e1015d" />
 <img width="436" height="248" alt="image" src="https://github.com/user-attachments/assets/a845b881-2831-43e3-bd26-5287f9783d68" />
+

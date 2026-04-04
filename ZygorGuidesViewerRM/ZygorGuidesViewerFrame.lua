@@ -511,36 +511,15 @@ function ZygorGuidesViewerFrame_OnLoad(self)
 
 		local name = 'ZygorGuidesViewerFrame_Act'..i
 
-		local action = CreateFrame("CheckButton", name.."Action", UIParent, "SecureActionButtonTemplate")
-		local petaction = CreateFrame("CheckButton", name.."PetAction", UIParent, "PetActionButtonTemplate")
+		local action = CreateFrame("CheckButton", name.."Action", ZygorGuidesViewerFrame, "SecureActionButtonTemplate")
+		local petaction = CreateFrame("CheckButton", name.."PetAction", ZygorGuidesViewerFrame, "PetActionButtonTemplate")
 
-		action:SetFrameStrata("MEDIUM")
-		action:SetToplevel(true)
+		action:SetFrameStrata("DIALOG")
+		action:SetFrameLevel(ZygorGuidesViewerFrame:GetFrameLevel()+30)
 		action:SetWidth(15)
 		action:SetHeight(15)
 		action:SetScript("OnEnter", function(self)
-			--if InCombatLockdown() then return end
-			--self:SetFrameStrata("DIALOG")
-			--self:SetWidth(32)
-			--self:SetHeight(32)
-			--select(2,self:GetAnimationGroups()):Stop()
-			--select(1,self:GetAnimationGroups()):Play()
-			local link
-			if self:GetAttribute("type1")=="item" then
-				link = select(2,GetItemInfo(self:GetAttribute("item1")))
-				GameTooltip:SetOwner(self,"ANCHOR_PRESERVE")
-				GameTooltip:ClearAllPoints()
-				GameTooltip:SetPoint("BOTTOMRIGHT",self,"TOPLEFT")
-				GameTooltip:SetHyperlink(link)
-				GameTooltip:Show()
-			end
-			if self:GetAttribute("type1")=="spell" then
-				GameTooltip:SetOwner(self,"ANCHOR_PRESERVE")
-				GameTooltip:ClearAllPoints()
-				GameTooltip:SetPoint("BOTTOMRIGHT",self,"TOPLEFT")
-				GameTooltip:SetSpellByID(self.spellid)
-				GameTooltip:Show()
-			end
+			ZygorGuidesViewer:ShowActionButtonTooltip(self)
 		end)
 		action:SetScript("OnLeave", function(self)
 			--if InCombatLockdown() then return end
@@ -559,9 +538,11 @@ function ZygorGuidesViewerFrame_OnLoad(self)
 		action.tex:SetHeight(15)
 		action.tex:SetHeight(15)
 
-		petaction:SetFrameStrata("HIGH")
+		petaction:SetFrameStrata("DIALOG")
+		petaction:SetFrameLevel(ZygorGuidesViewerFrame:GetFrameLevel()+31)
 		petaction:SetWidth(15)
 		petaction:SetHeight(15)
+		petaction:SetParent(ZygorGuidesViewerFrame)
 		_G[name..'PetActionNormalTexture2']:SetAlpha(0)
 		--petaction:SetScript("OnClick",PetActionButton_OnClick) -- taint
 		petaction:SetScript("OnDragStart",nil)

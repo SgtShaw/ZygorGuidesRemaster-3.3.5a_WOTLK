@@ -85,6 +85,15 @@ function me:Options_RegisterDefaults()
 			flashborder = true,
 
 			tooltipsbelow = true,
+			actionbuttonbar_enabled = true,
+			actionbuttonbar_onlywhenneeded = true,
+			actionbuttonbar_locked = false,
+			actionbuttonbar_scale = 1,
+			actionbuttonbar_size = 28,
+			actionbuttonbar_spacing = 3,
+			actionbuttonbar_pinside = "top",
+			actionbutton_enablemarkers = true,
+			actionbuttonbar_anchor = { point = "CENTER", relPoint = "CENTER", x = 0, y = -180 },
 
 			trackchains = true,
 
@@ -1503,6 +1512,109 @@ function me:Options_DefineOptions()
 			{"stepnumbers","goalicons","tooltipsbelow"},
 			L["opt_actionbuttons_intro"]
 		),
+	}
+
+	self.optionsactionbuttons.args.actionbuttonbar_enabled = {
+		name = L["opt_actionbar_enable"],
+		desc = L["opt_actionbar_enable_desc"],
+		type = "toggle",
+		width = "full",
+		order = 20,
+		set = function(info, value) Setter_Simple(info, value) if self.ActionButtons_ApplyProfile then self:ActionButtons_ApplyProfile() end end,
+	}
+	self.optionsactionbuttons.args.actionbuttonbar_onlywhenneeded = {
+		name = L["opt_actionbar_onlywhenneeded"],
+		desc = L["opt_actionbar_onlywhenneeded_desc"],
+		type = "toggle",
+		width = "full",
+		order = 21,
+		disabled = function() return not self.db.profile.actionbuttonbar_enabled end,
+		set = function(info, value) Setter_Simple(info, value) if self.ActionButtons_ApplyProfile then self:ActionButtons_ApplyProfile() end end,
+	}
+	self.optionsactionbuttons.args.actionbuttonbar_locked = {
+		name = L["opt_actionbar_locked"],
+		desc = L["opt_actionbar_locked_desc"],
+		type = "toggle",
+		width = "full",
+		order = 22,
+		disabled = function() return not self.db.profile.actionbuttonbar_enabled end,
+		set = function(info, value) Setter_Simple(info, value) if self.ActionButtons_ApplyProfile then self:ActionButtons_ApplyProfile() end end,
+	}
+	self.optionsactionbuttons.args.actionbuttonbar_scale = {
+		name = L["opt_actionbar_scale"],
+		desc = L["opt_actionbar_scale_desc"],
+		type = "range",
+		min = 0.5,
+		max = 2,
+		step = 0.05,
+		bigStep = 0.1,
+		isPercent = true,
+		order = 23,
+		disabled = function() return not self.db.profile.actionbuttonbar_enabled end,
+		set = function(info, value) Setter_Simple(info, value) if self.ActionButtons_ApplyProfile then self:ActionButtons_ApplyProfile() end end,
+	}
+	self.optionsactionbuttons.args.actionbuttonbar_size = {
+		name = L["opt_actionbar_size"],
+		desc = L["opt_actionbar_size_desc"],
+		type = "range",
+		min = 24,
+		max = 64,
+		step = 1,
+		bigStep = 2,
+		order = 24,
+		disabled = function() return not self.db.profile.actionbuttonbar_enabled end,
+		set = function(info, value) Setter_Simple(info, value) if self.ActionButtons_ApplyProfile then self:ActionButtons_ApplyProfile() end end,
+	}
+	self.optionsactionbuttons.args.actionbuttonbar_spacing = {
+		name = L["opt_actionbar_spacing"],
+		desc = L["opt_actionbar_spacing_desc"],
+		type = "range",
+		min = 0,
+		max = 20,
+		step = 1,
+		bigStep = 2,
+		order = 25,
+		disabled = function() return not self.db.profile.actionbuttonbar_enabled end,
+		set = function(info, value) Setter_Simple(info, value) if self.ActionButtons_ApplyProfile then self:ActionButtons_ApplyProfile() end end,
+	}
+	self.optionsactionbuttons.args.actionbuttonbar_pinside = {
+		name = L["opt_actionbar_pinside"],
+		desc = L["opt_actionbar_pinside_desc"],
+		type = "select",
+		order = 25.5,
+		values = {
+			top = L["opt_actionbar_pinside_top"],
+			bottom = L["opt_actionbar_pinside_bottom"],
+			left = L["opt_actionbar_pinside_left"],
+			right = L["opt_actionbar_pinside_right"],
+		},
+		disabled = function() return not self.db.profile.actionbuttonbar_enabled end,
+		set = function(info, value) Setter_Simple(info, value) if self.ActionButtons_ApplyProfile then self:ActionButtons_ApplyProfile() end end,
+	}
+	self.optionsactionbuttons.args.actionbuttonbar_resetanchor = {
+		name = L["opt_actionbar_resetanchor"],
+		desc = L["opt_actionbar_resetanchor_desc"],
+		type = "execute",
+		order = 25.6,
+		width = "full",
+		disabled = function() return not self.db.profile.actionbuttonbar_enabled end,
+		func = function()
+			if self.ActionButtons_ResetAnchor then
+				self:ActionButtons_ResetAnchor()
+			else
+				self.db.profile.actionbuttonbar_anchor = { snapped = true, custom = true }
+			end
+			if self.ActionButtons_ApplyProfile then self:ActionButtons_ApplyProfile() end
+		end,
+	}
+	self.optionsactionbuttons.args.actionbutton_enablemarkers = {
+		name = L["opt_actionbar_markers"],
+		desc = L["opt_actionbar_markers_desc"],
+		type = "toggle",
+		width = "full",
+		order = 26,
+		disabled = function() return not self.db.profile.actionbuttonbar_enabled end,
+		set = function(info, value) Setter_Simple(info, value) if self.ActionButtons_ApplyProfile then self:ActionButtons_ApplyProfile() end end,
 	}
 
 	-- New Guide Viewer page split: keep step-specific controls on Step Display only.
