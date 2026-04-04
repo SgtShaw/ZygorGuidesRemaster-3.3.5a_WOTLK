@@ -164,6 +164,13 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
+### v3.0 (Revision 102)
+
+- Bumped addon version/revision to 3.0.102 / 102.
+- Improved remaster `Show steps: All` handling so it behaves more like a true browsing mode instead of a minimal compact-mode toggle.
+- Restored a larger fixed browsing height when entering all-steps mode, kept a stronger minimum height there, and aligned the step scrollbar with the current step on entry.
+- Kept the Step View button behavior consistent with the viewer controls by using left click for the quick step menu and right click for Step Display settings.
+
 ### v3.0 (Revision 101)
 
 - Bumped addon version/revision to 3.0.101 / 101.
@@ -193,13 +200,6 @@ This addon is fully open source and can be inspected before use.
 - Added and wired the missing localization keys for options text, map/waypoint labels, step-view controls, and mini-frame button/tab labels across all shipped locale files.
 - Expanded `ruRU` coverage for the remaining untranslated settings/tooltips and replaced a substantial set of placeholder-English Guide Browser strings in the non-English locale packs with best-effort translations.
 - Narrowed Guide Manager keyboard capture so browsing shortcuts stay available without blocking built-in game screenshot behavior or interfering with active search/edit fields.
-
-### v3.0 (Revision 97)
-
-- Bumped addon version/revision to 3.0.97 / 97.
-- Fixed `Lock Window` persistence by adding the missing saved profile default.
-- Fixed minimap button dragging so it stays anchored to the minimap edge and saves its position by angle across reloads.
-- Fixed quick viewer controls that were sending `unknown argument` chat errors for `Lock Window`, `Auto-hide Border`, `Resize Up`, and `Hide In Combat`.
 ## Notes
 
 - Intended target client is **WotLK 3.3.5a (12340)**.
@@ -265,5 +265,6 @@ This remaster focuses on UI/UX modernization, packaging quality, compatibility m
 
 <img width="433" height="247" alt="image" src="https://github.com/user-attachments/assets/579b6acb-df5e-4f40-8ef3-7d6b33e1015d" />
 <img width="436" height="248" alt="image" src="https://github.com/user-attachments/assets/a845b881-2831-43e3-bd26-5287f9783d68" />
+
 
 

@@ -2540,11 +2540,20 @@ function me:ToggleStepViewMode()
 		end
 	else
 		self.db.profile.showallsteps = true
+		local targetHeight = self.db.profile.fullheight or 0
 		if self.Frame and self.Frame.GetHeight then
 			local h = self.Frame:GetHeight()
 			if h and h > (MIN_HEIGHT or 0) then
-				self.db.profile.fullheight = h
+				self.db.profile.fullheight = max(self.db.profile.fullheight or 0, h)
+				targetHeight = self.db.profile.fullheight
 			end
+		end
+		if targetHeight < 400 then targetHeight = 400 end
+		if self.Frame then
+			self.Frame:SetHeight(targetHeight)
+		end
+		if ZygorGuidesViewerFrameScrollScrollBar and self.CurrentStepNum then
+			ZygorGuidesViewerFrameScrollScrollBar:SetValue(self.CurrentStepNum)
 		end
 	end
 	self.stepchanged = true
@@ -4934,7 +4943,7 @@ function me:ResizeFrame()
 		if ZygorGuidesViewerFrame and not ZygorGuidesViewerFrame:IsShown() then
 			return
 		end
-		local minHeight = 130
+		local minHeight = self.db.profile.showallsteps and 220 or 130
 		if self.db.profile.displaymode == "guide" and not self.db.profile.showallsteps then
 			local height = 0
 			local count = self.db.profile.showcountsteps or 1
@@ -4965,6 +4974,7 @@ function me:ResizeFrame()
 			end
 		elseif self.db.profile.showallsteps or self.db.profile.displaymode=="gold" then
 			local targetHeight = self.db.profile.fullheight or ZygorGuidesViewerFrame:GetHeight() or minHeight
+			if self.db.profile.showallsteps and targetHeight < 400 then targetHeight = 400 end
 			if targetHeight < MIN_HEIGHT then targetHeight = MIN_HEIGHT end
 			if targetHeight < minHeight then targetHeight = minHeight end
 			if ZygorGuidesViewerFrame then

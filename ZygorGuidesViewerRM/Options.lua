@@ -421,17 +421,27 @@ function me:Options_DefineOptions()
 						},
 						get = function()  return self.db.profile.showallsteps and 0 or self.db.profile.showcountsteps  end,
 						set = function(_,n)
-							if n==0 then self.db.profile.showallsteps=true else self.db.profile.showallsteps=false self.db.profile.showcountsteps=n end
-							if self.db.profile['showallsteps'] then ZygorGuidesViewerFrame:SetHeight(self.db.profile.fullheight) end
+							if n==0 then
+								self.db.profile.showallsteps = true
+								local targetHeight = self.db.profile.fullheight or 0
+								if targetHeight < 400 then targetHeight = 400 end
+								ZygorGuidesViewerFrame:SetHeight(targetHeight)
+								if ZygorGuidesViewerFrameScrollScrollBar and self.CurrentStepNum then
+									ZygorGuidesViewerFrameScrollScrollBar:SetValue(self.CurrentStepNum)
+								end
+							else
+								self.db.profile.showallsteps = false
+								self.db.profile.showcountsteps=n
+							end
 							self:UpdateFrame(true)
 							self:AlignFrame()
 							self:UpdateLocking()
 							self:ScrollToCurrentStep()
+							self:ResizeFrame()
 							if not self.db.profile.showallsteps then
 								if ZygorGuidesViewerFrameScrollScrollBar then
 									ZygorGuidesViewerFrameScrollScrollBar:SetValue(1)
 								end
-								self:ResizeFrame()
 							end
 						      end,
 						order=1,
