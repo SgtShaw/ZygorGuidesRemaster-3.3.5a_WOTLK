@@ -164,10 +164,17 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
+### v3.0 (Revision 104)
+
+- Bumped addon version/revision to 3.0.104 / 104.
+- Refined the new Target Preview workflow so selected talk and kill targets drive the 3D preview more reliably while hover stays on the safer fallback-card path.
+- Added preview panel polish including smoother model rotation persistence, reaction-colored names, cleaner hint text wrapping, and preview-subject selection behavior improvements.
+- Tightened inline viewer action handling further by fixing duplicate target-button inconsistencies and slightly reducing the inline viewer kill button size.
+
 ### v3.0 (Revision 103)
 
 - Bumped addon version/revision to 3.0.103 / 103.
-- Added an optional Target Preview pane for current `talk` and `kill` steps, with hybrid live 3D preview and styled info-card fallback.
+- Added an optional Target Preview pane for current talk and kill steps, with hybrid live 3D preview and styled info-card fallback.
 - Added Target Preview snapping, drag/lock behavior, pin-side, sizing, scale, mode, and localization support so it matches the remaster viewer and Action Buttons workflow.
 - Polished the preview and action surfaces further with theme/opacity matching, target-name reaction coloring, smoother model handling, and additional action-target matching fixes.
 - Fixed remaster skin-color changes so they repaint cleanly without the viewer instruction area visibly popping or reflowing.
@@ -175,7 +182,7 @@ This addon is fully open source and can be inspected before use.
 ### v3.0 (Revision 102)
 
 - Bumped addon version/revision to 3.0.102 / 102.
-- Improved remaster `Show steps: All` handling so it behaves more like a true browsing mode instead of a minimal compact-mode toggle.
+- Improved remaster "Show steps: All" handling so it behaves more like a true browsing mode instead of a minimal compact-mode toggle.
 - Restored a larger fixed browsing height when entering all-steps mode, kept a stronger minimum height there, and aligned the step scrollbar with the current step on entry.
 - Kept the Step View button behavior consistent with the viewer controls by using left click for the quick step menu and right click for Step Display settings.
 
@@ -190,16 +197,9 @@ This addon is fully open source and can be inspected before use.
 ### v3.0 (Revision 100)
 
 - Bumped addon version/revision to 3.0.100 / 100.
-- Added the Action Buttons update for current-step actions, including clickable `talk`/`kill` targeting alongside existing `use`, `cast`, `script`, and `petaction` support.
+- Added the Action Buttons update for current-step actions, including clickable talk/kill targeting alongside existing use, cast, script, and petaction support.
 - Added action bar pin-side control, reset-position control, and safer saved-variable validation/reset handling for stale Action Button profile data.
 - Expanded Action Button localization support across the shipped locale files for the new pin-side and reset-position options.
-
-### v3.0 (Revision 99)
-
-- Bumped addon version/revision to 3.0.99 / 99.
-- Reviewed an additional `ruRU.lua` submission, validated it as localization-only, and selectively merged the safe wording improvements instead of replacing the file wholesale.
-- Cleaned up several `ruRU` strings further, including product naming, quest-chain wording, minimap/gold labels, and a few typo fixes.
-- Added `mikki33`'s GitHub profile link to the community credits.
 ## Notes
 
 - Intended target client is **WotLK 3.3.5a (12340)**.
@@ -265,6 +265,8 @@ This remaster focuses on UI/UX modernization, packaging quality, compatibility m
 
 <img width="433" height="247" alt="image" src="https://github.com/user-attachments/assets/579b6acb-df5e-4f40-8ef3-7d6b33e1015d" />
 <img width="436" height="248" alt="image" src="https://github.com/user-attachments/assets/a845b881-2831-43e3-bd26-5287f9783d68" />
+
+
 
 
 

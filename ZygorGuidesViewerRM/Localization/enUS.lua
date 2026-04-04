@@ -644,7 +644,7 @@ ZygorGuidesViewer_L("Main", "enUS", function() return {
 	["targetpreview_title_locked"] = "Target Preview",
 	["targetpreview_role_talk"] = "Talk to",
 	["targetpreview_role_kill"] = "Kill",
-	["targetpreview_hint"] = "Target this creature to preview its 3D model.",
+	["targetpreview_hint"] = "Click to target\nthis creature.",
 	["targetpreview_hint_empty"] = "No talk or kill target is active on this step.",
 	["targetpreview_empty_name"] = "No Target",
 	["actionbutton_bar_title"] = "Drag to move Action Buttons",

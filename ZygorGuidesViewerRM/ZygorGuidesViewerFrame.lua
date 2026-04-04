@@ -530,6 +530,11 @@ function ZygorGuidesViewerFrame_OnLoad(self)
 			--select(1,self:GetAnimationGroups()):Stop()
 			--select(2,self:GetAnimationGroups()):Play()
 		end)
+		action:SetScript("PostClick", function(self)
+			if ZygorGuidesViewer and ZygorGuidesViewer.ActionButtons_HandlePostClick then
+				ZygorGuidesViewer:ActionButtons_HandlePostClick(self)
+			end
+		end)
 		action:SetHighlightTexture("Interface/Buttons/ButtonHilight-Square")
 
 		action.tex = action:CreateTexture(name.."ActionIcon","OVERLAY")

@@ -11,6 +11,7 @@ local PREVIEW_SNAP_THRESHOLD_X = 120
 local PREVIEW_SNAP_THRESHOLD_Y = 90
 local PREVIEW_CLOSE_SIZE = 16
 local PREVIEW_ROTATION_SPEED = 0.008
+local PREVIEW_TARGET_CAM_DISTANCE = 1.7
 
 local function TP_ApplyIcon(texture, icon)
 	if not texture then return end
@@ -84,21 +85,153 @@ local function TP_SubjectMatchesTarget(subject)
 	return false
 end
 
+local function TP_CopySubject(spec, step)
+	if not spec then return nil end
+	return {
+		kind = spec.kind,
+		type = spec.type,
+		target = spec.target,
+		creatureid = spec.creatureid,
+		targetaliases = spec.targetaliases,
+		icon = spec.icon,
+		fallbackicon = spec.fallbackicon,
+		label = spec.label,
+		signature = spec.signature,
+		goal = spec.goal,
+		step = step,
+	}
+end
+
+function me:TargetPreview_GetGoalSubject(goal)
+	if not goal or not self.GetGoalActionSpec then return nil end
+	local spec = self:GetGoalActionSpec(goal)
+	if spec and (spec.kind == "talk" or spec.kind == "kill") and spec.target then
+		spec.goal = goal
+		spec.label = goal.GetText and goal:GetText() or spec.kind
+		return spec
+	end
+	return nil
+end
+
+function me:TargetPreview_IsFocusedSubject(subject)
+	if not subject then return false end
+	local sig = subject.signature
+	if not sig then return false end
+	return self.targetPreviewSelectedSignature == sig or self.targetPreviewHoveredSignature == sig
+end
+
+function me:TargetPreview_IsSelectedSubject(subject)
+	if not subject then return false end
+	local sig = subject.signature
+	if not sig then return false end
+	return self.targetPreviewSelectedSignature == sig
+end
+
+function me:TargetPreview_SetGoalFocus(goal, sticky)
+	if not self.db or not self.db.profile or not goal then return end
+	if goal and goal.parentStep and goal.parentStep ~= self.CurrentStep then
+		return
+	end
+	local spec = self:TargetPreview_GetGoalSubject(goal)
+	if not spec then return end
+	if sticky then
+		self.targetPreviewSelectedSignature = spec.signature
+		self.targetPreviewSelectedStep = self.CurrentStep
+		self.targetPreviewSelectedSubject = TP_CopySubject(spec, self.CurrentStep)
+		self.targetPreviewHoveredSignature = spec.signature
+		self.targetPreviewHoveredStep = self.CurrentStep
+		self.targetPreviewHoveredSubject = TP_CopySubject(spec, self.CurrentStep)
+	else
+		self.targetPreviewHoveredSignature = spec.signature
+		self.targetPreviewHoveredStep = self.CurrentStep
+		self.targetPreviewHoveredSubject = TP_CopySubject(spec, self.CurrentStep)
+	end
+	if self.TargetPreview_Refresh then
+		self:TargetPreview_Refresh()
+	end
+end
+
+function me:TargetPreview_SelectHoveredSubject()
+	if not self.targetPreviewHoveredSubject or self.targetPreviewHoveredStep ~= self.CurrentStep then return false end
+	self.targetPreviewSelectedSignature = self.targetPreviewHoveredSignature
+	self.targetPreviewSelectedStep = self.targetPreviewHoveredStep
+	self.targetPreviewSelectedSubject = TP_CopySubject(self.targetPreviewHoveredSubject, self.targetPreviewHoveredStep)
+	if self.TargetPreview_Refresh then
+		self:TargetPreview_Refresh()
+	end
+	return true
+end
+
+function me:TargetPreview_SelectActionSpec(spec)
+	if not spec or (spec.kind ~= "talk" and spec.kind ~= "kill") then return false end
+	self.targetPreviewSelectedSignature = spec.signature
+	self.targetPreviewSelectedStep = self.CurrentStep
+	self.targetPreviewSelectedSubject = TP_CopySubject(spec, self.CurrentStep)
+	if self.TargetPreview_Refresh then
+		self:TargetPreview_Refresh()
+	end
+	return true
+end
+
 function me:TargetPreview_GetCurrentSubject()
+	if self.targetPreviewSelectedStep and self.targetPreviewSelectedStep ~= self.CurrentStep then
+		self.targetPreviewSelectedSignature = nil
+		self.targetPreviewSelectedStep = nil
+		self.targetPreviewSelectedSubject = nil
+	end
+	if self.targetPreviewHoveredStep and self.targetPreviewHoveredStep ~= self.CurrentStep then
+		self.targetPreviewHoveredSignature = nil
+		self.targetPreviewHoveredStep = nil
+		self.targetPreviewHoveredSubject = nil
+	end
+
+	if self.targetPreviewHoveredSubject and self.targetPreviewHoveredStep == self.CurrentStep then
+		return self.targetPreviewHoveredSubject
+	end
+	if self.targetPreviewSelectedSubject and self.targetPreviewSelectedStep == self.CurrentStep then
+		return self.targetPreviewSelectedSubject
+	end
+
 	local specs = self.GetCurrentStepActionSpecs and self:GetCurrentStepActionSpecs() or {}
+	if self.targetPreviewHoveredSignature then
+		for _, spec in ipairs(specs) do
+			if spec and spec.signature == self.targetPreviewHoveredSignature then
+				return spec
+			end
+		end
+	end
+	if self.targetPreviewSelectedSignature then
+		for _, spec in ipairs(specs) do
+			if spec and spec.signature == self.targetPreviewSelectedSignature then
+				return spec
+			end
+		end
+	end
 	for _, spec in ipairs(specs) do
 		if spec and (spec.kind == "talk" or spec.kind == "kill") and spec.target then
 			return spec
 		end
 	end
 	if not self.CurrentStep or not self.CurrentStep.goals or not self.GetGoalActionSpec then return end
-	for _, goal in ipairs(self.CurrentStep.goals) do
-		local spec = self:GetGoalActionSpec(goal)
-		if spec and (spec.kind == "talk" or spec.kind == "kill") and spec.target then
-			spec.goal = goal
-			spec.label = goal.GetText and goal:GetText() or spec.kind
-			return spec
+	if self.targetPreviewHoveredSignature then
+		for _, goal in ipairs(self.CurrentStep.goals) do
+			local spec = self:TargetPreview_GetGoalSubject(goal)
+			if spec and spec.signature == self.targetPreviewHoveredSignature then
+				return spec
+			end
 		end
+	end
+	if self.targetPreviewSelectedSignature then
+		for _, goal in ipairs(self.CurrentStep.goals) do
+			local spec = self:TargetPreview_GetGoalSubject(goal)
+			if spec and spec.signature == self.targetPreviewSelectedSignature then
+				return spec
+			end
+		end
+	end
+	for _, goal in ipairs(self.CurrentStep.goals) do
+		local spec = self:TargetPreview_GetGoalSubject(goal)
+		if spec then return spec end
 	end
 end
 
@@ -311,8 +444,8 @@ function me:TargetPreview_Layout()
 	frame.placeholderIcon:SetHeight(52)
 
 	frame.hintText:ClearAllPoints()
-	frame.hintText:SetPoint("TOPLEFT", frame.placeholderIcon, "BOTTOMLEFT", -20, -10)
-	frame.hintText:SetPoint("TOPRIGHT", frame.placeholderIcon, "BOTTOMRIGHT", 20, -10)
+	frame.hintText:SetPoint("TOPLEFT", frame.placeholderIcon, "BOTTOMLEFT", -40, -10)
+	frame.hintText:SetPoint("TOPRIGHT", frame.placeholderIcon, "BOTTOMRIGHT", 40, -10)
 end
 
 function me:TargetPreview_ApplyTheme()
@@ -369,19 +502,26 @@ end
 function me:TargetPreview_ShowModel(subject)
 	local frame = self.TargetPreviewPane
 	if not frame or not subject then return false end
-	if not TP_SubjectMatchesTarget(subject) then return false end
-	local guid = UnitGUID("target")
-	if frame.modelSubjectGUID and frame.modelSubjectGUID == guid and frame.model:IsShown() then
+	local modelKey
+	local useTarget = TP_SubjectMatchesTarget(subject)
+	if useTarget then
+		modelKey = "target:" .. tostring(UnitGUID("target") or "")
+	else
+		return false
+	end
+	if frame.modelSubjectKey and frame.modelSubjectKey == modelKey and frame.model:IsShown() then
 		return true
 	end
 	local ok = pcall(function()
 		if frame.model.ClearModel then frame.model:ClearModel() end
 		frame.model:SetUnit("target")
 		if frame.model.SetPortraitZoom then frame.model:SetPortraitZoom(0) end
-		if frame.model.SetCamDistanceScale then frame.model:SetCamDistanceScale(1.7) end
+		if frame.model.SetCamDistanceScale then
+			frame.model:SetCamDistanceScale(PREVIEW_TARGET_CAM_DISTANCE)
+		end
 		if frame.model.SetCamera then frame.model:SetCamera(0) end
 		if frame.model.SetFacing then
-			if frame.modelSubjectGUID ~= guid then
+			if frame.modelSubjectKey ~= modelKey then
 				frame.modelFacing = 0
 			end
 			frame.model:SetFacing(frame.modelFacing or 0)
@@ -389,9 +529,9 @@ function me:TargetPreview_ShowModel(subject)
 		frame.model:Show()
 	end)
 	if ok then
-		frame.modelSubjectGUID = guid
+		frame.modelSubjectKey = modelKey
 	else
-		frame.modelSubjectGUID = nil
+		frame.modelSubjectKey = nil
 	end
 	return ok
 end
@@ -399,22 +539,26 @@ end
 function me:TargetPreview_ApplySubject(subject)
 	local frame = self.TargetPreviewPane
 	if not frame then return false end
+	frame.previewSubject = subject
 
 	local mode = self.db.profile.targetpreview_mode or "hybrid"
 	local hasSubject = subject and subject.target
+	local isSelectedSubject = hasSubject and self:TargetPreview_IsSelectedSubject(subject)
 	local roleText = subject and ((subject.kind == "kill" and L["targetpreview_role_kill"]) or L["targetpreview_role_talk"]) or ""
-	local liveData = hasSubject and self:TargetPreview_GetUnitData(subject) or nil
-	local canShowModel = hasSubject and mode ~= "card" and self:TargetPreview_ShowModel(subject)
+	local liveData = isSelectedSubject and self:TargetPreview_GetUnitData(subject) or nil
+	local allowLiveModel = isSelectedSubject
+	local canShowModel = allowLiveModel and mode ~= "card" and self:TargetPreview_ShowModel(subject)
 	local hasLiveTarget = liveData and true or false
+	local allowFallbackCard = subject and self:TargetPreview_IsFocusedSubject(subject)
 
 	if mode == "model" and not canShowModel then
-		frame.modelSubjectGUID = nil
+		frame.modelSubjectKey = nil
 		return false
 	end
-	if mode ~= "card" and not hasLiveTarget then
+	if mode ~= "card" and not hasLiveTarget and not allowFallbackCard then
 		if frame.model.ClearModel then frame.model:ClearModel() end
 		frame.model:Hide()
-		frame.modelSubjectGUID = nil
+		frame.modelSubjectKey = nil
 		return false
 	end
 
@@ -437,7 +581,7 @@ function me:TargetPreview_ApplySubject(subject)
 	else
 		if frame.model.ClearModel then frame.model:ClearModel() end
 		frame.model:Hide()
-		frame.modelSubjectGUID = nil
+		frame.modelSubjectKey = nil
 		frame.placeholderIcon:Show()
 		if hasSubject then
 			frame.hintText:SetText(L["targetpreview_hint"])
@@ -543,6 +687,16 @@ function me:TargetPreview_CreatePane()
 		edgeSize = 12,
 		insets = { left = 2, right = 2, top = 2, bottom = 2 },
 	})
+	frame.viewport:EnableMouse(true)
+	frame.viewport:SetScript("OnMouseUp", function(selfViewport, button)
+		if button ~= "LeftButton" then return end
+		local owner = selfViewport:GetParent()
+		if not owner or not owner.previewSubject then return end
+		if owner.model and owner.model:IsShown() then return end
+		if me.TargetPreview_SelectActionSpec then
+			me:TargetPreview_SelectActionSpec(owner.previewSubject)
+		end
+	end)
 	frame.model = CreateFrame("PlayerModel", nil, frame.viewport)
 	frame.model:SetFrameLevel(frame.viewport:GetFrameLevel() + 1)
 	frame.model:EnableMouse(true)
@@ -576,7 +730,9 @@ function me:TargetPreview_CreatePane()
 	frame.placeholderIcon = frame.viewport:CreateTexture(nil, "ARTWORK")
 	frame.hintText = frame.viewport:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
 	frame.hintText:SetJustifyH("CENTER")
+	frame.hintText:SetJustifyV("TOP")
 	frame.hintText:SetWordWrap(true)
+	frame.hintText:SetNonSpaceWrap(true)
 
 	self.TargetPreviewPane = frame
 	self:TargetPreview_ApplyTheme()
@@ -683,6 +839,11 @@ function me:TargetPreview_Refresh(force)
 end
 
 function me:TargetPreview_TargetChanged()
+	if not UnitExists("target") then
+		self.targetPreviewSelectedSignature = nil
+		self.targetPreviewSelectedStep = nil
+		self.targetPreviewSelectedSubject = nil
+	end
 	if self.TargetPreview_Refresh then
 		self:TargetPreview_Refresh()
 	end
@@ -691,6 +852,7 @@ end
 function me:TargetPreview_HandleActionButtonPostClick(button)
 	local spec = button and button.actionSpec
 	if not spec or (spec.kind ~= "talk" and spec.kind ~= "kill") then return end
+	self:TargetPreview_SelectActionSpec(spec)
 	self:TargetPreview_Refresh()
 	if self.ScheduleTimer then
 		self:ScheduleTimer(function()
@@ -707,12 +869,49 @@ tinsert(me.startups, function(self)
 end)
 
 hooksecurefunc(me, "UpdateFrameCurrent", function(self)
+	if self.targetPreviewHoveredStep and self.targetPreviewHoveredStep ~= self.CurrentStep then
+		self.targetPreviewHoveredSignature = nil
+		self.targetPreviewHoveredStep = nil
+		self.targetPreviewHoveredSubject = nil
+	end
+	if self.targetPreviewSelectedStep and self.targetPreviewSelectedStep ~= self.CurrentStep then
+		self.targetPreviewSelectedSignature = nil
+		self.targetPreviewSelectedStep = nil
+		self.targetPreviewSelectedSubject = nil
+	end
 	if self.TargetPreview_Refresh then self:TargetPreview_Refresh() end
 end)
 
 hooksecurefunc(me, "ActionButtons_HandlePostClick", function(self, button)
 	if self.TargetPreview_HandleActionButtonPostClick then
 		self:TargetPreview_HandleActionButtonPostClick(button)
+	end
+end)
+
+hooksecurefunc(me, "GoalOnEnter", function(self, goalframe)
+	local goal = goalframe and goalframe:GetParent() and goalframe:GetParent().goal
+	local spec = goal and self.TargetPreview_GetGoalSubject and self:TargetPreview_GetGoalSubject(goal)
+	if spec then
+		self:TargetPreview_SetGoalFocus(goal, false)
+	end
+end)
+
+hooksecurefunc(me, "GoalOnLeave", function(self, goalframe)
+	local goal = goalframe and goalframe:GetParent() and goalframe:GetParent().goal
+	local spec = goal and self.TargetPreview_GetGoalSubject and self:TargetPreview_GetGoalSubject(goal)
+	if spec and self.targetPreviewHoveredSignature == spec.signature then
+		self.targetPreviewHoveredSignature = nil
+		self.targetPreviewHoveredStep = nil
+		self.targetPreviewHoveredSubject = nil
+		if self.TargetPreview_Refresh then self:TargetPreview_Refresh() end
+	end
+end)
+
+hooksecurefunc(me, "GoalOnClick", function(self, goalframe)
+	local goal = goalframe and goalframe:GetParent() and goalframe:GetParent().goal
+	local spec = goal and self.TargetPreview_GetGoalSubject and self:TargetPreview_GetGoalSubject(goal)
+	if spec then
+		self:TargetPreview_SetGoalFocus(goal, true)
 	end
 end)
 

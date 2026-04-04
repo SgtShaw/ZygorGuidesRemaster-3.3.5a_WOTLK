@@ -236,7 +236,7 @@ if not me.ActionButtons_Refresh then
 			end
 		end
 		if #candidates == 0 then return end
-		local lines = { "/cleartarget [dead][noexists]" }
+		local lines = { "/cleartarget" }
 		for _, name in ipairs(candidates) do
 			lines[#lines + 1] = "/targetexact " .. name
 		end
@@ -347,7 +347,7 @@ if not me.ActionButtons_Refresh then
 			local target = self:GetGoalActionTargetName(goal)
 			local macrotext = AB_BuildTargetMacro(target)
 			if macrotext then
-				return { kind = "talk", type = "macro", macrotext = macrotext, icon = TALK_ICON, target = target, marker = 4, tooltip = "talk", signature = "talk:" .. tostring(goal.npcid or target) }
+				return { kind = "talk", type = "macro", macrotext = macrotext, icon = TALK_ICON, target = target, creatureid = goal.npcid, marker = 4, tooltip = "talk", signature = "talk:" .. tostring(goal.npcid or target) }
 			end
 		end
 
@@ -355,17 +355,19 @@ if not me.ActionButtons_Refresh then
 			local target = self:GetGoalActionTargetName(goal)
 			local singular = (not goal.targetid and goal.target) and AB_SingularizeName(goal.target) or nil
 			local macrotext, candidates = AB_BuildTargetMacroCandidates(target, singular)
+			local canonical = (candidates and candidates[#candidates]) or singular or target
 			if macrotext then
 				return {
 					kind = "kill",
 					type = "macro",
 					macrotext = macrotext,
 					icon = KILL_ICON,
-					target = (candidates and candidates[1]) or target,
+					target = canonical,
+					creatureid = goal.targetid,
 					targetaliases = candidates,
 					marker = 8,
 					tooltip = "kill",
-					signature = "kill:" .. tostring(goal.targetid or target)
+					signature = "kill:" .. tostring(goal.targetid or canonical)
 				}
 			end
 		end
@@ -441,6 +443,13 @@ if not me.ActionButtons_Refresh then
 		action.actionSpec = spec
 		if icon then AB_ApplyIcon(icon, spec.icon or spec.fallbackicon or ACTION_BAR_DEFAULT_ICON) end
 		return "action"
+	end
+
+	function me:GetInlineActionScale(spec)
+		if spec and spec.kind == "kill" then
+			return 0.9
+		end
+		return 1
 	end
 
 	function me:GetCurrentStepActionSpecs()
@@ -869,6 +878,20 @@ if not me.ActionButtons_Refresh then
 		local bar = self.ActionButtonBar
 		local button = bar and bar.buttons and bar.buttons[index]
 		if button and button:IsVisible() then button:Click() end
+	end
+
+	function me:ActionButtons_ClickSpec(spec)
+		if not spec or not spec.signature then return false end
+		local bar = self.ActionButtonBar
+		if not bar or not bar.buttons then return false end
+		for i = 1, ACTION_BAR_MAX_BUTTONS do
+			local button = bar.buttons[i]
+			if button and button:IsVisible() and button.actionSpec and button.actionSpec.signature == spec.signature then
+				button:Click()
+				return true
+			end
+		end
+		return false
 	end
 
 	function me:ActionButtons_ResetAnchor()
@@ -3633,6 +3656,7 @@ function me:UpdateFrameCurrent()
 	-- current step!
 
 	if self.CurrentStep then	-- hey, it may be missing, if the whole guide is for another class
+		local inlineSeenActionSignatures = {}
 
 		--local mapped = self.CurrentStep.x
 
@@ -3739,6 +3763,13 @@ function me:UpdateFrameCurrent()
 						local spec
 						if self.GetGoalActionSpec then
 							spec = self:GetGoalActionSpec(goal)
+							if spec and (spec.kind == "talk" or spec.kind == "kill") and spec.signature then
+								if inlineSeenActionSignatures[spec.signature] then
+									spec = nil
+								else
+									inlineSeenActionSignatures[spec.signature] = true
+								end
+							end
 						end
 
 						if not self.BUTTONS_INLINE then
@@ -3755,7 +3786,7 @@ function me:UpdateFrameCurrent()
 								petaction:Show()
 								petaction:ClearAllPoints()
 								petaction:SetPoint("TOPLEFT", line, "TOPLEFT", 0, 0)
-								petaction:SetScale(1)
+								petaction:SetScale(self:GetInlineActionScale(spec))
 								vis = nil
 							elseif vis == "action" then
 								action:SetParent(line)
@@ -3763,7 +3794,7 @@ function me:UpdateFrameCurrent()
 								action:SetFrameLevel(line:GetFrameLevel() + 10)
 								action:ClearAllPoints()
 								action:SetPoint("TOPLEFT", line, "TOPLEFT", 0, 0)
-								action:SetScale(1)
+								action:SetScale(self:GetInlineActionScale(spec))
 								vis = true
 							end
 						elseif goal.castspell and goal.castspellid then
@@ -3816,7 +3847,7 @@ function me:UpdateFrameCurrent()
 							action:SetParent(line)
 							action:SetFrameStrata(line:GetFrameStrata())
 							action:SetFrameLevel(line:GetFrameLevel() + 10)
-							action:SetScale(1)
+							action:SetScale(self:GetInlineActionScale(action.actionSpec))
 							action:ClearAllPoints()
 							action:SetPoint("TOPLEFT", line, "TOPLEFT", 0, 0)
 							self.actionsvisible = true
@@ -5570,6 +5601,11 @@ function me:GoalOnClick(goalframe,button)
 
 	local goal = goalframe:GetParent().goal
 	if not goal then return end
+	if self.TargetPreview_SelectHoveredSubject and self:TargetPreview_SelectHoveredSubject() then
+		-- keep the currently hovered preview subject selected through the redraw path
+	elseif self.TargetPreview_SetGoalFocus and self.TargetPreview_GetGoalSubject and self:TargetPreview_GetGoalSubject(goal) then
+		self:TargetPreview_SetGoalFocus(goal, true)
+	end
 	--local num=goalframe.goalnum
 	self:Debug("goal clicked "..tostring(goal.num))
 	--local goal = self.CurrentStep.goals[num]
@@ -5692,6 +5728,9 @@ end
 function me:GoalOnEnter(goalframe)
 	local goal = goalframe:GetParent().goal
 	if not goal then return end
+	if self.TargetPreview_SetGoalFocus and self.TargetPreview_GetGoalSubject and self:TargetPreview_GetGoalSubject(goal) then
+		self:TargetPreview_SetGoalFocus(goal, false)
+	end
 
 	local wayline,infoline,image
 
