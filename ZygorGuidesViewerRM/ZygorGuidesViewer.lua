@@ -213,6 +213,39 @@ if not me.ActionButtons_Refresh then
 		return table.concat(lines, "\n")
 	end
 
+	local function AB_SingularizeName(name)
+		if not name or type(name) ~= "string" then return end
+		if name:find("ies$") then
+			return name:gsub("ies$", "y")
+		end
+		if name:find("sses$") or name:find("xes$") or name:find("zes$") or name:find("ches$") or name:find("shes$") then
+			return name:gsub("es$", "")
+		end
+		if name:find("s$") and not name:find("ss$") then
+			return name:gsub("s$", "")
+		end
+	end
+
+	local function AB_BuildTargetMacroCandidates(...)
+		local candidates, seen = {}, {}
+		for i = 1, select("#", ...) do
+			local name = select(i, ...)
+			if name and not seen[name] then
+				seen[name] = true
+				candidates[#candidates + 1] = name
+			end
+		end
+		if #candidates == 0 then return end
+		local lines = { "/cleartarget [dead][noexists]" }
+		for _, name in ipairs(candidates) do
+			lines[#lines + 1] = "/targetexact " .. name
+		end
+		for _, name in ipairs(candidates) do
+			lines[#lines + 1] = "/target [noexists] " .. name
+		end
+		return table.concat(lines, "\n"), candidates
+	end
+
 	function me:GetGoalActionTargetName(goal)
 		if not goal then return end
 		if goal.npcid then
@@ -254,7 +287,18 @@ if not me.ActionButtons_Refresh then
 		if not spec or not spec.marker then return false, "nomarker" end
 		if not spec.target or not UnitExists("target") then return false, "notarget" end
 		local targetName = UnitName("target")
-		if targetName ~= spec.target then return false, "wrongtarget" end
+		if targetName ~= spec.target then
+			local matched
+			if spec.targetaliases then
+				for _, alias in ipairs(spec.targetaliases) do
+					if alias == targetName then
+						matched = true
+						break
+					end
+				end
+			end
+			if not matched then return false, "wrongtarget" end
+		end
 		return self:ActionButtonMarkTarget(spec.marker)
 	end
 
@@ -309,9 +353,20 @@ if not me.ActionButtons_Refresh then
 
 		if goal.action == "kill" then
 			local target = self:GetGoalActionTargetName(goal)
-			local macrotext = AB_BuildTargetMacro(target)
+			local singular = (not goal.targetid and goal.target) and AB_SingularizeName(goal.target) or nil
+			local macrotext, candidates = AB_BuildTargetMacroCandidates(target, singular)
 			if macrotext then
-				return { kind = "kill", type = "macro", macrotext = macrotext, icon = KILL_ICON, target = target, marker = 8, tooltip = "kill", signature = "kill:" .. tostring(goal.targetid or target) }
+				return {
+					kind = "kill",
+					type = "macro",
+					macrotext = macrotext,
+					icon = KILL_ICON,
+					target = (candidates and candidates[1]) or target,
+					targetaliases = candidates,
+					marker = 8,
+					tooltip = "kill",
+					signature = "kill:" .. tostring(goal.targetid or target)
+				}
 			end
 		end
 	end
@@ -602,6 +657,42 @@ if not me.ActionButtons_Refresh then
 		bar.close:SetPoint("TOPRIGHT", bar, "TOPRIGHT", -4, -4)
 	end
 
+	function me:ActionButtons_ApplyTheme()
+		local bar = self.ActionButtonBar
+		if not bar or not self.db or not self.db.profile then return end
+		local backc = self.db.profile.skincolors and self.db.profile.skincolors.back or {0.08, 0.09, 0.12}
+		local textc = self.db.profile.skincolors and self.db.profile.skincolors.text or {0.90, 0.92, 0.98}
+		local backalpha = self.db.profile.backopacity or 0.3
+		local opacitymain = self.db.profile.opacitymain or 1.0
+		local remastercolor = self.db.profile.remastercolor or "dark"
+		local isGoldAccent = (remastercolor == "goldaccent" or remastercolor == "goals")
+		local border = { 0.18, 0.18, 0.20, 0.92 }
+		local closeBack = { 0.13, 0.13, 0.14, 0.95 }
+		local closePush = { 0.19, 0.19, 0.21, 0.98 }
+		local closeText = textc
+		if isGoldAccent then
+			backc = { 0.04, 0.04, 0.05 }
+			border = { 0.17, 0.15, 0.10, 0.88 }
+			closeBack = { 0.09, 0.08, 0.07, 0.96 }
+			closePush = { 0.22, 0.17, 0.08, 0.98 }
+			closeText = { 0.92, 0.80, 0.50, 1.00 }
+		end
+		bar:SetAlpha(opacitymain)
+		bar:SetBackdropColor(backc[1], backc[2], backc[3], backalpha)
+		bar:SetBackdropBorderColor(border[1], border[2], border[3], border[4] or 1)
+		if bar.close then
+			if bar.close.GetNormalTexture and bar.close:GetNormalTexture() then
+				bar.close:GetNormalTexture():SetVertexColor(closeBack[1], closeBack[2], closeBack[3], closeBack[4] or 1)
+			end
+			if bar.close.GetPushedTexture and bar.close:GetPushedTexture() then
+				bar.close:GetPushedTexture():SetVertexColor(closePush[1], closePush[2], closePush[3], closePush[4] or 1)
+			end
+			if bar.close.x then
+				bar.close.x:SetTextColor(closeText[1], closeText[2], closeText[3], closeText[4] or 1)
+			end
+		end
+	end
+
 	function me:ActionButtons_UpdateDragState()
 		local bar = self.ActionButtonBar
 		if not bar then return end
@@ -700,6 +791,7 @@ if not me.ActionButtons_Refresh then
 			bar.buttons[i] = button
 		end
 		self.ActionButtonBar = bar
+		self:ActionButtons_ApplyTheme()
 		self:ActionButtons_ApplyAnchor()
 		self:ActionButtons_UpdateDragState()
 		return bar
@@ -762,6 +854,7 @@ if not me.ActionButtons_Refresh then
 		end
 		local shouldShow = (not self.db.profile.actionbuttonbar_onlywhenneeded) or (#specs > 0)
 		self:ActionButtons_ApplyAnchor()
+		self:ActionButtons_ApplyTheme()
 		self:ActionButtons_Layout()
 		self:ActionButtons_UpdateDragState()
 		if shouldShow then
@@ -849,6 +942,7 @@ if not me.ActionButtons_Refresh then
 		if not self.db or not self.db.profile then return end
 		self:ActionButtons_ValidateProfile()
 		self:ActionButtons_CreateBar()
+		self:ActionButtons_ApplyTheme()
 		self:ActionButtons_ApplyAnchor()
 		self:ActionButtons_UpdateDragState()
 		self:ActionButtons_Refresh(true)
@@ -4220,7 +4314,7 @@ function me:AlignFrame()
 	ZygorGuidesViewerFrame_Border_Flash_Logo:SetPoint("CENTER",ZygorGuidesViewerFrame_Border_Logo,"CENTER")
 end
 
-function me:UpdateSkin()
+function me:UpdateSkin(skipLayoutRefresh)
 	local preserveHidden = false
 	if self.db and self.db.profile and self.db.profile.hideborder then
 		preserveHidden = self.borderfadedout == true
@@ -4338,18 +4432,20 @@ function me:UpdateSkin()
 	end
 
 	if self.db.profile.skin == "remaster" then
-		self:ApplyRemasterSkin()
+		self:ApplyRemasterSkin(skipLayoutRefresh)
 	else
 		self:RestoreLegacySkin()
 	end
 
-	if self.ApplyFrameLayout then
+	if self.ApplyFrameLayout and not skipLayoutRefresh then
 		self:ApplyFrameLayout()
 	end
 
 	self:UpdateLocking()
-	self:AlignFrame()
-	self:ResizeFrame()
+	if not skipLayoutRefresh then
+		self:AlignFrame()
+		self:ResizeFrame()
+	end
 	if self.RefreshAutoHideBorderState then
 		self:RefreshAutoHideBorderState()
 	end
@@ -4364,13 +4460,127 @@ function me:UpdateSkin()
 	end
 end
 
-function me:ApplyRemasterSkin()
+local function ApplyRemasterThemeOnly(self, remasterFrames)
+	if not (self and self.db and self.db.profile and remasterFrames) then return end
+	local textc = self.db.profile.skincolors and self.db.profile.skincolors.text or {0.9, 0.92, 0.98}
+	local backc = self.db.profile.skincolors and self.db.profile.skincolors.back or {0.08, 0.09, 0.12}
+	local backalpha = self.db.profile.backopacity or 0.3
+	local opacitymain = self.db.profile.opacitymain or 1.0
+	local remastercolor = self.db.profile.remastercolor or "dark"
+	local isGoldAccent = (remastercolor == "goldaccent" or remastercolor == "goals")
+	local function setTexColor(tex, r, g, b, a)
+		if not tex then return end
+		if tex.SetColorTexture then
+			tex:SetColorTexture(r, g, b, a or 1)
+		else
+			tex:SetTexture(r, g, b, a or 1)
+		end
+	end
+
+	local theme = {
+		frameBorder = { 0.18, 0.18, 0.20, 0.92 },
+		frameLight = { 0.28, 0.28, 0.30, 0.18 },
+		insetBg = { 0.10, 0.10, 0.11, 0.95 },
+		insetBorder = { 0.20, 0.20, 0.22, 0.90 },
+		buttonBack = { 0.13, 0.13, 0.14, 0.95 },
+		buttonHover = { 0.19, 0.19, 0.21, 0.98 },
+		buttonBorder = { 0.27, 0.27, 0.30, 0.95 },
+		separator = { 0.32, 0.32, 0.35, 0.80 },
+		textPrimary = { 0.86, 0.86, 0.88, 1.00 },
+		textMeta = { 0.72, 0.72, 0.75, 0.90 },
+	}
+
+	if isGoldAccent then
+		theme.frameBorder = { 0.17, 0.15, 0.10, 0.88 }
+		theme.frameLight = { 0.12, 0.10, 0.07, 0.42 }
+		theme.insetBg = { 0.05, 0.05, 0.06, 0.97 }
+		theme.insetBorder = { 0.22, 0.18, 0.10, 0.90 }
+		theme.buttonBack = { 0.09, 0.08, 0.07, 0.96 }
+		theme.buttonHover = { 0.22, 0.17, 0.08, 0.98 }
+		theme.buttonBorder = { 0.50, 0.40, 0.18, 0.95 }
+		theme.separator = { 0.90, 0.74, 0.40, 0.62 }
+		theme.textPrimary = { 0.92, 0.80, 0.50, 1.00 }
+		theme.textMeta = { 0.78, 0.70, 0.55, 0.92 }
+	end
+	if remasterFrames.root then
+		remasterFrames.root:SetAlpha(opacitymain)
+		local rootc = backc
+		if isGoldAccent then
+			rootc = { 0.04, 0.04, 0.05 }
+		end
+		remasterFrames.root:SetBackdropColor(rootc[1], rootc[2], rootc[3], backalpha)
+		remasterFrames.root:SetBackdropBorderColor(theme.frameBorder[1], theme.frameBorder[2], theme.frameBorder[3], theme.frameBorder[4] or 1)
+	end
+	if remasterFrames.content then
+		local ib = theme.insetBg or backc
+		local ia = math.min(1, (theme.insetBg[4] or 0.95) * (backalpha / 0.3))
+		remasterFrames.content:SetBackdropColor(ib[1], ib[2], ib[3], ia)
+		remasterFrames.content:SetBackdropBorderColor(theme.insetBorder[1], theme.insetBorder[2], theme.insetBorder[3], theme.insetBorder[4] or 1)
+	end
+	if remasterFrames.headerBg then
+		if isGoldAccent then
+			setTexColor(remasterFrames.headerBg, 0, 0, 0, 0.58)
+		else
+			local c = theme.frameLight
+			setTexColor(remasterFrames.headerBg, c[1], c[2], c[3], c[4] or 1)
+		end
+	end
+	if remasterFrames.toolbarBg then
+		if isGoldAccent then
+			setTexColor(remasterFrames.toolbarBg, 0, 0, 0, 0.42)
+		else
+			local c = theme.frameLight
+			setTexColor(remasterFrames.toolbarBg, c[1], c[2], c[3], (c[4] or 1) * 0.8)
+		end
+	end
+	if remasterFrames.separator then
+		local c = theme.separator or theme.frameBorder
+		setTexColor(remasterFrames.separator, c[1], c[2], c[3], c[4] or 1)
+	end
+	if remasterFrames.headerTitle then
+		local c = theme.textPrimary or textc
+		remasterFrames.headerTitle:SetTextColor(c[1], c[2], c[3], c[4] or 1)
+	end
+	if remasterFrames.headerMeta then
+		local c = theme.textMeta or textc
+		remasterFrames.headerMeta:SetTextColor(c[1], c[2], c[3], c[4] or 0.85)
+	end
+	if remasterFrames.stepLabel then
+		local c = theme.textPrimary or textc
+		remasterFrames.stepLabel:SetTextColor(c[1], c[2], c[3], c[4] or 1)
+	end
+
+	local function applyButtonTheme(button)
+		if not button then return end
+		button.remasterBackColor = theme.buttonBack
+		button.remasterHoverColor = theme.buttonHover
+		button.remasterBorderColor = theme.buttonBorder
+		button:SetBackdropColor(theme.buttonBack[1], theme.buttonBack[2], theme.buttonBack[3], theme.buttonBack[4] or 1)
+		button:SetBackdropBorderColor(theme.buttonBorder[1], theme.buttonBorder[2], theme.buttonBorder[3], theme.buttonBorder[4] or 1)
+	end
+
+	applyButtonTheme(remasterFrames.guideButton)
+	applyButtonTheme(remasterFrames.prevButton)
+	applyButtonTheme(remasterFrames.nextButton)
+	applyButtonTheme(remasterFrames.closeButton)
+	applyButtonTheme(remasterFrames.settingsButton)
+	applyButtonTheme(remasterFrames.miniButton)
+	applyButtonTheme(remasterFrames.lockButton)
+end
+
+function me:ApplyRemasterSkin(skipLayoutRefresh)
 	if not self.framesLoaded or not ZygorGuidesViewerFrame or not ZygorGuidesViewerFrame_Border then
 		return
 	end
 	local remasterFrames = self:EnsureRemasterFrames()
-	LayoutRemasterFrames(remasterFrames, self.db and self.db.profile and self.db.profile.resizeup)
-	if ZygorGuidesViewerFrameMaster and ZygorGuidesViewerFrame then
+	if skipLayoutRefresh and self.remasterApplied then
+		ApplyRemasterThemeOnly(self, remasterFrames)
+		return
+	end
+	if not skipLayoutRefresh then
+		LayoutRemasterFrames(remasterFrames, self.db and self.db.profile and self.db.profile.resizeup)
+	end
+	if not skipLayoutRefresh and ZygorGuidesViewerFrameMaster and ZygorGuidesViewerFrame then
 		ZygorGuidesViewerFrame:ClearAllPoints()
 		if self.db and self.db.profile and self.db.profile.resizeup then
 			ZygorGuidesViewerFrame:SetPoint("BOTTOMLEFT", ZygorGuidesViewerFrameMaster, "BOTTOMLEFT", 0, 0)
@@ -4475,113 +4685,7 @@ function me:ApplyRemasterSkin()
 		end
 	end
 
-	-- apply user settings to remaster visuals
-	if self.db and self.db.profile and remasterFrames then
-		local textc = self.db.profile.skincolors and self.db.profile.skincolors.text or {0.9, 0.92, 0.98}
-		local backc = self.db.profile.skincolors and self.db.profile.skincolors.back or {0.08, 0.09, 0.12}
-		local backalpha = self.db.profile.backopacity or 0.3
-		local opacitymain = self.db.profile.opacitymain or 1.0
-		local remastercolor = self.db.profile.remastercolor or "dark"
-		local isGoldAccent = (remastercolor == "goldaccent" or remastercolor == "goals")
-		local function setTexColor(tex, r, g, b, a)
-			if not tex then return end
-			if tex.SetColorTexture then
-				tex:SetColorTexture(r, g, b, a or 1)
-			else
-				tex:SetTexture(r, g, b, a or 1)
-			end
-		end
-
-		local theme = {
-			frameBorder = { 0.18, 0.18, 0.20, 0.92 },
-			frameLight = { 0.28, 0.28, 0.30, 0.18 },
-			insetBg = { 0.10, 0.10, 0.11, 0.95 },
-			insetBorder = { 0.20, 0.20, 0.22, 0.90 },
-			buttonBack = { 0.13, 0.13, 0.14, 0.95 },
-			buttonHover = { 0.19, 0.19, 0.21, 0.98 },
-			buttonBorder = { 0.27, 0.27, 0.30, 0.95 },
-			separator = { 0.32, 0.32, 0.35, 0.80 },
-			textPrimary = { 0.86, 0.86, 0.88, 1.00 },
-			textMeta = { 0.72, 0.72, 0.75, 0.90 },
-		}
-
-		if isGoldAccent then
-			theme.frameBorder = { 0.17, 0.15, 0.10, 0.88 }
-			theme.frameLight = { 0.12, 0.10, 0.07, 0.42 }
-			theme.insetBg = { 0.05, 0.05, 0.06, 0.97 }
-			theme.insetBorder = { 0.22, 0.18, 0.10, 0.90 }
-			theme.buttonBack = { 0.09, 0.08, 0.07, 0.96 }
-			theme.buttonHover = { 0.22, 0.17, 0.08, 0.98 }
-			theme.buttonBorder = { 0.50, 0.40, 0.18, 0.95 }
-			theme.separator = { 0.90, 0.74, 0.40, 0.62 }
-			theme.textPrimary = { 0.92, 0.80, 0.50, 1.00 }
-			theme.textMeta = { 0.78, 0.70, 0.55, 0.92 }
-		end
-		if remasterFrames.root then
-			remasterFrames.root:SetAlpha(opacitymain)
-			local rootc = backc
-			if isGoldAccent then
-				rootc = { 0.04, 0.04, 0.05 }
-			end
-			remasterFrames.root:SetBackdropColor(rootc[1], rootc[2], rootc[3], backalpha)
-			remasterFrames.root:SetBackdropBorderColor(theme.frameBorder[1], theme.frameBorder[2], theme.frameBorder[3], theme.frameBorder[4] or 1)
-		end
-		if remasterFrames.content then
-			local ib = theme.insetBg or backc
-			local ia = math.min(1, (theme.insetBg[4] or 0.95) * (backalpha / 0.3))
-			remasterFrames.content:SetBackdropColor(ib[1], ib[2], ib[3], ia)
-			remasterFrames.content:SetBackdropBorderColor(theme.insetBorder[1], theme.insetBorder[2], theme.insetBorder[3], theme.insetBorder[4] or 1)
-		end
-		if remasterFrames.headerBg then
-			if isGoldAccent then
-				setTexColor(remasterFrames.headerBg, 0, 0, 0, 0.58)
-			else
-				local c = theme.frameLight
-				setTexColor(remasterFrames.headerBg, c[1], c[2], c[3], c[4] or 1)
-			end
-		end
-		if remasterFrames.toolbarBg then
-			if isGoldAccent then
-				setTexColor(remasterFrames.toolbarBg, 0, 0, 0, 0.42)
-			else
-				local c = theme.frameLight
-				setTexColor(remasterFrames.toolbarBg, c[1], c[2], c[3], (c[4] or 1) * 0.8)
-			end
-		end
-		if remasterFrames.separator then
-			local c = theme.separator or theme.frameBorder
-			setTexColor(remasterFrames.separator, c[1], c[2], c[3], c[4] or 1)
-		end
-		if remasterFrames.headerTitle then
-			local c = theme.textPrimary or textc
-			remasterFrames.headerTitle:SetTextColor(c[1], c[2], c[3], c[4] or 1)
-		end
-		if remasterFrames.headerMeta then
-			local c = theme.textMeta or textc
-			remasterFrames.headerMeta:SetTextColor(c[1], c[2], c[3], c[4] or 0.85)
-		end
-		if remasterFrames.stepLabel then
-			local c = theme.textPrimary or textc
-			remasterFrames.stepLabel:SetTextColor(c[1], c[2], c[3], c[4] or 1)
-		end
-
-		local function applyButtonTheme(button)
-			if not button then return end
-			button.remasterBackColor = theme.buttonBack
-			button.remasterHoverColor = theme.buttonHover
-			button.remasterBorderColor = theme.buttonBorder
-			button:SetBackdropColor(theme.buttonBack[1], theme.buttonBack[2], theme.buttonBack[3], theme.buttonBack[4] or 1)
-			button:SetBackdropBorderColor(theme.buttonBorder[1], theme.buttonBorder[2], theme.buttonBorder[3], theme.buttonBorder[4] or 1)
-		end
-
-		applyButtonTheme(remasterFrames.guideButton)
-		applyButtonTheme(remasterFrames.prevButton)
-		applyButtonTheme(remasterFrames.nextButton)
-		applyButtonTheme(remasterFrames.closeButton)
-		applyButtonTheme(remasterFrames.settingsButton)
-		applyButtonTheme(remasterFrames.miniButton)
-		applyButtonTheme(remasterFrames.lockButton)
-	end
+	ApplyRemasterThemeOnly(self, remasterFrames)
 
 	local function hideTexture(name)
 		local tex = _G[name]

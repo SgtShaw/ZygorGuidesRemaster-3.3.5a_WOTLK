@@ -164,6 +164,14 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
+### v3.0 (Revision 103)
+
+- Bumped addon version/revision to 3.0.103 / 103.
+- Added an optional Target Preview pane for current `talk` and `kill` steps, with hybrid live 3D preview and styled info-card fallback.
+- Added Target Preview snapping, drag/lock behavior, pin-side, sizing, scale, mode, and localization support so it matches the remaster viewer and Action Buttons workflow.
+- Polished the preview and action surfaces further with theme/opacity matching, target-name reaction coloring, smoother model handling, and additional action-target matching fixes.
+- Fixed remaster skin-color changes so they repaint cleanly without the viewer instruction area visibly popping or reflowing.
+
 ### v3.0 (Revision 102)
 
 - Bumped addon version/revision to 3.0.102 / 102.
@@ -192,14 +200,6 @@ This addon is fully open source and can be inspected before use.
 - Reviewed an additional `ruRU.lua` submission, validated it as localization-only, and selectively merged the safe wording improvements instead of replacing the file wholesale.
 - Cleaned up several `ruRU` strings further, including product naming, quest-chain wording, minimap/gold labels, and a few typo fixes.
 - Added `mikki33`'s GitHub profile link to the community credits.
-
-### v3.0 (Revision 98)
-
-- Bumped addon version/revision to 3.0.98 / 98.
-- Completed a broader localization cleanup across the remastered Guide Manager, embedded options, and viewer toolbar/tooltip surfaces.
-- Added and wired the missing localization keys for options text, map/waypoint labels, step-view controls, and mini-frame button/tab labels across all shipped locale files.
-- Expanded `ruRU` coverage for the remaining untranslated settings/tooltips and replaced a substantial set of placeholder-English Guide Browser strings in the non-English locale packs with best-effort translations.
-- Narrowed Guide Manager keyboard capture so browsing shortcuts stay available without blocking built-in game screenshot behavior or interfering with active search/edit fields.
 ## Notes
 
 - Intended target client is **WotLK 3.3.5a (12340)**.

@@ -94,6 +94,15 @@ function me:Options_RegisterDefaults()
 			actionbuttonbar_pinside = "top",
 			actionbutton_enablemarkers = true,
 			actionbuttonbar_anchor = { point = "CENTER", relPoint = "CENTER", x = 0, y = -180 },
+			targetpreview_enabled = true,
+			targetpreview_onlywhenneeded = true,
+			targetpreview_locked = false,
+			targetpreview_scale = 1,
+			targetpreview_width = 190,
+			targetpreview_height = 255,
+			targetpreview_pinside = "right",
+			targetpreview_mode = "hybrid",
+			targetpreview_anchor = { snapped = true, custom = true },
 
 			trackchains = true,
 
@@ -471,6 +480,8 @@ function me:Options_DefineOptions()
 							return self.db.profile.skin
 						end,
 						set = function(_,n)
+							local oldSkin = self.db.profile.skin
+							local oldRemasterColor = self.db.profile.remastercolor
 							local colors = {
 										remaster_dark={text={0.90,0.92,0.98},back={0.08,0.09,0.12}},
 										remaster_goldaccent={text={0.92,0.80,0.50},back={0.07,0.08,0.10}},
@@ -492,10 +503,18 @@ function me:Options_DefineOptions()
 								self.db.profile.skin = n
 								self.db.profile.skincolors = colors[self.db.profile.skin]
 							end
-							self:UpdateSkin()
-							self:AlignFrame()
+							local visualOnly = (oldSkin == self.db.profile.skin)
+							if visualOnly and self.db.profile.skin == "remaster" then
+								visualOnly = (oldRemasterColor ~= self.db.profile.remastercolor)
+							elseif visualOnly and self.db.profile.skin ~= "remaster" then
+								visualOnly = false
+							end
+							self:UpdateSkin(visualOnly)
+							if not visualOnly then
+								self:AlignFrame()
+								self:ScrollToCurrentStep()
+							end
 							self:UpdateLocking()
-							self:ScrollToCurrentStep()
 						      end,
 						order=1.1,
 						width="normal",
@@ -535,7 +554,7 @@ function me:Options_DefineOptions()
 						name = L["opt_backopacity"],
 						desc = L["opt_backopacity_desc"],
 						type = 'range',
-						set = function(i,v) Setter_Simple(i,v)  self:UpdateSkin()  end,
+						set = function(i,v) Setter_Simple(i,v)  self:UpdateSkin(true)  end,
 						min=0.0,
 						max=1.0,
 						isPercent = true,
@@ -1625,6 +1644,122 @@ function me:Options_DefineOptions()
 		order = 26,
 		disabled = function() return not self.db.profile.actionbuttonbar_enabled end,
 		set = function(info, value) Setter_Simple(info, value) if self.ActionButtons_ApplyProfile then self:ActionButtons_ApplyProfile() end end,
+	}
+	self.optionsactionbuttons.args.targetpreview_header = {
+		name = L["opt_targetpreview_header"],
+		type = "header",
+		order = 30,
+	}
+	self.optionsactionbuttons.args.targetpreview_desc = {
+		name = L["opt_targetpreview_intro"],
+		type = "description",
+		order = 30.1,
+	}
+	self.optionsactionbuttons.args.targetpreview_enabled = {
+		name = L["opt_targetpreview_enable"],
+		desc = L["opt_targetpreview_enable_desc"],
+		type = "toggle",
+		width = "full",
+		order = 31,
+		set = function(info, value) Setter_Simple(info, value) if self.TargetPreview_ApplyProfile then self:TargetPreview_ApplyProfile() end end,
+	}
+	self.optionsactionbuttons.args.targetpreview_onlywhenneeded = {
+		name = L["opt_targetpreview_onlywhenneeded"],
+		desc = L["opt_targetpreview_onlywhenneeded_desc"],
+		type = "toggle",
+		width = "full",
+		order = 32,
+		disabled = function() return not self.db.profile.targetpreview_enabled end,
+		set = function(info, value) Setter_Simple(info, value) if self.TargetPreview_ApplyProfile then self:TargetPreview_ApplyProfile() end end,
+	}
+	self.optionsactionbuttons.args.targetpreview_locked = {
+		name = L["opt_targetpreview_locked"],
+		desc = L["opt_targetpreview_locked_desc"],
+		type = "toggle",
+		width = "full",
+		order = 33,
+		disabled = function() return not self.db.profile.targetpreview_enabled end,
+		set = function(info, value) Setter_Simple(info, value) if self.TargetPreview_ApplyProfile then self:TargetPreview_ApplyProfile() end end,
+	}
+	self.optionsactionbuttons.args.targetpreview_scale = {
+		name = L["opt_targetpreview_scale"],
+		desc = L["opt_targetpreview_scale_desc"],
+		type = "range",
+		min = 0.5,
+		max = 2,
+		step = 0.05,
+		bigStep = 0.1,
+		isPercent = true,
+		order = 34,
+		disabled = function() return not self.db.profile.targetpreview_enabled end,
+		set = function(info, value) Setter_Simple(info, value) if self.TargetPreview_ApplyProfile then self:TargetPreview_ApplyProfile() end end,
+	}
+	self.optionsactionbuttons.args.targetpreview_width = {
+		name = L["opt_targetpreview_width"],
+		desc = L["opt_targetpreview_width_desc"],
+		type = "range",
+		min = 150,
+		max = 340,
+		step = 1,
+		bigStep = 5,
+		order = 35,
+		disabled = function() return not self.db.profile.targetpreview_enabled end,
+		set = function(info, value) Setter_Simple(info, value) if self.TargetPreview_ApplyProfile then self:TargetPreview_ApplyProfile() end end,
+	}
+	self.optionsactionbuttons.args.targetpreview_height = {
+		name = L["opt_targetpreview_height"],
+		desc = L["opt_targetpreview_height_desc"],
+		type = "range",
+		min = 170,
+		max = 460,
+		step = 1,
+		bigStep = 5,
+		order = 36,
+		disabled = function() return not self.db.profile.targetpreview_enabled end,
+		set = function(info, value) Setter_Simple(info, value) if self.TargetPreview_ApplyProfile then self:TargetPreview_ApplyProfile() end end,
+	}
+	self.optionsactionbuttons.args.targetpreview_pinside = {
+		name = L["opt_targetpreview_pinside"],
+		desc = L["opt_targetpreview_pinside_desc"],
+		type = "select",
+		order = 37,
+		values = {
+			top = L["opt_actionbar_pinside_top"],
+			bottom = L["opt_actionbar_pinside_bottom"],
+			left = L["opt_actionbar_pinside_left"],
+			right = L["opt_actionbar_pinside_right"],
+		},
+		disabled = function() return not self.db.profile.targetpreview_enabled end,
+		set = function(info, value) Setter_Simple(info, value) if self.TargetPreview_ApplyProfile then self:TargetPreview_ApplyProfile() end end,
+	}
+	self.optionsactionbuttons.args.targetpreview_mode = {
+		name = L["opt_targetpreview_mode"],
+		desc = L["opt_targetpreview_mode_desc"],
+		type = "select",
+		order = 38,
+		values = {
+			hybrid = L["opt_targetpreview_mode_hybrid"],
+			model = L["opt_targetpreview_mode_model"],
+			card = L["opt_targetpreview_mode_card"],
+		},
+		disabled = function() return not self.db.profile.targetpreview_enabled end,
+		set = function(info, value) Setter_Simple(info, value) if self.TargetPreview_ApplyProfile then self:TargetPreview_ApplyProfile() end end,
+	}
+	self.optionsactionbuttons.args.targetpreview_resetanchor = {
+		name = L["opt_targetpreview_resetanchor"],
+		desc = L["opt_targetpreview_resetanchor_desc"],
+		type = "execute",
+		order = 39,
+		width = "full",
+		disabled = function() return not self.db.profile.targetpreview_enabled end,
+		func = function()
+			if self.TargetPreview_ResetAnchor then
+				self:TargetPreview_ResetAnchor()
+			else
+				self.db.profile.targetpreview_anchor = { snapped = true, custom = true }
+			end
+			if self.TargetPreview_ApplyProfile then self:TargetPreview_ApplyProfile() end
+		end,
 	}
 
 	-- New Guide Viewer page split: keep step-specific controls on Step Display only.
