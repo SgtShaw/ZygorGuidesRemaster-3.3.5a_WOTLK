@@ -167,8 +167,11 @@ This addon is fully open source and can be inspected before use.
 ### v3.0 (Revision 106)
 
 - Bumped addon version/revision to 3.0.106 / 106.
-- Fixes: https://github.com/ErebusAres/ZygorGuidesRemaster-3.3.5a_WOTLK/issues/12 — resolved stretched/distorted inline action icons by sanitizing texcoords/insets and mirroring retail anchoring.
-- Fixes: https://github.com/ErebusAres/ZygorGuidesRemaster-3.3.5a_WOTLK/issues/13 — ensured inline item specs and icons render even when player has zero of the item, fixed show/hide ordering, and removed residual debug/test code.
+- Fixes: https://github.com/ErebusAres/ZygorGuidesRemaster-3.3.5a_WOTLK/issues/12 
+- Fixes: https://github.com/ErebusAres/ZygorGuidesRemaster-3.3.5a_WOTLK/issues/13 
+— Resolved stretched/distorted inline action icons by sanitizing texcoords/insets and mirroring retail anchoring.
+— Ensured inline item specs and icons render even when player has zero of the item, fixed show/hide ordering, and removed residual 
+debug/test code.
 - Prepared and cleaned live files for the 3.0.106 release.
 
 ### v3.0 (Revision 105)
