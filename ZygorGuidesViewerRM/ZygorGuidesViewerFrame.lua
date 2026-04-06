@@ -76,7 +76,7 @@ local function ApplyLineLayout(line, layout, useRemaster)
 	if line.icon then
 		line.icon:SetSize(layout.ICON_SIZE, layout.ICON_SIZE)
 		if useRemaster then
-			line.icon:SetTexture(ZGV.DIR.."\\Skins\\icons")
+			line.icon:SetTexture(ZGV.DIR.."\\Skin\\icons")
 			line.icon:SetDesaturated(true)
 			line.icon:SetVertexColor(0.8, 0.85, 0.95, 0.9)
 		end
@@ -245,7 +245,7 @@ function ZygorGuidesViewerFrame_Step_Setup(num)
 	step:RegisterForDrag("LeftButton")
 	step:RegisterForClicks("LeftButtonUp","RightButtonUp")
 
-	local iconcount=16
+		local iconcount=16
 	local function icon_seticon(self,n)
 		self:SetTexCoord((n-1)/iconcount,n/iconcount,0,1)
 	end
@@ -333,11 +333,23 @@ function ZygorGuidesViewerFrame_Step_Setup(num)
 				ZygorGuidesViewer:ActionButtons_HandlePostClick(self)
 			end
 		end)
-		action:SetHighlightTexture("Interface/Buttons/ButtonHilight-Square")
-		action.icon = action:CreateTexture(actionname.."ActionIcon","OVERLAY")
-		action.icon:SetAllPoints(action)
-		action.icon:SetWidth(15)
-		action.icon:SetHeight(15)
+		action:SetNormalTexture("Interface\\Buttons\\UI-Quickslot2")
+		action:SetPushedTexture("Interface\\Buttons\\UI-Quickslot-Depress")
+		action:SetHighlightTexture("Interface/Buttons/ButtonHilight-Square", "ADD")
+		action:SetCheckedTexture(nil)
+		action:SetPushedTextOffset(0, 0)
+		action.overlay = CreateFrame("Frame", nil, action)
+		action.overlay:EnableMouse(false)
+		action.overlay:SetAllPoints(action)
+		action.overlay:SetFrameLevel(action:GetFrameLevel()+1)
+		action.icon = action.overlay:CreateTexture(actionname.."ActionIcon","BACKGROUND")
+		action.overlay.icon = action.icon
+		action.icon:ClearAllPoints()
+		local inset = 2
+		action.icon:SetPoint("TOPLEFT", action.overlay, "TOPLEFT", inset, -inset)
+		action.icon:SetPoint("BOTTOMRIGHT", action.overlay, "BOTTOMRIGHT", -inset, inset)
+		action.icon:SetTexCoord(0,1,0,1)
+		action.overlay:Hide()
 		action:Hide()
 
 		petaction:SetFrameStrata(actionholder:GetFrameStrata())
@@ -345,7 +357,30 @@ function ZygorGuidesViewerFrame_Step_Setup(num)
 		petaction:SetWidth(15)
 		petaction:SetHeight(15)
 		petaction:SetAllPoints(actionholder)
-		_G[actionname..'PetActionNormalTexture2']:SetAlpha(0)
+		petaction:SetNormalTexture("")
+		petaction:SetPushedTexture("")
+		petaction:SetHighlightTexture("Interface/Buttons/ButtonHilight-Square")
+		petaction:SetCheckedTexture("")
+		local petnormal = petaction.GetNormalTexture and petaction:GetNormalTexture()
+		if petnormal then petnormal:Hide() end
+		local petpushed = petaction.GetPushedTexture and petaction:GetPushedTexture()
+		if petpushed then petpushed:SetTexture("") end
+		local pethighlight = petaction.GetHighlightTexture and petaction:GetHighlightTexture()
+		if pethighlight then pethighlight:SetTexture("Interface/Buttons/ButtonHilight-Square") end
+		local petflash = _G[actionname..'PetActionFlash']
+		if petflash then petflash:Hide() end
+		local petautocastable = _G[actionname..'PetActionAutoCastable']
+		if petautocastable then petautocastable:Hide() end
+		local petshine = _G[actionname..'PetActionShine']
+		if petshine then petshine:Hide() end
+		local pethotkey = _G[actionname..'PetActionHotKey']
+		if pethotkey then pethotkey:Hide() end
+		local peticon = _G[actionname..'PetActionIcon']
+		if peticon then
+			peticon:ClearAllPoints()
+			peticon:SetAllPoints(petaction)
+			peticon:SetTexCoord(0,1,0,1)
+		end
 		petaction:SetScript("OnDragStart",nil)
 		petaction:Hide()
 

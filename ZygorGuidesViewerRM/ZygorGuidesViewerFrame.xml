@@ -259,17 +259,24 @@
 						local isRemaster = ZGV.db.profile and ZGV.db.profile.skin == "remaster"
 						local suppressRefresh = ZGV.visualSkinRefreshOnly or ZGV.suspendRemasterShowRefresh
 
-						if ZGV.db.profile.showallsteps then
-							ZygorGuidesViewerFrameScrollChild:SetWidth(width-39)
-						else
-							ZygorGuidesViewerFrameScrollChild:SetWidth(width-20)
+						if not isRemaster then
+							if ZGV.db.profile.showallsteps then
+								ZygorGuidesViewerFrameScrollChild:SetWidth(width-39)
+							else
+								ZygorGuidesViewerFrameScrollChild:SetWidth(width-20)
+							end
 						end
 
-						if not suppressRefresh and (not isRemaster or widthChanged) then
+						if not suppressRefresh and (
+							not isRemaster
+							or widthChanged
+							or ZGV.forceRemasterRelayout
+						) then
 							ZGV:UpdateFrame(true)
 							ZGV:ResizeFrame()
 						end
 
+						ZGV.forceRemasterRelayout = nil
 						self.oldWidth = width
 						if ZGV.db.profile.showallsteps then
 							ZGV.db.profile.fullheight = self:GetHeight()

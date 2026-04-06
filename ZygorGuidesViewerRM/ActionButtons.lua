@@ -5,8 +5,10 @@ local L = ZGV.L
 
 local ACTION_BAR_MAX_BUTTONS = 5
 local ACTION_BAR_DEFAULT_ICON = "Interface\\Icons\\INV_Misc_QuestionMark"
-local TALK_ICON = "Interface\\TargetingFrame\\UI-RaidTargetingIcon_4"
-local KILL_ICON = "Interface\\TargetingFrame\\UI-RaidTargetingIcon_8"
+local ACTION_BAR_CUSTOM_ICONS = ZGV.DIR.."\\Skins\\actionbar"
+local TALK_ICON = { file = ZGV.DIR.."\\Skin\\icons", coords = {12/16 + 0.006,13/16 - 0.006,0.08,0.92}, inset = 2, crop = 0.02 }
+local KILL_ICON = { file = ACTION_BAR_CUSTOM_ICONS, coords = {1/8,2/8,0,1}, inset = 2, crop = 0.02 }
+local SCRIPT_ICON = { file = ACTION_BAR_CUSTOM_ICONS, coords = {3/8,4/8,0,1}, inset = 2, crop = 0.02 }
 
 local function wipeattrs(button)
 	button:SetAttribute("type1", nil)
@@ -33,7 +35,10 @@ local function getspellicon(goal)
 end
 
 local function getitemicon(goal)
-	return select(10, GetItemInfo(goal.useitemid or goal.useitem)) or "Interface\\Icons\\INV_Misc_Bag_08"
+	local id = goal.useitemid or goal.useitem
+	local info = { GetItemInfo(id) }
+	-- debug prints removed
+	return select(10, unpack(info)) or "Interface\\Icons\\INV_Misc_Bag_08"
 end
 
 local function getmacroicon(goal)
@@ -41,6 +46,64 @@ local function getmacroicon(goal)
 		return select(2, GetMacroInfo(goal.macro))
 	end
 	return ACTION_BAR_DEFAULT_ICON
+end
+
+local function applyicon(texture, icon)
+	if not texture then return end
+	if type(icon) == "table" then
+		texture:SetTexture(icon.file)
+		if icon.coords then
+			local l, r, t, b = unpack(icon.coords)
+			l = math.max(0, math.min(1, l))
+			r = math.max(0, math.min(1, r))
+			t = math.max(0, math.min(1, t))
+			b = math.max(0, math.min(1, b))
+			if r <= l or b <= t then
+				texture:SetTexCoord(0, 1, 0, 1)
+			else
+				texture:SetTexCoord(l, r, t, b)
+			end
+		else
+			texture:SetTexCoord(0, 1, 0, 1)
+		end
+	else
+		texture:SetTexture(icon or ACTION_BAR_DEFAULT_ICON)
+		-- crop edges to avoid atlas/padding artifacts
+		texture:SetTexCoord(0.12, 0.88, 0.12, 0.88)
+	end
+end
+
+local function applybaricon(texture, icon)
+	if not texture then return end
+	local inset = (type(icon) == "table" and icon.inset) or 3
+	if type(inset) ~= "number" then inset = 3 end
+	inset = math.max(0, inset)
+	texture:ClearAllPoints()
+	texture:SetPoint("TOPLEFT", texture:GetParent(), "TOPLEFT", inset, -inset)
+	texture:SetPoint("BOTTOMRIGHT", texture:GetParent(), "BOTTOMRIGHT", -inset, inset)
+	if type(icon) == "table" then
+		texture:SetTexture(icon.file)
+		if icon.coords then
+			local l, r, t, b = unpack(icon.coords)
+			l = math.max(0, math.min(1, l))
+			r = math.max(0, math.min(1, r))
+			t = math.max(0, math.min(1, t))
+			b = math.max(0, math.min(1, b))
+			if r <= l or b <= t then
+				l, r, t, b = 0.07, 0.93, 0.07, 0.93
+			end
+			local crop = icon.crop or 0.03
+			crop = math.max(0, math.min(0.49, crop))
+			local xinset = (r - l) * crop
+			local yinset = (b - t) * crop
+			texture:SetTexCoord(l + xinset, r - xinset, t + yinset, b - yinset)
+		else
+			texture:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+		end
+	else
+		texture:SetTexture(icon or ACTION_BAR_DEFAULT_ICON)
+		texture:SetTexCoord(0.12, 0.88, 0.12, 0.88)
+	end
 end
 
 function ZGV:GetGoalActionTargetName(goal)
@@ -85,11 +148,10 @@ local function buildtargetmacro(name, marker)
 	end
 	return table.concat(lines, "\n")
 end
-
 function ZGV:GetGoalActionSpec(goal)
 	if not goal then return end
 
-	if (goal.useitemid or goal.useitem) and GetItemCount(goal.useitemid or goal.useitem) > 0 then
+	if (goal.useitemid or goal.useitem) then
 		return {
 			kind = "item",
 			type = "item",
@@ -135,7 +197,7 @@ function ZGV:GetGoalActionSpec(goal)
 			kind = "script",
 			type = "macro",
 			macro = "ZygorGuidesMacro" .. goal.num,
-			icon = getmacroicon(goal),
+			icon = goal.macro and getmacroicon(goal) or SCRIPT_ICON,
 			tooltip = "script",
 			signature = "script:" .. tostring(goal.num),
 		}
@@ -233,7 +295,17 @@ function ZGV:ApplyInlineActionSpec(spec, action, petaction, actname)
 		petaction.tooltipName = spec.tooltipName
 		petaction.tooltipSubtext = spec.tooltipSubtext
 		petaction.actionSpec = spec
-		if peticon then peticon:SetTexture(spec.icon or ACTION_BAR_DEFAULT_ICON) end
+		if peticon then
+			local _, _, tex, isToken = GetPetActionInfo(spec.petaction)
+			peticon:ClearAllPoints()
+			peticon:SetAllPoints(petaction)
+			if tex then
+				peticon:SetTexture(isToken and _G[tex] or tex)
+			else
+				peticon:SetTexture(spec.icon or ACTION_BAR_DEFAULT_ICON)
+			end
+			peticon:SetTexCoord(0, 1, 0, 1)
+		end
 		return "petaction"
 	end
 
@@ -250,7 +322,10 @@ function ZGV:ApplyInlineActionSpec(spec, action, petaction, actname)
 	end
 
 	action.actionSpec = spec
-	if icon then icon:SetTexture(spec.icon or ACTION_BAR_DEFAULT_ICON) end
+	if icon then
+				-- debug prints removed
+		applyicon(icon, spec.icon or ACTION_BAR_DEFAULT_ICON)
+	end
 	return "action"
 end
 
@@ -419,7 +494,8 @@ function ZGV:ActionButtons_ApplyButtonSpec(button, spec)
 	end
 
 	button.actionSpec = spec
-	button.icon:SetTexture(spec.icon or ACTION_BAR_DEFAULT_ICON)
+	-- debug prints removed
+	applybaricon(button.icon, spec.icon or ACTION_BAR_DEFAULT_ICON)
 	button:Show()
 end
 

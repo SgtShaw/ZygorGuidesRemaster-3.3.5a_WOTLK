@@ -446,15 +446,22 @@ function me:Options_DefineOptions()
 								self.db.profile.showallsteps=false
 								self.db.profile.showcountsteps=n
 							end
-							self:UpdateFrame(true)
-							self:AlignFrame()
-							self:UpdateLocking()
-							self:ScrollToCurrentStep()
-							if not self.db.profile.showallsteps then
-								if ZygorGuidesViewerFrameScrollScrollBar then
-									ZygorGuidesViewerFrameScrollScrollBar:SetValue(1)
+							local frame = ZygorGuidesViewerFrame
+							local handler = frame and frame.GetScript and frame:GetScript("OnSizeChanged")
+							if self.db.profile.skin == "remaster" and frame and handler then
+								self.forceRemasterRelayout = true
+								handler(frame)
+							else
+								self:UpdateFrame(true)
+								self:AlignFrame()
+								self:UpdateLocking()
+								self:ScrollToCurrentStep()
+								if not self.db.profile.showallsteps then
+									if ZygorGuidesViewerFrameScrollScrollBar then
+										ZygorGuidesViewerFrameScrollScrollBar:SetValue(0)
+									end
+									self:ResizeFrame()
 								end
-								self:ResizeFrame()
 							end
 						      end,
 						order=1,
