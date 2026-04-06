@@ -265,7 +265,7 @@ ZygorGuidesViewer_L("Main", "enUS", function() return {
 	["initialized"] = 'Initialized.',
 
 	["miniframe_notloaded"] = "No leveling guides are loaded.|n|nPlease go to http://zygorguides.com to purchase Zygor's 1-80 Leveling Guides, or load some third-party guides.|n|nIf you're sure you have installed some guides, ask their authors for installation troubleshooting.",
-	["miniframe_notselected"] = "No guide is currently selected.\nPlease click the blinking button above to select a guide.",
+	["miniframe_notselected"] = "No guide is currently selected.\nPlease click the flashing Guides button to select a guide.",
 	["miniframe_loading"] = "Loading guides: %d%%",
 
 	['frame_locked'] = "Window locked",
@@ -375,11 +375,6 @@ ZygorGuidesViewer_L("Main", "enUS", function() return {
 	["binding_togglewindow"] = "Show Guide Window",
 	["binding_prev"] = "Previous Step",
 	["binding_next"] = "Next Step",
-	["binding_actionbutton1"] = "Action Button 1",
-	["binding_actionbutton2"] = "Action Button 2",
-	["binding_actionbutton3"] = "Action Button 3",
-	["binding_actionbutton4"] = "Action Button 4",
-	["binding_actionbutton5"] = "Action Button 5",
 
 	["req_not"] = "not %s",
 
@@ -597,6 +592,8 @@ ZygorGuidesViewer_L("Main", "enUS", function() return {
 	["opt_actionbuttons_intro"] = "Configure goal icon and interactive step presentation.",
 	["opt_actionbar_enable"] = "Enable Action Bar",
 	["opt_actionbar_enable_desc"] = "Show a movable action bar for the current step's actionable goals.",
+	["opt_inlinebuttons_enable"] = "Enable Inline Buttons",
+	["opt_inlinebuttons_enable_desc"] = "Show actionable talk/kill buttons directly inside step lines. These are hidden when step line icons are disabled or the action bar is disabled.",
 	["opt_actionbar_onlywhenneeded"] = "Show Only When Needed",
 	["opt_actionbar_onlywhenneeded_desc"] = "Hide the action bar when the current step has no actionable buttons.",
 	["opt_actionbar_locked"] = "Lock Action Bar Position",
@@ -640,7 +637,7 @@ ZygorGuidesViewer_L("Main", "enUS", function() return {
 	["opt_targetpreview_mode_card"] = "Info Card Only",
 	["opt_targetpreview_resetanchor"] = "Reset Target Preview Position",
 	["opt_targetpreview_resetanchor_desc"] = "Reset the target preview pane to its default snapped position.",
-	["targetpreview_title"] = "Drag to move Target Preview",
+	["targetpreview_title"] = "Target Preview",
 	["targetpreview_title_locked"] = "Target Preview",
 	["targetpreview_role_talk"] = "Talk to",
 	["targetpreview_role_kill"] = "Kill",
@@ -665,6 +662,7 @@ ZygorGuidesViewer_L("Main", "enUS", function() return {
 	["frame_toolbar_stepview_showall"] = "to show all",
 	["frame_toolbar_stepview_showonly"] = "to show only |cffffffff%s|r",
 	["frame_toolbar_stepview_setcount"] = "to set number of steps",
+	["frame_toolbar_stepview_options"] = "to open Step Display options",
 	["frame_toolbar_unlock"] = "Unlock Window",
 	["frame_toolbar_unlock_click"] = "to unlock",
 	["frame_toolbar_lock"] = "Lock Window",

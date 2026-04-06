@@ -29,6 +29,19 @@ local Gratuity = LibStub("LibGratuity-3.0")
 me.registeredguides = {}
 me.registeredmapspotsets = {}
 
+do
+	local frameIndex = CreateFrame and CreateFrame("Frame")
+	if frameIndex and not frameIndex.SetShown then
+		frameIndex.SetShown = function(self, shown)
+			if shown then self:Show() else self:Hide() end
+		end
+	end
+	local cooldownIndex = CreateFrame and CreateFrame("Cooldown")
+	if cooldownIndex and not cooldownIndex.SetDrawSwipe then
+		cooldownIndex.SetDrawSwipe = function() end
+	end
+end
+
 local addonName = ...
 local DIR = "Interface\\AddOns\\"..(addonName or "ZygorGuidesViewer")
 ZGV.DIR = DIR
@@ -45,23 +58,6 @@ BINDING_NAME_ZYGORGUIDES_NEXT = L["binding_next"]
 
 local _,_,_,ver = GetBuildInfo()
 local WotLK = (ver>=30000)
-
-do
-	local probe = CreateFrame and CreateFrame("Frame")
-	local frameIndex = probe and getmetatable(probe) and getmetatable(probe).__index
-	if frameIndex and not frameIndex.SetShown then
-		frameIndex.SetShown = function(self, shown)
-			if shown then self:Show() else self:Hide() end
-		end
-	end
-	local cooldown = probe and CreateFrame and CreateFrame("Cooldown", nil, probe, "CooldownFrameTemplate")
-	local cooldownIndex = cooldown and getmetatable(cooldown) and getmetatable(cooldown).__index
-	if cooldownIndex and not cooldownIndex.SetDrawSwipe then
-		cooldownIndex.SetDrawSwipe = function() end
-	end
-	if cooldown and cooldown.Hide then cooldown:Hide() end
-	if probe and probe.Hide then probe:Hide() end
-end
 
 
 local BZ = LibStub("LibBabble-Zone-3.0")
@@ -109,7 +105,7 @@ ZGV.STEPMARGIN_Y=4
 ZGV.MIN_STEP_HEIGHT=15
 
 local FONT = STANDARD_TEXT_FONT
---ZGV.BUTTONS_INLINE=true
+ZGV.BUTTONS_INLINE=true
 local cos, sin, rad, deg = math.cos, math.sin, math.rad, math.deg
 local atan2 = math.atan2
 local MAPBUTTON_RADIUS = 78
@@ -347,7 +343,7 @@ if not me.ActionButtons_Refresh then
 			local target = self:GetGoalActionTargetName(goal)
 			local macrotext = AB_BuildTargetMacro(target)
 			if macrotext then
-				return { kind = "talk", type = "macro", macrotext = macrotext, icon = TALK_ICON, target = target, creatureid = goal.npcid, marker = 4, tooltip = "talk", signature = "talk:" .. tostring(goal.npcid or target) }
+				return { kind = "talk", type = "macro", macrotext = macrotext, icon = TALK_ICON, target = target, marker = 4, tooltip = "talk", signature = "talk:" .. tostring(goal.npcid or target) }
 			end
 		end
 
@@ -357,18 +353,7 @@ if not me.ActionButtons_Refresh then
 			local macrotext, candidates = AB_BuildTargetMacroCandidates(target, singular)
 			local canonical = (candidates and candidates[#candidates]) or singular or target
 			if macrotext then
-				return {
-					kind = "kill",
-					type = "macro",
-					macrotext = macrotext,
-					icon = KILL_ICON,
-					target = canonical,
-					creatureid = goal.targetid,
-					targetaliases = candidates,
-					marker = 8,
-					tooltip = "kill",
-					signature = "kill:" .. tostring(goal.targetid or canonical)
-				}
+				return { kind = "kill", type = "macro", macrotext = macrotext, icon = KILL_ICON, target = canonical, targetaliases = candidates, marker = 8, tooltip = "kill", signature = "kill:" .. tostring(goal.targetid or canonical) }
 			end
 		end
 	end
@@ -410,8 +395,9 @@ if not me.ActionButtons_Refresh then
 	end
 
 	function me:ApplyInlineActionSpec(spec, action, petaction, actname)
-		local icon = _G[actname .. "ActionIcon"]
-		local peticon = _G[actname .. "PetActionIcon"]
+		if not action or not petaction then return false end
+		local icon = action.icon or (actname and _G[actname .. "ActionIcon"])
+		local peticon = actname and _G[actname .. "PetActionIcon"]
 
 		AB_WipeAttrs(action)
 		action:Hide()
@@ -441,15 +427,9 @@ if not me.ActionButtons_Refresh then
 		end
 
 		action.actionSpec = spec
+		action.previewSubject = spec
 		if icon then AB_ApplyIcon(icon, spec.icon or spec.fallbackicon or ACTION_BAR_DEFAULT_ICON) end
 		return "action"
-	end
-
-	function me:GetInlineActionScale(spec)
-		if spec and spec.kind == "kill" then
-			return 0.9
-		end
-		return 1
 	end
 
 	function me:GetCurrentStepActionSpecs()
@@ -666,54 +646,41 @@ if not me.ActionButtons_Refresh then
 		bar.close:SetPoint("TOPRIGHT", bar, "TOPRIGHT", -4, -4)
 	end
 
-	function me:ActionButtons_ApplyTheme()
-		local bar = self.ActionButtonBar
-		if not bar or not self.db or not self.db.profile then return end
-		local backc = self.db.profile.skincolors and self.db.profile.skincolors.back or {0.08, 0.09, 0.12}
-		local textc = self.db.profile.skincolors and self.db.profile.skincolors.text or {0.90, 0.92, 0.98}
-		local backalpha = self.db.profile.backopacity or 0.3
-		local opacitymain = self.db.profile.opacitymain or 1.0
-		local remastercolor = self.db.profile.remastercolor or "dark"
-		local isGoldAccent = (remastercolor == "goldaccent" or remastercolor == "goals")
-		local border = { 0.18, 0.18, 0.20, 0.92 }
-		local closeBack = { 0.13, 0.13, 0.14, 0.95 }
-		local closePush = { 0.19, 0.19, 0.21, 0.98 }
-		local closeText = textc
-		if isGoldAccent then
-			backc = { 0.04, 0.04, 0.05 }
-			border = { 0.17, 0.15, 0.10, 0.88 }
-			closeBack = { 0.09, 0.08, 0.07, 0.96 }
-			closePush = { 0.22, 0.17, 0.08, 0.98 }
-			closeText = { 0.92, 0.80, 0.50, 1.00 }
-		end
-		bar:SetAlpha(opacitymain)
-		bar:SetBackdropColor(backc[1], backc[2], backc[3], backalpha)
-		bar:SetBackdropBorderColor(border[1], border[2], border[3], border[4] or 1)
-		if bar.close then
-			if bar.close.GetNormalTexture and bar.close:GetNormalTexture() then
-				bar.close:GetNormalTexture():SetVertexColor(closeBack[1], closeBack[2], closeBack[3], closeBack[4] or 1)
-			end
-			if bar.close.GetPushedTexture and bar.close:GetPushedTexture() then
-				bar.close:GetPushedTexture():SetVertexColor(closePush[1], closePush[2], closePush[3], closePush[4] or 1)
-			end
-			if bar.close.x then
-				bar.close.x:SetTextColor(closeText[1], closeText[2], closeText[3], closeText[4] or 1)
-			end
-		end
-	end
-
 	function me:ActionButtons_UpdateDragState()
 		local bar = self.ActionButtonBar
 		if not bar then return end
 		local locked = self.db.profile.actionbuttonbar_locked
 		bar:EnableMouse(not locked)
 		bar:SetMovable(not locked)
-		if bar.close then
-			if locked then
-				bar.close:Hide()
-			else
-				bar.close:Show()
-			end
+		if bar.close.SetShown then
+			bar.close:SetShown(true)
+		else
+			bar.close:Show()
+		end
+	end
+
+	function me:ActionButtons_ApplyTheme()
+		local bar = self.ActionButtonBar
+		if not bar or not self.db or not self.db.profile then return end
+
+		local textc = self.db.profile.skincolors and self.db.profile.skincolors.text or {0.90, 0.92, 0.98}
+		local backc = self.db.profile.skincolors and self.db.profile.skincolors.back or {0.08, 0.09, 0.12}
+		local backalpha = self.db.profile.backopacity or 0.3
+		local opacitymain = self.db.profile.opacitymain or 1.0
+		local remastercolor = self.db.profile.remastercolor or "dark"
+		local isGoldAccent = (remastercolor == "goldaccent" or remastercolor == "goals")
+		local border = { 0.18, 0.18, 0.20, 0.92 }
+
+		if isGoldAccent then
+			backc = { 0.04, 0.04, 0.05 }
+			border = { 0.17, 0.15, 0.10, 0.88 }
+		end
+
+		bar:SetAlpha(opacitymain)
+		bar:SetBackdropColor(backc[1], backc[2], backc[3], backalpha)
+		bar:SetBackdropBorderColor(border[1], border[2], border[3], border[4])
+		if bar.close and bar.close.x then
+			bar.close.x:SetTextColor(textc[1], textc[2], textc[3], 0.95)
 		end
 	end
 
@@ -731,8 +698,6 @@ if not me.ActionButtons_Refresh then
 			edgeSize = 12,
 			insets = { left = 2, right = 2, top = 2, bottom = 2 },
 		})
-		bar:SetBackdropColor(0, 0, 0, 0.92)
-		bar:SetBackdropBorderColor(0.35, 0.35, 0.35, 0.95)
 		bar:SetScript("OnDragStart", function(frame)
 			if not me.db.profile.actionbuttonbar_locked then
 				frame.snapped = false
@@ -851,6 +816,10 @@ if not me.ActionButtons_Refresh then
 			if self.ActionButtonBar then self.ActionButtonBar:Hide() end
 			return
 		end
+		if not self.Frame or not self.Frame:IsShown() then
+			if self.ActionButtonBar then self.ActionButtonBar:Hide() end
+			return
+		end
 		if InCombatLockdown() and not force then
 			self.actionButtonsRefreshPending = true
 			return
@@ -863,7 +832,6 @@ if not me.ActionButtons_Refresh then
 		end
 		local shouldShow = (not self.db.profile.actionbuttonbar_onlywhenneeded) or (#specs > 0)
 		self:ActionButtons_ApplyAnchor()
-		self:ActionButtons_ApplyTheme()
 		self:ActionButtons_Layout()
 		self:ActionButtons_UpdateDragState()
 		if shouldShow then
@@ -878,20 +846,6 @@ if not me.ActionButtons_Refresh then
 		local bar = self.ActionButtonBar
 		local button = bar and bar.buttons and bar.buttons[index]
 		if button and button:IsVisible() then button:Click() end
-	end
-
-	function me:ActionButtons_ClickSpec(spec)
-		if not spec or not spec.signature then return false end
-		local bar = self.ActionButtonBar
-		if not bar or not bar.buttons then return false end
-		for i = 1, ACTION_BAR_MAX_BUTTONS do
-			local button = bar.buttons[i]
-			if button and button:IsVisible() and button.actionSpec and button.actionSpec.signature == spec.signature then
-				button:Click()
-				return true
-			end
-		end
-		return false
 	end
 
 	function me:ActionButtons_ResetAnchor()
@@ -970,6 +924,16 @@ if not me.ActionButtons_Refresh then
 		self:ActionButtons_UpdateDragState()
 		self:ActionButtons_Refresh(true)
 	end
+end
+
+function me:InlineButtonsEnabled()
+	return not not (
+		self.BUTTONS_INLINE
+		and self.db and self.db.profile
+		and self.db.profile.goalicons
+		and self.db.profile.actionbuttonbar_enabled
+		and self.db.profile.inlinebuttons_enabled ~= false
+	)
 end
 
 local function NormalizeDegrees(angle)
@@ -1197,6 +1161,124 @@ function me:UpdateLegacyHeaderTitle(fullTitle)
 	titleFS:SetText(line1.."\n"..line2)
 end
 
+function me:GetCurrentGuideProgress()
+	if not (self.CurrentGuide and self.CurrentGuide.steps and #self.CurrentGuide.steps > 0) then
+		return 0, 0, 0
+	end
+	local total = #self.CurrentGuide.steps
+	local current = tonumber(self.CurrentStepNum or 1) or 1
+	if current < 1 then current = 1 end
+	if current > total then current = total end
+	local progress = total > 0 and (current / total) or 0
+	return progress, current, total
+end
+
+function me:GetGuideProgressPadding()
+	if self.CurrentGuide and self.db and self.db.profile and self.db.profile.displaymode == "guide" then
+		return 10
+	end
+	return 0
+end
+
+function me:EnsureGuideProgressWidgets()
+	if not ZygorGuidesViewerFrame then return end
+
+	if not self.GuideProgressBar then
+		local bar = CreateFrame("Frame", "ZGVGuideProgressBar", ZygorGuidesViewerFrame)
+		bar:SetHeight(4)
+		bar:SetFrameLevel(ZygorGuidesViewerFrame:GetFrameLevel() + 6)
+
+		local bg = bar:CreateTexture(nil, "BORDER")
+		bg:SetAllPoints(bar)
+		if bg.SetColorTexture then
+			bg:SetColorTexture(1, 1, 1, 0.12)
+		else
+			bg:SetTexture(1, 1, 1, 0.12)
+		end
+		bar.bg = bg
+
+		local fill = bar:CreateTexture(nil, "ARTWORK")
+		fill:SetPoint("TOPLEFT", bar, "TOPLEFT", 0, 0)
+		fill:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", 0, 0)
+		fill:SetWidth(0)
+		if fill.SetColorTexture then
+			fill:SetColorTexture(0.20, 0.72, 0.28, 0.95)
+		else
+			fill:SetTexture(0.20, 0.72, 0.28, 0.95)
+		end
+		bar.fill = fill
+		bar:Hide()
+		self.GuideProgressBar = bar
+	end
+end
+
+function me:UpdateGuideProgressWidgets()
+	self:EnsureGuideProgressWidgets()
+	local progress, current, total = self:GetCurrentGuideProgress()
+	local bar = self.GuideProgressBar
+	if not bar then return end
+
+	local show = total > 0 and self.CurrentGuide and self.db and self.db.profile and self.db.profile.displaymode == "guide"
+	local stepframe = self.CurrentStepframeNum and self.stepframes and self.stepframes[self.CurrentStepframeNum]
+	if not show or not stepframe or not stepframe:IsShown() then
+		bar:Hide()
+		return
+	end
+
+	bar:SetParent(stepframe)
+	bar:ClearAllPoints()
+	bar:SetPoint("BOTTOMLEFT", stepframe, "BOTTOMLEFT", ZGV.STEPMARGIN_X, 6)
+	bar:SetPoint("BOTTOMRIGHT", stepframe, "BOTTOMRIGHT", -ZGV.STEPMARGIN_X, 6)
+	bar:SetFrameStrata(stepframe:GetFrameStrata())
+	bar:SetFrameLevel(stepframe:GetFrameLevel() + 20)
+
+	if bar.bg then
+		if self.db and self.db.profile and self.db.profile.skin == "remaster" then
+			if bar.bg.SetColorTexture then
+				bar.bg:SetColorTexture(1, 1, 1, 0.10)
+			else
+				bar.bg:SetTexture(1, 1, 1, 0.10)
+			end
+		else
+			if bar.bg.SetColorTexture then
+				bar.bg:SetColorTexture(1, 1, 1, 0.12)
+			else
+				bar.bg:SetTexture(1, 1, 1, 0.12)
+			end
+		end
+	end
+
+	if bar.fill then
+		if self.db and self.db.profile and self.db.profile.skin == "remaster" then
+			local accent = (self.db.profile.remastercolor == "goldaccent" or self.db.profile.remastercolor == "goals")
+			if bar.fill.SetColorTexture then
+				if accent then
+					bar.fill:SetColorTexture(0.86, 0.68, 0.22, 0.98)
+				else
+					bar.fill:SetColorTexture(0.28, 0.82, 0.36, 0.98)
+				end
+			else
+				if accent then
+					bar.fill:SetTexture(0.86, 0.68, 0.22, 0.98)
+				else
+					bar.fill:SetTexture(0.28, 0.82, 0.36, 0.98)
+				end
+			end
+		else
+			if bar.fill.SetColorTexture then
+				bar.fill:SetColorTexture(0.20, 0.72, 0.28, 0.95)
+			else
+				bar.fill:SetTexture(0.20, 0.72, 0.28, 0.95)
+			end
+		end
+	end
+
+	bar:Show()
+	local width = bar:GetWidth() or 0
+	local fillWidth = math.max(0, math.min(width, width * progress))
+	bar.fill:SetWidth(fillWidth)
+end
+
 
 function me:UpdateRemasterHeader()
 	if not self.RemasterFrames then
@@ -1395,6 +1477,7 @@ function me:UpdateRemasterHeader()
 	if frames.stepLabel then
 		frames.stepLabel:SetText(stepText)
 	end
+	self:UpdateGuideProgressWidgets()
 end
 
 function me:EnsureRemasterFrames()
@@ -1741,24 +1824,26 @@ function me:EnsureRemasterFrames()
 	styleCompositeButton(miniButton, "Menu-WithBG")
 	miniButton:SetPoint("RIGHT", settingsButton, "LEFT", -6, 0)
 	miniButton:SetScript("OnClick", function(selfBtn, button)
-		if button == "RightButton" then
-			if ZygorGuidesViewer.OpenGuideManagerStepDisplay then
-				ZygorGuidesViewer:OpenGuideManagerStepDisplay()
-			elseif ZygorGuidesViewer.OpenStepDisplayOptions then
+		if button == "LeftButton" then
+			ZygorGuidesViewer:OpenQuickSteps()
+		else
+			if ZGV and ZGV.OpenGuideManagerStepDisplay then
+				ZGV:OpenGuideManagerStepDisplay()
+			elseif ZygorGuidesViewer and ZygorGuidesViewer.OpenStepDisplayOptions then
 				ZygorGuidesViewer:OpenStepDisplayOptions()
 			else
-				InterfaceOptionsFrame_OpenToCategory((ZygorGuidesViewer.optionsstepdisplay and ZygorGuidesViewer.optionsstepdisplay.name) or "Step Display")
+				ZygorGuidesViewer:SetOption("StepDisplay","showcountsteps "..(ZGV.db.profile.showallsteps and ZGV.db.profile.showcountsteps or 0))
 			end
-		else
-			ZygorGuidesViewer:OpenQuickSteps()
 		end
 	end)
 	miniButton:RegisterForClicks("LeftButtonUp", "RightButtonUp")
 	miniButton:SetScript("OnEnter", function(selfBtn)
 		GameTooltip:SetOwner(selfBtn, "ANCHOR_TOPRIGHT")
 		GameTooltip:SetText(L["frame_toolbar_stepview"])
-		GameTooltip:AddLine(tipClick(L["frame_toolbar_stepview_setcount"]))
-		GameTooltip:AddLine(tipRight(L["frame_toolbar_settings_right"]))
+		if ZGV and ZGV.db and ZGV.db.profile then
+			GameTooltip:AddLine(tipClick(L["frame_toolbar_stepview_setcount"]))
+			GameTooltip:AddLine(tipRight((L["frame_toolbar_stepview_options"] or "to open Step Display options")))
+		end
 		GameTooltip:Show()
 	end)
 	miniButton:SetScript("OnLeave", function()
@@ -1913,7 +1998,7 @@ function me:OnInitialize()
 	--LibSimpleOptions.AddSlashCommand("Zygor's Guide","/zygoropt")
 
 	self:Options_SetupConfig()
-	self:Options_SetupBlizConfig()
+	self.blizConfigPending = true
 
 --	self:Echo(L["initialized"])
 	self:Debug ("Initialized.")
@@ -1937,13 +2022,7 @@ function me:OnInitialize()
 	end
 
 
-	if self.LibTaxi then
-		if not self.db.char.taxis then self.db.char.taxis = {} end
-		self.LibTaxi:Startup(self.db.char.taxis)
-	end
-
-	if self.Pointer then self.Pointer:Startup() end
-	if self.Foglight then self.Foglight:Startup() end
+	self.deferredWorldStartupPending = true
 
 	if ZygorTalentAdvisor and ZygorTalentAdvisor.revision > self.revision then
 		self.revision = ZygorTalentAdvisor.revision
@@ -1967,13 +2046,14 @@ function me:OnEnable()
 
 	self:UpdateMapButton()
 	self:UpdateSkin()
-	if self.ActionButtons_ApplyProfile then
-		self:ActionButtons_ApplyProfile()
-	end
+	self.optionalUiProfilePending = true
 
 	self:Debug("enabled")
 
 	self:AddEvent("UNIT_INVENTORY_CHANGED")
+	self:AddEvent("BAG_UPDATE","LiveProgressEvent")
+	self:AddEvent("CHAT_MSG_COMBAT_HOSTILE_DEATH","LiveProgressEvent")
+	self:AddEvent("CHAT_MSG_COMBAT_XP_GAIN","LiveProgressEvent")
 
 	-- combat detection for hiding in combat
 	self:AddEvent("PLAYER_REGEN_DISABLED")
@@ -1990,9 +2070,7 @@ function me:OnEnable()
 		startup(self)
 	end
 
-	self:SetWaypointAddon(self.db.profile.waypointaddon)
-
-	self:PruneNPCs()
+	self.deferredWorldStartupPending = true
 
 	self.Log.entries = self.db.char.debuglog
 	self.Log:Add("Viewer started. ---------------------------")
@@ -2003,6 +2081,30 @@ function me:OnEnable()
 	--self:QueryQuests()
 
 	if ZGV_DEV then ZGV_DEV() end
+end
+
+function me:EnsureOptionalUIProfile(force)
+	if not force and not self.optionalUiProfilePending then return end
+	self.optionalUiProfilePending = nil
+	if self.ActionButtons_ApplyProfile then
+		self:ActionButtons_ApplyProfile()
+	end
+	if self.TargetPreview_ApplyProfile then
+		self:TargetPreview_ApplyProfile()
+	end
+end
+
+function me:EnsureDeferredWorldStartup(force)
+	if not force and not self.deferredWorldStartupPending then return end
+	self.deferredWorldStartupPending = nil
+	if self.LibTaxi then
+		if not self.db.char.taxis then self.db.char.taxis = {} end
+		self.LibTaxi:Startup(self.db.char.taxis)
+	end
+	if self.Pointer then self.Pointer:Startup() end
+	if self.Foglight then self.Foglight:Startup() end
+	self:SetWaypointAddon(self.db.profile.waypointaddon)
+	self:PruneNPCs()
 end
 
 function me:OnDisable()
@@ -2065,6 +2167,22 @@ function me:OnFirstQuestLogUpdate()
 	self:AlignFrame()
 	self:UpdateFrame(true)
 	self.questLogInitialized = true
+	if self.deferredWorldStartupPending and self.ScheduleTimer then
+		self:ScheduleTimer(function()
+			if ZGV and ZGV.EnsureDeferredWorldStartup and ZGV.questLogInitialized then
+				ZGV:EnsureDeferredWorldStartup()
+			end
+		end, 0.20)
+	elseif self.deferredWorldStartupPending and self.EnsureDeferredWorldStartup then
+		self:EnsureDeferredWorldStartup()
+	end
+	if self.optionalUiProfilePending and self.Frame and self.Frame:IsShown() and self.ScheduleTimer then
+		self:ScheduleTimer(function()
+			if ZGV and ZGV.EnsureOptionalUIProfile and ZGV.Frame and ZGV.Frame:IsShown() and ZGV.questLogInitialized then
+				ZGV:EnsureOptionalUIProfile()
+			end
+		end, 0.20)
+	end
 end
 
 function me:GetGuideByTitle(title)
@@ -2186,6 +2304,13 @@ function me:FocusStep(num,quiet)
 	if not self.CurrentGuide.steps then return end
 	if num>#self.CurrentGuide.steps then return end
 
+	if self:InlineButtonsEnabled() and InCombatLockdown() and self.actionsvisible and self.inlineRenderedStepNum then
+		self.pendingCombatStepNum = num
+		self.pendingCombatStepQuiet = quiet and true or false
+		self.pendingInlineCombatRefresh = true
+		return
+	end
+
 	self:Debug("FocusStep "..num..(quiet and " (quiet)" or ""))
 
 	self.CurrentStepNum = num
@@ -2217,9 +2342,25 @@ function me:FocusStep(num,quiet)
 		self:UpdateFrame(true)
 		self:ScrollToCurrentStep()
 		self:UpdateCooldowns()
+		if self.ScheduleTimer then
+			self:ScheduleTimer(function()
+				if ZGV and ZGV.UpdateFrameCurrent then
+					ZGV:UpdateFrameCurrent()
+					if ZGV.ActionButtons_Refresh then ZGV:ActionButtons_Refresh(true) end
+					if ZGV.TargetPreview_Refresh then ZGV:TargetPreview_Refresh(true) end
+				end
+			end, 0.05)
+			self:ScheduleTimer(function()
+				if ZGV and ZGV.UpdateFrameCurrent then
+					ZGV:UpdateFrameCurrent()
+					if ZGV.ActionButtons_Refresh then ZGV:ActionButtons_Refresh(true) end
+					if ZGV.TargetPreview_Refresh then ZGV:TargetPreview_Refresh(true) end
+				end
+			end, 0.20)
+		end
 
 		self:UpdateCartographerExport()
-		self:RefreshCurrentWaypoint()
+		self:SetWaypoint()
 	end
 	--self:UpdateMinimapArrow(true)
 
@@ -2319,8 +2460,11 @@ end
 -- 09-09-24: 
 function me:TryToCompleteStep(force)
 	if not self.CurrentStep then return end
+	local triedStepBefore = self.lasttriedstep
+	local wasCompletedBefore = self.lastwascompleted
+	local previousGoalStateSig = self.lastCurrentStepGoalStateSig
 
-	if self.BUTTONS_INLINE then
+	if self:InlineButtonsEnabled() then
 		if self.actionsvisible and InCombatLockdown() then return end
 	end
 
@@ -2448,13 +2592,37 @@ function me:TryToCompleteStep(force)
 		--if not updated then self:UpdateFrame() end
 	end
 
-	self:UpdateFrame()
-	-- Keep arrow target synced with sub-goal progression (e.g. chained goto/path points)
-	-- even when the step itself doesn't change.
-	self:SetWaypoint()
+	local goalStateSig
+	if self.CurrentStep and self.CurrentStep.goals then
+		local parts = {}
+		for gi,goal in ipairs(self.CurrentStep.goals) do
+			if goal:IsVisible() then
+				local status,detail = goal:GetStatus()
+				parts[#parts+1] = gi .. ":" .. tostring(status) .. ":" .. tostring(detail)
+			end
+		end
+		goalStateSig = table.concat(parts, "|")
+	end
+
+	local stepStateChanged =
+		(triedStepBefore ~= self.CurrentStep)
+		or (wasCompletedBefore ~= stepcomplete)
+		or (self.frameNeedsUpdating and true or false)
+
+	if stepStateChanged then
+		self:UpdateFrame()
+		-- Keep arrow target synced when the visible step state actually changed.
+		self:SetWaypoint()
+	elseif previousGoalStateSig ~= goalStateSig then
+		-- Goal text such as "(#/x)" lives in the full step-line rebuild, not the
+		-- current-step color/icon pass. Refresh the viewer without re-pointing the
+		-- arrow when only per-goal progress changed.
+		self:UpdateFrame()
+	end
 
 	self.lasttriedstep = self.CurrentStep
 	self.lastwascompleted = stepcomplete
+	self.lastCurrentStepGoalStateSig = goalStateSig
 end
 
 
@@ -2551,6 +2719,7 @@ end
 function me:StopFlashAnimation()
 	if not self.stepframes[1] then return end
 	for s=1,20 do
+		if not (self.stepframes[s] and self.stepframes[s].lines) then break end
 		for i=1,20,1 do
 			local anim_w2g = self.stepframes[s].lines[i].anim_w2g
 			if not anim_w2g then break end
@@ -2572,9 +2741,9 @@ function me:UpdateCooldowns()
 	local stepframe = self.stepframes[self.CurrentStepframeNum]
 	if not stepframe then return end
 	for i=1,20,1 do
-		local cooldown = _G["ZygorGuidesViewerFrame_Act"..i.."ActionCooldown"]
-		if not cooldown then return end
-		local goal = stepframe.lines[i].goal
+		local line = stepframe.lines[i]
+		local cooldown = line and line.cooldown
+		local goal = line.goal
 		if goal and goal:IsActionable() then
 			--cooldown:Show()
 			--self:Debug("goal "..i.." actionable")
@@ -2637,51 +2806,6 @@ function me:SetDisplayMode(mode)
 	self:UpdateFrame(true)
 end
 
-function me:RefreshCurrentWaypoint()
-	if not self.CurrentStep then return end
-	self:SetWaypoint()
-	if self.Pointer and self.Pointer.UpdateWaypoints then
-		self.Pointer:UpdateWaypoints()
-	end
-end
-
-function me:ToggleStepViewMode()
-	if not (self.db and self.db.profile) then return end
-	if self.db.profile.showallsteps then
-		self.db.profile.showallsteps = false
-		if not self.db.profile.showcountsteps or self.db.profile.showcountsteps < 1 then
-			self.db.profile.showcountsteps = 1
-		end
-		if ZygorGuidesViewerFrameScrollScrollBar then
-			ZygorGuidesViewerFrameScrollScrollBar:SetValue(1)
-		end
-	else
-		self.db.profile.showallsteps = true
-		local targetHeight = self.db.profile.fullheight or 0
-		if self.Frame and self.Frame.GetHeight then
-			local h = self.Frame:GetHeight()
-			if h and h > (MIN_HEIGHT or 0) then
-				self.db.profile.fullheight = max(self.db.profile.fullheight or 0, h)
-				targetHeight = self.db.profile.fullheight
-			end
-		end
-		if targetHeight < 400 then targetHeight = 400 end
-		if self.Frame then
-			self.Frame:SetHeight(targetHeight)
-		end
-		if ZygorGuidesViewerFrameScrollScrollBar and self.CurrentStepNum then
-			ZygorGuidesViewerFrameScrollScrollBar:SetValue(self.CurrentStepNum)
-		end
-	end
-	self.stepchanged = true
-	self:UpdateFrame(true)
-	self:AlignFrame()
-	self:UpdateLocking()
-	self:ScrollToCurrentStep()
-	self:ResizeFrame()
-	self:RefreshCurrentWaypoint()
-end
-
 local Tpi=6.2832
 local cardinals = {"N","NW","W","SW","S","SE","E","NE","N"}
 local function GetCardinalDirName(angle)
@@ -2708,6 +2832,15 @@ function me:UpdateFrame(full,onupdate)
 
 	if not self.Frame or not self.Frame:IsVisible() then return end
 
+	-- If a step changes during combat while inline secure buttons are active,
+	-- keep the visible viewer on the last fully rendered step until combat ends.
+	-- Otherwise the new step text can render while the old protected inline
+	-- button is still stuck on the reused line region.
+	if self:InlineButtonsEnabled() and InCombatLockdown() and self.inlineRenderedStepNum and self.inlineRenderedStepNum ~= self.CurrentStepNum then
+		self.pendingInlineCombatRefresh = true
+		return
+	end
+
 	self:EnsureSectionTitleFont()
 	if self.db and self.db.profile and self.db.profile.skin == "remaster" then
 		if not self.remasterApplied then
@@ -2717,8 +2850,8 @@ function me:UpdateFrame(full,onupdate)
 		local remasterFrames = self:EnsureRemasterFrames()
 		LayoutRemasterFrames(remasterFrames, self.db and self.db.profile and self.db.profile.resizeup)
 		if ZygorGuidesViewerFrameScroll and remasterFrames and remasterFrames.content then
-			ZygorGuidesViewerFrameScroll:SetParent(remasterFrames.content)
 			ZygorGuidesViewerFrameScroll:ClearAllPoints()
+			ZygorGuidesViewerFrameScroll:SetParent(remasterFrames.content)
 			ZygorGuidesViewerFrameScroll:SetPoint("TOPLEFT", remasterFrames.content, "TOPLEFT", 0, -2)
 			ZygorGuidesViewerFrameScroll:SetPoint("BOTTOMRIGHT", remasterFrames.content, "BOTTOMRIGHT", -2, 2)
 			ZygorGuidesViewerFrameScroll:SetFrameLevel(remasterFrames.content:GetFrameLevel() + 2)
@@ -2777,6 +2910,8 @@ function me:UpdateFrame(full,onupdate)
 			end
 		end
 	end
+
+	self:UpdateGuideProgressWidgets()
 
 	--if InCombatLockdown() then return end
 	--[[
@@ -2855,7 +2990,10 @@ function me:UpdateFrame(full,onupdate)
 			for stepbuttonnum = 1,self.StepLimit do repeat
 				--frame = _G['ZygorGuidesViewerFrame_Step'..stepbuttonnum]
 				frame = self.stepframes[stepbuttonnum]
-				
+				if frame and (not frame.lines or not frame.lines[1] or not frame.lines[1].icon) then
+					ZygorGuidesViewerFrame_Step_Setup(stepbuttonnum)
+				end
+
 				stepnum = firststep + stepbuttonnum - 1
 				
 				-- show this button at all?
@@ -2877,7 +3015,6 @@ function me:UpdateFrame(full,onupdate)
 
 					frame.stepnum = stepnum
 					frame.step = stepdata
-
 					--#### position step frame
 
 					frame:SetWidth(self.db.profile.showallsteps and ZygorGuidesViewerFrameScrollChild:GetWidth() or ZygorGuidesViewerFrameScroll:GetWidth()) -- this is needed so the text lines below can access proper widths
@@ -3093,10 +3230,11 @@ function me:UpdateFrame(full,onupdate)
 						frame.lines[1]:SetPoint("TOPRIGHT",frame,-ZGV.STEPMARGIN_X,-ZGV.STEPMARGIN_Y)
 					end
 
+					local progressPadding = (stepnum == self.CurrentStepNum) and self:GetGuideProgressPadding() or 0
 					if not frame.truncated or not TMP_TRUNCATE then
-						frame:SetHeight(height + 3*self.STEPMARGIN_Y)
+						frame:SetHeight(height + 2*self.STEPMARGIN_Y + progressPadding)
 					else
-						frame:SetHeight(heightleft + 2*self.STEPMARGIN_Y)
+						frame:SetHeight(heightleft + 2*self.STEPMARGIN_Y + progressPadding)
 					end
 
 					--end
@@ -3310,7 +3448,7 @@ function me:UpdateFrame(full,onupdate)
 		
 		for spotbuttonnum = 1,self.StepLimit do repeat
 			--frame = _G['ZygorGuidesViewerFrame_Step'..stepbuttonnum]
-			frame = self.spotframes[spotbuttonnum]
+				frame = self.spotframes[spotbuttonnum]
 			assert(frame,"Out of spot frames at "..spotbuttonnum)
 			
 			spotnum = firstspot + spotbuttonnum - 1
@@ -3589,10 +3727,10 @@ function me:UpdateFrame(full,onupdate)
 			end
 		until true end
 
-		self.stepchanged=false
+	self.stepchanged=false
 
-		-- set minimum frame size to one step
-		minh = self.spotframes[1]:GetHeight() + 40
+	-- set minimum frame size to one step
+	minh = self.spotframes[1]:GetHeight() + 40
 
 		--self:HighlightCurrentStep()
 
@@ -3613,6 +3751,13 @@ function me:UpdateFrame(full,onupdate)
 
 	self:ResizeFrame()
 
+	if self.ActionButtons_Refresh then
+		self:ActionButtons_Refresh(true)
+	end
+	if self.TargetPreview_Refresh then
+		self:TargetPreview_Refresh(true)
+	end
+
 	if self.delayFlash and self.delayFlash>0 then
 		self.delayFlash=2 --ready to flash!
 		--ZygorGuidesViewerFrame_bdflash:StartRGB(1,1,1,1,0,1,0,1)
@@ -3621,16 +3766,20 @@ end
 
 function me:ClearFrameCurrent()
 	if InCombatLockdown() then return end
-	for i=1,20 do
-		local actname = "ZygorGuidesViewerFrame_Act"..i
-		local action = _G[actname..'Action']
-		local petaction = _G[actname..'PetAction']
-		local cooldown = _G[actname..'ActionCooldown']
-
-		action:Hide()
-		petaction:Hide()
-		cooldown:Hide()
+	for _,stepframe in ipairs(self.stepframes or {}) do
+		for i=1,20 do
+			local line = stepframe and stepframe.lines and stepframe.lines[i]
+			local action = line and line.action
+			local petaction = line and line.petaction
+			local cooldown = line and line.cooldown
+			local actionholder = line and line.actionHolder
+			if action then action:Hide() end
+			if petaction then petaction:Hide() end
+			if cooldown then cooldown:Hide() end
+			if actionholder then actionholder:Hide() end
+		end
 	end
+	self.inlineRenderedStepNum = nil
 	if self.ActionButtons_Refresh then
 		self:ActionButtons_Refresh(true)
 	end
@@ -3656,7 +3805,6 @@ function me:UpdateFrameCurrent()
 	-- current step!
 
 	if self.CurrentStep then	-- hey, it may be missing, if the whole guide is for another class
-		local inlineSeenActionSignatures = {}
 
 		--local mapped = self.CurrentStep.x
 
@@ -3696,6 +3844,7 @@ function me:UpdateFrameCurrent()
 
 		local name, line,label,icon,back,clicker,anim_w2g,anim_w2r,action,petaction,cooldown, lastlabel
 		local height = 0
+		local inlineSeenActionSignatures = {}
 
 		if not self.stepframes[1].stepnum then return end
 
@@ -3716,11 +3865,21 @@ function me:UpdateFrameCurrent()
 			return self:ClearFrameCurrent()
 		end
 
+		-- Inline viewer buttons use secure action buttons. If combat starts and the
+		-- step changes, rebuilding only the text/lines while leaving the protected
+		-- button state untouched can leave an old step's action visible on the new
+		-- step. Defer the current-step refresh until combat ends so the inline
+		-- region stays consistent.
+		if self:InlineButtonsEnabled() and InCombatLockdown() and self.actionsvisible and self.inlineRenderedStepNum ~= self.CurrentStepNum then
+			self.pendingInlineCombatRefresh = true
+			return
+		end
+
 		--textline(1):ClearAllPoints()
 		--textline(1):SetPoint("TOPLEFT",stepframe,"TOPLEFT",0,self.CurrentStep.requirement and -textline(1):GetHeight()-STEP_LINE_SPACING or 0)
 		--textline(1):SetPoint("TOPRIGHT",stepframe,"TOPRIGHT",0,self.CurrentStep.requirement and -textline(1):GetHeight()-STEP_LINE_SPACING or 0)
 
-		if self.BUTTONS_INLINE then
+		if self:InlineButtonsEnabled() then
 			if not InCombatLockdown() then self.actionsvisible = false end
 		end
 
@@ -3736,11 +3895,17 @@ function me:UpdateFrameCurrent()
 			anim_w2g = line.anim_w2g
 			anim_w2r = line.anim_w2r
 
-			-- don't even touch this in combat.
-			local actname = "ZygorGuidesViewerFrame_Act"..i
-			action = _G[actname..'Action']
-			petaction = _G[actname..'PetAction']
-			cooldown = _G[actname..'ActionCooldown']
+			local actname = line.actionBaseName or (((stepframe and stepframe.GetName and stepframe:GetName()) or ("ZygorGuidesViewerFrame_Step"..framenum)).."_Line"..i)
+			line.actionBaseName = actname
+			local inlineEnabled = self:InlineButtonsEnabled()
+			action = line.action
+			petaction = line.petaction
+			cooldown = line.cooldown
+			local actionholder = line.actionHolder
+			if actionholder then
+				actionholder:SetFrameStrata(line:GetFrameStrata())
+				actionholder:SetFrameLevel(line:GetFrameLevel()+15)
+			end
 
 			if line.goal then
 
@@ -3755,85 +3920,88 @@ function me:UpdateFrameCurrent()
 				--steptext = string.gsub(steptext,"\t([a-z]+\. )","\t|cffffff88%1|r")
 				--steptext = string.gsub(steptext,"\t",">")
 
-				if not InCombatLockdown() and not stepframe.slideup:IsPlaying() then
-					if goal:IsActionable() then
-						--	cooldown:Show()
-						--self:Debug("showing cooldown "..i)
-						local vis
-						local spec
-						if self.GetGoalActionSpec then
-							spec = self:GetGoalActionSpec(goal)
-							if spec and (spec.kind == "talk" or spec.kind == "kill") and spec.signature then
-								if inlineSeenActionSignatures[spec.signature] then
-									spec = nil
-								else
-									inlineSeenActionSignatures[spec.signature] = true
-								end
+				if not InCombatLockdown() then
+					local vis
+					local spec
+					if self.GetGoalActionSpec then
+						spec = self:GetGoalActionSpec(goal)
+						if spec and (spec.kind == "talk" or spec.kind == "kill") then
+							if inlineSeenActionSignatures[spec.signature] then
+								spec = nil
+							else
+								inlineSeenActionSignatures[spec.signature] = true
 							end
 						end
-
-						if not self.BUTTONS_INLINE then
-							action:Raise() --SetFrameLevel(ZygorGuidesViewerFrame:GetFrameLevel()+10)
-							petaction:Raise() --petaction:Raise()--SetFrameLevel(ZygorGuidesViewerFrame:GetFrameLevel()+10)
-						end
+					end
+					if inlineEnabled and (spec or goal:IsActionable()) then
+						--	cooldown:Show()
+						--self:Debug("showing cooldown "..i)
+						local actionIcon = action and (action.icon or (actname and _G[actname.."ActionIcon"]))
+						local petActionIcon = actname and _G[actname.."PetActionIcon"]
 
 						if spec and self.ApplyInlineActionSpec then
 							vis = self:ApplyInlineActionSpec(spec, action, petaction, actname)
-							if vis == "petaction" then
-								petaction:SetParent(line)
-								petaction:SetFrameStrata(line:GetFrameStrata())
-								petaction:SetFrameLevel(line:GetFrameLevel() + 10)
+							if vis == "petaction" and petaction then
 								petaction:Show()
-								petaction:ClearAllPoints()
-								petaction:SetPoint("TOPLEFT", line, "TOPLEFT", 0, 0)
-								petaction:SetScale(self:GetInlineActionScale(spec))
+								if actionholder then
+									actionholder:SetWidth(15)
+									actionholder:SetHeight(15)
+									actionholder:Show()
+								end
 								vis = nil
-							elseif vis == "action" then
-								action:SetParent(line)
-								action:SetFrameStrata(line:GetFrameStrata())
-								action:SetFrameLevel(line:GetFrameLevel() + 10)
-								action:ClearAllPoints()
-								action:SetPoint("TOPLEFT", line, "TOPLEFT", 0, 0)
-								action:SetScale(self:GetInlineActionScale(spec))
+							elseif vis == "action" and action then
+								if inlineEnabled then
+									action:SetAllPoints(actionholder or line)
+									if petaction then petaction:SetAllPoints(actionholder or line) end
+								end
 								vis = true
 							end
 						elseif goal.castspell and goal.castspellid then
+							if not action then vis = nil else
 							action:SetAttribute("type1","spell")
 							action:SetAttribute("spell1",goal.castspell)
 							action.spellid = goal.castspellid
-							_G[actname.."ActionIcon"]:SetTexture(select(3, GetSpellInfo(goal.castspellid or goal.castspell)) or "Interface\\Icons\\Spell_Nature_FaerieFire")
+							if actionIcon then actionIcon:SetTexture(select(3, GetSpellInfo(goal.castspellid or goal.castspell)) or "Interface\\Icons\\Spell_Nature_FaerieFire") end
 							vis=true
+							end
 						elseif goal.useitem or goal.useitemid then
+							if not action then vis = nil else
 							action:SetAttribute("type1","item")
 							action:SetAttribute("item1",goal.useitemid and "item:"..goal.useitemid  or  goal.useitem)
-							_G[actname.."ActionIcon"]:SetTexture(select(10, GetItemInfo(goal.useitemid or goal.useitem)) or "Interface\\Icons\\INV_Misc_Bag_08")
+							if actionIcon then actionIcon:SetTexture(select(10, GetItemInfo(goal.useitemid or goal.useitem)) or "Interface\\Icons\\INV_Misc_Bag_08") end
 							vis=true
+							end
 						elseif goal.script then
+							if not action then vis = nil else
 							action:SetAttribute("type1","macro")
 							action:SetAttribute("macro","ZygorGuidesMacro"..goal.num)
-							_G[actname.."ActionIcon"]:SetTexture(select(2,GetMacroInfo(goal.macro)))
+							if actionIcon then actionIcon:SetTexture(select(2,GetMacroInfo(goal.macro))) end
 							vis=true
+							end
 						elseif goal.petaction then
 							local num,name,subtext,tex = FindPetActionInfo(goal.petaction)
-							if num then
+							if num and petaction then
 								petaction:SetID(num)
 								petaction.tooltipName=name
 								petaction.tooltipSubtext=subtext
-								_G[actname.."PetActionIcon"]:SetTexture(tex)
-								petaction:SetParent(line)
-								petaction:SetFrameStrata(line:GetFrameStrata())
-								petaction:SetFrameLevel(line:GetFrameLevel() + 10)
+								if petActionIcon then petActionIcon:SetTexture(tex) end
 								petaction:Show()
-								petaction:ClearAllPoints()
-								petaction:SetPoint("TOPLEFT", line, "TOPLEFT", 0, 0)
-								petaction:SetScale(1)
+								if inlineEnabled then
+									if actionholder then
+										actionholder:SetWidth(15)
+										actionholder:SetHeight(15)
+										actionholder:Show()
+									end
+									petaction:SetAllPoints(actionholder or line)
+									self.actionsvisible = true
+								end
 							else
-								petaction:Hide()
+								if petaction then petaction:Hide() end
 							end
 						else
-							action:Hide()
-							petaction:Hide()
-							cooldown:Hide()
+							if action then action:Hide() end
+							if petaction then petaction:Hide() end
+							if cooldown then cooldown:Hide() end
 							--[[
 							if not InCombatLockdown() then
 								action:Hide()
@@ -3842,26 +4010,32 @@ function me:UpdateFrameCurrent()
 							--]]
 						end
 
-						if vis then
+						if vis and action then
 							action:Show()
-							action:SetParent(line)
-							action:SetFrameStrata(line:GetFrameStrata())
-							action:SetFrameLevel(line:GetFrameLevel() + 10)
-							action:SetScale(self:GetInlineActionScale(action.actionSpec))
-							action:ClearAllPoints()
-							action:SetPoint("TOPLEFT", line, "TOPLEFT", 0, 0)
-							self.actionsvisible = true
+							if inlineEnabled then
+								local inlineSize = (goal and goal.action == "kill") and 14 or 15
+								if actionholder then
+									actionholder:SetWidth(inlineSize)
+									actionholder:SetHeight(inlineSize)
+									actionholder:Show()
+								end
+								action:SetAllPoints(actionholder or line)
+								if petaction then petaction:SetAllPoints(actionholder or line) end
+								self.actionsvisible = true
+							end
 						end
 
 						--cooldown:Show()
 					else
-						action:Hide()
-						petaction:Hide()
-						cooldown:Hide()
+						if action then action:Hide() end
+						if petaction then petaction:Hide() end
+						if cooldown then cooldown:Hide() end
+						if actionholder then actionholder:Hide() end
 					end
 
 					-- cooldown flasher
 					local DoCooldown = function (cooldown,start,dur,en)
+						if not cooldown then return end
 						CooldownFrame_SetTimer(cooldown, start, dur, en)
 
 						-- is this useless or what
@@ -3983,8 +4157,8 @@ function me:UpdateFrameCurrent()
 				if self.db.profile.goalbackgrounds then back:Show() else back:Hide() end
 				if self.db.profile.goalicons then icon:Show() icon:SetAlpha(1.0) else icon:Hide() end
 
-				if self.BUTTONS_INLINE then
-					if action:IsShown() then icon:Hide() end
+				if self:InlineButtonsEnabled() then
+					if (action and action:IsShown()) or (petaction and petaction:IsShown()) then icon:Hide() end
 				end
 				
 				--clicker:Show()
@@ -3993,8 +4167,12 @@ function me:UpdateFrameCurrent()
 			else
 				icon:Hide()
 				back:Hide()
-				if not InCombatLockdown() then action:Hide() petaction:Hide() end
-				cooldown:Hide()
+				if not InCombatLockdown() then
+					if action then action:Hide() end
+					if petaction then petaction:Hide() end
+				end
+				if cooldown then cooldown:Hide() end
+				if actionholder then actionholder:Hide() end
 				--label:SetText("")
 				--label:SetHeight(0)
 				
@@ -4057,6 +4235,7 @@ function me:UpdateFrameCurrent()
 		if self.ActionButtons_Refresh then
 			self:ActionButtons_Refresh()
 		end
+		self.inlineRenderedStepNum = self.CurrentStepNum
 	end
 end
 
@@ -4087,7 +4266,7 @@ end
 function me:AlignFrame()
 	if self.db and self.db.profile and self.db.profile.skin == "remaster" then
 		if self.ApplyRemasterSkin then
-			self:ApplyRemasterSkin()
+			self:ApplyRemasterSkin(self.visualSkinRefreshOnly)
 		end
 		return
 	end
@@ -4345,7 +4524,7 @@ function me:AlignFrame()
 	ZygorGuidesViewerFrame_Border_Flash_Logo:SetPoint("CENTER",ZygorGuidesViewerFrame_Border_Logo,"CENTER")
 end
 
-function me:UpdateSkin(skipLayoutRefresh)
+function me:UpdateSkin(visualOnly)
 	local preserveHidden = false
 	if self.db and self.db.profile and self.db.profile.hideborder then
 		preserveHidden = self.borderfadedout == true
@@ -4462,161 +4641,55 @@ function me:UpdateSkin(skipLayoutRefresh)
 		ZygorGuidesViewerFrameScrollScrollBarTrackerTexture:SetTexture(SKINDIR.."\\leavesofsteel")
 	end
 
+	self.visualSkinRefreshOnly = visualOnly and true or nil
+
 	if self.db.profile.skin == "remaster" then
-		self:ApplyRemasterSkin(skipLayoutRefresh)
+		self:ApplyRemasterSkin(visualOnly)
 	else
 		self:RestoreLegacySkin()
 	end
 
-	if self.ApplyFrameLayout and not skipLayoutRefresh then
+	if self.ApplyFrameLayout and not visualOnly then
 		self:ApplyFrameLayout()
 	end
 
 	self:UpdateLocking()
-	if not skipLayoutRefresh then
+	if not visualOnly then
 		self:AlignFrame()
 		self:ResizeFrame()
 	end
-	if self.RefreshAutoHideBorderState then
+	if self.RefreshAutoHideBorderState and not visualOnly then
 		self:RefreshAutoHideBorderState()
 	end
 	if preserveHidden and self.ForceHideBorderNow then
 		self:ForceHideBorderNow()
-		self:ScheduleTimer(function()
-			if ZGV and ZGV.ForceHideBorderNow then ZGV:ForceHideBorderNow() end
-		end, 0.05)
-		self:ScheduleTimer(function()
-			if ZGV and ZGV.ForceHideBorderNow then ZGV:ForceHideBorderNow() end
-		end, 0.15)
+		if not visualOnly then
+			self:ScheduleTimer(function()
+				if ZGV and ZGV.ForceHideBorderNow then ZGV:ForceHideBorderNow() end
+			end, 0.05)
+			self:ScheduleTimer(function()
+				if ZGV and ZGV.ForceHideBorderNow then ZGV:ForceHideBorderNow() end
+			end, 0.15)
+		end
 	end
+
+	self.visualSkinRefreshOnly = nil
 end
 
-local function ApplyRemasterThemeOnly(self, remasterFrames)
-	if not (self and self.db and self.db.profile and remasterFrames) then return end
-	local textc = self.db.profile.skincolors and self.db.profile.skincolors.text or {0.9, 0.92, 0.98}
-	local backc = self.db.profile.skincolors and self.db.profile.skincolors.back or {0.08, 0.09, 0.12}
-	local backalpha = self.db.profile.backopacity or 0.3
-	local opacitymain = self.db.profile.opacitymain or 1.0
-	local remastercolor = self.db.profile.remastercolor or "dark"
-	local isGoldAccent = (remastercolor == "goldaccent" or remastercolor == "goals")
-	local function setTexColor(tex, r, g, b, a)
-		if not tex then return end
-		if tex.SetColorTexture then
-			tex:SetColorTexture(r, g, b, a or 1)
-		else
-			tex:SetTexture(r, g, b, a or 1)
-		end
-	end
-
-	local theme = {
-		frameBorder = { 0.18, 0.18, 0.20, 0.92 },
-		frameLight = { 0.28, 0.28, 0.30, 0.18 },
-		insetBg = { 0.10, 0.10, 0.11, 0.95 },
-		insetBorder = { 0.20, 0.20, 0.22, 0.90 },
-		buttonBack = { 0.13, 0.13, 0.14, 0.95 },
-		buttonHover = { 0.19, 0.19, 0.21, 0.98 },
-		buttonBorder = { 0.27, 0.27, 0.30, 0.95 },
-		separator = { 0.32, 0.32, 0.35, 0.80 },
-		textPrimary = { 0.86, 0.86, 0.88, 1.00 },
-		textMeta = { 0.72, 0.72, 0.75, 0.90 },
-	}
-
-	if isGoldAccent then
-		theme.frameBorder = { 0.17, 0.15, 0.10, 0.88 }
-		theme.frameLight = { 0.12, 0.10, 0.07, 0.42 }
-		theme.insetBg = { 0.05, 0.05, 0.06, 0.97 }
-		theme.insetBorder = { 0.22, 0.18, 0.10, 0.90 }
-		theme.buttonBack = { 0.09, 0.08, 0.07, 0.96 }
-		theme.buttonHover = { 0.22, 0.17, 0.08, 0.98 }
-		theme.buttonBorder = { 0.50, 0.40, 0.18, 0.95 }
-		theme.separator = { 0.90, 0.74, 0.40, 0.62 }
-		theme.textPrimary = { 0.92, 0.80, 0.50, 1.00 }
-		theme.textMeta = { 0.78, 0.70, 0.55, 0.92 }
-	end
-	if remasterFrames.root then
-		remasterFrames.root:SetAlpha(opacitymain)
-		local rootc = backc
-		if isGoldAccent then
-			rootc = { 0.04, 0.04, 0.05 }
-		end
-		remasterFrames.root:SetBackdropColor(rootc[1], rootc[2], rootc[3], backalpha)
-		remasterFrames.root:SetBackdropBorderColor(theme.frameBorder[1], theme.frameBorder[2], theme.frameBorder[3], theme.frameBorder[4] or 1)
-	end
-	if remasterFrames.content then
-		local ib = theme.insetBg or backc
-		local ia = math.min(1, (theme.insetBg[4] or 0.95) * (backalpha / 0.3))
-		remasterFrames.content:SetBackdropColor(ib[1], ib[2], ib[3], ia)
-		remasterFrames.content:SetBackdropBorderColor(theme.insetBorder[1], theme.insetBorder[2], theme.insetBorder[3], theme.insetBorder[4] or 1)
-	end
-	if remasterFrames.headerBg then
-		if isGoldAccent then
-			setTexColor(remasterFrames.headerBg, 0, 0, 0, 0.58)
-		else
-			local c = theme.frameLight
-			setTexColor(remasterFrames.headerBg, c[1], c[2], c[3], c[4] or 1)
-		end
-	end
-	if remasterFrames.toolbarBg then
-		if isGoldAccent then
-			setTexColor(remasterFrames.toolbarBg, 0, 0, 0, 0.42)
-		else
-			local c = theme.frameLight
-			setTexColor(remasterFrames.toolbarBg, c[1], c[2], c[3], (c[4] or 1) * 0.8)
-		end
-	end
-	if remasterFrames.separator then
-		local c = theme.separator or theme.frameBorder
-		setTexColor(remasterFrames.separator, c[1], c[2], c[3], c[4] or 1)
-	end
-	if remasterFrames.headerTitle then
-		local c = theme.textPrimary or textc
-		remasterFrames.headerTitle:SetTextColor(c[1], c[2], c[3], c[4] or 1)
-	end
-	if remasterFrames.headerMeta then
-		local c = theme.textMeta or textc
-		remasterFrames.headerMeta:SetTextColor(c[1], c[2], c[3], c[4] or 0.85)
-	end
-	if remasterFrames.stepLabel then
-		local c = theme.textPrimary or textc
-		remasterFrames.stepLabel:SetTextColor(c[1], c[2], c[3], c[4] or 1)
-	end
-
-	local function applyButtonTheme(button)
-		if not button then return end
-		button.remasterBackColor = theme.buttonBack
-		button.remasterHoverColor = theme.buttonHover
-		button.remasterBorderColor = theme.buttonBorder
-		button:SetBackdropColor(theme.buttonBack[1], theme.buttonBack[2], theme.buttonBack[3], theme.buttonBack[4] or 1)
-		button:SetBackdropBorderColor(theme.buttonBorder[1], theme.buttonBorder[2], theme.buttonBorder[3], theme.buttonBorder[4] or 1)
-	end
-
-	applyButtonTheme(remasterFrames.guideButton)
-	applyButtonTheme(remasterFrames.prevButton)
-	applyButtonTheme(remasterFrames.nextButton)
-	applyButtonTheme(remasterFrames.closeButton)
-	applyButtonTheme(remasterFrames.settingsButton)
-	applyButtonTheme(remasterFrames.miniButton)
-	applyButtonTheme(remasterFrames.lockButton)
-end
-
-function me:ApplyRemasterSkin(skipLayoutRefresh)
+function me:ApplyRemasterSkin(visualOnly)
 	if not self.framesLoaded or not ZygorGuidesViewerFrame or not ZygorGuidesViewerFrame_Border then
 		return
 	end
 	local remasterFrames = self:EnsureRemasterFrames()
-	if skipLayoutRefresh and self.remasterApplied then
-		ApplyRemasterThemeOnly(self, remasterFrames)
-		return
-	end
-	if not skipLayoutRefresh then
+	if not visualOnly then
 		LayoutRemasterFrames(remasterFrames, self.db and self.db.profile and self.db.profile.resizeup)
-	end
-	if not skipLayoutRefresh and ZygorGuidesViewerFrameMaster and ZygorGuidesViewerFrame then
-		ZygorGuidesViewerFrame:ClearAllPoints()
-		if self.db and self.db.profile and self.db.profile.resizeup then
-			ZygorGuidesViewerFrame:SetPoint("BOTTOMLEFT", ZygorGuidesViewerFrameMaster, "BOTTOMLEFT", 0, 0)
-		else
-			ZygorGuidesViewerFrame:SetPoint("TOPLEFT", ZygorGuidesViewerFrameMaster, "TOPLEFT", 0, 0)
+		if ZygorGuidesViewerFrameMaster and ZygorGuidesViewerFrame then
+			ZygorGuidesViewerFrame:ClearAllPoints()
+			if self.db and self.db.profile and self.db.profile.resizeup then
+				ZygorGuidesViewerFrame:SetPoint("BOTTOMLEFT", ZygorGuidesViewerFrameMaster, "BOTTOMLEFT", 0, 0)
+			else
+				ZygorGuidesViewerFrame:SetPoint("TOPLEFT", ZygorGuidesViewerFrameMaster, "TOPLEFT", 0, 0)
+			end
 		end
 	end
 	if self.remasterDefaultsCaptured then
@@ -4690,33 +4763,136 @@ function me:ApplyRemasterSkin(skipLayoutRefresh)
 	if remasterFrames and remasterFrames.root then
 		remasterFrames.root:Show()
 	end
-	if remasterFrames and remasterFrames.header then remasterFrames.header:Show() end
-	if remasterFrames and remasterFrames.separator then remasterFrames.separator:Show() end
-	if remasterFrames and remasterFrames.toolbar then remasterFrames.toolbar:Show() end
-	if remasterFrames and remasterFrames.content then remasterFrames.content:Show() end
-	if remasterFrames and remasterFrames.headerTitle then remasterFrames.headerTitle:Show() end
-	if remasterFrames and remasterFrames.headerMeta then remasterFrames.headerMeta:Show() end
-	if remasterFrames and remasterFrames.guideButton then remasterFrames.guideButton:Show() end
-	if remasterFrames and remasterFrames.prevButton then remasterFrames.prevButton:Show() end
-	if remasterFrames and remasterFrames.nextButton then remasterFrames.nextButton:Show() end
-	if remasterFrames and remasterFrames.stepLabel then remasterFrames.stepLabel:Show() end
-	if remasterFrames and remasterFrames.closeButton then remasterFrames.closeButton:Show() end
-	if remasterFrames and remasterFrames.settingsButton then remasterFrames.settingsButton:Show() end
-	if remasterFrames and remasterFrames.miniButton then remasterFrames.miniButton:Show() end
-	if remasterFrames and remasterFrames.lockButton then remasterFrames.lockButton:Show() end
+	if remasterFrames and remasterFrames.content then
+		remasterFrames.content:Show()
+	end
+	if self.RefreshAutoHideBorderState and remasterFrames and not visualOnly then
+		self:RefreshAutoHideBorderState()
+	elseif remasterFrames then
+		if remasterFrames.header then remasterFrames.header:Show() end
+		if remasterFrames.separator then remasterFrames.separator:Show() end
+		if remasterFrames.toolbar then remasterFrames.toolbar:Show() end
+	end
 
 	if ZygorGuidesViewerFrame_MissingText and remasterFrames and remasterFrames.content then
 		ZygorGuidesViewerFrame_MissingText:SetParent(remasterFrames.content)
-		ZygorGuidesViewerFrame_MissingText:ClearAllPoints()
-		ZygorGuidesViewerFrame_MissingText:SetPoint("TOPLEFT", remasterFrames.content, "TOPLEFT", 5, -10)
-		ZygorGuidesViewerFrame_MissingText:SetPoint("TOPRIGHT", remasterFrames.content, "TOPRIGHT", -5, -10)
-		ZygorGuidesViewerFrame_MissingText:SetPoint("BOTTOM", remasterFrames.content, "BOTTOM", 0, 5)
+		if not visualOnly then
+			ZygorGuidesViewerFrame_MissingText:ClearAllPoints()
+			ZygorGuidesViewerFrame_MissingText:SetPoint("TOPLEFT", remasterFrames.content, "TOPLEFT", 5, -10)
+			ZygorGuidesViewerFrame_MissingText:SetPoint("TOPRIGHT", remasterFrames.content, "TOPRIGHT", -5, -10)
+			ZygorGuidesViewerFrame_MissingText:SetPoint("BOTTOM", remasterFrames.content, "BOTTOM", 0, 5)
+		end
 		if ZygorGuidesViewerFrame_MissingText.SetDrawLayer then
 			ZygorGuidesViewerFrame_MissingText:SetDrawLayer("OVERLAY")
 		end
 	end
 
-	ApplyRemasterThemeOnly(self, remasterFrames)
+	-- apply user settings to remaster visuals
+	if self.db and self.db.profile and remasterFrames then
+		local textc = self.db.profile.skincolors and self.db.profile.skincolors.text or {0.9, 0.92, 0.98}
+		local backc = self.db.profile.skincolors and self.db.profile.skincolors.back or {0.08, 0.09, 0.12}
+		local backalpha = self.db.profile.backopacity or 0.3
+		local opacitymain = self.db.profile.opacitymain or 1.0
+		local remastercolor = self.db.profile.remastercolor or "dark"
+		local isGoldAccent = (remastercolor == "goldaccent" or remastercolor == "goals")
+		local function setTexColor(tex, r, g, b, a)
+			if not tex then return end
+			if tex.SetColorTexture then
+				tex:SetColorTexture(r, g, b, a or 1)
+			else
+				tex:SetTexture(r, g, b, a or 1)
+			end
+		end
+
+		local theme = {
+			frameBorder = { 0.18, 0.18, 0.20, 0.92 },
+			frameLight = { 0.28, 0.28, 0.30, 0.18 },
+			insetBg = { 0.10, 0.10, 0.11, 0.95 },
+			insetBorder = { 0.20, 0.20, 0.22, 0.90 },
+			buttonBack = { 0.13, 0.13, 0.14, 0.95 },
+			buttonHover = { 0.19, 0.19, 0.21, 0.98 },
+			buttonBorder = { 0.27, 0.27, 0.30, 0.95 },
+			separator = { 0.32, 0.32, 0.35, 0.80 },
+			textPrimary = { 0.86, 0.86, 0.88, 1.00 },
+			textMeta = { 0.72, 0.72, 0.75, 0.90 },
+		}
+
+		if isGoldAccent then
+			theme.frameBorder = { 0.17, 0.15, 0.10, 0.88 }
+			theme.frameLight = { 0.12, 0.10, 0.07, 0.42 }
+			theme.insetBg = { 0.05, 0.05, 0.06, 0.97 }
+			theme.insetBorder = { 0.22, 0.18, 0.10, 0.90 }
+			theme.buttonBack = { 0.09, 0.08, 0.07, 0.96 }
+			theme.buttonHover = { 0.22, 0.17, 0.08, 0.98 }
+			theme.buttonBorder = { 0.50, 0.40, 0.18, 0.95 }
+			theme.separator = { 0.90, 0.74, 0.40, 0.62 }
+			theme.textPrimary = { 0.92, 0.80, 0.50, 1.00 }
+			theme.textMeta = { 0.78, 0.70, 0.55, 0.92 }
+		end
+		if remasterFrames.root then
+			remasterFrames.root:SetAlpha(opacitymain)
+			local rootc = backc
+			if isGoldAccent then
+				rootc = { 0.04, 0.04, 0.05 }
+			end
+			remasterFrames.root:SetBackdropColor(rootc[1], rootc[2], rootc[3], backalpha)
+			remasterFrames.root:SetBackdropBorderColor(theme.frameBorder[1], theme.frameBorder[2], theme.frameBorder[3], theme.frameBorder[4] or 1)
+		end
+		if remasterFrames.content then
+			local ib = theme.insetBg or backc
+			local ia = math.min(1, (theme.insetBg[4] or 0.95) * (backalpha / 0.3))
+			remasterFrames.content:SetBackdropColor(ib[1], ib[2], ib[3], ia)
+			remasterFrames.content:SetBackdropBorderColor(theme.insetBorder[1], theme.insetBorder[2], theme.insetBorder[3], theme.insetBorder[4] or 1)
+		end
+		if remasterFrames.headerBg then
+			if isGoldAccent then
+				setTexColor(remasterFrames.headerBg, 0, 0, 0, 0.58)
+			else
+				local c = theme.frameLight
+				setTexColor(remasterFrames.headerBg, c[1], c[2], c[3], c[4] or 1)
+			end
+		end
+		if remasterFrames.toolbarBg then
+			if isGoldAccent then
+				setTexColor(remasterFrames.toolbarBg, 0, 0, 0, 0.42)
+			else
+				local c = theme.frameLight
+				setTexColor(remasterFrames.toolbarBg, c[1], c[2], c[3], (c[4] or 1) * 0.8)
+			end
+		end
+		if remasterFrames.separator then
+			local c = theme.separator or theme.frameBorder
+			setTexColor(remasterFrames.separator, c[1], c[2], c[3], c[4] or 1)
+		end
+		if remasterFrames.headerTitle then
+			local c = theme.textPrimary or textc
+			remasterFrames.headerTitle:SetTextColor(c[1], c[2], c[3], c[4] or 1)
+		end
+		if remasterFrames.headerMeta then
+			local c = theme.textMeta or textc
+			remasterFrames.headerMeta:SetTextColor(c[1], c[2], c[3], c[4] or 0.85)
+		end
+		if remasterFrames.stepLabel then
+			local c = theme.textPrimary or textc
+			remasterFrames.stepLabel:SetTextColor(c[1], c[2], c[3], c[4] or 1)
+		end
+		local function applyButtonTheme(button)
+			if not button then return end
+			button.remasterBackColor = theme.buttonBack
+			button.remasterHoverColor = theme.buttonHover
+			button.remasterBorderColor = theme.buttonBorder
+			button:SetBackdropColor(theme.buttonBack[1], theme.buttonBack[2], theme.buttonBack[3], theme.buttonBack[4] or 1)
+			button:SetBackdropBorderColor(theme.buttonBorder[1], theme.buttonBorder[2], theme.buttonBorder[3], theme.buttonBorder[4] or 1)
+		end
+
+		applyButtonTheme(remasterFrames.guideButton)
+		applyButtonTheme(remasterFrames.prevButton)
+		applyButtonTheme(remasterFrames.nextButton)
+		applyButtonTheme(remasterFrames.closeButton)
+		applyButtonTheme(remasterFrames.settingsButton)
+		applyButtonTheme(remasterFrames.miniButton)
+		applyButtonTheme(remasterFrames.lockButton)
+	end
 
 	local function hideTexture(name)
 		local tex = _G[name]
@@ -4766,7 +4942,7 @@ function me:ApplyRemasterSkin(skipLayoutRefresh)
 		ZygorGuidesViewerFrame_Border_TitleBar:SetHeight(26)
 	end
 
-	if ZygorGuidesViewerFrameScroll and remasterFrames and remasterFrames.content then
+	if not visualOnly and ZygorGuidesViewerFrameScroll and remasterFrames and remasterFrames.content then
 		ZygorGuidesViewerFrameScroll:ClearAllPoints()
 		ZygorGuidesViewerFrameScroll:SetParent(remasterFrames.content)
 		ZygorGuidesViewerFrameScroll:SetPoint("TOPLEFT", remasterFrames.content, "TOPLEFT", 10, -10)
@@ -4795,7 +4971,8 @@ function me:ApplyRemasterSkin(skipLayoutRefresh)
 		if ZygorGuidesViewerFrameScrollChild and remasterFrames.content.GetWidth then
 			local cw = remasterFrames.content:GetWidth() or 0
 			if cw > 40 then
-				ZygorGuidesViewerFrameScrollChild:SetWidth(cw - 24)
+				local scrollbarPad = (self.db and self.db.profile and self.db.profile.showallsteps) and 39 or 20
+				ZygorGuidesViewerFrameScrollChild:SetWidth(math.max(cw - scrollbarPad, 1))
 			end
 		end
 		if ZygorGuidesViewerFrameScrollChild then
@@ -5078,7 +5255,7 @@ function me:ResizeFrame()
 		if ZygorGuidesViewerFrame and not ZygorGuidesViewerFrame:IsShown() then
 			return
 		end
-		local minHeight = self.db.profile.showallsteps and 220 or 130
+		local minHeight = self.db.profile.showallsteps and 220 or 118
 		if self.db.profile.displaymode == "guide" and not self.db.profile.showallsteps then
 			local height = 0
 			local count = self.db.profile.showcountsteps or 1
@@ -5090,34 +5267,31 @@ function me:ResizeFrame()
 					height = height + step:GetHeight()
 				end
 			end
-			local extra = 32
-			if self.RemasterFrames and self.RemasterFrames.header and self.RemasterFrames.toolbar then
-				local headerh = self.RemasterFrames.header:GetHeight() or 34
-				local toolbarh = self.RemasterFrames.toolbar:GetHeight() or 28
-				local topPad = 6
-				local headerToToolbar = 6
-				local toolbarToContent = 8
-				local contentBottom = 6
-				local scrollPad = 6
-				extra = headerh + toolbarh + topPad + headerToToolbar + toolbarToContent + contentBottom + scrollPad
-			end
+			local extra = 40
+				if self.RemasterFrames and self.RemasterFrames.header and self.RemasterFrames.toolbar then
+					local headerh = self.RemasterFrames.header:GetHeight() or 34
+					local toolbarh = self.RemasterFrames.toolbar:GetHeight() or 28
+					local topPad = 6
+					local headerToToolbar = 6
+					local toolbarToContent = 8
+					local contentBottom = 4
+					local scrollPad = 4
+					extra = headerh + toolbarh + topPad + headerToToolbar + toolbarToContent + contentBottom + scrollPad
+				end
 			height = height + extra
 			if height < MIN_HEIGHT then height = MIN_HEIGHT end
 			if height < minHeight then height = minHeight end
 			if ZygorGuidesViewerFrame then
 				ZygorGuidesViewerFrame:SetHeight(height)
 			end
-		elseif self.db.profile.showallsteps or self.db.profile.displaymode=="gold" then
-			local targetHeight = self.db.profile.fullheight or ZygorGuidesViewerFrame:GetHeight() or minHeight
-			if self.db.profile.showallsteps and targetHeight < 400 then targetHeight = 400 end
-			if targetHeight < MIN_HEIGHT then targetHeight = MIN_HEIGHT end
-			if targetHeight < minHeight then targetHeight = minHeight end
-			if ZygorGuidesViewerFrame then
-				ZygorGuidesViewerFrame:SetHeight(targetHeight)
-			end
 		else
-			if ZygorGuidesViewerFrame and ZygorGuidesViewerFrame:GetHeight() < minHeight then
-				ZygorGuidesViewerFrame:SetHeight(minHeight)
+			if ZygorGuidesViewerFrame then
+				local targetHeight = self.db.profile.fullheight or ZygorGuidesViewerFrame:GetHeight() or minHeight
+				if self.db.profile.showallsteps and targetHeight < 400 then targetHeight = 400 end
+				if targetHeight < minHeight then targetHeight = minHeight end
+				if ZygorGuidesViewerFrame:GetHeight() < targetHeight then
+					ZygorGuidesViewerFrame:SetHeight(targetHeight)
+				end
 			end
 		end
 		if ZygorGuidesViewerFrameScroll and ZygorGuidesViewerFrameScrollScrollBar then
@@ -5229,9 +5403,32 @@ end
 
 function me:ToggleFrame()
 	if self:IsVisible() then
+		if self.ActionButtonBar then self.ActionButtonBar:Hide() end
+		if self.TargetPreviewPane then self.TargetPreviewPane:Hide() end
 		self.Frame:Hide()
 	else
+		self.suspendRemasterShowRefresh = true
+		local canReuseCurrent =
+			self.CurrentGuide
+			and self.CurrentStep
+			and self.CurrentStepframeNum
+			and self.inlineRenderedStepNum == self.CurrentStepNum
+			and not self.stepchanged
+			and not self.frameNeedsUpdating
+		self.preparedFrameShow = true
+		if canReuseCurrent then
+			if self.db and self.db.profile and self.db.profile.skin == "remaster" then
+				if self.UpdateRemasterHeader then self:UpdateRemasterHeader() end
+			else
+				self:AlignFrame()
+			end
+		else
+			self:UpdateFrame(true)
+			self:AlignFrame()
+		end
 		self.Frame:Show()
+		if self.ActionButtons_Refresh then self:ActionButtons_Refresh(true) end
+		if self.TargetPreview_Refresh then self:TargetPreview_Refresh(true) end
 	end
 end
 
@@ -5280,6 +5477,13 @@ end
 
 function me:SkipStep(delta,fast)
 	if not self.CurrentGuide then return end
+
+	if self:InlineButtonsEnabled() and InCombatLockdown() and self.actionsvisible then
+		self.pendingCombatSkipDelta = delta
+		self.pendingCombatSkipFast = fast and true or false
+		self.pendingInlineCombatRefresh = true
+		return
+	end
 
 	local skipped=0
 	local atstart = false
@@ -5403,6 +5607,12 @@ function me:UNIT_INVENTORY_CHANGED(event,unit)
 	end
 end
 
+function me:LiveProgressEvent()
+	if not self.CurrentStep then return end
+	if not self.Frame or not self.Frame:IsVisible() then return end
+	self:TryToCompleteStep(true)
+end
+
 local blobstate=nil
 function me:PLAYER_REGEN_DISABLED()
 	--ZygorGuidesViewerFrame_Cover:Show()
@@ -5426,8 +5636,26 @@ end
 function me:PLAYER_REGEN_ENABLED()
 	--ZygorGuidesViewerFrame_Cover:Hide()
 	--ZygorGuidesViewerFrame_Cover:EnableMouse(false)
+	local pendingSkipDelta = self.pendingCombatSkipDelta
+	local pendingSkipFast = self.pendingCombatSkipFast
+	self.pendingCombatSkipDelta = nil
+	self.pendingCombatSkipFast = nil
+	local pendingStepNum = self.pendingCombatStepNum
+	local pendingStepQuiet = self.pendingCombatStepQuiet
+	self.pendingCombatStepNum = nil
+	self.pendingCombatStepQuiet = nil
 	if self.CurrentStep then self.CurrentStep:PrepareCompletion() end
-	self:UpdateFrameCurrent()
+	local pendingCombatRefresh = self.pendingInlineCombatRefresh
+	self.pendingInlineCombatRefresh = nil
+	if pendingSkipDelta then
+		self:SkipStep(pendingSkipDelta, pendingSkipFast)
+	elseif pendingStepNum then
+		self:FocusStep(pendingStepNum, pendingStepQuiet)
+	elseif pendingCombatRefresh then
+		self:UpdateFrame(true)
+	else
+		self:UpdateFrameCurrent()
+	end
 	self:UpdateCooldowns()
 	if self.ActionButtons_Refresh then
 		self:ActionButtons_Refresh(true)
@@ -5539,30 +5767,50 @@ function me:Frame_OnShow()
 	end
 	--]]
 	self.db.profile.visible = not not self.Frame:IsVisible()
-	self:UpdateFrame(true)
-	self:AlignFrame()
-	if self.RefreshAutoHideBorderState then
+	if self.preparedFrameShow then
+		self.preparedFrameShow = nil
+	else
+		self:UpdateFrame(true)
+		self:AlignFrame()
+	end
+	self.deferBorderAutoHideUntil = GetTime() + 0.35
+	local preserveHidden = self.db and self.db.profile and self.db.profile.hideborder and self.borderfadedout
+	if not preserveHidden then
+		self.borderfadedout = nil
+	end
+	if preserveHidden and self.ForceHideBorderNow then
+		self:ForceHideBorderNow()
+	elseif self.RefreshAutoHideBorderState and not self.suspendRemasterShowRefresh then
 		self:RefreshAutoHideBorderState()
-		-- Re-apply once shortly after show to catch post-layout frame updates on reload.
-		self:ScheduleTimer(function()
-			if ZGV and ZGV.RefreshAutoHideBorderState then
-				ZGV:RefreshAutoHideBorderState()
-				if ZGV.db and ZGV.db.profile and ZGV.db.profile.hideborder and ZGV.ForceHideBorderNow then
-					local hovered = MouseIsOver(ZygorGuidesViewerFrame,10,-10,-30,30)
-					if ZGV.db.profile.skin == "remaster" and ZGV.RemasterFrames then
-						local rf = ZGV.RemasterFrames
-						hovered = hovered
-							or (rf.root and MouseIsOver(rf.root,10,-10,-30,30))
-							or (rf.content and MouseIsOver(rf.content,10,-10,-30,30))
-							or (rf.header and MouseIsOver(rf.header,10,-10,-30,30))
-							or (rf.toolbar and MouseIsOver(rf.toolbar,10,-10,-30,30))
-					elseif ZygorGuidesViewerFrame_Border_TitleBar then
-						hovered = hovered or MouseIsOver(ZygorGuidesViewerFrame_Border_TitleBar,10,-10,-30,30)
+		if self.db.profile.skin ~= "remaster" then
+			-- Re-apply once shortly after show to catch post-layout frame updates on reload.
+			self:ScheduleTimer(function()
+				if ZGV and ZGV.RefreshAutoHideBorderState then
+					ZGV:RefreshAutoHideBorderState()
+					if ZGV.db and ZGV.db.profile and ZGV.db.profile.hideborder and ZGV.ForceHideBorderNow then
+						local hovered = MouseIsOver(ZygorGuidesViewerFrame,10,-10,-30,30)
+						if ZygorGuidesViewerFrame_Border_TitleBar then
+							hovered = hovered or MouseIsOver(ZygorGuidesViewerFrame_Border_TitleBar,10,-10,-30,30)
+						end
+						if not hovered then ZGV:ForceHideBorderNow() end
 					end
-					if not hovered then ZGV:ForceHideBorderNow() end
 				end
+			end, 0.1)
+		end
+	end
+	if self.suspendRemasterShowRefresh then
+		self.suspendRemasterShowRefresh = nil
+	end
+	if self.optionalUiProfilePending and not self.questLogInitialized then
+		-- Startup-visible viewer: wait until the initial guide/quest-log restore is complete.
+	elseif self.optionalUiProfilePending and self.ScheduleTimer then
+		self:ScheduleTimer(function()
+			if ZGV and ZGV.EnsureOptionalUIProfile and ZGV.Frame and ZGV.Frame:IsShown() then
+				ZGV:EnsureOptionalUIProfile()
 			end
-		end, 0.1)
+		end, 0.05)
+	elseif self.optionalUiProfilePending and self.EnsureOptionalUIProfile then
+		self:EnsureOptionalUIProfile()
 	end
 
 	if self.db.profile.hidearrowwithguide then
@@ -5574,11 +5822,18 @@ function me:Frame_OnHide()
 	PlaySound("igQuestLogClose")
 	self.db.profile.visible = not not self.Frame:IsVisible()
 	if not InCombatLockdown() then
-		for i=1,20,1 do
-			local action = _G["ZygorGuidesViewerFrame_Act"..i.."Action"]
-			if action then action:Hide() end
-			local cooldown = _G["ZygorGuidesViewerFrame_Act"..i.."ActionCooldown"]
-			if cooldown then cooldown:Hide() end
+		for _,stepframe in ipairs(self.stepframes or {}) do
+			for i=1,20,1 do
+				local line = stepframe and stepframe.lines and stepframe.lines[i]
+				local action = line and line.action
+				local petaction = line and line.petaction
+				local cooldown = line and line.cooldown
+				local actionholder = line and line.actionHolder
+				if action then action:Hide() end
+				if petaction then petaction:Hide() end
+				if cooldown then cooldown:Hide() end
+				if actionholder then actionholder:Hide() end
+			end
 		end
 	end
 
@@ -5601,11 +5856,6 @@ function me:GoalOnClick(goalframe,button)
 
 	local goal = goalframe:GetParent().goal
 	if not goal then return end
-	if self.TargetPreview_SelectHoveredSubject and self:TargetPreview_SelectHoveredSubject() then
-		-- keep the currently hovered preview subject selected through the redraw path
-	elseif self.TargetPreview_SetGoalFocus and self.TargetPreview_GetGoalSubject and self:TargetPreview_GetGoalSubject(goal) then
-		self:TargetPreview_SetGoalFocus(goal, true)
-	end
 	--local num=goalframe.goalnum
 	self:Debug("goal clicked "..tostring(goal.num))
 	--local goal = self.CurrentStep.goals[num]
@@ -5728,9 +5978,6 @@ end
 function me:GoalOnEnter(goalframe)
 	local goal = goalframe:GetParent().goal
 	if not goal then return end
-	if self.TargetPreview_SetGoalFocus and self.TargetPreview_GetGoalSubject and self:TargetPreview_GetGoalSubject(goal) then
-		self:TargetPreview_SetGoalFocus(goal, false)
-	end
 
 	local wayline,infoline,image
 

@@ -17684,59 +17684,78 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Northrend (72
 		.talk Walt##24807
 		..turnin Iron Rune Constructs and You: The Bluff##11491
 		..accept Lightning Infused Relics##11494
+		..accept The Delicate Sound of Thunder##11495
 	step //57
 		'Click the Work Bench tablet next to the iron golem next to you
 		.' Get on the work bench and let Walt put you in the golem suit|invehicle
 	step //58
-		goto 72.7,67.3|n
-		.' The path down to Lightning Infused Relics starts here|goto 72.7,67.3,0.5|noway|c
+		goto 74.3,70.8
+		.' Use the Rocket Jump ability on your hotbar on the middle rune on the wooden platform
+		.' Rocket Jump to the Lower Level|goal Rocket Jump to the Lower Level|q 11495/2
+		.' Start collecting Lightning Infused Relics as you head toward the cave|tip They look like blue crystals on the ground around this area.
 	step //59
+		goto 71.6,69.4
+		.' Investigate the Thundering Cave|q 11495/1|tip This quest can be a little buggy. Run around inside the cave until the dialogue starts.
+		.' Keep collecting Lightning Infused Relics around and inside the cave as you go
+	step //60
+		goto 72.7,67.3|n
+		.' Follow the path down to finish collecting Lightning Infused Relics|goto 72.7,67.3,0.5|noway|c
+	step //61
 		goto 71.8,69.2
 		.' Use your Collect Data ability next to the blue crystals|petaction Collect Data|tip They look like blue crystals on the ground around this area.
 		.' Use your Bluff ability to get rid of suspicious dwarves|petaction Bluff
 		.' Collect 15 Iron Rune Data|goal 15 Iron Rune Data Collected|q 11494/1
-	step //60
+	step //62
 		'Get to a safe place, then click the red arrow on your hotbar to leave the golem suit|outvehicle
-	step //61
+	step //63
 		goto 75.1,65.5
 		.talk Walt##24807
 		..turnin Lightning Infused Relics##11494
-	step //62
+		..turnin The Delicate Sound of Thunder##11495
+		..accept News From the East##11501
+	step //64
+		goto 75.1,65.5
+		.' Tell Walt "I'm ready to go."
+		.' Begin Flying to Westguard Keep|invehicle|q 11501
+	step //65
+		goto 30.8,42.8
+		.' Fly to Westguard Keep|outvehicle|q 11501 |noway
+	step //66
 		goto 40.3,60.3
 		.talk Orfus of Kamagua##23804
 		..accept The Dead Rise!##11504
-	step //63
+	step //67
 		goto 57.7,77.5
 		.' Click the Mound of Debris|tip It looks like a pile of dirt in the bottom of this small pit, next to a skeleton.
 		.get Fengir's Clue|q 11504/1
-	step //64
+	step //68
 		goto 59.2,77
 		.' Click the Unlocked Chest|tip It looks like a small chest in the bottom of this small pit, next to a skeleton.
 		.get Rodin's Clue|q 11504/2
-	step //65
+	step //69
 		goto 59.8,79.4
 		.' Click the Long Tail Feather|tip It's a small blue feather sitting on a circular shield in this pit, on top of a skeleton.
 		.get Isuldof's Clue|q 11504/3
-	step //66
+	step //70
 		goto 62,80
 		.' Click the Cannonball|tip It looks like a big round grey ball sitting in the dirt in this pit, between a skeleton's legs.
 		.get Windan's Clue|q 11504/4
-	step //67
+	step //71
 		goto 40.3,60.3
 		.talk Orfus of Kamagua##23804
 		..turnin The Dead Rise!##11504
 		..accept Elder Atuik and Kamagua##11507
-	step //68
+	step //72
 		'Go across The Ancient Lift to 25.0,57.0|goto 25.0,57.0
 		.talk Elder Atuik##24755
 		..turnin Elder Atuik and Kamagua##11507
 		..accept Grezzix Spindlesnap##11508
 		..accept Feeding the Survivors##11456
-	step //69
+	step //73
 		goto 24.7,57.8
 		.talk Kip Trawlskip##28197
 		..fpath Kamagua
-	step //70
+	step //74
 		goto 29.1,58.8
 		.kill Island Shoveltusks|n
 		.get 6 Island Shoveltusk Meat|q 11456/1
@@ -18047,6 +18066,7 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Northrend (72
 		'Go inside the fort to 28.8,44.1|goto 28.8,44.1
 		.talk Captain Adams##23749
 		..turnin To Westguard Keep!##11291
+		..turnin News From the East##11501
 		..accept The Clutches of Evil##11157
 	step //138
 		goto 35.6,40.6
@@ -18202,10 +18222,6 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Northrend (72
 		.talk Captain Adams##23749
 		..turnin Mission: Plague This!##11332
 		..accept Operation: Skornful Wrath##11248
-	step //173
-		goto 30.6,42.8
-		.talk Quartermaster Brevin##24494
-		..accept Everything Must Be Ready##11406
 	step //174
 		goto 30.2,28.7
 		.talk Overseer Irena Stonemantle##23891
@@ -18372,55 +18388,69 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Northrend (72
 		..turnin Burn Skorn, Burn!##11247
 		..accept All Hail the Conqueror of Skorn!##11250
 	step //211
-		ding 73
+		'Go inside the fort to 28.8,44.1|goto 28.8,44.1
+		.talk Captain Adams##23749
+		..turnin All Hail the Conqueror of Skorn!##11250
+		..accept Dealing With Gjalerbron##11235
 	step //212
+		goto 30.6,42.8
+		.talk Quartermaster Brevin##24494
+		..accept Everything Must Be Ready##11406
+	step //213
+		goto 28.9,44
+		.talk Father Levariol##24038
+		..turnin Stop the Ascension!##11249
+		..accept Of Keys and Cages##11231
+	step //214
+		ding 73
+	step //215
 		goto 60.3,18.7
 		.talk Christopher Sloan##24056
 		..accept I'll Try Anything!##11329
-	step //213
+	step //216
 		goto 61.5,18.8
 		.' Click the Water Plants|tip They look like tall bushy plants underwater around this area.
 		.from Northern Barbfish##24285
 		.get 5 Northern Barbfish|q 11329/1
-	step //214
+	step //217
 		goto 60.3,18.7
 		.talk Christopher Sloan##24056
 		..turnin I'll Try Anything!##11329
 		..accept The One That Got Away##11410
-	step //215
+	step //218
 		goto 64,19.6
 		.' Use your Fresh Barbfish Bait next to the Sunken Boat underwater|use Fresh Barbfish Bait##34013
 		.kill Frostfin|q 11410/1
-	step //216
+	step //219
 		goto 60.3,18.7
 		.talk Christopher Sloan##24056
 		..turnin The One That Got Away##11410
-	step //217
+	step //220
 		goto 61.8,17.2
 		.talk Lieutenant Maeve##24282
 		..accept The Enigmatic Frost Nymphs##11302
-	step //218
+	step //221
 		goto 62.3,17.2
 		.talk Prospector Belvar##24328
 		..accept The Book of Runes##11346
-	step //219
+	step //222
 		goto 62.6,16.8
 		.talk Gil Grisert##24139
 		..turnin Everything Must Be Ready##11406
 		..accept Down to the Wire##11269
-	step //220
+	step //223
 		goto 62.6,16.8
 		.talk Trapper Jethan##24131
 		..accept Preying Upon the Weak##11292
-	step //221
+	step //224
 		goto 60.1,16.1
 		.talk James Ormsby##24061
 		..fpath Fort Wildervar
-	step //222
+	step //225
 		goto 60.2,15.6
 		.talk Foreman Colbey##24176
 		..accept The Yeti Next Door##11284
-	step //223
+	step //226
 		goto 57.3,18.6
 		.kill Frosthorn Rams|n
 		.collect 4 Tough Ram Meat##33352|n
@@ -18430,32 +18460,22 @@ ZygorGuidesViewer:RegisterGuide("Zygor's Alliance Leveling Guides\\Northrend (72
 		.get 10 Spotted Hippogryph Down|q 11269/1
 		.' Click the Sprung Traps|tip They look like small animals stuck in traps on the ground around this area.
 		.get 8 Trapped Prey|q 11292/1
-	step //224
+	step //227
 		goto 54.1,8.2|n
 		.' The path up to The Cleansing starts here|goto 54.1,8.2,0.5|noway|c
-	step //225
+	step //228
 		'Follow the path up to 61.1,2|goto 61.1,2
 		.' Click the Frostblade Shrine|tip It's a big blue glowing altar table thing.
 		.kill Inner Turmoil that spawns|n
 		.get Cleansed of Your Inner Turmoil|q 11322/1
-	step //226
-		'Hearth to Westguard Keep|goto Howling Fjord,30.9,41.5,1|use Hearthstone##6948|noway|c
-	step //227
-		'Go inside the fort to 28.8,44.1|goto 28.8,44.1
-		.talk Captain Adams##23749
-		..turnin All Hail the Conqueror of Skorn!##11250
-		..accept Dealing With Gjalerbron##11235
-	step //228
-		goto 28.9,44
-		.talk Father Levariol##24038
-		..turnin Stop the Ascension!##11249
-		..accept Of Keys and Cages##11231
 	step //229
+		'Hearth to Westguard Keep|goto Howling Fjord,30.9,41.5,1|use Hearthstone##6948|noway|c
+	step //230
 		goto 30.2,28.7
 		.talk Watcher Moonleaf##24273
 		..turnin The Cleansing##11322
 		..accept In Worg's Clothing##11325
-	step //230
+	step //231
 		goto 29.7,5.7
 		'Use your Worg Disguise to turn into a Worg|use Worg Disguise##33618
 		.talk Ulfang##24261

@@ -254,6 +254,10 @@
 						if not ZGV or not ZGV.db then return end
 
 						local width = self:GetWidth()
+						local oldWidth = self.oldWidth or width
+						local widthChanged = math.abs(width - oldWidth) > 0.5
+						local isRemaster = ZGV.db.profile and ZGV.db.profile.skin == "remaster"
+						local suppressRefresh = ZGV.visualSkinRefreshOnly or ZGV.suspendRemasterShowRefresh
 
 						if ZGV.db.profile.showallsteps then
 							ZygorGuidesViewerFrameScrollChild:SetWidth(width-39)
@@ -261,10 +265,12 @@
 							ZygorGuidesViewerFrameScrollChild:SetWidth(width-20)
 						end
 
-						ZGV:UpdateFrame(true)
-						ZGV:ResizeFrame()
+						if not suppressRefresh and (not isRemaster or widthChanged) then
+							ZGV:UpdateFrame(true)
+							ZGV:ResizeFrame()
+						end
 
-						self.oldWidth=self:GetWidth()
+						self.oldWidth = width
 						if ZGV.db.profile.showallsteps then
 							ZGV.db.profile.fullheight = self:GetHeight()
 						end

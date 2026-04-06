@@ -86,6 +86,7 @@ function me:Options_RegisterDefaults()
 
 			tooltipsbelow = true,
 			actionbuttonbar_enabled = true,
+			inlinebuttons_enabled = true,
 			actionbuttonbar_onlywhenneeded = true,
 			actionbuttonbar_locked = false,
 			actionbuttonbar_scale = 1,
@@ -433,24 +434,27 @@ function me:Options_DefineOptions()
 							if n==0 then
 								self.db.profile.showallsteps = true
 								local targetHeight = self.db.profile.fullheight or 0
-								if targetHeight < 400 then targetHeight = 400 end
-								ZygorGuidesViewerFrame:SetHeight(targetHeight)
-								if ZygorGuidesViewerFrameScrollScrollBar and self.CurrentStepNum then
-									ZygorGuidesViewerFrameScrollScrollBar:SetValue(self.CurrentStepNum)
+								if targetHeight <= 0 and ZygorGuidesViewerFrame and ZygorGuidesViewerFrame.GetHeight then
+									local h = ZygorGuidesViewerFrame:GetHeight() or 0
+									if h > 0 then
+										self.db.profile.fullheight = math.max(self.db.profile.fullheight or 0, h)
+										targetHeight = self.db.profile.fullheight
+									end
 								end
+								if targetHeight > 0 then ZygorGuidesViewerFrame:SetHeight(targetHeight) end
 							else
-								self.db.profile.showallsteps = false
+								self.db.profile.showallsteps=false
 								self.db.profile.showcountsteps=n
 							end
 							self:UpdateFrame(true)
 							self:AlignFrame()
 							self:UpdateLocking()
 							self:ScrollToCurrentStep()
-							self:ResizeFrame()
 							if not self.db.profile.showallsteps then
 								if ZygorGuidesViewerFrameScrollScrollBar then
 									ZygorGuidesViewerFrameScrollScrollBar:SetValue(1)
 								end
+								self:ResizeFrame()
 							end
 						      end,
 						order=1,
@@ -480,8 +484,6 @@ function me:Options_DefineOptions()
 							return self.db.profile.skin
 						end,
 						set = function(_,n)
-							local oldSkin = self.db.profile.skin
-							local oldRemasterColor = self.db.profile.remastercolor
 							local colors = {
 										remaster_dark={text={0.90,0.92,0.98},back={0.08,0.09,0.12}},
 										remaster_goldaccent={text={0.92,0.80,0.50},back={0.07,0.08,0.10}},
@@ -493,6 +495,9 @@ function me:Options_DefineOptions()
 										blue={text={0.7,0.8,1.0},back={0.08,0.11,0.24}},
 										green={text={0.5,1.0,0.5},back={0.09,0.20,0.07}},
 										orange={text={1.0,0.8,0.0},back={0.23,0.11,0.07}}}
+							local oldskin = self.db.profile.skin
+							local oldremaster = self.db.profile.remastercolor
+							local oldresizeup = self.db.profile.resizeup
 							if n:match("^remaster_") then
 								self.db.profile.skin = "remaster"
 								local rc = n:gsub("^remaster_", "")
@@ -503,12 +508,7 @@ function me:Options_DefineOptions()
 								self.db.profile.skin = n
 								self.db.profile.skincolors = colors[self.db.profile.skin]
 							end
-							local visualOnly = (oldSkin == self.db.profile.skin)
-							if visualOnly and self.db.profile.skin == "remaster" then
-								visualOnly = (oldRemasterColor ~= self.db.profile.remastercolor)
-							elseif visualOnly and self.db.profile.skin ~= "remaster" then
-								visualOnly = false
-							end
+							local visualOnly = (oldskin == self.db.profile.skin) and (self.db.profile.skin == "remaster") and (oldresizeup == self.db.profile.resizeup) and (oldremaster ~= self.db.profile.remastercolor)
 							self:UpdateSkin(visualOnly)
 							if not visualOnly then
 								self:AlignFrame()
@@ -529,7 +529,16 @@ function me:Options_DefineOptions()
 						name = L["opt_opacitymain"],
 						desc = L["opt_opacitymain_desc"],
 						type = 'range',
-						set = function(i,v) Setter_Simple(i,v)  self:AlignFrame() end,
+						set = function(i,v)
+							Setter_Simple(i,v)
+							if self.db and self.db.profile and self.db.profile.skin=="remaster" then
+								self:UpdateSkin(true)
+								if self.ActionButtons_ApplyProfile then self:ActionButtons_ApplyProfile() end
+								if self.TargetPreview_ApplyProfile then self:TargetPreview_ApplyProfile() end
+							else
+								self:AlignFrame()
+							end
+						end,
 						min = 0,
 						max = 1.0,
 						isPercent = true,
@@ -554,7 +563,10 @@ function me:Options_DefineOptions()
 						name = L["opt_backopacity"],
 						desc = L["opt_backopacity_desc"],
 						type = 'range',
-						set = function(i,v) Setter_Simple(i,v)  self:UpdateSkin(true)  end,
+						set = function(i,v)
+							Setter_Simple(i,v)
+							self:UpdateSkin(self.db and self.db.profile and self.db.profile.skin=="remaster")
+						end,
 						min=0.0,
 						max=1.0,
 						isPercent = true,
@@ -683,7 +695,11 @@ function me:Options_DefineOptions()
 						name = L["opt_goalicons"],
 						desc = L["opt_goalicons_desc"],
 						type = 'toggle',
-						set = function(i,v) Setter_Simple(i,v)  self:UpdateFrame()  end,
+						set = function(i,v)
+							Setter_Simple(i,v)
+							self:UpdateFrame()
+							if self.ActionButtons_ApplyProfile then self:ActionButtons_ApplyProfile() end
+						end,
 						order = 1,
 					},
 					tooltipsbelow = {
@@ -1549,7 +1565,23 @@ function me:Options_DefineOptions()
 		type = "toggle",
 		width = "full",
 		order = 20,
-		set = function(info, value) Setter_Simple(info, value) if self.ActionButtons_ApplyProfile then self:ActionButtons_ApplyProfile() end end,
+		set = function(info, value)
+			Setter_Simple(info, value)
+			if self.ActionButtons_ApplyProfile then self:ActionButtons_ApplyProfile() end
+			if ZGV and ZGV.UpdateFrame then ZGV:UpdateFrame(true) end
+		end,
+	}
+	self.optionsactionbuttons.args.inlinebuttons_enabled = {
+		name = L["opt_inlinebuttons_enable"],
+		desc = L["opt_inlinebuttons_enable_desc"],
+		type = "toggle",
+		width = "full",
+		order = 20.5,
+		disabled = function() return not self.db.profile.actionbuttonbar_enabled or not self.db.profile.goalicons end,
+		set = function(info, value)
+			Setter_Simple(info, value)
+			if ZGV and ZGV.UpdateFrame then ZGV:UpdateFrame(true) end
+		end,
 	}
 	self.optionsactionbuttons.args.actionbuttonbar_onlywhenneeded = {
 		name = L["opt_actionbar_onlywhenneeded"],
@@ -1877,6 +1909,7 @@ function me:Options_SetupConfig()
 end
 
 function me:Options_SetupBlizConfig()
+	if self.blizRootPanel then return end
 	InterfaceOptionsFrame:GetRegions():SetTexture(0,0,0,0.9)
 	LibStub("AceConfigDialog-3.0"):SetDefaultSize("ZygorGuidesViewer", 600, 400)
 	local rootpanel = LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer", self.options.name)
@@ -1888,16 +1921,23 @@ function me:Options_SetupBlizConfig()
 	self.blizNotificationsPanel = LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Notifications", self.optionsnotifications.name, self.options.name)
 	self.blizActionButtonsPanel = LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-ActionButtons", self.optionsactionbuttons.name, self.options.name)
 	self.blizConvPanel = LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Conv", self.optionsconv.name, self.options.name)
-	self.blizAccessibilityPanel = LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Accessibility", self.optionsaccessibility.name, self.options.name)
+	self.blizAccessPanel = LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Accessibility", self.optionsaccessibility.name, self.options.name)
 	self.blizAboutPanel = LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-About", self.optionsabout.name, self.options.name)
 	if (self.db.profile.debug) then
-		self.blizDebugPanel = LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Debug", self.optionsdebug.name, self.options.name)
+		LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Debug", self.optionsdebug.name, self.options.name)
 	end
 	--LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Data", self.optionsdata.name, self.options.name)
 	self.blizProfilePanel = LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Profile", self.optionsprofile.name, self.options.name)
 end
 
+function me:EnsureBlizConfig()
+	if self.blizRootPanel then return end
+	self:Options_SetupBlizConfig()
+	self.blizConfigPending = nil
+end
+
 function me:OpenStepDisplayOptions()
+	if self.EnsureBlizConfig then self:EnsureBlizConfig() end
 	local panel = self.blizStepDisplayPanel
 	if panel then
 		InterfaceOptionsFrame_OpenToCategory(panel)
@@ -2021,7 +2061,9 @@ end
 
 function me:OpenOptions()
 	--self:OpenConfigMenu()
-	InterfaceOptionsFrame_OpenToCategory((self.options and self.options.name) or "Zygor Guides Viewer Remastered")
+	if self.EnsureBlizConfig then self:EnsureBlizConfig() end
+	local panel = self.blizRootPanel or ((self.options and self.options.name) or "Zygor Guides Viewer Remastered")
+	InterfaceOptionsFrame_OpenToCategory(panel)
 end
 
 

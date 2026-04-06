@@ -4786,16 +4786,6 @@ function me:SelectGuideManagerCategory(category)
 	if frame and frame.SetCategory then frame:SetCategory(category) end
 end
 
-function me:ToggleGuideManagerFrame(section)
-	local frame = EnsureGuideManagerStandaloneFrame(self)
-	if frame:IsShown() then
-		frame:Hide()
-	else
-		if section then self:SelectGuideManagerSection(section) end
-		frame:Show()
-	end
-end
-
 function me:OpenGuideManagerStepDisplay()
 	local frame = EnsureGuideManagerStandaloneFrame(self)
 	if self.db and self.db.profile then
@@ -4809,4 +4799,14 @@ function me:OpenGuideManagerStepDisplay()
 	end
 	self:SelectGuideManagerSection("options")
 	self:SelectGuideManagerCategory("stepdisplay")
+end
+
+function me:ToggleGuideManagerFrame(section)
+	local frame = EnsureGuideManagerStandaloneFrame(self)
+	if frame:IsShown() then
+		frame:Hide()
+	else
+		if section then self:SelectGuideManagerSection(section) end
+		frame:Show()
+	end
 end

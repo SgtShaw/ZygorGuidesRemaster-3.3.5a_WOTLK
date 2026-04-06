@@ -164,6 +164,14 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
+### v3.0 (Revision 105)
+
+- Bumped addon version/revision to 3.0.105 / 105.
+- Finalized the rebuilt viewer branch as the new stable publish state after the GO/Garryowen crash recovery and startup stabilization work.
+- Kept the rebuilt action bar, target preview, and real line-owned inline `talk`/`kill` buttons active while improving objective-progress refreshes and adding an in-view guide progress bar.
+- Updated the active Northrend Alliance leveling guide to include `The Delicate Sound of Thunder##11495`, `News From the East##11501`, and the related `The Clutches of Evil##11157` handoff flow.
+- Carbonite map zoom can still scale its map-side icon differently from built-in Carbonite icons, but the normal waypoint marker remains visible and functional.
+
 ### v3.0 (Revision 104)
 
 - Bumped addon version/revision to 3.0.104 / 104.

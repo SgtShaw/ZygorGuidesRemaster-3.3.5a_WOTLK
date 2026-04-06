@@ -90,6 +90,10 @@ local function IsCarboniteActive()
 	return _G.Nx ~= nil
 end
 
+local function ShouldUseCarboniteMapTarget()
+	return false
+end
+
 local function ApplyMinimapMarkerVisualState(frame)
 	if not frame then return end
 	local blend = IsCarboniteActive() and "ADD" or "BLEND"
@@ -111,6 +115,13 @@ local function ApplyMinimapMarkerVisualState(frame)
 		frame.arrow:SetBlendMode(blend)
 		if frame.arrow.SetDesaturated then frame.arrow:SetDesaturated(false) end
 	end
+end
+
+local function WaypointsShareMinimapTarget(a,b)
+	if not a or not b or a == b then return false end
+	if a.c ~= b.c or a.z ~= b.z then return false end
+	if not a.x or not a.y or not b.x or not b.y then return false end
+	return math.abs(a.x - b.x) <= 0.0025 and math.abs(a.y - b.y) <= 0.0025
 end
 
 function Pointer:CarbonitePruneManagedButtons()
@@ -148,6 +159,55 @@ function Pointer:CarbonitePruneManagedButtons()
 	end
 end
 
+function Pointer:RefreshWorldMapMarkers()
+	local c,z = GetCurrentMapContinentAndZone()
+	for way in pairs(self.waypoints) do
+		if way.UpdateWorldMapIcon then
+			way:UpdateWorldMapIcon(c,z)
+		end
+	end
+end
+
+function Pointer:ClearCarboniteMapTarget()
+	if not self.carbTargetId then return end
+	local Nx = _G.Nx
+	if Nx and Nx.TTRW then
+		pcall(Nx.TTRW, Nx, self.carbTargetId)
+	end
+	self.carbTargetId = nil
+	self.carbTargetWaypoint = nil
+end
+
+function Pointer:SyncCarboniteMapTarget(waypoint)
+	if not ShouldUseCarboniteMapTarget() then
+		self:ClearCarboniteMapTarget()
+		return
+	end
+
+	if not waypoint or waypoint.hidden then
+		self:ClearCarboniteMapTarget()
+		return
+	end
+
+	local Nx = _G.Nx
+	if not (Nx and Nx.TTSTCZXY) then
+		self:ClearCarboniteMapTarget()
+		return
+	end
+
+	if self.carbTargetWaypoint == waypoint and self.carbTargetId then
+		return
+	end
+
+	self:ClearCarboniteMapTarget()
+	local title = waypoint.t or waypoint.title or "Waypoint"
+	local ok, id = pcall(Nx.TTSTCZXY, Nx, waypoint.c, waypoint.z, waypoint.x * 100, waypoint.y * 100, title)
+	if ok and id then
+		self.carbTargetId = id
+		self.carbTargetWaypoint = waypoint
+	end
+end
+
 function Pointer:SetupCarboniteHooks()
 	if self._carboniteHooksInstalled then return end
 	local Nx = _G.Nx
@@ -156,21 +216,25 @@ function Pointer:SetupCarboniteHooks()
 	if Nx.Map.Doc.MOI then
 		hooksecurefunc(Nx.Map.Doc, "MOI", function()
 			Pointer:CarbonitePruneManagedButtons()
+			Pointer:RefreshWorldMapMarkers()
 		end)
 	end
 	if Nx.Map.MDF1 then
 		hooksecurefunc(Nx.Map, "MDF1", function()
 			Pointer:CarbonitePruneManagedButtons()
+			Pointer:RefreshWorldMapMarkers()
 		end)
 	end
 	if Nx.Map.MBSU then
 		hooksecurefunc(Nx.Map, "MBSU", function()
 			Pointer:CarbonitePruneManagedButtons()
+			Pointer:RefreshWorldMapMarkers()
 		end)
 	end
 
 	self._carboniteHooksInstalled = true
 	self:CarbonitePruneManagedButtons()
+	self:RefreshWorldMapMarkers()
 end
 
 function Pointer:EnsureQuestPOICompatPatch()
@@ -833,6 +897,9 @@ function Pointer:ClearWaypoints (waytype)
 end
 
 function Pointer:RemoveWaypoint(waypoint)
+	if self.carbTargetWaypoint == waypoint then
+		self:ClearCarboniteMapTarget()
+	end
 	Astrolabe:RemoveIconFromMinimap(waypoint.minimapFrame)
 	waypoint.minimapFrame:Hide()
 	waypoint.minimapFrame.waypoint=nil
@@ -847,6 +914,7 @@ end
 function Pointer:HideArrow()
 	self.ArrowFrame.waypoint = nil
 	self:ResetMinimapZoom() -- to perhaps reset the zoom
+	self:ClearCarboniteMapTarget()
 	--self.ArrowFrame:Hide()
 end
 
@@ -866,6 +934,7 @@ function Pointer:ShowArrow(waypoint)
 
 	initialdist = nil
 	lastminimapdist=99999
+	self:SyncCarboniteMapTarget(waypoint)
 
 	--self.ArrowFrame.temporarilyhidden = true
 	--self.ArrowFrame:Show()
@@ -919,6 +988,9 @@ end
 function markerproto:UpdateWorldMapIcon(c,z)
 	local show=true
 	if not ZGV.Pointer.OverlayFrame:IsShown() or self.hidden then show=false end
+	if ZGV.Pointer.carbTargetId and ZGV.Pointer.carbTargetWaypoint == self and ZGV.Pointer.ArrowFrame and ZGV.Pointer.ArrowFrame.waypoint == self then
+		show = false
+	end
 
 	if show and not self.overworld then
 		if not c then c,z=GetCurrentMapContinentAndZone() end
@@ -944,7 +1016,7 @@ end
 
 function markerproto:UpdateMiniMapIcon(c,z)
 	if not c then c,z=GetCurrentMapContinentAndZone() end
-	if profile.minicons and not self.hidden and 
+	if profile.minicons and not self.hidden and not ZGV.Pointer:IsWaypointSuppressedOnMinimap(self) and 
 	(
 	 self.onminimap=="always" or 
 	 ZGV.Pointer.ArrowFrame.waypoint==self or
@@ -1312,23 +1384,23 @@ end
 
 
 function Pointer:MinimapZoomChanged()
-	if profile.minimapzoom then
-		--minimapcontrolled = true
-	else
-		--minimapcontrolled = false
-		Minimap:SetZoom(0)
-		MinimapZoomOut:Disable()
-		MinimapZoomIn:Enable()
-	end
+	minimap_lastset = Minimap:GetZoom() or 0
+	minimapcontrol_suspension = 0
 end
 
 function Pointer:ResetMinimapZoom()
-	if profile.minimapzoom then
-		Minimap:SetZoom(0)
-		MinimapZoomOut:Disable()
-		MinimapZoomIn:Enable()
-	end
-	--minimap_lastset = 0
+	minimap_lastset = Minimap:GetZoom() or 0
+	minimapcontrol_suspension = 0
+	lastminimapdist = 99999
+end
+
+function Pointer:IsWaypointSuppressedOnMinimap(waypoint)
+	if not waypoint or not waypoint.spot then return false end
+	local active = self.ArrowFrame and self.ArrowFrame.waypoint
+	if not active or active == waypoint then return false end
+	if active.spot then return false end
+	if active.hidden or active.hideminimap then return false end
+	return WaypointsShareMinimapTarget(waypoint, active)
 end
 
 local function ShowTooltip(button,tooltip)
@@ -1387,6 +1459,11 @@ function Pointer.MinimapButton_OnUpdate(self,elapsed)
 	self.minimap_count = 0
 
 	if not profile.minicons then self.icon:Hide() self.arrow:Hide() return end
+	if IsCarboniteActive() and WorldMapFrame and WorldMapFrame:IsVisible() then
+		self.icon:Hide()
+		self.arrow:Hide()
+		return
+	end
 	local markerParent = GetMinimapMarkerParent()
 	if self:GetParent() ~= markerParent or self:GetScale() < 0.99 or self:GetAlpha() < 0.99 then
 		self:SetParent(markerParent)
@@ -1418,6 +1495,12 @@ function Pointer.MinimapButton_OnUpdate(self,elapsed)
 		return
 	end
 
+	if Pointer:IsWaypointSuppressedOnMinimap(self.waypoint) then
+		self.icon:Hide()
+		self.arrow:Hide()
+		return
+	end
+
 	local edge = Astrolabe:IsIconOnEdge(self)
 
 	if edge then
@@ -1443,43 +1526,6 @@ function Pointer.MinimapButton_OnUpdate(self,elapsed)
 		ZGV.Pointer.MinimapButton_OnEnter(self)
 	end
 
-	-- minimap autozoom
-	if profile.minimapzoom then
-		local Minimap = Minimap
-		local getzoom = Minimap:GetZoom()
-		if getzoom~=minimap_lastset then
-			-- user playing with minimap; suspend our activities for a while
-			minimapcontrol_suspension = 5.0
-			minimap_lastset = getzoom
-		end
-
-		-- are we pointed to?
-		if Pointer.ArrowFrame.waypoint==self.waypoint then
-			if minimapcontrol_suspension>0 then
-				minimapcontrol_suspension = minimapcontrol_suspension - elapsed
-			else
-				local old_minimap_lastset=minimap_lastset
-				local dist = dist*2
-				if dist~=lastminimapdist then
-					local mapsizes = MinimapSize[Astrolabe.minimapOutside and 'outdoor' or 'indoor']
-
-					minimap_lastset=0
-					for i=1,Minimap:GetZoomLevels()-1 do
-						if dist<mapsizes[i]*0.7 then minimap_lastset=i end
-					end
-
-					if old_minimap_lastset~=minimap_lastset then
-						-- sanitise buttons
-						if(minimap_lastset == (Minimap:GetZoomLevels() - 1)) then MinimapZoomIn:Disable() else MinimapZoomIn:Enable() end
-						if(minimap_lastset == 0) then MinimapZoomOut:Disable() else MinimapZoomOut:Enable() end
-
-						Minimap:SetZoom(minimap_lastset) 
-					end
-				end
-				lastminimapdist=dist
-			end
-		end
-	end
 end
 
 function Pointer.MinimapButton_OnClick(self,button)

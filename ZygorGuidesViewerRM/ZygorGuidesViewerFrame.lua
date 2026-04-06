@@ -301,11 +301,67 @@ function ZygorGuidesViewerFrame_Step_Setup(num)
 		clicker:SetScript("OnClick",clicker_onclick)
 		clicker:SetScript("OnEnter",clicker_onenter)
 		clicker:SetScript("OnLeave",clicker_onleave)
-		clicker:EnableMouse(false)
+		clicker:EnableMouse(true)
+
+		local actionname = stepname.."_Line"..i
+		local actionholder = CreateFrame("Frame", actionname.."ActionHolder", line)
+		local action = CreateFrame("CheckButton", actionname.."Action", actionholder, "SecureActionButtonTemplate")
+		local petaction = CreateFrame("CheckButton", actionname.."PetAction", actionholder, "PetActionButtonTemplate")
+		local cooldown = CreateFrame("Cooldown", actionname.."ActionCooldown", action, "CooldownFrameTemplate")
+
+		actionholder:SetFrameStrata(line:GetFrameStrata())
+		actionholder:SetFrameLevel(line:GetFrameLevel()+15)
+		actionholder:SetWidth(15)
+		actionholder:SetHeight(15)
+		actionholder:SetPoint("TOPLEFT", line, "TOPLEFT", 0, 0)
+		actionholder:Hide()
+
+		action:SetFrameStrata(actionholder:GetFrameStrata())
+		action:SetFrameLevel(actionholder:GetFrameLevel()+1)
+		action:RegisterForClicks("AnyUp")
+		action:SetWidth(15)
+		action:SetHeight(15)
+		action:SetAllPoints(actionholder)
+		action:SetScript("OnEnter", function(self)
+			ZygorGuidesViewer:ShowActionButtonTooltip(self)
+		end)
+		action:SetScript("OnLeave", function(self)
+			GameTooltip:Hide()
+		end)
+		action:SetScript("PostClick", function(self)
+			if ZygorGuidesViewer and ZygorGuidesViewer.ActionButtons_HandlePostClick then
+				ZygorGuidesViewer:ActionButtons_HandlePostClick(self)
+			end
+		end)
+		action:SetHighlightTexture("Interface/Buttons/ButtonHilight-Square")
+		action.icon = action:CreateTexture(actionname.."ActionIcon","OVERLAY")
+		action.icon:SetAllPoints(action)
+		action.icon:SetWidth(15)
+		action.icon:SetHeight(15)
+		action:Hide()
+
+		petaction:SetFrameStrata(actionholder:GetFrameStrata())
+		petaction:SetFrameLevel(actionholder:GetFrameLevel()+1)
+		petaction:SetWidth(15)
+		petaction:SetHeight(15)
+		petaction:SetAllPoints(actionholder)
+		_G[actionname..'PetActionNormalTexture2']:SetAlpha(0)
+		petaction:SetScript("OnDragStart",nil)
+		petaction:Hide()
+
+		cooldown:SetPoint("CENTER", 0, -1)
+		cooldown:SetAllPoints()
+		cooldown:Hide()
+		action.cd = cooldown
 
 		--line.icon=icon
 		--line.back=back
 		--line.clicker=clicker
+		line.actionBaseName = actionname
+		line.actionHolder = actionholder
+		line.action = action
+		line.petaction = petaction
+		line.cooldown = cooldown
 		line.anim_w2g = obj("Line"..i.."Back_white2green")
 		line.anim_w2r = obj("Line"..i.."Back_white2rgba")
 
@@ -503,62 +559,8 @@ function ZygorGuidesViewerFrame_OnLoad(self)
 
 	self:SetClampRectInsets(0,0,10,0)
 
-	for i=1,20 do
-		
+	for i=1,5 do
 		ZygorGuidesViewerFrame_Step_Setup(i)
-
-		-- and now, the final trick: the mystery action button.
-
-		local name = 'ZygorGuidesViewerFrame_Act'..i
-
-		local action = CreateFrame("CheckButton", name.."Action", ZygorGuidesViewerFrame, "SecureActionButtonTemplate")
-		local petaction = CreateFrame("CheckButton", name.."PetAction", ZygorGuidesViewerFrame, "PetActionButtonTemplate")
-
-		action:SetFrameStrata("DIALOG")
-		action:SetFrameLevel(ZygorGuidesViewerFrame:GetFrameLevel()+30)
-		action:SetWidth(15)
-		action:SetHeight(15)
-		action:SetScript("OnEnter", function(self)
-			ZygorGuidesViewer:ShowActionButtonTooltip(self)
-		end)
-		action:SetScript("OnLeave", function(self)
-			--if InCombatLockdown() then return end
-			--self:SetWidth(15)
-			--self:SetHeight(15)
-			--self:SetFrameStrata("MEDIUM")
-			GameTooltip:Hide()
-			--select(1,self:GetAnimationGroups()):Stop()
-			--select(2,self:GetAnimationGroups()):Play()
-		end)
-		action:SetScript("PostClick", function(self)
-			if ZygorGuidesViewer and ZygorGuidesViewer.ActionButtons_HandlePostClick then
-				ZygorGuidesViewer:ActionButtons_HandlePostClick(self)
-			end
-		end)
-		action:SetHighlightTexture("Interface/Buttons/ButtonHilight-Square")
-
-		action.tex = action:CreateTexture(name.."ActionIcon","OVERLAY")
-		action.tex:SetAllPoints(action)
-		action.tex:SetWidth(15)
-		action.tex:SetHeight(15)
-		action.tex:SetHeight(15)
-
-		petaction:SetFrameStrata("DIALOG")
-		petaction:SetFrameLevel(ZygorGuidesViewerFrame:GetFrameLevel()+31)
-		petaction:SetWidth(15)
-		petaction:SetHeight(15)
-		petaction:SetParent(ZygorGuidesViewerFrame)
-		_G[name..'PetActionNormalTexture2']:SetAlpha(0)
-		--petaction:SetScript("OnClick",PetActionButton_OnClick) -- taint
-		petaction:SetScript("OnDragStart",nil)
-		--petaction:SetScript("OnReceiveDrag",nil) --doesn't work
-
-		local cd = CreateFrame("Cooldown", name.."ActionCooldown", action, "CooldownFrameTemplate")
-		action.cd = cd
-		cd:SetPoint("CENTER", 0, -1)
-		cd:SetAllPoints()
-		cd:Hide()
-
 	end
 
 	for i=1,20 do
@@ -659,6 +661,15 @@ local stepframe,line
 
 local throttle=0
 
+local function SetChromeElementState(frame, shown)
+	if not frame then return end
+	frame:Show()
+	frame:SetAlpha(shown and 1 or 0)
+	if frame.EnableMouse then
+		frame:EnableMouse(shown)
+	end
+end
+
 local function SetRemasterChromeHidden(remasterFrames, hidden, force)
 	if not remasterFrames or not remasterFrames.root or not remasterFrames.content then return end
 	if ZGV.remasterChromeHidden == hidden and not force then return end
@@ -667,65 +678,35 @@ local function SetRemasterChromeHidden(remasterFrames, hidden, force)
 	local header = remasterFrames.header
 	local toolbar = remasterFrames.toolbar
 	local separator = remasterFrames.separator
-	local content = remasterFrames.content
-	local root = remasterFrames.root
 
 	if hidden then
-		if root and root.GetBackdropColor and root.SetBackdropColor then
-			ZGV.remasterRootBackdropColor = ZGV.remasterRootBackdropColor or { root:GetBackdropColor() }
-			ZGV.remasterRootBorderColor = ZGV.remasterRootBorderColor or { root:GetBackdropBorderColor() }
-			local r,g,b = unpack(ZGV.remasterRootBackdropColor)
-			root:SetBackdropColor(r or 0, g or 0, b or 0, 0)
-			local br,bg,bb = unpack(ZGV.remasterRootBorderColor)
-			root:SetBackdropBorderColor(br or 0, bg or 0, bb or 0, 0)
-		end
-		if content and content.GetBackdropColor and content.SetBackdropColor then
-			ZGV.remasterContentBackdropColor = ZGV.remasterContentBackdropColor or { content:GetBackdropColor() }
-			ZGV.remasterContentBorderColor = ZGV.remasterContentBorderColor or { content:GetBackdropBorderColor() }
-			local cr,cg,cb = unpack(ZGV.remasterContentBackdropColor)
-			content:SetBackdropColor(cr or 0, cg or 0, cb or 0, 0)
-			local cbr,cbg,cbb = unpack(ZGV.remasterContentBorderColor)
-			content:SetBackdropBorderColor(cbr or 0, cbg or 0, cbb or 0, 0)
-		end
-		if header then header:Hide() end
-		if toolbar then toolbar:Hide() end
-		if separator then separator:Hide() end
-		content:ClearAllPoints()
-		content:SetPoint("TOPLEFT", root, "TOPLEFT", 6, -6)
-		content:SetPoint("BOTTOMRIGHT", root, "BOTTOMRIGHT", -6, 8)
+		SetChromeElementState(header, false)
+		SetChromeElementState(toolbar, false)
+		SetChromeElementState(separator, false)
+		SetChromeElementState(remasterFrames.headerTitle, false)
+		SetChromeElementState(remasterFrames.headerMeta, false)
+		SetChromeElementState(remasterFrames.guideButton, false)
+		SetChromeElementState(remasterFrames.prevButton, false)
+		SetChromeElementState(remasterFrames.nextButton, false)
+		SetChromeElementState(remasterFrames.stepLabel, false)
+		SetChromeElementState(remasterFrames.closeButton, false)
+		SetChromeElementState(remasterFrames.settingsButton, false)
+		SetChromeElementState(remasterFrames.miniButton, false)
+		SetChromeElementState(remasterFrames.lockButton, false)
 	else
-		if root and root.SetBackdropColor and ZGV.remasterRootBackdropColor then
-			root:SetBackdropColor(unpack(ZGV.remasterRootBackdropColor))
-		end
-		if root and root.SetBackdropBorderColor and ZGV.remasterRootBorderColor then
-			root:SetBackdropBorderColor(unpack(ZGV.remasterRootBorderColor))
-		end
-		if content and content.SetBackdropColor and ZGV.remasterContentBackdropColor then
-			content:SetBackdropColor(unpack(ZGV.remasterContentBackdropColor))
-		end
-		if content and content.SetBackdropBorderColor and ZGV.remasterContentBorderColor then
-			content:SetBackdropBorderColor(unpack(ZGV.remasterContentBorderColor))
-		end
-		if header then
-			header:Show()
-			header:SetAlpha(1)
-		end
-		if toolbar then
-			toolbar:Show()
-			toolbar:SetAlpha(1)
-		end
-		if separator then
-			separator:Show()
-			separator:SetAlpha(1)
-		end
-		content:ClearAllPoints()
-		if ZGV and ZGV.db and ZGV.db.profile and ZGV.db.profile.resizeup then
-			content:SetPoint("TOPLEFT", root, "TOPLEFT", 6, -6)
-			content:SetPoint("BOTTOMRIGHT", toolbar, "TOPRIGHT", 0, 10)
-		else
-			content:SetPoint("TOPLEFT", toolbar, "BOTTOMLEFT", 0, -10)
-			content:SetPoint("BOTTOMRIGHT", root, "BOTTOMRIGHT", -6, 8)
-		end
+		SetChromeElementState(header, true)
+		SetChromeElementState(toolbar, true)
+		SetChromeElementState(separator, true)
+		SetChromeElementState(remasterFrames.headerTitle, true)
+		SetChromeElementState(remasterFrames.headerMeta, true)
+		SetChromeElementState(remasterFrames.guideButton, true)
+		SetChromeElementState(remasterFrames.prevButton, true)
+		SetChromeElementState(remasterFrames.nextButton, true)
+		SetChromeElementState(remasterFrames.stepLabel, true)
+		SetChromeElementState(remasterFrames.closeButton, true)
+		SetChromeElementState(remasterFrames.settingsButton, true)
+		SetChromeElementState(remasterFrames.miniButton, true)
+		SetChromeElementState(remasterFrames.lockButton, true)
 	end
 end
 
@@ -745,6 +726,9 @@ function ZGV:RefreshAutoHideBorderState()
 			or (remasterFrames.root and MouseIsOver(remasterFrames.root,10,-10,-30,30))
 			or (remasterFrames.content and MouseIsOver(remasterFrames.content,10,-10,-30,30))
 	end
+	if self.deferBorderAutoHideUntil and GetTime() < self.deferBorderAutoHideUntil then
+		hovering = true
+	end
 	if isRemaster and remasterHeader then
 		hovering = hovering or MouseIsOver(remasterHeader,10,-10,-30,30)
 	elseif TitleBar then
@@ -754,9 +738,6 @@ function ZGV:RefreshAutoHideBorderState()
 	if not hideborder then
 		self.borderfadedout = nil
 		if isRemaster and remasterFrames then
-			if remasterHeader then remasterHeader:Show() remasterHeader:SetAlpha(1) end
-			if remasterToolbar then remasterToolbar:Show() remasterToolbar:SetAlpha(1) end
-			if remasterSeparator then remasterSeparator:Show() remasterSeparator:SetAlpha(1) end
 			SetRemasterChromeHidden(remasterFrames,false,true)
 		else
 			if Border then Border:Show() Border:SetAlpha(opacity) end
@@ -768,9 +749,6 @@ function ZGV:RefreshAutoHideBorderState()
 	-- Preserve hidden state across skin swaps/reloads when auto-hide is already active.
 	if self.borderfadedout then
 		if isRemaster and remasterFrames then
-			if remasterHeader then remasterHeader:SetAlpha(0) remasterHeader:Hide() end
-			if remasterToolbar then remasterToolbar:SetAlpha(0) remasterToolbar:Hide() end
-			if remasterSeparator then remasterSeparator:SetAlpha(0) remasterSeparator:Hide() end
 			SetRemasterChromeHidden(remasterFrames,true,true)
 		else
 			if Border then Border:SetAlpha(0) Border:Hide() end
@@ -782,9 +760,6 @@ function ZGV:RefreshAutoHideBorderState()
 	if hovering then
 		self.borderfadedout = nil
 		if isRemaster and remasterFrames then
-			if remasterHeader then remasterHeader:Show() remasterHeader:SetAlpha(1) end
-			if remasterToolbar then remasterToolbar:Show() remasterToolbar:SetAlpha(1) end
-			if remasterSeparator then remasterSeparator:Show() remasterSeparator:SetAlpha(1) end
 			SetRemasterChromeHidden(remasterFrames,false)
 		else
 			if Border then Border:Show() Border:SetAlpha(opacity) end
@@ -793,9 +768,6 @@ function ZGV:RefreshAutoHideBorderState()
 	else
 		self.borderfadedout = true
 		if isRemaster and remasterFrames then
-			if remasterHeader then remasterHeader:SetAlpha(0) remasterHeader:Hide() end
-			if remasterToolbar then remasterToolbar:SetAlpha(0) remasterToolbar:Hide() end
-			if remasterSeparator then remasterSeparator:SetAlpha(0) remasterSeparator:Hide() end
 			SetRemasterChromeHidden(remasterFrames,true,true)
 		else
 			if Border then Border:SetAlpha(0) Border:Hide() end
@@ -809,9 +781,6 @@ function ZGV:ForceHideBorderNow()
 	local isRemaster = self.db.profile.skin == "remaster"
 	local remasterFrames = isRemaster and self.RemasterFrames
 	if isRemaster and remasterFrames then
-		if remasterFrames.header then remasterFrames.header:SetAlpha(0) remasterFrames.header:Hide() end
-		if remasterFrames.toolbar then remasterFrames.toolbar:SetAlpha(0) remasterFrames.toolbar:Hide() end
-		if remasterFrames.separator then remasterFrames.separator:SetAlpha(0) remasterFrames.separator:Hide() end
 		SetRemasterChromeHidden(remasterFrames, true, true)
 	else
 		if Border then Border:SetAlpha(0) Border:Hide() end
@@ -878,6 +847,18 @@ function ZygorGuidesViewerFrame_OnUpdate(self,elapsed)
 
 	-- auto-hide border
 	if ZGV.db.profile.hideborder then
+		if ZGV.deferBorderAutoHideUntil and GetTime() < ZGV.deferBorderAutoHideUntil then
+			ZGV.borderfadedout = nil
+			if isRemaster and remasterFrames then
+				SetRemasterChromeHidden(remasterFrames,false,true)
+			else
+				if Border then Border:Show() Border:SetAlpha(ZGV.db.profile.opacitymain or 1.0) end
+				if Skipper and Skipper.mustbevisible then Skipper:Show() Skipper:SetAlpha(ZGV.db.profile.opacitymain or 1.0) end
+			end
+			self.leftCount=0
+			self.mouseCount=0
+			return
+		end
 		-- never hide while the window is being moved
 		if ZGV.framemoving then
 			self.leftCount=0
@@ -895,18 +876,12 @@ function ZygorGuidesViewerFrame_OnUpdate(self,elapsed)
 				self.mouseCount = self.mouseCount+elapsed
 				self.leftCount=0
 				if self.mouseCount>delay then
-					if remasterHeader then
-						remasterHeader:Show()
-						UIFrameFadeIn(remasterHeader,fadespeed,0.0,1.0)
-					end
-					if remasterToolbar then
-						remasterToolbar:Show()
-						UIFrameFadeIn(remasterToolbar,fadespeed,0.0,1.0)
-					end
-					if remasterSeparator then
-						remasterSeparator:Show()
-						UIFrameFadeIn(remasterSeparator,fadespeed,0.0,1.0)
-					end
+					SetChromeElementState(remasterHeader, true)
+					SetChromeElementState(remasterToolbar, true)
+					SetChromeElementState(remasterSeparator, true)
+					if remasterHeader then UIFrameFadeIn(remasterHeader,fadespeed,0.0,1.0) end
+					if remasterToolbar then UIFrameFadeIn(remasterToolbar,fadespeed,0.0,1.0) end
+					if remasterSeparator then UIFrameFadeIn(remasterSeparator,fadespeed,0.0,1.0) end
 					ZGV.borderfadedout=nil
 					SetRemasterChromeHidden(remasterFrames,false)
 				end
@@ -930,14 +905,8 @@ function ZygorGuidesViewerFrame_OnUpdate(self,elapsed)
 
 			local chromeAlpha = remasterToolbar and remasterToolbar:GetAlpha() or 1
 			if chromeAlpha<0.05 then
-				if remasterHeader then remasterHeader:Hide() end
-				if remasterToolbar then remasterToolbar:Hide() end
-				if remasterSeparator then remasterSeparator:Hide() end
 				SetRemasterChromeHidden(remasterFrames,true)
 			else
-				if remasterHeader then remasterHeader:Show() end
-				if remasterToolbar then remasterToolbar:Show() end
-				if remasterSeparator then remasterSeparator:Show() end
 				SetRemasterChromeHidden(remasterFrames,false)
 			end
 		else
@@ -977,18 +946,6 @@ function ZygorGuidesViewerFrame_OnUpdate(self,elapsed)
 	else
 		ZGV.borderfadedout=nil
 		if isRemaster and remasterFrames then
-			if remasterHeader then
-				remasterHeader:Show()
-				remasterHeader:SetAlpha(1)
-			end
-			if remasterToolbar then
-				remasterToolbar:Show()
-				remasterToolbar:SetAlpha(1)
-			end
-			if remasterSeparator then
-				remasterSeparator:Show()
-				remasterSeparator:SetAlpha(1)
-			end
 			SetRemasterChromeHidden(remasterFrames,false)
 		else
 			Border:Show()
@@ -1082,8 +1039,19 @@ function ZygorGuidesViewerFrame_OnUpdate(self,elapsed)
 			t=t-floor(t)
 			if t>0.5 then
 				GuideButton:LockHighlight()
+				if ZGV.RemasterFrames and ZGV.RemasterFrames.guideButton and ZGV.RemasterFrames.guideButton.LockHighlight then
+					ZGV.RemasterFrames.guideButton:LockHighlight()
+				end
 			else
 				GuideButton:UnlockHighlight()
+				if ZGV.RemasterFrames and ZGV.RemasterFrames.guideButton and ZGV.RemasterFrames.guideButton.UnlockHighlight then
+					ZGV.RemasterFrames.guideButton:UnlockHighlight()
+				end
+			end
+		else
+			GuideButton:UnlockHighlight()
+			if ZGV.RemasterFrames and ZGV.RemasterFrames.guideButton and ZGV.RemasterFrames.guideButton.UnlockHighlight then
+				ZGV.RemasterFrames.guideButton:UnlockHighlight()
 			end
 		end
 	end

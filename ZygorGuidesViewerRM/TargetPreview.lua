@@ -10,8 +10,10 @@ local PREVIEW_PADDING = 8
 local PREVIEW_SNAP_THRESHOLD_X = 120
 local PREVIEW_SNAP_THRESHOLD_Y = 90
 local PREVIEW_CLOSE_SIZE = 16
-local PREVIEW_ROTATION_SPEED = 0.008
-local PREVIEW_TARGET_CAM_DISTANCE = 1.7
+local PREVIEW_ROTATION_SPEED = 0.012
+local PREVIEW_TARGET_CAM_DISTANCE = 2.0
+
+me.targetPreviewSafeModelReady = me.targetPreviewSafeModelReady or false
 
 local function TP_ApplyIcon(texture, icon)
 	if not texture then return end
@@ -135,6 +137,7 @@ function me:TargetPreview_SetGoalFocus(goal, sticky)
 	local spec = self:TargetPreview_GetGoalSubject(goal)
 	if not spec then return end
 	if sticky then
+		self.targetPreviewInteractiveReady = true
 		self.targetPreviewSelectedSignature = spec.signature
 		self.targetPreviewSelectedStep = self.CurrentStep
 		self.targetPreviewSelectedSubject = TP_CopySubject(spec, self.CurrentStep)
@@ -153,6 +156,7 @@ end
 
 function me:TargetPreview_SelectHoveredSubject()
 	if not self.targetPreviewHoveredSubject or self.targetPreviewHoveredStep ~= self.CurrentStep then return false end
+	self.targetPreviewInteractiveReady = true
 	self.targetPreviewSelectedSignature = self.targetPreviewHoveredSignature
 	self.targetPreviewSelectedStep = self.targetPreviewHoveredStep
 	self.targetPreviewSelectedSubject = TP_CopySubject(self.targetPreviewHoveredSubject, self.targetPreviewHoveredStep)
@@ -164,6 +168,7 @@ end
 
 function me:TargetPreview_SelectActionSpec(spec)
 	if not spec or (spec.kind ~= "talk" and spec.kind ~= "kill") then return false end
+	self.targetPreviewInteractiveReady = true
 	self.targetPreviewSelectedSignature = spec.signature
 	self.targetPreviewSelectedStep = self.CurrentStep
 	self.targetPreviewSelectedSubject = TP_CopySubject(spec, self.CurrentStep)
@@ -500,40 +505,39 @@ function me:TargetPreview_GetUnitData(subject)
 end
 
 function me:TargetPreview_ShowModel(subject)
+	if not self.targetPreviewSafeModelReady then return false end
+	if not subject or not subject.target then return false end
+	if not TP_SubjectMatchesTarget(subject) then return false end
+
 	local frame = self.TargetPreviewPane
-	if not frame or not subject then return false end
-	local modelKey
-	local useTarget = TP_SubjectMatchesTarget(subject)
-	if useTarget then
-		modelKey = "target:" .. tostring(UnitGUID("target") or "")
-	else
-		return false
-	end
-	if frame.modelSubjectKey and frame.modelSubjectKey == modelKey and frame.model:IsShown() then
-		return true
-	end
-	local ok = pcall(function()
-		if frame.model.ClearModel then frame.model:ClearModel() end
-		frame.model:SetUnit("target")
-		if frame.model.SetPortraitZoom then frame.model:SetPortraitZoom(0) end
-		if frame.model.SetCamDistanceScale then
-			frame.model:SetCamDistanceScale(PREVIEW_TARGET_CAM_DISTANCE)
-		end
-		if frame.model.SetCamera then frame.model:SetCamera(0) end
-		if frame.model.SetFacing then
-			if frame.modelSubjectKey ~= modelKey then
-				frame.modelFacing = 0
+	local model = frame and frame.model
+	if not model or not model.SetUnit then return false end
+
+	local targetGUID = UnitGUID and UnitGUID("target")
+	local subjectKey = (subject.signature or subject.target or "target") .. ":" .. tostring(targetGUID or UnitName("target") or "")
+
+	if frame.modelSubjectKey ~= subjectKey then
+		if model.ClearModel then model:ClearModel() end
+		model:SetUnit("target")
+		if model.SetCamDistanceScale then
+			local ctype = UnitCreatureType and UnitCreatureType("target")
+			local scale = PREVIEW_TARGET_CAM_DISTANCE
+			if ctype == "Humanoid" then
+				scale = 1.35
 			end
-			frame.model:SetFacing(frame.modelFacing or 0)
+			pcall(model.SetCamDistanceScale, model, scale)
 		end
-		frame.model:Show()
-	end)
-	if ok then
-		frame.modelSubjectKey = modelKey
-	else
-		frame.modelSubjectKey = nil
+		if model.SetFacing then
+			frame.modelFacing = 0
+			model:SetFacing(frame.modelFacing)
+		end
+		frame.modelSubjectKey = subjectKey
+	elseif model.SetFacing then
+		frame.modelFacing = frame.modelFacing or 0
+		model:SetFacing(frame.modelFacing)
 	end
-	return ok
+
+	return true
 end
 
 function me:TargetPreview_ApplySubject(subject)
@@ -622,7 +626,6 @@ function me:TargetPreview_CreatePane()
 		me:TargetPreview_SnapNow(selfFrame, me:TargetPreview_GetSnapFrame())
 	end)
 	frame:SetScript("OnUpdate", function(selfFrame)
-		if me.db.profile.targetpreview_locked then return end
 		if selfFrame.modelRotating and selfFrame.model and selfFrame.model.SetFacing then
 			local cx = GetCursorPosition()
 			local last = selfFrame.modelRotateCursorX or cx
@@ -631,6 +634,7 @@ function me:TargetPreview_CreatePane()
 			selfFrame.modelFacing = (selfFrame.modelFacing or 0) + (delta * PREVIEW_ROTATION_SPEED)
 			selfFrame.model:SetFacing(selfFrame.modelFacing)
 		end
+		if me.db.profile.targetpreview_locked then return end
 		if selfFrame.draggingManual then
 			me:TargetPreview_UpdateManualDrag(selfFrame)
 			return
@@ -678,6 +682,13 @@ function me:TargetPreview_CreatePane()
 	frame.metaText = frame.info:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
 	frame.metaText:SetJustifyH("LEFT")
 	frame.metaText:SetWordWrap(true)
+	do
+		local font, size, flags = frame.roleText:GetFont()
+		if font and size then
+			frame.nameText:SetFont(font, size + 2, flags)
+			frame.metaText:SetFont(font, math.max(8, size - 2), flags)
+		end
+	end
 
 	frame.viewport = CreateFrame("Frame", nil, frame)
 	frame.viewport:SetBackdrop({
@@ -709,11 +720,18 @@ function me:TargetPreview_CreatePane()
 		owner.modelRotateCursorX = GetCursorPosition()
 	end)
 	frame.model:SetScript("OnMouseUp", function(selfModel, button)
-		if button ~= "RightButton" then return end
 		local owner = selfModel:GetParent() and selfModel:GetParent():GetParent()
 		if not owner then return end
-		owner.modelRotating = nil
-		owner.modelRotateCursorX = nil
+		if button == "LeftButton" then
+			if owner.previewSubject and me.TargetPreview_SelectActionSpec then
+				me:TargetPreview_SelectActionSpec(owner.previewSubject)
+			end
+			return
+		end
+		if button == "RightButton" then
+			owner.modelRotating = nil
+			owner.modelRotateCursorX = nil
+		end
 	end)
 	frame.model:SetScript("OnDragStop", function(selfModel)
 		local owner = selfModel:GetParent() and selfModel:GetParent():GetParent()
@@ -819,6 +837,11 @@ function me:TargetPreview_Refresh(force)
 		if self.TargetPreviewPane then self.TargetPreviewPane:Hide() end
 		return
 	end
+	local hasHoverSubject = self.targetPreviewHoveredSubject and self.targetPreviewHoveredStep == self.CurrentStep
+	if not self.targetPreviewInteractiveReady and not hasHoverSubject then
+		if self.TargetPreviewPane then self.TargetPreviewPane:Hide() end
+		return
+	end
 
 	local frame = self:TargetPreview_CreatePane()
 	local subject = self:TargetPreview_GetCurrentSubject()
@@ -839,6 +862,18 @@ function me:TargetPreview_Refresh(force)
 end
 
 function me:TargetPreview_TargetChanged()
+	if UnitExists("target") then
+		self.targetPreviewInteractiveReady = true
+		local specs = self.GetCurrentStepActionSpecs and self:GetCurrentStepActionSpecs() or {}
+		for _, spec in ipairs(specs) do
+			if spec and (spec.kind == "talk" or spec.kind == "kill") and TP_SubjectMatchesTarget(spec) then
+				self.targetPreviewSelectedSignature = spec.signature
+				self.targetPreviewSelectedStep = self.CurrentStep
+				self.targetPreviewSelectedSubject = TP_CopySubject(spec, self.CurrentStep)
+				break
+			end
+		end
+	end
 	if not UnitExists("target") then
 		self.targetPreviewSelectedSignature = nil
 		self.targetPreviewSelectedStep = nil
@@ -847,10 +882,18 @@ function me:TargetPreview_TargetChanged()
 	if self.TargetPreview_Refresh then
 		self:TargetPreview_Refresh()
 	end
+	if self.ScheduleTimer then
+		self:ScheduleTimer(function()
+			if ZGV and ZGV.TargetPreview_Refresh then ZGV:TargetPreview_Refresh() end
+		end, 0.05)
+		self:ScheduleTimer(function()
+			if ZGV and ZGV.TargetPreview_Refresh then ZGV:TargetPreview_Refresh() end
+		end, 0.20)
+	end
 end
 
 function me:TargetPreview_HandleActionButtonPostClick(button)
-	local spec = button and button.actionSpec
+	local spec = button and (button.previewSubject or button.actionSpec)
 	if not spec or (spec.kind ~= "talk" and spec.kind ~= "kill") then return end
 	self:TargetPreview_SelectActionSpec(spec)
 	self:TargetPreview_Refresh()
@@ -866,6 +909,18 @@ end
 
 tinsert(me.startups, function(self)
 	self:AddEvent("PLAYER_TARGET_CHANGED", "TargetPreview_TargetChanged")
+	self.targetPreviewSafeModelReady = false
+	self.targetPreviewInteractiveReady = false
+	if self.ScheduleTimer then
+		self:ScheduleTimer(function()
+			if ZGV then
+				ZGV.targetPreviewSafeModelReady = true
+				if ZGV.TargetPreview_Refresh then
+					ZGV:TargetPreview_Refresh()
+				end
+			end
+		end, 2.0)
+	end
 end)
 
 hooksecurefunc(me, "UpdateFrameCurrent", function(self)
@@ -911,13 +966,35 @@ hooksecurefunc(me, "GoalOnClick", function(self, goalframe)
 	local goal = goalframe and goalframe:GetParent() and goalframe:GetParent().goal
 	local spec = goal and self.TargetPreview_GetGoalSubject and self:TargetPreview_GetGoalSubject(goal)
 	if spec then
-		self:TargetPreview_SetGoalFocus(goal, true)
+		local hovered = self.targetPreviewHoveredSubject
+		if hovered and hovered.signature == spec.signature and self.TargetPreview_SelectHoveredSubject then
+			self:TargetPreview_SelectHoveredSubject()
+		else
+			self:TargetPreview_SetGoalFocus(goal, true)
+		end
+		if self.ScheduleTimer then
+			self:ScheduleTimer(function()
+				if ZGV and ZGV.TargetPreview_Refresh then ZGV:TargetPreview_Refresh() end
+			end, 0.05)
+			self:ScheduleTimer(function()
+				if ZGV and ZGV.TargetPreview_Refresh then ZGV:TargetPreview_Refresh() end
+			end, 0.20)
+		end
 	end
 end)
 
 hooksecurefunc(me, "UpdateSkin", function(self)
 	if self.ActionButtons_ApplyTheme then self:ActionButtons_ApplyTheme() end
-	if self.TargetPreview_ApplyProfile then self:TargetPreview_ApplyProfile() end
+	if self.TargetPreviewPane then
+		if self.TargetPreview_ApplyTheme then self:TargetPreview_ApplyTheme() end
+		if self.TargetPreview_Layout then self:TargetPreview_Layout() end
+		if self.TargetPreview_ApplyAnchor then self:TargetPreview_ApplyAnchor() end
+		if self.TargetPreview_UpdateDragState then self:TargetPreview_UpdateDragState() end
+	elseif self.Frame and self.Frame:IsShown() and self.TargetPreview_ApplyProfile then
+		self:TargetPreview_ApplyProfile()
+	else
+		self.optionalUiProfilePending = true
+	end
 end)
 
 hooksecurefunc(me, "Frame_OnHide", function(self)
