@@ -3465,9 +3465,11 @@ function me:UpdateFrame(full,onupdate,nonsecure_only)
 			for stepbuttonnum = 1,self.StepLimit do repeat
 				--frame = _G['ZygorGuidesViewerFrame_Step'..stepbuttonnum]
 				frame = self.stepframes[stepbuttonnum]
-				if frame and (not frame.lines or not frame.lines[1] or not frame.lines[1].icon) then
+				if not frame or not frame.lines or not frame.lines[1] or not frame.lines[1].icon then
 					ZygorGuidesViewerFrame_Step_Setup(stepbuttonnum)
+					frame = self.stepframes[stepbuttonnum]
 				end
+				if not frame then break end
 
 				stepnum = firststep + stepbuttonnum - 1
 				

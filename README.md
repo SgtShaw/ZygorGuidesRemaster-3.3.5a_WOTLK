@@ -164,7 +164,11 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
-### v3.0 (Revision 110)
+### v3.0 (Revision 111)
+
+- Bumped addon version/revision to 3.0.111 / 111.
+- Fixed the Show steps: All nil-frame crash in the viewer update path.
+- Carried forward the recent remaster compact, in-combat viewer, target preview, drag, and localization improvements into the new published revision.`r`n`r`n### v3.0 (Revision 110)
 
 - Bumped addon version/revision to 3.0.110 / 110.
 - Tightened remaster compact row spacing and footer fit without changing the remaster skin.
@@ -297,6 +301,8 @@ This remaster focuses on UI/UX modernization, packaging quality, compatibility m
 
 <img width="433" height="247" alt="image" src="https://github.com/user-attachments/assets/579b6acb-df5e-4f40-8ef3-7d6b33e1015d" />
 <img width="436" height="248" alt="image" src="https://github.com/user-attachments/assets/a845b881-2831-43e3-bd26-5287f9783d68" />
+
+
 
 
 
