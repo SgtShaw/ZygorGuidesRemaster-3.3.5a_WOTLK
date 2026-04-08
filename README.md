@@ -164,6 +164,12 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
+### v3.0 (Revision 109)
+
+- Bumped addon version/revision to 3.0.109 / 109.
+- Synced the repo copy with the current live addon files excluding BACKUP and Workspace.
+- Added the 3.0.109 release notes file and aligned runtime metadata with the release version.
+
 ### v3.0 (Revision 106)
 
 - Bumped addon version/revision to 3.0.106 / 106.

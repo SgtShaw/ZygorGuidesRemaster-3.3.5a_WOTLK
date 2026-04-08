@@ -279,12 +279,13 @@ function ZygorGuidesViewerFrame_Step_Setup(num)
 		label:ClearAllPoints()
 		label:SetPoint("TOPLEFT",ZGV.ICON_INDENT,0)
 		label:SetPoint("TOPRIGHT",0,0)
+		label:SetJustifyV("MIDDLE")
 
 		step.lines[i]=line
 		line.label=label
 
 		icon:ClearAllPoints()
-		icon:SetPoint("TOPLEFT",0,1)
+		icon:SetPoint("LEFT", line, "LEFT", 0, 0)
 		icon:SetTexture(ZGV.DIR.."\\Skin\\icons")
 		icon.SetIcon = icon_seticon
 		icon:SetIcon(1)
@@ -305,38 +306,33 @@ function ZygorGuidesViewerFrame_Step_Setup(num)
 
 		local actionname = stepname.."_Line"..i
 		local actionholder = CreateFrame("Frame", actionname.."ActionHolder", line)
-		local action = CreateFrame("CheckButton", actionname.."Action", actionholder, "SecureActionButtonTemplate")
-		local petaction = CreateFrame("CheckButton", actionname.."PetAction", actionholder, "PetActionButtonTemplate")
-		local cooldown = CreateFrame("Cooldown", actionname.."ActionCooldown", action, "CooldownFrameTemplate")
+		local action = CreateFrame("CheckButton", actionname.."Action", actionholder)
+		local petaction = CreateFrame("CheckButton", actionname.."PetAction", actionholder)
+		local cooldown = CreateFrame("Cooldown", actionname.."ActionCooldown", actionholder, "CooldownFrameTemplate")
 
 		actionholder:SetFrameStrata(line:GetFrameStrata())
 		actionholder:SetFrameLevel(line:GetFrameLevel()+15)
 		actionholder:SetWidth(15)
 		actionholder:SetHeight(15)
-		actionholder:SetPoint("TOPLEFT", line, "TOPLEFT", 0, 0)
+		actionholder:SetPoint("LEFT", line, "LEFT", 0, 0)
 		actionholder:Hide()
 
 		action:SetFrameStrata(actionholder:GetFrameStrata())
 		action:SetFrameLevel(actionholder:GetFrameLevel()+1)
-		action:RegisterForClicks("AnyUp")
 		action:SetWidth(15)
 		action:SetHeight(15)
 		action:SetAllPoints(actionholder)
 		action:SetScript("OnEnter", function(self)
-			ZygorGuidesViewer:ShowActionButtonTooltip(self)
-		end)
-		action:SetScript("OnLeave", function(self)
-			GameTooltip:Hide()
-		end)
-		action:SetScript("PostClick", function(self)
-			if ZygorGuidesViewer and ZygorGuidesViewer.ActionButtons_HandlePostClick then
-				ZygorGuidesViewer:ActionButtons_HandlePostClick(self)
+			if ZygorGuidesViewer and ZygorGuidesViewer.ShowActionButtonTooltip then
+				ZygorGuidesViewer:ShowActionButtonTooltip(self)
 			end
+		end)
+		action:SetScript("OnLeave", function()
+			GameTooltip:Hide()
 		end)
 		action:SetNormalTexture("Interface\\Buttons\\UI-Quickslot2")
 		action:SetPushedTexture("Interface\\Buttons\\UI-Quickslot-Depress")
 		action:SetHighlightTexture("Interface/Buttons/ButtonHilight-Square", "ADD")
-		action:SetCheckedTexture(nil)
 		action:SetPushedTextOffset(0, 0)
 		action.overlay = CreateFrame("Frame", nil, action)
 		action.overlay:EnableMouse(false)
@@ -349,6 +345,7 @@ function ZygorGuidesViewerFrame_Step_Setup(num)
 		action.icon:SetPoint("TOPLEFT", action.overlay, "TOPLEFT", inset, -inset)
 		action.icon:SetPoint("BOTTOMRIGHT", action.overlay, "BOTTOMRIGHT", -inset, inset)
 		action.icon:SetTexCoord(0,1,0,1)
+		action:SetCheckedTexture(nil)
 		action.overlay:Hide()
 		action:Hide()
 
@@ -357,37 +354,37 @@ function ZygorGuidesViewerFrame_Step_Setup(num)
 		petaction:SetWidth(15)
 		petaction:SetHeight(15)
 		petaction:SetAllPoints(actionholder)
-		petaction:SetNormalTexture("")
-		petaction:SetPushedTexture("")
-		petaction:SetHighlightTexture("Interface/Buttons/ButtonHilight-Square")
-		petaction:SetCheckedTexture("")
-		local petnormal = petaction.GetNormalTexture and petaction:GetNormalTexture()
-		if petnormal then petnormal:Hide() end
-		local petpushed = petaction.GetPushedTexture and petaction:GetPushedTexture()
-		if petpushed then petpushed:SetTexture("") end
-		local pethighlight = petaction.GetHighlightTexture and petaction:GetHighlightTexture()
-		if pethighlight then pethighlight:SetTexture("Interface/Buttons/ButtonHilight-Square") end
-		local petflash = _G[actionname..'PetActionFlash']
-		if petflash then petflash:Hide() end
-		local petautocastable = _G[actionname..'PetActionAutoCastable']
-		if petautocastable then petautocastable:Hide() end
-		local petshine = _G[actionname..'PetActionShine']
-		if petshine then petshine:Hide() end
-		local pethotkey = _G[actionname..'PetActionHotKey']
-		if pethotkey then pethotkey:Hide() end
-		local peticon = _G[actionname..'PetActionIcon']
-		if peticon then
-			peticon:ClearAllPoints()
-			peticon:SetAllPoints(petaction)
-			peticon:SetTexCoord(0,1,0,1)
-		end
-		petaction:SetScript("OnDragStart",nil)
+		petaction:SetScript("OnEnter", function(self)
+			if ZygorGuidesViewer and ZygorGuidesViewer.ShowActionButtonTooltip then
+				ZygorGuidesViewer:ShowActionButtonTooltip(self)
+			end
+		end)
+		petaction:SetScript("OnLeave", function()
+			GameTooltip:Hide()
+		end)
+		petaction:SetNormalTexture("Interface\\Buttons\\UI-Quickslot2")
+		petaction:SetPushedTexture("Interface\\Buttons\\UI-Quickslot-Depress")
+		petaction:SetHighlightTexture("Interface/Buttons/ButtonHilight-Square", "ADD")
+		petaction:SetCheckedTexture(nil)
+		petaction:SetPushedTextOffset(0, 0)
+		petaction.overlay = CreateFrame("Frame", nil, petaction)
+		petaction.overlay:EnableMouse(false)
+		petaction.overlay:SetAllPoints(petaction)
+		petaction.overlay:SetFrameLevel(petaction:GetFrameLevel()+1)
+		petaction.icon = petaction.overlay:CreateTexture(actionname.."PetActionIcon","BACKGROUND")
+		petaction.overlay.icon = petaction.icon
+		petaction.icon:ClearAllPoints()
+		petaction.icon:SetPoint("TOPLEFT", petaction.overlay, "TOPLEFT", inset, -inset)
+		petaction.icon:SetPoint("BOTTOMRIGHT", petaction.overlay, "BOTTOMRIGHT", -inset, inset)
+		petaction.icon:SetTexCoord(0,1,0,1)
+		petaction.overlay:Hide()
 		petaction:Hide()
 
 		cooldown:SetPoint("CENTER", 0, -1)
-		cooldown:SetAllPoints()
+		cooldown:SetAllPoints(actionholder)
 		cooldown:Hide()
 		action.cd = cooldown
+		petaction.cd = cooldown
 
 		--line.icon=icon
 		--line.back=back
@@ -1095,6 +1092,25 @@ function ZygorGuidesViewerFrame_OnUpdate(self,elapsed)
 		ZGV.frameNeedsUpdating=nil
 		ZGV:Debug("frameNeedsUpdating, so updating.")
 		ZGV:UpdateFrame()
+	end
+
+	if ZGV.pendingShowRelayoutPass
+	and ZGV.Frame
+	and ZGV.Frame:IsShown()
+	and not ZGV.framemoving
+	then
+		ZGV.pendingShowRelayoutPass = nil
+		ZGV.forceRemasterRelayout = true
+		ZGV:UpdateFrame(true,true,InCombatLockdown() and ZGV:InlineButtonsEnabled())
+	end
+
+	if ZGV.pendingCombatNonsecureRelayoutPass
+	and InCombatLockdown()
+	and ZGV.Frame
+	and ZGV.Frame:IsShown()
+	then
+		ZGV.pendingCombatNonsecureRelayoutPass = nil
+		ZGV:UpdateFrame(true,true,true)
 	end
 
 	-- and now the FAST step surfing

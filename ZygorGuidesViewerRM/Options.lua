@@ -62,8 +62,8 @@ function me:Options_RegisterDefaults()
 			hidestepborders = false,
 			showcountsteps = 1,
 			framescale = 1.0,
-			fontsize = 10,
-			fontsecsize = 10,
+			fontsize = 11,
+			fontsecsize = 9,
 			disablerouteloopstacking = false,
 
 			--backcolor = {r=0.18,g=0.05,b=0.23,a=0.56},
