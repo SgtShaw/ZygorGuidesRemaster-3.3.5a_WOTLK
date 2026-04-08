@@ -251,6 +251,35 @@ function me:TargetPreview_GetSnapSide()
 	return (self.db and self.db.profile and self.db.profile.targetpreview_pinside) or "right"
 end
 
+function me:TargetPreview_GetGrowthMode()
+	local mode = self.db and self.db.profile and self.db.profile.targetpreview_growth or "auto"
+	if mode ~= "up" and mode ~= "down" and mode ~= "auto" then
+		mode = "auto"
+	end
+	return mode
+end
+
+function me:TargetPreview_ShouldBottomAlignToViewer(viewer)
+	local side = self:TargetPreview_GetSnapSide()
+	if side ~= "left" and side ~= "right" then
+		return false
+	end
+	local mode = self:TargetPreview_GetGrowthMode()
+	if mode == "up" then
+		return true
+	end
+	if mode == "down" then
+		return false
+	end
+	if not self.db or not self.db.profile or not self.db.profile.resizeup then
+		return false
+	end
+	if viewer and self.RemasterFrames and self.RemasterFrames.root and viewer == self.RemasterFrames.root then
+		return true
+	end
+	return true
+end
+
 function me:TargetPreview_AnchorToViewer(frame, viewer)
 	if not frame then return end
 	viewer = viewer or self:TargetPreview_GetSnapFrame()
@@ -261,14 +290,23 @@ function me:TargetPreview_AnchorToViewer(frame, viewer)
 	end
 	frame.snapped = true
 	local side = self:TargetPreview_GetSnapSide()
+	local bottomAlign = self:TargetPreview_ShouldBottomAlignToViewer(viewer)
 	if side == "bottom" then
 		frame:SetPoint("TOPLEFT", viewer, "BOTTOMLEFT", 0, -10)
 	elseif side == "left" then
-		frame:SetPoint("TOPRIGHT", viewer, "TOPLEFT", -10, 0)
+		if bottomAlign then
+			frame:SetPoint("BOTTOMRIGHT", viewer, "BOTTOMLEFT", -10, 0)
+		else
+			frame:SetPoint("TOPRIGHT", viewer, "TOPLEFT", -10, 0)
+		end
 	elseif side == "top" then
 		frame:SetPoint("BOTTOMLEFT", viewer, "TOPLEFT", 0, 10)
 	else
-		frame:SetPoint("TOPLEFT", viewer, "TOPRIGHT", 10, 0)
+		if bottomAlign then
+			frame:SetPoint("BOTTOMLEFT", viewer, "BOTTOMRIGHT", 10, 0)
+		else
+			frame:SetPoint("TOPLEFT", viewer, "TOPRIGHT", 10, 0)
+		end
 	end
 end
 
@@ -390,6 +428,15 @@ function me:TargetPreview_ApplyAnchor()
 		return
 	end
 	self:TargetPreview_AnchorToViewer(frame)
+end
+
+function me:TargetPreview_ApplyAnchorThrottled(elapsed)
+	local frame = self.TargetPreviewPane
+	if not frame or not frame.snapped then return end
+	frame.anchorThrottle = (frame.anchorThrottle or 0) + (elapsed or 0)
+	if frame.anchorThrottle < 0.03 then return end
+	frame.anchorThrottle = 0
+	self:TargetPreview_ApplyAnchor()
 end
 
 function me:TargetPreview_UpdateDragState()
@@ -625,7 +672,7 @@ function me:TargetPreview_CreatePane()
 		selfFrame:SetClampedToScreen(true)
 		me:TargetPreview_SnapNow(selfFrame, me:TargetPreview_GetSnapFrame())
 	end)
-	frame:SetScript("OnUpdate", function(selfFrame)
+	frame:SetScript("OnUpdate", function(selfFrame, elapsed)
 		if selfFrame.modelRotating and selfFrame.model and selfFrame.model.SetFacing then
 			local cx = GetCursorPosition()
 			local last = selfFrame.modelRotateCursorX or cx
@@ -638,9 +685,6 @@ function me:TargetPreview_CreatePane()
 		if selfFrame.draggingManual then
 			me:TargetPreview_UpdateManualDrag(selfFrame)
 			return
-		end
-		if me.framemoving and selfFrame.snapped then
-			me:TargetPreview_ApplyAnchor()
 		end
 	end)
 	frame:RegisterForDrag("LeftButton")
@@ -770,6 +814,7 @@ function me:TargetPreview_ValidateProfile()
 	local profile = self.db.profile
 	local validSides = { top = true, bottom = true, left = true, right = true }
 	local validModes = { hybrid = true, model = true, card = true }
+	local validGrowth = { auto = true, up = true, down = true }
 	local validPoints = {
 		TOPLEFT = true, TOP = true, TOPRIGHT = true,
 		LEFT = true, CENTER = true, RIGHT = true,
@@ -781,6 +826,9 @@ function me:TargetPreview_ValidateProfile()
 	end
 	if not validModes[profile.targetpreview_mode] then
 		profile.targetpreview_mode = "hybrid"
+	end
+	if not validGrowth[profile.targetpreview_growth] then
+		profile.targetpreview_growth = "auto"
 	end
 
 	profile.targetpreview_scale = tonumber(profile.targetpreview_scale) or 1

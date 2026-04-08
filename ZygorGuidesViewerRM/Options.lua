@@ -102,6 +102,7 @@ function me:Options_RegisterDefaults()
 			targetpreview_width = 190,
 			targetpreview_height = 255,
 			targetpreview_pinside = "right",
+			targetpreview_growth = "auto",
 			targetpreview_mode = "hybrid",
 			targetpreview_anchor = { snapped = true, custom = true },
 
@@ -674,12 +675,7 @@ function me:Options_DefineOptions()
 						desc = L["opt_miniresizeup_desc"],
 						type = 'toggle',
 						set = function(i,v)
-							Setter_Simple(i,v)
-							self:ReanchorFrame()
-							self:Debug("size up? "..tostring(self.db.profile.resizeup))
-							--self.frameNeedsResizing = self.frameNeedsResizing + 1
-							self:AlignFrame()
-							-- THIS SUCKS.
+							self:SetResizeUp(v)
 						      end,
 						order=4.1,
 					},
@@ -1767,6 +1763,19 @@ function me:Options_DefineOptions()
 			bottom = L["opt_actionbar_pinside_bottom"],
 			left = L["opt_actionbar_pinside_left"],
 			right = L["opt_actionbar_pinside_right"],
+		},
+		disabled = function() return not self.db.profile.targetpreview_enabled end,
+		set = function(info, value) Setter_Simple(info, value) if self.TargetPreview_ApplyProfile then self:TargetPreview_ApplyProfile() end end,
+	}
+	self.optionsactionbuttons.args.targetpreview_growth = {
+		name = L["opt_targetpreview_growth"],
+		desc = L["opt_targetpreview_growth_desc"],
+		type = "select",
+		order = 37.5,
+		values = {
+			auto = L["opt_targetpreview_growth_auto"],
+			up = L["opt_targetpreview_growth_up"],
+			down = L["opt_targetpreview_growth_down"],
 		},
 		disabled = function() return not self.db.profile.targetpreview_enabled end,
 		set = function(info, value) Setter_Simple(info, value) if self.TargetPreview_ApplyProfile then self:TargetPreview_ApplyProfile() end end,

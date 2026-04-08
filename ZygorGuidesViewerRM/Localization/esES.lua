@@ -617,6 +617,11 @@ local plurals = {
 	["gold_header_herb"] = "Hierbas:",
 	["gold_header_skin"] = "Desuello:",
 	["going"] = "%d%% hacia %s",
+	["opt_targetpreview_growth"] = "Direccion de crecimiento",
+	["opt_targetpreview_growth_desc"] = "Elige si la vista previa fijada debe seguir la direccion de cambio de tamano del visor, crecer hacia arriba o crecer hacia abajo.",
+	["opt_targetpreview_growth_auto"] = "Seguir al visor",
+	["opt_targetpreview_growth_up"] = "Crecer hacia arriba",
+	["opt_targetpreview_growth_down"] = "Crecer hacia abajo",
 	["haman$"] = "hamans",
 	["(%a)man$"] = "%1men",
 }

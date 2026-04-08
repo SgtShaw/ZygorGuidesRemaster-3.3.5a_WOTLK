@@ -616,6 +616,11 @@ ZygorGuidesViewer_L("Main", "frFR", function() return {
 	["opt_analyzereps_desc"] = "Analyse vos reputations actuelles et marque les etapes non pertinentes comme obsoletes.",
 	["opt_mapcoords"] = "Afficher les coordonnees carte",
 	["opt_mapcoords_desc"] = "Affiche les coordonnees joueur et curseur dans les fenetres de carte.",
+	["opt_targetpreview_growth"] = "Direction d'agrandissement",
+	["opt_targetpreview_growth_desc"] = "Choisissez si l'aperçu cible ancre doit suivre la direction de redimensionnement du viewer, grandir vers le haut ou vers le bas.",
+	["opt_targetpreview_growth_auto"] = "Suivre le viewer",
+	["opt_targetpreview_growth_up"] = "Grandir vers le haut",
+	["opt_targetpreview_growth_down"] = "Grandir vers le bas",
 
 	["haman$"] = "hamans",
 	["(%a)man$"] = "%1men",

@@ -164,7 +164,15 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
-### v3.0 (Revision 109)
+### v3.0 (Revision 110)
+
+- Bumped addon version/revision to 3.0.110 / 110.
+- Tightened remaster compact row spacing and footer fit without changing the remaster skin.
+- Fixed in-combat viewer resizing and stale inline action carry-over during step swaps.
+- Added a target preview growth-direction option with Match Viewer, Grow Up, and Grow Down modes.
+- Reduced the initial viewer drag hitch, kept the action bar following live, and resnapped target preview on drag stop.
+- Kept the guide progress bar green regardless of remaster accent changes or reloads.
+- Added localization entries for the new target preview growth option, including placeholder strings for remaining locales.`r`n`r`n### v3.0 (Revision 109)
 
 - Bumped addon version/revision to 3.0.109 / 109.
 - Synced the repo copy with the current live addon files excluding BACKUP and Workspace.
@@ -289,6 +297,9 @@ This remaster focuses on UI/UX modernization, packaging quality, compatibility m
 
 <img width="433" height="247" alt="image" src="https://github.com/user-attachments/assets/579b6acb-df5e-4f40-8ef3-7d6b33e1015d" />
 <img width="436" height="248" alt="image" src="https://github.com/user-attachments/assets/a845b881-2831-43e3-bd26-5287f9783d68" />
+
+
+
 
 
 

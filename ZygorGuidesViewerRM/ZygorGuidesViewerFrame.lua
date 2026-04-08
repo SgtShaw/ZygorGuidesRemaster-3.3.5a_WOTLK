@@ -851,9 +851,12 @@ function ZygorGuidesViewerFrame_OnUpdate(self,elapsed)
 
 	throttle=throttle+elapsed ; if throttle<0.05 then return end ; elapsed=throttle ; throttle=0
 
+	-- Dragging should only move the viewer and any snapped companion panes.
+	-- Rebuilding current-step visuals here causes visible hitching while moving.
 	if ZGV.framemoving then
-		--ZygorGuidesViewer:UpdateFrame(nil,true)
-		ZGV:UpdateFrameCurrent()
+		self.leftCount=0
+		self.mouseCount=0
+		return
 	end
 
 	local locked = ZGV.db.profile.windowlocked
@@ -1111,6 +1114,19 @@ function ZygorGuidesViewerFrame_OnUpdate(self,elapsed)
 	then
 		ZGV.pendingCombatNonsecureRelayoutPass = nil
 		ZGV:UpdateFrame(true,true,true)
+	end
+
+	if ZGV.pendingResizeDirectionRelayoutPass
+	and ZGV.Frame
+	and ZGV.Frame:IsShown()
+	and not ZGV.framemoving
+	then
+		ZGV.pendingResizeDirectionRelayoutPass = nil
+		ZGV.forceRemasterRelayout = true
+		ZGV:UpdateFrame(true)
+		ZGV:AlignFrame()
+		if ZGV.ActionButtons_ApplyAnchor then ZGV:ActionButtons_ApplyAnchor() end
+		if ZGV.TargetPreview_ApplyAnchor then ZGV:TargetPreview_ApplyAnchor() end
 	end
 
 	-- and now the FAST step surfing

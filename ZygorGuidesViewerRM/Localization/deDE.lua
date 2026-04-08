@@ -606,6 +606,11 @@ ZygorGuidesViewer_L("Main", "deDE", function() return {
 	["opt_analyzereps_desc"] = "Wertet deinen aktuellen Rufstand aus und markiert unpassende Rufschritte als veraltet.",
 	["opt_mapcoords"] = "Kartenkoordinaten anzeigen",
 	["opt_mapcoords_desc"] = "Zeigt Maus- und Spielerkoordinaten in Kartenfenstern an.",
+	["opt_targetpreview_growth"] = "Wachstumsrichtung",
+	["opt_targetpreview_growth_desc"] = "Waehle, ob die angedockte Zielvorschau der Groessenrichtung des Viewers folgen, nach oben wachsen oder nach unten wachsen soll.",
+	["opt_targetpreview_growth_auto"] = "Viewer folgen",
+	["opt_targetpreview_growth_up"] = "Nach oben wachsen",
+	["opt_targetpreview_growth_down"] = "Nach unten wachsen",
 
 	["haman$"] = "hamans",
 	["(%a)man$"] = "%1men",

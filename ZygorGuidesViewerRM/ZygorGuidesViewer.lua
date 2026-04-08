@@ -777,6 +777,15 @@ do
 		self:ActionButtons_AnchorToViewer(bar)
 	end
 
+	function me:ActionButtons_ApplyAnchorThrottled(elapsed)
+		local bar = self.ActionButtonBar
+		if not bar or not bar.snapped then return end
+		bar.anchorThrottle = (bar.anchorThrottle or 0) + (elapsed or 0)
+		if bar.anchorThrottle < 0.03 then return end
+		bar.anchorThrottle = 0
+		self:ActionButtons_ApplyAnchor()
+	end
+
 	function me:ActionButtons_Layout()
 		local bar = self.ActionButtonBar
 		if not bar then return end
@@ -877,14 +886,14 @@ do
 			local viewer = me:ActionButtons_GetSnapFrame()
 			me:ActionButtons_SnapNow(frame, viewer)
 		end)
-		bar:SetScript("OnUpdate", function(frame)
+		bar:SetScript("OnUpdate", function(frame, elapsed)
 			if me.db.profile.actionbuttonbar_locked or InCombatLockdown() then return end
 			if frame.draggingManual then
 				me:ActionButtons_UpdateManualDrag(frame)
 				return
 			end
 			if me.framemoving and frame.snapped and not frame:IsDragging() then
-				me:ActionButtons_ApplyAnchor()
+				me:ActionButtons_ApplyAnchorThrottled(elapsed)
 			end
 		end)
 		bar:RegisterForDrag("LeftButton")
@@ -1661,19 +1670,10 @@ function me:UpdateGuideProgressWidgets()
 
 	if bar.fill then
 		if self.db and self.db.profile and self.db.profile.skin == "remaster" then
-			local accent = (self.db.profile.remastercolor == "goldaccent" or self.db.profile.remastercolor == "goals")
 			if bar.fill.SetColorTexture then
-				if accent then
-					bar.fill:SetColorTexture(0.86, 0.68, 0.22, 0.98)
-				else
-					bar.fill:SetColorTexture(0.28, 0.82, 0.36, 0.98)
-				end
+				bar.fill:SetColorTexture(0.28, 0.82, 0.36, 0.98)
 			else
-				if accent then
-					bar.fill:SetTexture(0.86, 0.68, 0.22, 0.98)
-				else
-					bar.fill:SetTexture(0.28, 0.82, 0.36, 0.98)
-				end
+				bar.fill:SetTexture(0.28, 0.82, 0.36, 0.98)
 			end
 		else
 			if bar.fill.SetColorTexture then
@@ -1919,6 +1919,7 @@ function me:EnsureRemasterFrames()
 		ZygorGuidesViewerFrameMaster:EnableMouse(true)
 	end
 	local function remasterStartDrag()
+		if ZGV and ZGV.framemoving then return end
 		if not ZygorGuidesViewer.db.profile["windowlocked"] and ZygorGuidesViewerFrameMaster then
 			ZygorGuidesViewerFrameMaster:SetMovable(true)
 			ZygorGuidesViewerFrameMaster:StartMoving()
@@ -1926,20 +1927,23 @@ function me:EnsureRemasterFrames()
 		end
 	end
 	local function remasterStopDrag()
+		if ZGV and not ZGV.framemoving then return end
 		if ZygorGuidesViewerFrameMaster then
 			ZygorGuidesViewerFrameMaster:StopMovingOrSizing()
 		end
 		ZGV.framemoving = nil
+		if ZGV.ActionButtons_ApplyAnchor then ZGV:ActionButtons_ApplyAnchor() end
+		if ZGV.TargetPreview_ApplyAnchor then ZGV:TargetPreview_ApplyAnchor() end
 	end
 	frames.startDrag = remasterStartDrag
 	frames.stopDrag = remasterStopDrag
 	root:SetScript("OnDragStart", remasterStartDrag)
 	root:SetScript("OnDragStop", remasterStopDrag)
 	root:SetScript("OnMouseDown", function(self, button)
-		if button == "LeftButton" then remasterStartDrag() end
+		if button == "LeftButton" and not ZGV.framemoving then remasterStartDrag() end
 	end)
 	root:SetScript("OnMouseUp", function(self, button)
-		if button == "LeftButton" then remasterStopDrag() end
+		if button == "LeftButton" and ZGV.framemoving then remasterStopDrag() end
 	end)
 	root:SetBackdrop({
 		bgFile = "Interface\\Buttons\\white8x8",
@@ -1964,10 +1968,10 @@ function me:EnsureRemasterFrames()
 	header:SetScript("OnDragStart", remasterStartDrag)
 	header:SetScript("OnDragStop", remasterStopDrag)
 	header:SetScript("OnMouseDown", function(self, button)
-		if button == "LeftButton" then remasterStartDrag() end
+		if button == "LeftButton" and not ZGV.framemoving then remasterStartDrag() end
 	end)
 	header:SetScript("OnMouseUp", function(self, button)
-		if button == "LeftButton" then remasterStopDrag() end
+		if button == "LeftButton" and ZGV.framemoving then remasterStopDrag() end
 	end)
 	frames.header = header
 
@@ -1993,10 +1997,10 @@ function me:EnsureRemasterFrames()
 	toolbar:SetScript("OnDragStart", remasterStartDrag)
 	toolbar:SetScript("OnDragStop", remasterStopDrag)
 	toolbar:SetScript("OnMouseDown", function(self, button)
-		if button == "LeftButton" then remasterStartDrag() end
+		if button == "LeftButton" and not ZGV.framemoving then remasterStartDrag() end
 	end)
 	toolbar:SetScript("OnMouseUp", function(self, button)
-		if button == "LeftButton" then remasterStopDrag() end
+		if button == "LeftButton" and ZGV.framemoving then remasterStopDrag() end
 	end)
 	frames.toolbar = toolbar
 
@@ -2014,10 +2018,10 @@ function me:EnsureRemasterFrames()
 	content:SetScript("OnDragStart", remasterStartDrag)
 	content:SetScript("OnDragStop", remasterStopDrag)
 	content:SetScript("OnMouseDown", function(self, button)
-		if button == "LeftButton" then remasterStartDrag() end
+		if button == "LeftButton" and not ZGV.framemoving then remasterStartDrag() end
 	end)
 	content:SetScript("OnMouseUp", function(self, button)
-		if button == "LeftButton" then remasterStopDrag() end
+		if button == "LeftButton" and ZGV.framemoving then remasterStopDrag() end
 	end)
 	content:SetBackdrop({
 		bgFile = "Interface\\Buttons\\white8x8",
@@ -6813,9 +6817,14 @@ end
 function me:SetResizeUp(value)
 	if not (self.db and self.db.profile) then return end
 	self.db.profile.resizeup = not not value
+	self.forceRemasterRelayout = true
 	self:ReanchorFrame()
 	self:Debug("size up? "..tostring(self.db.profile.resizeup))
 	self:AlignFrame()
+	self:UpdateFrame(true)
+	if self.ActionButtons_ApplyAnchor then self:ActionButtons_ApplyAnchor() end
+	if self.TargetPreview_ApplyAnchor then self:TargetPreview_ApplyAnchor() end
+	self.pendingResizeDirectionRelayoutPass = 1
 end
 
 function me:ToggleResizeUp()
