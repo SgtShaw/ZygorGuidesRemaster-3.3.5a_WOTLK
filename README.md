@@ -164,11 +164,24 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
+### v3.0 (Revision 112)
+
+- Bumped addon version/revision to 3.0.112 / 112.
+- Fixed quest-bound item progress so live bag counts can override under-reported quest-log totals.
+- Increased the default action bar button size slightly and improved full-button cooldown text rendering.
+- Fixed stale inline cooldown overlays carrying onto non-item actionable rows.
+- Improved secure talk/kill raid-marker application in combat.
+- Fixed stale combat action bar state when the current step no longer has needed bar actions.
+- Suppressed generic no-ID kill rows from action bar and target preview when they are not reliably targetable.
+- Added `.from`-driven kill targeting so adjacent generic kill rows and `.from` rows themselves can provide actionable kill buttons and target preview subjects.
+
 ### v3.0 (Revision 111)
 
 - Bumped addon version/revision to 3.0.111 / 111.
 - Fixed the Show steps: All nil-frame crash in the viewer update path.
-- Carried forward the recent remaster compact, in-combat viewer, target preview, drag, and localization improvements into the new published revision.`r`n`r`n### v3.0 (Revision 110)
+- Carried forward the recent remaster compact, in-combat viewer, target preview, drag, and localization improvements into the new published revision.
+
+### v3.0 (Revision 110)
 
 - Bumped addon version/revision to 3.0.110 / 110.
 - Tightened remaster compact row spacing and footer fit without changing the remaster skin.
@@ -176,7 +189,9 @@ This addon is fully open source and can be inspected before use.
 - Added a target preview growth-direction option with Match Viewer, Grow Up, and Grow Down modes.
 - Reduced the initial viewer drag hitch, kept the action bar following live, and resnapped target preview on drag stop.
 - Kept the guide progress bar green regardless of remaster accent changes or reloads.
-- Added localization entries for the new target preview growth option, including placeholder strings for remaining locales.`r`n`r`n### v3.0 (Revision 109)
+- Added localization entries for the new target preview growth option, including placeholder strings for remaining locales.
+
+### v3.0 (Revision 109)
 
 - Bumped addon version/revision to 3.0.109 / 109.
 - Synced the repo copy with the current live addon files excluding BACKUP and Workspace.
@@ -301,6 +316,7 @@ This remaster focuses on UI/UX modernization, packaging quality, compatibility m
 
 <img width="433" height="247" alt="image" src="https://github.com/user-attachments/assets/579b6acb-df5e-4f40-8ef3-7d6b33e1015d" />
 <img width="436" height="248" alt="image" src="https://github.com/user-attachments/assets/a845b881-2831-43e3-bd26-5287f9783d68" />
+
 
 
 

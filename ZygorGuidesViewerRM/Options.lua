@@ -90,7 +90,7 @@ function me:Options_RegisterDefaults()
 			actionbuttonbar_onlywhenneeded = true,
 			actionbuttonbar_locked = false,
 			actionbuttonbar_scale = 1,
-			actionbuttonbar_size = 28,
+			actionbuttonbar_size = 30,
 			actionbuttonbar_spacing = 3,
 			actionbuttonbar_pinside = "top",
 			actionbutton_enablemarkers = true,

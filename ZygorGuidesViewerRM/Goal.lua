@@ -11,6 +11,25 @@ ZGV.GoalProto_mt = { __index=Goal }
 
 Goal.indent=0
 
+local function GetQuestBoundGoalCount(goal, questGoalData)
+	local needed = goal.count or (questGoalData and questGoalData.needed) or 1
+	local current = (questGoalData and questGoalData.num) or 0
+
+	-- Some Wrath quest-item objectives lag or under-report in the quest log.
+	-- For item-style goals, prefer the higher live bag count when available.
+	if goal.action=="get" or goal.action=="collect" or goal.action=="buy" then
+		local item = goal.targetid or goal.target
+		if item then
+			local liveCount = GetItemCount(item) or 0
+			if liveCount > current then
+				current = liveCount
+			end
+		end
+	end
+
+	return current, needed
+end
+
 function Goal:GetStatus()
 	if not self:IsVisible() then return "hidden" end
 	if not self:IsCompleteable() then return "passive" end
@@ -182,12 +201,12 @@ function Goal:IsComplete()
 					if questGoalData.complete then
 						return true, true
 					else
-						local count = self.count or questGoalData.needed or 1
-						if questGoalData.num>=count then
+						local current, count = GetQuestBoundGoalCount(self, questGoalData)
+						if current>=count then
 							return true, true
 						else
 							--ZGV:Debug("Not yet completed: "..questself.num.."/"..questgoal.needed)
-							return false, true, questGoalData.num/count
+							return false, true, current/count
 						end
 					end
 				else
@@ -723,8 +742,8 @@ function Goal:GetText(showcompleteness)
 					-- goal-bound
 					local questgoal = questdata.goals[self.objnum]
 					if questgoal then
-						local count = self.count or questgoal.needed
-						desc = L["completion_goal"]:format(questgoal.num,count)
+						local current, count = GetQuestBoundGoalCount(self, questgoal)
+						desc = L["completion_goal"]:format(current,count)
 					end
 				else
 					-- quest-bound, bugger

@@ -114,7 +114,7 @@ local AB_SetInlineVisualShown
 
 do
 	local ACTION_BAR_MAX_BUTTONS = 5
-	local ACTION_BAR_SIZE = 28
+	local ACTION_BAR_SIZE = 30
 	local ACTION_BAR_PADDING = 3
 	local ACTION_BAR_CLOSE_SIZE = 18
 	local ACTION_BAR_DEFAULT_ICON = "Interface\\Icons\\INV_Misc_QuestionMark"
@@ -200,13 +200,16 @@ do
 		end
 	end
 
-	local function AB_BuildTargetMacro(name)
+	local function AB_BuildTargetMacro(name, marker)
 		if not name then return end
 		local lines = {
-			"/cleartarget [dead][noexists]",
+			"/cleartarget",
 			"/targetexact " .. name,
 			"/target [noexists] " .. name,
 		}
+		if marker then
+			lines[#lines + 1] = "/targetmarker [exists] " .. tostring(marker)
+		end
 		return table.concat(lines, "\n")
 	end
 
@@ -221,6 +224,123 @@ do
 		if name:find("s$") and not name:find("ss$") then
 			return name:gsub("s$", "")
 		end
+	end
+
+	local function AB_BuildTargetMacroList(candidates, marker)
+		if not candidates or #candidates == 0 then return end
+		local seen, unique = {}, {}
+		for _, name in ipairs(candidates) do
+			if name and not seen[name] then
+				seen[name] = true
+				unique[#unique + 1] = name
+			end
+		end
+		if #unique == 0 then return end
+		local lines = { "/cleartarget" }
+		for _, name in ipairs(unique) do
+			lines[#lines + 1] = "/targetexact " .. name
+		end
+		for _, name in ipairs(unique) do
+			lines[#lines + 1] = "/target [noexists] " .. name
+		end
+		if type(marker) == "number" then
+			lines[#lines + 1] = "/targetmarker [exists] " .. tostring(marker)
+		end
+		return table.concat(lines, "\n"), unique
+	end
+
+	local function AB_GetMobCandidates(goal)
+		if not goal or not goal.mobs then return end
+		local candidates = {}
+		for _, mob in ipairs(goal.mobs) do
+			local name = mob and mob.name
+			if mob and mob.id and ZGV.GetTranslatedNPC then
+				name = ZGV:GetTranslatedNPC(mob.id) or name
+			end
+			name = AB_SafeName(name)
+			if name then
+				candidates[#candidates + 1] = name
+			end
+		end
+		if #candidates == 0 then return end
+		return candidates
+	end
+
+	local function AB_GetGoalFromCandidates(goal)
+		if not goal or not goal.parentStep or not goal.parentStep.goals or not goal.num then return end
+		local goals = goal.parentStep.goals
+		local candidates = {}
+		local function addMobs(fromGoal)
+			if not fromGoal or fromGoal.action ~= "from" then return end
+			local mobCandidates = AB_GetMobCandidates(fromGoal)
+			if mobCandidates then
+				for _, name in ipairs(mobCandidates) do
+					candidates[#candidates + 1] = name
+				end
+			end
+		end
+
+		local found = false
+		for i = goal.num - 1, 1, -1 do
+			local sibling = goals[i]
+			if sibling and sibling.action == "from" then
+				addMobs(sibling)
+				found = true
+			elseif sibling and (sibling.action or sibling.text) then
+				break
+			end
+		end
+		if not found then
+			for i = goal.num + 1, #goals do
+				local sibling = goals[i]
+				if sibling and sibling.action == "from" then
+					addMobs(sibling)
+					found = true
+				elseif sibling and (sibling.action or sibling.text) then
+					break
+				end
+			end
+		end
+		if #candidates == 0 then return end
+		return candidates
+	end
+
+	local function AB_IsReliableKillTarget(goal, target, singular)
+		if not goal then return false end
+		if goal.targetid or goal.npcid then return true end
+		local rawTarget = goal.actiontarget or goal.target
+		if goal.questid and goal.objnum and goal.action == "kill" and rawTarget and goal.target
+		and type(rawTarget) == "string" and type(goal.target) == "string"
+		and rawTarget ~= goal.target then
+			return false
+		end
+		if rawTarget and type(rawTarget) == "string" then
+			local raw = rawTarget:lower():gsub("^%s+", ""):gsub("%s+$", "")
+			if raw:find(" mob$") or raw:find(" mobs$") or raw:find(" enemy$") or raw:find(" enemies$") then
+				return false
+			end
+		end
+		local name = singular or target or rawTarget
+		if not name or type(name) ~= "string" then return false end
+		local lowered = name:lower():gsub("^%s+", ""):gsub("%s+$", "")
+		local genericSuffixes = {
+			" mob", " mobs",
+			" enemy", " enemies",
+			" creature", " creatures",
+			" npc", " npcs",
+			" target", " targets",
+			" humanoid", " humanoids",
+			" undead", " demons", " beasts",
+		}
+		for _, suffix in ipairs(genericSuffixes) do
+			if lowered:sub(-#suffix) == suffix then
+				return false
+			end
+		end
+		if lowered == "mob" or lowered == "mobs" or lowered == "enemy" or lowered == "enemies" then
+			return false
+		end
+		return true
 	end
 
 	AB_SetInlineVisualShown = function(button, shown)
@@ -392,6 +512,7 @@ do
 		local candidates, seen = {}, {}
 		for i = 1, select("#", ...) do
 			local name = select(i, ...)
+			if type(name) == "number" then break end
 			if name and not seen[name] then
 				seen[name] = true
 				candidates[#candidates + 1] = name
@@ -404,6 +525,10 @@ do
 		end
 		for _, name in ipairs(candidates) do
 			lines[#lines + 1] = "/target [noexists] " .. name
+		end
+		local marker = select(select("#", ...), ...)
+		if type(marker) == "number" then
+			lines[#lines + 1] = "/targetmarker [exists] " .. tostring(marker)
 		end
 		return table.concat(lines, "\n"), candidates
 	end
@@ -419,6 +544,7 @@ do
 			if target then return AB_SafeName(target) end
 		end
 		if goal.npc then return AB_SafeName(goal.npc) end
+		if goal.action == "kill" and goal.actiontarget then return AB_SafeName(goal.actiontarget) end
 		if goal.target then return AB_SafeName(goal.target) end
 	end
 
@@ -485,6 +611,13 @@ do
 
 	function me:GetGoalActionSpec(goal)
 		if not goal then return end
+		local fromCandidates
+		if goal.action == "from" then
+			fromCandidates = AB_GetMobCandidates(goal)
+		elseif goal.action == "kill" then
+			fromCandidates = AB_GetGoalFromCandidates(goal)
+		end
+		if goal.actionselectable == false and not (fromCandidates and #fromCandidates > 0) then return end
 
 		if (goal.useitemid or goal.useitem) and GetItemCount(goal.useitemid or goal.useitem) > 0 then
 			return { kind = "item", type = "item", item = goal.useitemid and ("item:" .. goal.useitemid) or goal.useitem, itemid = goal.useitemid, icon = AB_GetItemIcon(goal), tooltip = "item", signature = "item:" .. tostring(goal.useitemid or goal.useitem) }
@@ -507,19 +640,38 @@ do
 
 		if goal.action == "talk" then
 			local target = self:GetGoalActionTargetName(goal)
-			local macrotext = AB_BuildTargetMacro(target)
+			local macrotext = AB_BuildTargetMacro(target, 4)
 			if macrotext then
 				return { kind = "talk", type = "macro", macrotext = macrotext, icon = TALK_ICON, target = target, marker = 4, tooltip = "talk", signature = "talk:" .. tostring(goal.npcid or target) }
 			end
 		end
 
 		if goal.action == "kill" then
+			if fromCandidates and #fromCandidates > 0 then
+				local macrotext, candidates = AB_BuildTargetMacroList(fromCandidates, 8)
+				local canonical = candidates and candidates[1]
+				if macrotext and canonical then
+					return { kind = "kill", type = "macro", macrotext = macrotext, icon = KILL_ICON, target = canonical, targetaliases = candidates, marker = 8, tooltip = "kill", signature = "killfrom:" .. tostring(goal.questid or canonical) }
+				end
+			end
 			local target = self:GetGoalActionTargetName(goal)
-			local singular = (not goal.targetid and goal.target) and AB_SingularizeName(goal.target) or nil
-			local macrotext, candidates = AB_BuildTargetMacroCandidates(target, singular)
+			local killTarget = goal.actiontarget or goal.target
+			local singular = (not goal.targetid and killTarget) and AB_SingularizeName(killTarget) or nil
+			if not AB_IsReliableKillTarget(goal, target, singular) then
+				return
+			end
+			local macrotext, candidates = AB_BuildTargetMacroCandidates(target, singular, 8)
 			local canonical = (candidates and candidates[#candidates]) or singular or target
 			if macrotext then
 				return { kind = "kill", type = "macro", macrotext = macrotext, icon = KILL_ICON, target = canonical, targetaliases = candidates, marker = 8, tooltip = "kill", signature = "kill:" .. tostring(goal.targetid or canonical) }
+			end
+		end
+
+		if goal.action == "from" and fromCandidates and #fromCandidates > 0 then
+			local macrotext, candidates = AB_BuildTargetMacroList(fromCandidates, 8)
+			local canonical = candidates and candidates[1]
+			if macrotext and canonical then
+				return { kind = "kill", type = "macro", macrotext = macrotext, icon = KILL_ICON, target = canonical, targetaliases = candidates, marker = 8, tooltip = "kill", signature = "from:" .. tostring(canonical) }
 			end
 		end
 	end
@@ -592,25 +744,24 @@ do
 
 	function me:GetCurrentStepActionSpecs()
 		local specs, seen = {}, {}
-		local stepframe = self.CurrentStepframeNum and self.stepframes and self.stepframes[self.CurrentStepframeNum]
 		if not self.CurrentStep then return specs end
-		if stepframe and stepframe.lines then
-			for i = 1, 20 do
-				local line = stepframe.lines[i]
-				local goal = line and line.goal
-				local spec = goal and self:GetGoalActionSpec(goal)
-				if spec then
-					spec.goal = goal
-					spec.label = goal:GetText() or goal.action or spec.kind
-					if spec.kind == "talk" or spec.kind == "kill" then
-						if not seen[spec.signature] then
-							seen[spec.signature] = true
+		if self.CurrentStep.goals then
+			for _, goal in ipairs(self.CurrentStep.goals) do
+				if goal and (not goal.IsVisible or goal:IsVisible()) then
+					local spec = self:GetGoalActionSpec(goal)
+					if spec then
+						spec.goal = goal
+						spec.label = goal:GetText() or goal.action or spec.kind
+						if spec.kind == "talk" or spec.kind == "kill" then
+							if not seen[spec.signature] then
+								seen[spec.signature] = true
+								specs[#specs + 1] = spec
+							end
+						else
 							specs[#specs + 1] = spec
 						end
-					else
-						specs[#specs + 1] = spec
+						if #specs >= ACTION_BAR_MAX_BUTTONS then break end
 					end
-					if #specs >= ACTION_BAR_MAX_BUTTONS then break end
 				end
 			end
 		end
@@ -803,8 +954,8 @@ do
 			button.overlay.icon:SetPoint("TOPLEFT", button.overlay, "TOPLEFT", 3, -3)
 			button.overlay.icon:SetPoint("BOTTOMRIGHT", button.overlay, "BOTTOMRIGHT", -3, 3)
 			button.overlay.cooldown:ClearAllPoints()
-			button.overlay.cooldown:SetPoint("TOPLEFT", button.overlay.icon, "TOPLEFT", 3, -3)
-			button.overlay.cooldown:SetPoint("BOTTOMRIGHT", button.overlay.icon, "BOTTOMRIGHT", -3, 3)
+			button.overlay.cooldown:SetPoint("TOPLEFT", button, "TOPLEFT", 0, 0)
+			button.overlay.cooldown:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", 0, 0)
 			if i == 1 then
 				button:SetPoint("TOPLEFT", bar, "TOPLEFT", ACTION_BAR_PADDING, -ACTION_BAR_PADDING)
 			else
@@ -855,6 +1006,50 @@ do
 		bar:SetBackdropBorderColor(border[1], border[2], border[3], border[4])
 		if bar.close and bar.close.x then
 			bar.close.x:SetTextColor(textc[1], textc[2], textc[3], 0.95)
+		end
+	end
+
+	function me:ActionButtons_BarMatchesSpecs(bar, specs)
+		if not bar or not bar.buttons then return false end
+		local liveCount = specs and #specs or 0
+		local barCount = 0
+		for i = 1, ACTION_BAR_MAX_BUTTONS do
+			local button = bar.buttons[i]
+			local barspec = button and button.actionSpec
+			if barspec then
+				barCount = barCount + 1
+			end
+			local livespec = specs and specs[i]
+			if (not barspec) ~= (not livespec) then
+				return false
+			end
+			if barspec and livespec then
+				local barSig = barspec.signature or (barspec.kind .. ":" .. tostring(i))
+				local liveSig = livespec.signature or (livespec.kind .. ":" .. tostring(i))
+				if barSig ~= liveSig then
+					return false
+				end
+			end
+		end
+		return barCount == liveCount
+	end
+
+	function me:ActionButtons_SetPendingCombatState(active)
+		local bar = self.ActionButtonBar
+		if not bar then return end
+		if active then
+			if bar.combatBlocker then
+				bar.combatBlocker:ClearAllPoints()
+				bar.combatBlocker:SetPoint("TOPLEFT", bar, "TOPLEFT", 0, 0)
+				bar.combatBlocker:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", 0, 0)
+				bar.combatBlocker:Show()
+			end
+			bar:SetAlpha(0)
+		else
+			if bar.combatBlocker then
+				bar.combatBlocker:Hide()
+			end
+			self:ActionButtons_ApplyTheme()
 		end
 	end
 
@@ -914,6 +1109,11 @@ do
 			LibStub("AceConfigRegistry-3.0"):NotifyChange("ZygorGuidesViewer")
 			me:ActionButtons_Refresh(true)
 		end)
+		bar.combatBlocker = CreateFrame("Frame", nil, UIParent)
+		bar.combatBlocker:SetFrameStrata(bar:GetFrameStrata())
+		bar.combatBlocker:SetFrameLevel(bar:GetFrameLevel() + 50)
+		bar.combatBlocker:EnableMouse(true)
+		bar.combatBlocker:Hide()
 		bar.buttons = {}
 		for i = 1, ACTION_BAR_MAX_BUTTONS do
 			local button = CreateFrame("CheckButton", "ZygorGuidesViewerActionButton" .. i, bar, "SecureActionButtonTemplate")
@@ -928,11 +1128,12 @@ do
 			button.overlay:SetAllPoints(button)
 			button.overlay:SetFrameLevel(button:GetFrameLevel() + 1)
 			button.overlay.icon = button.overlay:CreateTexture(nil, "BACKGROUND")
-			button.overlay.cooldown = CreateFrame("Cooldown", nil, button.overlay, "CooldownFrameTemplate")
+			button.overlay.cooldown = CreateFrame("Cooldown", button:GetName() .. "Cooldown", button, "CooldownFrameTemplate")
 			if button.overlay.cooldown.SetDrawSwipe then
 				button.overlay.cooldown:SetDrawSwipe(true)
 			end
-			button.overlay.cooldown:SetAllPoints(button.overlay)
+			button.overlay.cooldown:SetFrameLevel(button.overlay:GetFrameLevel() + 1)
+			button.overlay.cooldown:SetAllPoints(button)
 			button:SetScript("OnEnter", function(self) me:ShowActionButtonTooltip(self) end)
 			button:SetScript("OnLeave", function() GameTooltip:Hide() end)
 			button:SetScript("PostClick", function(self) me:ActionButtons_HandlePostClick(self) end)
@@ -994,12 +1195,23 @@ do
 			if self.ActionButtonBar then self.ActionButtonBar:Hide() end
 			return
 		end
-		if InCombatLockdown() and not force then
+		if InCombatLockdown() then
+			local bar = self.ActionButtonBar
+			local specs = self:GetCurrentStepActionSpecs()
 			self.actionButtonsRefreshPending = true
+			if bar then
+				local shouldShow = (not self.db.profile.actionbuttonbar_onlywhenneeded) or (#specs > 0)
+				local matches = self:ActionButtons_BarMatchesSpecs(bar, specs)
+				self:ActionButtons_SetPendingCombatState((not shouldShow) or (not matches))
+				if shouldShow and matches then
+					self:ActionButtons_UpdateCooldowns()
+				end
+			end
 			return
 		end
 		self.actionButtonsRefreshPending = nil
 		local bar = self:ActionButtons_CreateBar()
+		self:ActionButtons_SetPendingCombatState(false)
 		local specs = self:GetCurrentStepActionSpecs()
 		for i = 1, ACTION_BAR_MAX_BUTTONS do
 			self:ActionButtons_ApplyButtonSpec(bar.buttons[i], specs[i])
@@ -3233,6 +3445,8 @@ function me:UpdateCooldowns()
 				local start,dur,en = GetPetActionCooldown(num)
 				CooldownFrame_SetTimer(cooldown, start, dur, en)
 				if start>0 then cooldown:Show() else cooldown:Hide() end
+			else
+				cooldown:Hide()
 			end
 		else
 			cooldown:Hide()

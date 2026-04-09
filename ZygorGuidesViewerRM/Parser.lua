@@ -728,6 +728,17 @@ function me:ParseEntry(text)
 
 				-- now object##id
 				goal.target,goal.targetid = self:ParseID(object)
+				goal.actiontarget = goal.target
+				if cmd=="kill" and not goal.targetid and goal.target and type(goal.target)=="string" then
+					local rawkill = goal.target:lower():gsub("^%s+",""):gsub("%s+$","")
+					if rawkill:find(" mob$") or rawkill:find(" mobs$")
+					or rawkill:find(" enemy$") or rawkill:find(" enemies$")
+					or rawkill:find(" creature$") or rawkill:find(" creatures$")
+					or rawkill:find(" npc$") or rawkill:find(" npcs$")
+					then
+						goal.actionselectable = false
+					end
+				end
 
 				-- finally, assume buys are futureproof
 				if cmd=="buy" then goal.future=true end
