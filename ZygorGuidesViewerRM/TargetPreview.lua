@@ -12,6 +12,19 @@ local PREVIEW_SNAP_THRESHOLD_Y = 90
 local PREVIEW_CLOSE_SIZE = 16
 local PREVIEW_ROTATION_SPEED = 0.012
 local PREVIEW_TARGET_CAM_DISTANCE = 2.0
+local PREVIEW_MODEL_REFRESH_INTERVAL = 0.08
+local PREVIEW_MODEL_REFRESH_TICKS = 4
+
+local PREVIEW_MODEL_FRAMING = {
+	Humanoid = { cam = 1.35, facing = 0.00 },
+	Undead = { cam = 1.50, facing = 0.00 },
+	Demon = { cam = 1.65, facing = 0.00 },
+	Elemental = { cam = 1.75, facing = 0.00 },
+	Beast = { cam = 3.10, facing = 0.00 },
+	Critter = { cam = 2.60, facing = 0.00 },
+	Dragonkin = { cam = 3.25, facing = 0.00 },
+	default = { cam = PREVIEW_TARGET_CAM_DISTANCE, facing = 0.00 },
+}
 
 me.targetPreviewSafeModelReady = me.targetPreviewSafeModelReady or false
 
@@ -101,6 +114,28 @@ local function TP_CopySubject(spec, step)
 		signature = spec.signature,
 		goal = spec.goal,
 		step = step,
+	}
+end
+
+local function TP_TryModelCall(model, methodName, ...)
+	if not model then return false end
+	local method = model[methodName]
+	if type(method) ~= "function" then return false end
+	return pcall(method, model, ...)
+end
+
+local function TP_GetModelFraming(unit, subject, model)
+	local creatureType = UnitCreatureType and UnitCreatureType(unit)
+	local profile = PREVIEW_MODEL_FRAMING[creatureType] or PREVIEW_MODEL_FRAMING.default
+	return {
+		cam = profile.cam or PREVIEW_TARGET_CAM_DISTANCE,
+		facing = profile.facing or 0,
+		key = table.concat({
+			tostring((UnitGUID and UnitGUID(unit)) or UnitName(unit) or ""),
+			tostring(creatureType or "unknown"),
+			tostring(profile.cam or PREVIEW_TARGET_CAM_DISTANCE),
+			tostring(profile.facing or 0),
+		}, ":"),
 	}
 end
 
@@ -551,6 +586,43 @@ function me:TargetPreview_GetUnitData(subject)
 	}
 end
 
+function me:TargetPreview_ClearModelState(frame)
+	if not frame then return end
+	frame.modelSubjectKey = nil
+	frame.modelFramingKey = nil
+	frame.modelFramingTicks = nil
+	frame.modelFramingElapsed = nil
+end
+
+function me:TargetPreview_ScheduleModelFraming(frame)
+	if not frame then return end
+	frame.modelFramingKey = nil
+	frame.modelFramingTicks = PREVIEW_MODEL_REFRESH_TICKS
+	frame.modelFramingElapsed = 0
+end
+
+function me:TargetPreview_ApplyModelFraming(force)
+	local frame = self.TargetPreviewPane
+	local model = frame and frame.model
+	if not frame or not model or not UnitExists("target") then return false end
+	if not frame.previewSubject or not TP_SubjectMatchesTarget(frame.previewSubject) then return false end
+
+	local framing = TP_GetModelFraming("target", frame.previewSubject, model)
+	if not framing then return false end
+	if not force and frame.modelFramingKey == framing.key then return true end
+
+	TP_TryModelCall(model, "SetCamDistanceScale", framing.cam)
+	if model.SetFacing then
+		if frame.modelFacing == nil then
+			frame.modelFacing = framing.facing or 0
+		end
+		TP_TryModelCall(model, "SetFacing", frame.modelFacing)
+	end
+
+	frame.modelFramingKey = framing.key
+	return true
+end
+
 function me:TargetPreview_ShowModel(subject)
 	if not self.targetPreviewSafeModelReady then return false end
 	if not subject or not subject.target then return false end
@@ -561,28 +633,17 @@ function me:TargetPreview_ShowModel(subject)
 	if not model or not model.SetUnit then return false end
 
 	local targetGUID = UnitGUID and UnitGUID("target")
-	local subjectKey = (subject.signature or subject.target or "target") .. ":" .. tostring(targetGUID or UnitName("target") or "")
+	local subjectKey = (subject.signature or subject.target or "target") .. ":" .. "unit:" .. tostring(targetGUID or UnitName("target") or "")
 
 	if frame.modelSubjectKey ~= subjectKey then
 		if model.ClearModel then model:ClearModel() end
 		model:SetUnit("target")
-		if model.SetCamDistanceScale then
-			local ctype = UnitCreatureType and UnitCreatureType("target")
-			local scale = PREVIEW_TARGET_CAM_DISTANCE
-			if ctype == "Humanoid" then
-				scale = 1.35
-			end
-			pcall(model.SetCamDistanceScale, model, scale)
-		end
-		if model.SetFacing then
-			frame.modelFacing = 0
-			model:SetFacing(frame.modelFacing)
-		end
 		frame.modelSubjectKey = subjectKey
-	elseif model.SetFacing then
-		frame.modelFacing = frame.modelFacing or 0
-		model:SetFacing(frame.modelFacing)
+		frame.modelFacing = nil
+		self:TargetPreview_ScheduleModelFraming(frame)
 	end
+
+	self:TargetPreview_ApplyModelFraming(frame.modelFramingKey == nil)
 
 	return true
 end
@@ -603,13 +664,13 @@ function me:TargetPreview_ApplySubject(subject)
 	local allowFallbackCard = subject and self:TargetPreview_IsFocusedSubject(subject)
 
 	if mode == "model" and not canShowModel then
-		frame.modelSubjectKey = nil
+		self:TargetPreview_ClearModelState(frame)
 		return false
 	end
 	if mode ~= "card" and not hasLiveTarget and not allowFallbackCard then
 		if frame.model.ClearModel then frame.model:ClearModel() end
 		frame.model:Hide()
-		frame.modelSubjectKey = nil
+		self:TargetPreview_ClearModelState(frame)
 		return false
 	end
 
@@ -632,7 +693,7 @@ function me:TargetPreview_ApplySubject(subject)
 	else
 		if frame.model.ClearModel then frame.model:ClearModel() end
 		frame.model:Hide()
-		frame.modelSubjectKey = nil
+		self:TargetPreview_ClearModelState(frame)
 		frame.placeholderIcon:Show()
 		if hasSubject then
 			frame.hintText:SetText(L["targetpreview_hint"])
@@ -680,6 +741,17 @@ function me:TargetPreview_CreatePane()
 			selfFrame.modelRotateCursorX = cx
 			selfFrame.modelFacing = (selfFrame.modelFacing or 0) + (delta * PREVIEW_ROTATION_SPEED)
 			selfFrame.model:SetFacing(selfFrame.modelFacing)
+		end
+		if selfFrame.modelFramingTicks and selfFrame.modelFramingTicks > 0 then
+			selfFrame.modelFramingElapsed = (selfFrame.modelFramingElapsed or 0) + (elapsed or 0)
+			if selfFrame.modelFramingElapsed >= PREVIEW_MODEL_REFRESH_INTERVAL then
+				selfFrame.modelFramingElapsed = 0
+				if me:TargetPreview_ApplyModelFraming(true) then
+					selfFrame.modelFramingTicks = selfFrame.modelFramingTicks - 1
+				else
+					selfFrame.modelFramingTicks = nil
+				end
+			end
 		end
 		if me.db.profile.targetpreview_locked then return end
 		if selfFrame.draggingManual then
@@ -788,6 +860,7 @@ function me:TargetPreview_CreatePane()
 		if not owner then return end
 		owner.modelRotating = nil
 		owner.modelRotateCursorX = nil
+		me:TargetPreview_ClearModelState(owner)
 	end)
 	frame.placeholderIcon = frame.viewport:CreateTexture(nil, "ARTWORK")
 	frame.hintText = frame.viewport:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")

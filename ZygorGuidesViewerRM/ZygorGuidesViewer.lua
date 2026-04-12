@@ -548,6 +548,22 @@ do
 		if goal.target then return AB_SafeName(goal.target) end
 	end
 
+	function me:GetNPCIDByName(name)
+		if not name or name == "" or not ZygorGuidesNPCs then return end
+		local cache = self.npcIdByNameCache
+		if not cache then
+			cache = {}
+			for id, data in pairs(ZygorGuidesNPCs) do
+				local npcName = data and data:match(".|(.-)|")
+				if npcName and npcName ~= "" then
+					cache[strlower(npcName)] = id
+				end
+			end
+			self.npcIdByNameCache = cache
+		end
+		return cache[strlower(name)]
+	end
+
 	function me:ActionButtonCanMark()
 		if InCombatLockdown() or not UnitExists("target") then return false end
 		return true
@@ -642,7 +658,8 @@ do
 			local target = self:GetGoalActionTargetName(goal)
 			local macrotext = AB_BuildTargetMacro(target, 4)
 			if macrotext then
-				return { kind = "talk", type = "macro", macrotext = macrotext, icon = TALK_ICON, target = target, marker = 4, tooltip = "talk", signature = "talk:" .. tostring(goal.npcid or target) }
+				local npcid = goal.npcid or self:GetNPCIDByName(target)
+				return { kind = "talk", type = "macro", macrotext = macrotext, icon = TALK_ICON, target = target, npcid = npcid, marker = 4, tooltip = "talk", signature = "talk:" .. tostring(npcid or target) }
 			end
 		end
 
@@ -663,7 +680,8 @@ do
 			local macrotext, candidates = AB_BuildTargetMacroCandidates(target, singular, 8)
 			local canonical = (candidates and candidates[#candidates]) or singular or target
 			if macrotext then
-				return { kind = "kill", type = "macro", macrotext = macrotext, icon = KILL_ICON, target = canonical, targetaliases = candidates, marker = 8, tooltip = "kill", signature = "kill:" .. tostring(goal.targetid or canonical) }
+				local creatureid = goal.targetid or self:GetNPCIDByName(canonical) or self:GetNPCIDByName(singular) or self:GetNPCIDByName(target)
+				return { kind = "kill", type = "macro", macrotext = macrotext, icon = KILL_ICON, target = canonical, creatureid = creatureid, targetaliases = candidates, marker = 8, tooltip = "kill", signature = "kill:" .. tostring(creatureid or canonical) }
 			end
 		end
 
@@ -7958,6 +7976,7 @@ end
 
 function me:PruneNPCs()
 	if not ZygorGuidesNPCs then return end
+	self.npcIdByNameCache = nil
 	local faction,_ = UnitFactionGroup("player")
 	if not faction then return end
 	local badf = (faction=="Alliance") and "H" or "A"

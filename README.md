@@ -164,9 +164,10 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
-### v3.0 (Revision 112)
+### v3.0 (Revision 113)
 
-- Bumped addon version/revision to 3.0.112 / 112.
+- Bumped addon version/revision to 3.0.113 / 113.
+- Tightened target preview 3D framing by carrying creature IDs through kill/talk action specs and widening creature-type camera distance for long-body targets like stags and serpents.
 - Fixed quest-bound item progress so live bag counts can override under-reported quest-log totals.
 - Increased the default action bar button size slightly and improved full-button cooldown text rendering.
 - Fixed stale inline cooldown overlays carrying onto non-item actionable rows.
