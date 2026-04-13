@@ -1843,23 +1843,67 @@ function me:Options_DefineOptions()
 				type = "description",
 				name = L["opt_optimization_internal_only"],
 			},
-			memory_header = {
+			routing_header = {
 				order = 20,
+				type = "header",
+				name = L["opt_optimization_routing_header"],
+			},
+			routing_desc = {
+				order = 21,
+				type = "description",
+				name = L["opt_optimization_routing_desc"],
+			},
+			pathfinding_speed = {
+				order = 22,
+				type = "select",
+				name = L["opt_pathfinding_speed"],
+				desc = L["opt_pathfinding_speed_desc"],
+				width = "double",
+				values = {
+					[1] = L["opt_pathfinding_speed_slow"],
+					[15] = L["opt_pathfinding_speed_medium"],
+					[50] = L["opt_pathfinding_speed_fast"],
+				},
+				get = function()
+					return self.db.profile.pathfinding_speed or 1
+				end,
+				set = function(_,v)
+					self.db.profile.pathfinding_speed = tonumber(v) or 1
+					if self.LibRover and self.LibRover.UpdateConfig then self.LibRover:UpdateConfig() end
+					if self.Pointer and self.Pointer.DestinationWaypoint and self.Pointer.DestinationWaypoint.type == "manual" then
+						if self.LibRover and self.LibRover.UpdateNow then self.LibRover:UpdateNow() end
+					else
+						self:ShowWaypoints()
+					end
+				end,
+				disabled = function()
+					return not self.db.profile.pathfinding
+				end,
+			},
+			travel_do_full_linking_at_startup = {
+				order = 23,
+				type = "toggle",
+				name = L["opt_travel_full_linking_startup"],
+				desc = L["opt_travel_full_linking_startup_desc"],
+				width = "full",
+			},
+			memory_header = {
+				order = 30,
 				type = "header",
 				name = L["opt_optimization_memory_header"],
 			},
 			memory_desc = {
-				order = 21,
+				order = 31,
 				type = "description",
 				name = L["opt_optimization_memory_desc"],
 			},
 			diagnostics_header = {
-				order = 30,
+				order = 40,
 				type = "header",
 				name = L["opt_optimization_diagnostics_header"],
 			},
 			diagnostics_desc = {
-				order = 31,
+				order = 41,
 				type = "description",
 				name = L["opt_optimization_diagnostics_desc"],
 			},
@@ -2491,7 +2535,17 @@ function me:Options_DefineOptions()
 			type = "toggle",
 			width = "full",
 			get = function() return ZGV.db.profile.gearshowallstats end,
-			set = function(i,v) ZGV.db.profile.gearshowallstats = v end,
+			set = function(i,v)
+				ZGV.db.profile.gearshowallstats = v
+				local ACR = LibStub and LibStub("AceConfigRegistry-3.0", true)
+				if ACR and ACR.NotifyChange then
+					ACR:NotifyChange("ZygorGuidesViewer-ItemScore")
+				end
+				local gm = _G["ZGVGuideManagerFrame"]
+				if gm and gm.currentSection == "options" and gm.currentOptionsApp == "ZygorGuidesViewer-ItemScore" and gm.RenderOptionsApp then
+					gm:RenderOptionsApp("ZygorGuidesViewer-ItemScore")
+				end
+			end,
 		}
 
 		IS_args.weightsheader = {
