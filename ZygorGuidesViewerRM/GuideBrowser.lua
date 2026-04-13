@@ -2328,6 +2328,7 @@ end
 
 local function ResolveGuideDominantMapImage(guide)
 	if not guide then return nil end
+	if not guide.steps then return nil end
 	local key = guide.title or tostring(guide)
 	ZGV._guideHeroMapCache = ZGV._guideHeroMapCache or {}
 	if ZGV._guideHeroMapCache[key] ~= nil then
@@ -5194,6 +5195,9 @@ local function EnsureGuideManagerStandaloneFrame(self)
 			frame.detailProgressLabel:SetText(LT("gb_progress_format", 0))
 			frame.detailProgressFill:SetWidth(0)
 			return
+		end
+		if not guide.steps and not guide.parse_failed and self.EnsureGuideParsed then
+			guide = self:EnsureGuideParsed(guide) or guide
 		end
 		local steps = (guide.steps and #guide.steps) or 0
 		local author = guide.author or LT("gb_unknown")

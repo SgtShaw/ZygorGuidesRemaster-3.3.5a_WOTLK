@@ -164,6 +164,24 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
+### Revision 115 - 3.0.115
+
+- Added a dedicated `Optimization` options tab.
+- Added configurable internal waypoint arrow refresh rate options (`20 FPS`, `30 FPS`, `60 FPS`, `Unlimited`).
+- Surfaced additional travel performance options for route calculation budget and startup travel-link building.
+- Replaced eager startup guide parsing with header-only startup plus on-demand guide parsing.
+- Added a small parsed-guide cache to reduce long-session memory growth while keeping guide switching transparent.
+- Updated the Guide Browser details pane so single-clicking a guide loads that guide's step count on demand instead of showing `Steps: 0`.
+- Reduced login-time memory usage and improved startup responsiveness significantly on Wrath 3.3.5a.
+- Added the ability to close the Gear Finder by pressing your CharacterFrame hotkey `Default: C`.
+
+### Revision 114 - 3.0.114
+
+- Restored the safe Wrath 3D target preview framing fix for long-body creature targets without relying on `!!!ClassicAPI`.
+- Localized the newer Wrath UI additions, including Target Preview, Gear Finder, and related popup/status text.
+- Reworked the options layout to better match the retail-style flow while keeping `Remaster` as the default skin.
+- Improved options navigation with better tab ordering/icons and moved duplicate legacy guide copies into `Guides/Archived`.
+
 ### v3.0 (Revision 113)
 
 - Bumped addon version/revision to 3.0.113 / 113.

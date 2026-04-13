@@ -593,7 +593,6 @@ function GearFinder:CreateMainFrame()
 	self.MainFrame:SetBackdropColor(0.05, 0.05, 0.08, 1.0)
 	self.MainFrame:SetBackdropBorderColor(0.6, 0.6, 0.6, 1.0)
 
-
 	local MF = self.MainFrame
 
 	MF.Logo = CHAIN(MF:CreateTexture())

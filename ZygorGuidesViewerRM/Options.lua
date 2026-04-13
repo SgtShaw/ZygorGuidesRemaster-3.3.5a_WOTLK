@@ -300,7 +300,7 @@ function me:Options_DefineOptions()
 			steps = {
 				order=3.1,
 				type = "description",
-				name = function() if not ZGV.CurrentGuide then return "" end  return L["opt_guide_steps"]:format(#ZGV.CurrentGuide.steps) end,
+				name = function() if not ZGV.CurrentGuide then return "" end  return L["opt_guide_steps"]:format(#(ZGV.CurrentGuide.steps or {})) end,
 			},
 			author = {
 				order=3.2,

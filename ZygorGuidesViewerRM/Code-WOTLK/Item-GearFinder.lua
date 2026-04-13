@@ -15,6 +15,21 @@ function GearFinder:Initialise()
 		-- Restore the character tab that was active before
 		if PaperDollFrame then PaperDollFrame:Show() end
 	end)
+
+	if not GearFinder.ToggleCharacterWrapped and ToggleCharacter then
+		local origToggleCharacter = ToggleCharacter
+		ToggleCharacter = function(...)
+			if GearFinder.MainFrame and GearFinder.MainFrame:IsVisible() then
+				GearFinder.MainFrame:Hide()
+				if CharacterFrame and CharacterFrame:IsShown() and HideUIPanel then
+					HideUIPanel(CharacterFrame)
+				end
+				return
+			end
+			return origToggleCharacter(...)
+		end
+		GearFinder.ToggleCharacterWrapped = true
+	end
 end
 
 local L = ZGV.L

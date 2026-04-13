@@ -3845,6 +3845,112 @@ function me:GetGuideByTitle(title)
 	end
 end
 
+function me:IsGuideParsed(guideOrTitle)
+	local guide = guideOrTitle
+	if type(guideOrTitle)=="string" then
+		guide = self:GetGuideByTitle(guideOrTitle)
+	elseif type(guideOrTitle)=="number" then
+		guide = self.registeredguides[guideOrTitle]
+	end
+	return guide and guide.parsed or false
+end
+
+me.parsedGuideCacheLimit = 3
+me._parsedGuideTouchCounter = me._parsedGuideTouchCounter or 0
+
+function me:MarkGuideRecentlyParsed(guide)
+	if not guide then return end
+	self._parsedGuideTouchCounter = (self._parsedGuideTouchCounter or 0) + 1
+	guide._parsedTouch = self._parsedGuideTouchCounter
+end
+
+function me:UnloadParsedGuide(guide)
+	if not guide or not guide.parsed then return false end
+	if self.CurrentGuide and guide == self.CurrentGuide then return false end
+	if guide._parsing then return false end
+	guide.steps = nil
+	guide.labels = nil
+	guide.parsed = false
+	return true
+end
+
+function me:TrimParsedGuideCache()
+	local limit = tonumber(self.parsedGuideCacheLimit or 3) or 3
+	if limit < 1 then limit = 1 end
+
+	local protected = {}
+	if self.CurrentGuide then
+		protected[self.CurrentGuide] = true
+		if self.CurrentGuide.prev then
+			local prevGuide = self:GetGuideByTitle(self.CurrentGuide.prev)
+			if prevGuide and prevGuide.parsed then protected[prevGuide] = true end
+		end
+		if self.CurrentGuide.next then
+			local nextGuide = self:GetGuideByTitle(self.CurrentGuide.next)
+			if nextGuide and nextGuide.parsed then protected[nextGuide] = true end
+		end
+	end
+
+	local parsed = {}
+	for _,guide in ipairs(self.registeredguides) do
+		if guide and guide.parsed and guide.steps then
+			tinsert(parsed,guide)
+		end
+	end
+	if #parsed <= limit then return end
+
+	table.sort(parsed,function(a,b)
+		return (a._parsedTouch or 0) < (b._parsedTouch or 0)
+	end)
+
+	local keep = #parsed
+	for _,guide in ipairs(parsed) do
+		if keep <= limit then break end
+		if not protected[guide] and self:UnloadParsedGuide(guide) then
+			keep = keep - 1
+		end
+	end
+end
+
+function me:EnsureGuideParsed(guideOrTitle,allowRetry)
+	local guide = guideOrTitle
+	if type(guideOrTitle)=="string" then
+		guide = self:GetGuideByTitle(guideOrTitle)
+	elseif type(guideOrTitle)=="number" then
+		guide = self.registeredguides[guideOrTitle]
+	end
+	if not guide then return nil,false end
+	if guide.parsed then return guide,true end
+	if guide.parse_failed and not allowRetry then return guide,false end
+	if not guide.rawdata then
+		guide.parsed = true
+		guide.parse_failed = nil
+		self:MarkGuideRecentlyParsed(guide)
+		return guide,true
+	end
+
+	guide._parsing = true
+	local status,parsed,err,line,linedata = pcall(self.ParseEntry,self,guide.rawdata)
+	guide._parsing = nil
+	if status and parsed then
+		for k,v in pairs(parsed) do guide[k]=v end
+		guide.parsed=true
+		guide.parse_failed=nil
+		self:MarkGuideRecentlyParsed(guide)
+		self:TrimParsedGuideCache()
+		return guide,true
+	end
+
+	if not status then err=parsed end
+	if err then
+		self:Print(L["message_errorloading_full"]:format(guide.title,line or 0,linedata or "???",err))
+	else
+		self:Print(L["message_errorloading_brief"]:format(guide.title))
+	end
+	guide.parse_failed=true
+	return guide,false
+end
+
 function me:GetRememberedGuideStep(title)
 	if not title or not self.db or not self.db.char then return nil end
 	self.db.char.guide_progress = self.db.char.guide_progress or {}
@@ -3889,11 +3995,16 @@ function me:SetGuide(name,step,temp)
 
 	--if guide.is_stored then guide = self.db.global.storedguides[name] end
 
+	if guide and not guide.steps then
+		guide = self:EnsureGuideParsed(guide,true)
+	end
+
 	if guide and guide.steps then
 		--self.MapNotes = _G["ZygorGuides_"..faction.."Mapnotes"]
 		local name = guide.title
 
 		self.CurrentGuide = guide
+		self:MarkGuideRecentlyParsed(self.CurrentGuide)
 
 		self:Print(L["message_loadedguide"]:format(name))
 
@@ -3918,10 +4029,13 @@ function me:SetGuide(name,step,temp)
 		self:Debug("Guide loaded: "..name)
 		
 		self:FocusStep(step)
+		self:TrimParsedGuideCache()
 
 		ZygorGuidesViewerFrame_Border_GuideButton:UnlockHighlight()
 	else
-		self:Print(L["message_missingguide"]:format(name))
+		if not (guide and guide.parse_failed) then
+			self:Print(L["message_missingguide"]:format(name))
+		end
 		self.db.char['guide'] = nil
 		self.db.char['step'] = nil
 		self.CurrentGuide = nil
@@ -3958,6 +4072,9 @@ end
 function me:FocusStep(num,quiet)
 	if not num or num<=0 then return end
 	if not self.CurrentGuide then return end
+	if not self.CurrentGuide.steps then
+		self:EnsureGuideParsed(self.CurrentGuide)
+	end
 	if not self.CurrentGuide.steps then return end
 	if num>#self.CurrentGuide.steps then return end
 
@@ -4111,11 +4228,15 @@ function me:ListMentionedQuests()
 	local guide = self:FindDefaultGuide()
 	if guide then guide=self.registeredguides[guide] else return end
 	while guide do
+		if not guide.quests and not guide.parse_failed then
+			self:EnsureGuideParsed(guide)
+		end
 		if guide.quests then for qid,lev in pairs(guide.quests) do self.mentionedQuests[qid]=lev end end
 		guide.quests=nil
 
 		guide = self:GetGuideByTitle(guide.next)
 	end
+	self:TrimParsedGuideCache()
 end
 	
 --- Attempt to complete current step.
@@ -8285,7 +8406,7 @@ function me:RegisterGuide(title,data,extra)
 		group = self.registered_groups
 	end
 
-	local guide = {['title']=title,['title_short']=tit or title,['rawdata']=data,['extra']=extra,realm=guideRealm}
+	local guide = {['title']=title,['title_short']=tit or title,['rawdata']=data,['extra']=extra,realm=guideRealm,parsed=false,parse_failed=nil}
 
 	-- Support retail-style guide registration: RegisterGuide("TITLE", {meta=..., items=..., maps=...}, [[steps]])
 	if type(data) == "table" then
@@ -8318,6 +8439,9 @@ function me:RegisterGuide(title,data,extra)
 		elseif title:match("^Pets") or title:match("^Mount") or title:match("^Hunter Pet") then
 			guide.type = "petsmounts"
 		end
+	end
+	if not guide.rawdata or guide.rawdata == "" then
+		guide.parsed = true
 	end
 
 	tinsert(group.guides,{full=title,short=tit or title,num=#self.registeredguides+1})
@@ -8408,26 +8532,10 @@ function me:ParseGuides()
 	if not self.db.char.maint_startguides then return true end
 	self.loading=true
 
-	if #self.registeredguides>0 then
-		for i,guide in ipairs(self.registeredguides) do
-			if guide.rawdata then
-				local status,parsed,err,line,linedata = pcall(self.ParseEntry,self,guide.rawdata)
-				if status and parsed then
-					for k,v in pairs(parsed) do guide[k]=v end
-					guide.rawdata=nil
-					self.loadprogress = i/#self.registeredguides
-				else
-					if not status then err=parsed end
-					if err then
-						self:Print(L["message_errorloading_full"]:format(guide.title,line or 0,linedata or "???",err))
-					else
-						self:Print(L["message_errorloading_brief"]:format(guide.title))
-					end
-					guide.rawdata=nil
-				end
-				self:UpdateFrame(true)
-				return false
-			end
+	if self.db and self.db.char and self.db.char.guidename then
+		local currentGuide = self:GetGuideByTitle(self.db.char.guidename)
+		if currentGuide and currentGuide.rawdata and not currentGuide.parsed and not currentGuide.parse_failed then
+			self:EnsureGuideParsed(currentGuide,true)
 		end
 	end
 
@@ -9020,7 +9128,7 @@ end
 
 function me:ReloadTranslation()
 	for i,guide in ipairs(self.registeredguides) do
-		for s,step in ipairs(guide.steps) do
+		for s,step in ipairs(guide.steps or {}) do
 			for g,goal in ipairs(step.goals) do
 				goal.L=false
 			end
@@ -9161,4 +9269,3 @@ end
 
 --hooksecurefunc("WorldMapFrame_UpdateQuests",function() if not InCombatLockdown() then text=nil end end)
 --hooksecurefunc("QuestInfo_Display",function() if not InCombatLockdown() then shownFrame=nil bottomShownFrame=nil end end)
-
