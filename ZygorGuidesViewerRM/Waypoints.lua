@@ -9,9 +9,172 @@ local Astrolabe
 
 local tinsert=tinsert
 
+
+---------------------------------------------------------------------------
+-- Travel Advisor - Lightweight cross-zone routing for 3.3.5a
+-- Uses Astrolabe distance to pick closest transit, LibTaxi for FP awareness.
+---------------------------------------------------------------------------
+
+local TA_Astrolabe = DongleStub and (({pcall(DongleStub,"Astrolabe-0.4-Zygor")})[2] or ({pcall(DongleStub,"Astrolabe-0.4")})[2])
+local TA_LibTaxi = LibStub and ({pcall(LibStub,"LibTaxi-1.0")})[2]
+
+local zoneContinentCache = {}
+local zoneNumberCache = {}
+
+local function GetZoneContinent(zoneName)
+	if zoneContinentCache[zoneName] then return zoneContinentCache[zoneName] end
+	local c, z = ZGV:GetMapZoneNumbers(zoneName)
+	if c and c > 0 then
+		zoneContinentCache[zoneName] = c
+		zoneNumberCache[zoneName] = z
+		return c
+	end
+	return nil
+end
+
+local function GetZoneNumber(zoneName)
+	if zoneNumberCache[zoneName] then return zoneContinentCache[zoneName], zoneNumberCache[zoneName] end
+	GetZoneContinent(zoneName)
+	return zoneContinentCache[zoneName], zoneNumberCache[zoneName]
+end
+
+-- Compute Astrolabe distance from player to a zone coordinate
+local function DistToPoint(zone, x, y)
+	if not TA_Astrolabe then return 999999 end
+	local pc, pz, px, py = TA_Astrolabe:GetCurrentPlayerPosition()
+	if not pc or not px then return 999999 end
+	local c, z = GetZoneNumber(zone)
+	if not c then return 999999 end
+	local dist = TA_Astrolabe:ComputeDistance(pc, pz, px, py, c, z, x/100, y/100)
+	return dist or 999999
+end
+
+-- Transit routes: {fromCont, toCont, faction, mode, instruction, zone, x, y, arrivalCont, arrivalZone}
+local TRANSIT_ROUTES = {
+	-- Alliance: EK <-> Kalimdor
+	{2, 1, "Alliance", "ship", "Take the boat from Menethil Harbor to Theramore", "Wetlands", 4.6, 57.3},
+	{1, 2, "Alliance", "ship", "Take the boat from Theramore to Menethil Harbor", "Dustwallow Marsh", 71.6, 56.2},
+	{2, 1, "Alliance", "ship", "Take the boat from Stormwind Harbor to Auberdine", "Stormwind City", 18.4, 25.6},
+	{1, 2, "Alliance", "ship", "Take the boat from Auberdine to Stormwind", "Darkshore", 32.4, 43.8},
+	-- Horde: EK <-> Kalimdor
+	{2, 1, "Horde", "zeppelin", "Take the zeppelin from Undercity to Orgrimmar", "Tirisfal Glades", 60.7, 58.8},
+	{1, 2, "Horde", "zeppelin", "Take the zeppelin from Orgrimmar to Undercity", "Durotar", 50.9, 13.8},
+	{2, 1, "Horde", "zeppelin", "Take the zeppelin from Grom'gol to Orgrimmar", "Stranglethorn Vale", 31.6, 29.2},
+	{1, 2, "Horde", "zeppelin", "Take the zeppelin from Orgrimmar to Grom'gol", "Durotar", 50.9, 13.8},
+	-- Alliance: to Northrend
+	{2, 4, "Alliance", "ship", "Take the boat from Stormwind Harbor to Valiance Keep", "Stormwind City", 18.4, 25.6},
+	{1, 4, "Alliance", "ship", "Take the boat from Auberdine to Valiance Keep", "Darkshore", 32.4, 43.8},
+	-- Horde: to Northrend
+	{2, 4, "Horde", "zeppelin", "Take the zeppelin from Undercity to Vengeance Landing", "Tirisfal Glades", 60.7, 58.8},
+	{1, 4, "Horde", "zeppelin", "Take the zeppelin from Orgrimmar to Warsong Hold", "Durotar", 50.9, 13.8},
+	-- Northrend back
+	{4, 2, "Alliance", "ship", "Take the boat from Valiance Keep to Stormwind", "Borean Tundra", 59.7, 69.1},
+	{4, 1, "Horde", "zeppelin", "Take the zeppelin from Warsong Hold to Orgrimmar", "Borean Tundra", 41.6, 53.6},
+	{4, 2, "Horde", "zeppelin", "Take the zeppelin from Vengeance Landing to Undercity", "Howling Fjord", 77.6, 28.2},
+	-- Outland via Dark Portal
+	{2, 3, nil, "portal", "Go through the Dark Portal in Blasted Lands", "Blasted Lands", 58.0, 58.0},
+	{3, 2, nil, "portal", "Go through the Dark Portal in Hellfire Peninsula", "Hellfire Peninsula", 89.0, 50.0},
+	-- Dalaran portals (Northrend hub - instant, always prefer if player is in Dalaran)
+	{4, 2, "Alliance", "portal", "Use the Stormwind portal in Dalaran", "Dalaran", 40.1, 62.8},
+	{4, 2, "Horde", "portal", "Use the Undercity portal in Dalaran", "Dalaran", 55.4, 37.8},
+	{4, 1, "Alliance", "portal", "Use the Darnassus portal in Dalaran", "Dalaran", 37.6, 63.3},
+	{4, 1, "Horde", "portal", "Use the Orgrimmar portal in Dalaran", "Dalaran", 58.2, 38.5},
+	{4, 3, nil, "portal", "Use the Shattrath portal in Dalaran", "Dalaran", 46.1, 33.5},
+	-- Shattrath portals (Outland hub)
+	{3, 2, "Alliance", "portal", "Use the Stormwind portal in Shattrath", "Shattrath City", 57.2, 48.2},
+	{3, 1, "Alliance", "portal", "Use the Darnassus portal in Shattrath", "Shattrath City", 56.8, 49.5},
+	{3, 1, "Horde", "portal", "Use the Orgrimmar portal in Shattrath", "Shattrath City", 56.8, 49.5},
+}
+
+local currentAdvice = nil
+local lastAdviceSig = nil
+
+local function GetTravelAdvice(destZone)
+	if not destZone then return nil end
+	local playerZone = GetRealZoneText()
+	if playerZone == destZone then return nil end
+
+	local sig = playerZone .. ">" .. destZone
+	if sig == lastAdviceSig then return currentAdvice end
+	lastAdviceSig = sig
+
+	local playerCont = GetZoneContinent(playerZone)
+	local destCont = GetZoneContinent(destZone)
+	if not playerCont or not destCont then currentAdvice = nil return nil end
+
+	-- Same continent: suggest nearest flight path
+	if playerCont == destCont then
+		-- Check if player has any discovered taxi near destination using LibTaxi
+		local fpNote = ""
+		if TA_LibTaxi then
+			local known = TA_LibTaxi:GetTaxisEnglish()
+			if known then
+				-- See if any known taxi contains the dest zone name
+				local hasNearby = false
+				for taxiName in pairs(known) do
+					if taxiName:find(destZone, 1, true) then
+						hasNearby = true
+						fpNote = " (FP known)"
+						break
+					end
+				end
+				if not hasNearby then
+					fpNote = " (no FP discovered nearby!)"
+				end
+			end
+		end
+		currentAdvice = {
+			mode = "taxi",
+			text = "Fly to " .. destZone .. fpNote,
+		}
+		return currentAdvice
+	end
+
+	-- Different continent: find closest transit point to player
+	local faction = UnitFactionGroup("player")
+	local candidates = {}
+	for _, route in ipairs(TRANSIT_ROUTES) do
+		if route[1] == playerCont and route[2] == destCont then
+			if route[3] == nil or route[3] == faction then
+				local dist = DistToPoint(route[6], route[7], route[8])
+				-- Portals are instant travel - heavily discount their distance
+				if route[4] == "portal" then dist = dist * 0.1 end
+				tinsert(candidates, { route = route, dist = dist })
+			end
+		end
+	end
+
+	-- Sort by distance (closest first)
+	table.sort(candidates, function(a, b) return a.dist < b.dist end)
+
+	local best = candidates[1] and candidates[1].route
+	if best then
+		currentAdvice = { mode = best[4], text = best[5], zone = best[6], x = best[7], y = best[8] }
+	else
+		currentAdvice = { mode = "walk", text = "Travel to " .. destZone }
+	end
+	return currentAdvice
+end
+
+local function TravelAdvisor_Clear()
+	currentAdvice = nil
+	lastAdviceSig = nil
+end
+
+function me:GetLibRoverPath() return nil end
+function me:GetLibRoverModes() return nil end
+function me:ClearLibRoverPath() TravelAdvisor_Clear() end
+
+local function GetTravelArrowTitle(destZone)
+	local advice = GetTravelAdvice(destZone)
+	if not advice then return nil end
+	local colors = { taxi="|cff88ff00", ship="|cff5588ff", zeppelin="|cff5588ff", portal="|cffaa55ff" }
+	return (colors[advice.mode] or "|cffffffff") .. advice.text .. "|r"
+end
+
 local function GetRemasterArrowTitle(self,goal,explicitTitle)
 	local useRemasterPointer =
-		(self and self.db and self.db.profile and self.db.profile.skin == "remaster")
+		(self and self.db and self.db.profile and self:IsRemasterSkin())
 		or (self and self.Pointer and self.Pointer.IsRetailRemasterArrowEnabled and self.Pointer:IsRetailRemasterArrowEnabled())
 	if not useRemasterPointer then
 		return (explicitTitle and explicitTitle ~= "") and explicitTitle or nil
@@ -43,6 +206,26 @@ local function GetRemasterArrowTitle(self,goal,explicitTitle)
 	end
 	if (goal.action=="get" or goal.action=="collect") and goal.target then
 		return ("Collect %s"):format(goal.target)
+	end
+	if goal.action=="goldcollect" and goal.target then
+		return ("Farm %s"):format(goal.target)
+	end
+	if goal.action=="fpath" and goal.param then
+		return ("Take flight to %s"):format(goal.param)
+	end
+	if goal.routegroup then
+		local step = goal.parentStep
+		if step then
+			for _,g in ipairs(step.goals) do
+				if g.action and g.action~="goto" and g.target then
+					if g.action=="goldcollect" then return ("Farm %s in this area"):format(g.target) end
+					if g.action=="kill" then return ("Kill %s in this area"):format(g.target) end
+					if g.action=="collect" or g.action=="get" then return ("Collect %s in this area"):format(g.target) end
+					break
+				end
+			end
+		end
+		return "Follow the path"
 	end
 	if goal.GetText then
 		local raw = goal:GetText(true)
@@ -309,13 +492,24 @@ me.WaypointFunctions['internal'] = {
 			local lastDisplayGoal
 			local displayActions = {
 				accept=true, turnin=true, talk=true, goto=true, use=true, buy=true,
-				get=true, collect=true, goal=true, kill=true, from=true,
+				get=true, collect=true, goldcollect=true, goal=true, kill=true, from=true,
 			}
 			local function IsNavOnly(goal)
 				return goal and goal.action=="goto" and not goal.npc
 			end
 			if not self.CurrentStep or not self.CurrentStep.goals then return end
 			if goalnumORx then goals={self.CurrentStep.goals[goalnumORx]} else for i=1,#self.CurrentStep.goals do if self.CurrentStep.goals[i].x then tinsert(goals,self.CurrentStep.goals[i]) end end end
+
+			-- Travel Advisor: detect cross-zone goals
+			local currentZone = GetRealZoneText()
+			local crossZoneDest = nil
+			for _,goal in ipairs(goals) do
+				local gmap = goal.map or (self.CurrentStep and self.CurrentStep.map)
+				if gmap and gmap ~= currentZone and goal.x and goal.y then
+					crossZoneDest = gmap
+					break
+				end
+			end
 			if not goalnumORx then
 				for i=1,#self.CurrentStep.goals do
 					local g = self.CurrentStep.goals[i]
@@ -346,16 +540,39 @@ me.WaypointFunctions['internal'] = {
 					end
 				end
 			end
+			-- For route/path goals, find first and last indices to only show endpoint markers
+			local routeFirst, routeLast
 			for k,goal in ipairs(goals) do
-				if not goal.force_noway then
+				if goal.routegroup then
+					if not routeFirst then routeFirst = k end
+					routeLast = k
+				end
+			end
+			for k,goal in ipairs(goals) do
+				-- Skip middle route waypoints - ants handle the trail
+				if goal.routegroup and routeFirst and k ~= routeFirst and k ~= routeLast then
+					-- skip, ant trail covers these
+				elseif not goal.force_noway then
 					local gmap = goal.map or (self.CurrentStep and self.CurrentStep.map) or GetRealZoneText()
+					-- If cross-zone, show travel advice on arrow
+					local travelTitle = nil
+					if crossZoneDest and gmap ~= currentZone then
+						travelTitle = GetTravelArrowTitle(crossZoneDest)
+					end
 					local arrowTitle =
-						GetRemasterArrowTitle(self,goal,title)
+						travelTitle
+						or GetRemasterArrowTitle(self,goal,title)
 						or self.CurrentStep:GetTitle()
 						or (gmap and goal.x and ("%s %d,%d"):format(gmap,goal.x,goal.y))
 						or L['waypoint_step']:format(self.CurrentStepNum)
 					local way = self.Pointer:SetWaypoint (nil,gmap,goal.x,goal.y,{title=arrowTitle,goal=goal,onminimap="always",overworld=true})
 					if way then
+						-- Shrink route endpoint markers
+						if goal.routegroup then
+							way.minimapFrame.icon:SetSize(8, 8)
+							way.worldmapFrame.icon:SetSize(12, 12)
+							way.worldmapFrame:SetSize(12, 12)
+						end
 						if not firstpoint then firstpoint=way end
 						lastpoint=way
 						table.insert(points,{goal=goal,way=way})
@@ -396,6 +613,24 @@ me.WaypointFunctions['internal'] = {
 						or self.CurrentStep:GetTitle()
 						or (preferredDisplayGoal.map and preferredDisplayGoal.x and ("%s %d,%d"):format(preferredDisplayGoal.map,preferredDisplayGoal.x,preferredDisplayGoal.y))
 						or L['waypoint_step']:format(self.CurrentStepNum)
+				end
+				-- Travel Advisor: when cross-zone, override arrow to point at transit location
+				if crossZoneDest then
+					local advice = GetTravelAdvice(crossZoneDest)
+					if advice and advice.zone and advice.x and advice.y then
+						-- Create a waypoint at the transit point (boat dock, zeppelin tower, portal)
+						local transitWay = self.Pointer:SetWaypoint(nil, advice.zone, advice.x, advice.y, {
+							title = advice.text,
+							onminimap = "always",
+							overworld = true,
+						})
+						if transitWay then
+							selected = transitWay
+							selected.t = GetTravelArrowTitle(crossZoneDest)
+						end
+					elseif advice then
+						selected.t = GetTravelArrowTitle(crossZoneDest)
+					end
 				end
 				self.Pointer:ShowArrow (selected)
 			elseif lastpoint then

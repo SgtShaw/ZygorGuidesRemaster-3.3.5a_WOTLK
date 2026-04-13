@@ -42,13 +42,22 @@ end
 
 function me:ParseMapXYDist(text)
 	local map,x,y,dist,_
+	-- Strip retail "< distance" suffix: "Zone x,y < 60" -> "Zone x,y,60"
+	local ltDist
+	text, ltDist = text:gsub("%s*<%s*([0-9%.]+)%s*$",",%1")
+	-- Strip floor suffix: "Zone/0 x,y" -> "Zone x,y" or "Zone/0" -> "Zone"
+	text = text:gsub("/%d+(%s)","%1"):gsub("/%d+$","")
+	-- comma-separated: "Map Name,x,y,dist"
 	_,_,map,x,y,dist = string.find(text,"^(.+),([0-9%.]+),([0-9%.]+),([0-9%.]+)$")
 	if not _ then _,_,x,y,dist = string.find(text,"^([0-9%.]+),([0-9%.]+),([0-9%.]+)$") end
 	if not _ then _,_,map,x,y = string.find(text,"^(.+),([0-9%.]+),([0-9%.]+)$") end
 	if not _ then _,_,x,y = string.find(text,"^([0-9%.]+),([0-9%.]+)$") end
+	-- space-separated: "Map Name x,y,dist" or "Map Name x,y" (retail guide format)
+	if not _ then _,_,map,x,y,dist = string.find(text,"^(.-)%s+([0-9%.]+),([0-9%.]+),([0-9%.]+)$") end
+	if not _ then _,_,map,x,y = string.find(text,"^(.-)%s+([0-9%.]+),([0-9%.]+)$") end
 	if not _ then _,_,dist = string.find(text,"^([0-9%.]+)$") end
 	if not _ then map = text end
-	
+
 	x = tonumber(x)
 	y = tonumber(y)
 --	if x then x=x/100 end
@@ -63,36 +72,11 @@ end
 local function ParsePathPoints(params)
 	local points = {}
 	if not params or params=="" then return points end
-	local i = 1
-	local len = #params
-	while i<=len do
-		local tail = params:sub(i)
-		local consumed = false
-
-		local a,b,x,y,_,dist = tail:find("^%s*([0-9%.]+)%s*,%s*([0-9%.]+)%s*(,%s*([0-9%.]+))?")
-		if a then
-			tinsert(points,{map=nil,x=tonumber(x),y=tonumber(y),dist=tonumber(dist) or 0.2})
-			i = i + b
-			consumed = true
-		end
-
-		if not consumed then
-			local ma,mb,map,mx,my,_,mdist = tail:find("^%s*([^,]+)%s*,%s*([0-9%.]+)%s*,%s*([0-9%.]+)%s*(,%s*([0-9%.]+))?")
-			if ma then
-				map = map and map:gsub("^%s+",""):gsub("%s+$","")
-				tinsert(points,{map=map,x=tonumber(mx),y=tonumber(my),dist=tonumber(mdist) or 0.2})
-				i = i + mb
-				consumed = true
-			end
-		end
-
-		if not consumed then
-			local na,nb = tail:find("^%s*[^%s]+")
-			if na then
-				i = i + nb
-			else
-				break
-			end
+	-- Extract all x,y coordinate pairs using gmatch (handles any separator: tabs, spaces, or none)
+	for x, y in params:gmatch("(%d+%.%d+)%s*,%s*(%d+%.%d+)") do
+		local nx, ny = tonumber(x), tonumber(y)
+		if nx and ny and nx <= 100 and ny <= 100 then
+			tinsert(points, {map=nil, x=nx, y=ny, dist=0.2})
 		end
 	end
 	return points
@@ -268,6 +252,23 @@ ZGV.ConditionEnv = {
 		local s = ZGV:GetSkill(skill)
 		return (s and (s.max or s.level)) or 0
 	end,
+	-- Retail condition functions
+	subzone = function(name)
+		return GetSubZoneText() == name or GetMinimapZoneText() == name
+	end,
+	raceclass = function(rc)
+		local _, pclass = UnitClass("player")
+		local _, prace = UnitRace("player")
+		return pclass == rc or prace == rc
+	end,
+	havequest = function(id)
+		local numEntries = GetNumQuestLogEntries()
+		for i = 1, numEntries do
+			local _, _, _, _, isHeader, _, _, questId = GetQuestLogTitle(i)
+			if not isHeader and questId == id then return true end
+		end
+		return false
+	end,
 }
 
 local function MakeCondition(cond,forcebool)
@@ -413,16 +414,20 @@ local function MergeMultilinePathBlocks(text)
 			local merged = line
 			local j = i + 1
 			while j<=#lines do
-				local t = lines[j]:gsub("^%s+",""):gsub("%s+$","")
+				local raw_t = lines[j]
+				local t = raw_t:gsub("^%s+",""):gsub("%s+$",""):gsub("\r","")
 				if t=="" then break end
-				if t:match("^[%.']") or t:match("^|") or t:match("^step%s") or t:match("^#") then break end
+				if t:match("^[%.']") or t:match("^|") or t:match("^step") or t:match("^#") then break end
+				-- Break on lines that are their own path/loop/route commands
+				local is_path_cmd = t:match("^path%s") or t:match("^path$") or t:match("^loop%s") or t:match("^loop$") or t:match("^route%s") or t:match("^route$")
+				if is_path_cmd then break end
 				-- Continuation row: coordinate rows like:
 				-- "x,y;" / "map,x,y;" / optional dist / optional per-point "|tip ...",
 				-- with optional trailing ";".
 				local looks_coord_row = t:match("^[^,;]+,%s*[0-9%.]+%s*,%s*[0-9%.]+")
 					or t:match("^[0-9%.]+%s*,%s*[0-9%.]+")
 				if looks_coord_row then
-					merged = merged .. t
+					merged = merged .. " " .. t
 					j = j + 1
 				else
 					break
@@ -489,11 +494,15 @@ function me:ParseEntry(text)
 		--if st then line=line:sub(1,st-1) end
 		-- not really faster
 		line = line:gsub("//.*$","")
+		-- Skip comment lines (retail guides use -- for comments inside guide text)
+		if line:match("^%-%-") then line="" end
 
 		local indent
 		indent,line = line:match("^(%.*)(.*)")
 
 		line = line:gsub("^%* *","")
+		-- Strip retail italic markers: _text_ -> text
+		line = line:gsub("_([^_]+)_","%1")
 
 		line = line .. "|"
 		local goal={}
@@ -541,6 +550,8 @@ function me:ParseEntry(text)
 
 			local cmd,params = chunk:match("([^%s]*)%s?(.*)")
 			if cmd and cmd~="" then
+				-- Normalize command to lowercase for retail guide compatibility
+				cmd = cmd:lower()
 				-- Be resilient to accidental dotted command tokens in chunks,
 				-- e.g. ".route"/"..route" after line edits.
 				cmd = cmd:gsub("^%.+","")
@@ -603,6 +614,8 @@ function me:ParseEntry(text)
 					for _,g in ipairs(generated_goals) do g.title=params end
 				end
 			elseif cmd=="map" then
+				-- Strip floor suffix (e.g. "Elwynn Forest/0" -> "Elwynn Forest")
+				params = params:gsub("/%d+$","")
 				if BZL[params] then params=BZL[params] end
 				if step then step.map = params end
 				prevmap = params
@@ -690,7 +703,7 @@ function me:ParseEntry(text)
 				else
 					points = ParsePathPoints(params)
 				end
-				if #points>0 then
+					if #points>0 then
 					generated_goals = {}
 					local defaultdist = 0.2
 					if cmd=="route" or cmd=="loop" then
@@ -710,7 +723,7 @@ function me:ParseEntry(text)
 					-- driven by step reset logic (for example via |until ...).
 				end
 
-			elseif cmd=="kill" or cmd=="get" or cmd=="collect" or cmd=="goal" or cmd=="buy" then
+			elseif cmd=="kill" or cmd=="get" or cmd=="collect" or cmd=="goldcollect" or cmd=="goal" or cmd=="buy" then
 				goal.action = goal.action or cmd
 
 				-- first, extract the count
@@ -776,15 +789,30 @@ function me:ParseEntry(text)
 					
 					tinsert(goal.mobs,{name=nm,id=id,pl=plural and true or false})
 				end
-			elseif cmd=="complete" then --unused
-				goal.action = goal.action or cmd
-				goal.quest,goal.questid,goal.objnum = self:ParseID(params)
-				if not goal.quest and not goal.questid then return nil,"no quest parameter",linecount,chunk end
+			elseif cmd=="complete" then
+				-- Retail uses |complete with conditions like subzone("Name") or quest IDs
+				local fun,err = MakeCondition(params,true)
+				if fun then
+					goal.action = goal.action or "condition"
+					goal.condition_complete_raw = params
+					goal.condition_complete = fun
+				else
+					-- Fallback: try as quest ID
+					goal.action = goal.action or cmd
+					goal.quest,goal.questid,goal.objnum = self:ParseID(params)
+				end
 			elseif cmd=="ding" then
 				goal.action = goal.action or cmd
-				goal.level = tonumber(params)
+				-- Retail format: "ding level,xp" (e.g. "ding 24,19250")
+				local dlevel, dxp = params:match("^(%d+)%s*,%s*(%d+)$")
+				if dlevel then
+					goal.level = tonumber(dlevel)
+					goal.xp = tonumber(dxp)
+				else
+					goal.level = tonumber(params)
+				end
 				if not goal.level then return nil,"'ding': invalid level value",linecount,chunk end
-				prevlevel = tonumber(params)
+				prevlevel = goal.level
 			elseif cmd=="equipped" then
 				goal.action = goal.action or cmd
 				local slot,item = params:match("^([a-zA-Z]+) (.*)")
@@ -826,7 +854,7 @@ function me:ParseEntry(text)
 				goal.skill,goal.skilllevel = params:match("^(.+),([0-9]+)$")
 				goal.skilllevel = tonumber(goal.skilllevel)
 				if not goal.skill then return nil,"'skill*': no skill found",linecount,chunk end
-			elseif cmd=="learn" then
+			elseif cmd=="learn" and params and params:find("##") then
 				goal.action = goal.action or cmd
 				goal.recipe,goal.recipeid = self:ParseID(params)
 				if not goal.recipeid then return nil,"'learn': no recipe found",linecount,chunk end
@@ -847,6 +875,40 @@ function me:ParseEntry(text)
 				goal.action = goal.action or cmd
 			elseif cmd=="outvehicle" then
 				goal.action = goal.action or cmd
+			elseif cmd=="ontaxi" then
+				goal.action = goal.action or "goto"
+				goal.ontaxi = true
+				if params and params~="" then
+					local map,x,y,dist = self:ParseMapXYDist(params)
+					if BZL[map] then map=BZL[map] end
+					goal.map = map or goal.map or step.map or prevmap
+					goal.x = x or goal.x
+					goal.y = y or goal.y
+					goal.dist = dist or goal.dist
+					if goal.map then step.map = goal.map  prevmap = goal.map end
+				end
+			elseif cmd=="offtaxi" then
+				goal.action = goal.action or "goto"
+				goal.offtaxi = true
+				if params and params~="" then
+					local map,x,y,dist = self:ParseMapXYDist(params)
+					if BZL[map] then map=BZL[map] end
+					goal.map = map or goal.map or step.map or prevmap
+					goal.x = x or goal.x
+					goal.y = y or goal.y
+					goal.dist = dist or goal.dist
+					if goal.map then step.map = goal.map  prevmap = goal.map end
+				end
+			elseif cmd=="click" then
+				goal.action = goal.action or "goal"
+				local name,nid = self:ParseID(params:gsub("%+$",""))
+				goal.target = name
+				goal.targetid = nid
+				goal.text = goal.text or ("Click " .. (name or params))
+			elseif cmd=="clicknpc" then
+				goal.action = goal.action or "talk"
+				goal.npc, goal.npcid = self:ParseID(params:gsub("%+$",""))
+				goal.text = goal.text or ("Click " .. (goal.npc or params))
 			elseif cmd=="condition" then
 				goal.action = goal.action or cmd
 				local fun,err = MakeCondition(params,false)
@@ -861,6 +923,16 @@ function me:ParseEntry(text)
 
 			-- clickable icon displayers
 
+			elseif cmd=="trash" then
+				-- Retail: destroy/trash an item. Complete when item count reaches 0.
+				goal.action = goal.action or "trash"
+				local name, id = self:ParseID(params:gsub("%+$",""))
+				goal.target = name
+				goal.targetid = id
+				goal.text = goal.text or ("Destroy " .. (name or params))
+			elseif cmd=="walk" then
+				-- Retail: walk modifier (just a hint, no action needed)
+				-- ignored
 			elseif cmd=="cast" then
 				goal.action = goal.action or cmd
 				goal.castspell,goal.castspellid = self:ParseID(params)
@@ -882,18 +954,30 @@ function me:ParseEntry(text)
 			elseif cmd=="only" then
 				local cond = params:match("^if%s+(.*)$")
 				if cond then
-					-- condition match
+					-- condition match - try as Lua expression first
 					local fun,err = MakeCondition(cond,true)
-					if not fun then return nil,err,linecount,chunk end
-					if generated_goals and chunkcount>1 then
-						for _,g in ipairs(generated_goals) do
-							g.condition_visible_raw=cond
-							g.condition_visible=fun
+					if fun then
+						if generated_goals and chunkcount>1 then
+							for _,g in ipairs(generated_goals) do
+								g.condition_visible_raw=cond
+								g.condition_visible=fun
+							end
+						else
+							local subject = goal  if chunkcount==1 then subject=step end
+							subject.condition_visible_raw=cond
+							subject.condition_visible=fun
 						end
 					else
-						local subject = goal  if chunkcount==1 then subject=step end
-						subject.condition_visible_raw=cond
-						subject.condition_visible=fun
+						-- MakeCondition failed - treat as race/class match (e.g. "only if Draenei Hunter")
+						local rcparams = cond:gsub("%s+",",") -- "Draenei Hunter" -> "Draenei,Hunter"
+						if goal.action or goal.text or chunkcount>1 then
+							if not ZGV:RaceClassMatch(split(rcparams,",")) then
+								goal={}
+								break
+							end
+						else
+							step.requirement=split(rcparams,",")
+						end
 					end
 				else
 					-- race/class match
@@ -1094,7 +1178,7 @@ function me:ParseEntry(text)
 
 				if goal.x then goal.map = prevmap end
 
-				goal.text=(cmd=="'") and params or chunk
+				goal.text=(cmd=="'" or goal.x) and params or chunk
 			end
 
 			chunkcount=chunkcount+1
@@ -1144,7 +1228,9 @@ function me:ParseEntry(text)
 			step.goals[#step.goals+1] = parsedgoal
 
 			if (parsedgoal.action=="get" or parsedgoal.action=="kill" or parsedgoal.action=="goal") and not parsedgoal.questid and not parsedgoal.force_nocomplete then
-				return nil,"Objective has no quest ID!",linecount,line
+				-- Allow kill/get without quest ID (farming guides, gold guides).
+				-- Mark as no-complete so they don't try to track quest progress.
+				parsedgoal.force_nocomplete = true
 			end
 			return true
 		end

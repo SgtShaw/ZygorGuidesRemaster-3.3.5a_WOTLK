@@ -47,6 +47,875 @@ local DIR = "Interface\\AddOns\\"..(addonName or "ZygorGuidesViewer")
 ZGV.DIR = DIR
 local SKINDIR = ""
 
+-- GetItemQualityColor polyfill: 3.3.5a returns (r,g,b) but later versions return (r,g,b,hex)
+do
+	local origGetItemQualityColor = GetItemQualityColor
+	GetItemQualityColor = function(quality)
+		local r, g, b = origGetItemQualityColor(quality)
+		local hex = format("ff%02x%02x%02x", (r or 1)*255, (g or 1)*255, (b or 1)*255)
+		return r, g, b, hex
+	end
+end
+
+-- API polyfills for 3.3.5a (methods added in later WoW versions)
+do
+	local texMeta = getmetatable(UIParent:CreateTexture()).__index
+	if texMeta and not texMeta.SetColorTexture then
+		texMeta.SetColorTexture = function(self, r, g, b, a)
+			self:SetTexture(r, g, b, a)
+		end
+	end
+	local frameMeta = getmetatable(UIParent).__index
+	if frameMeta and not frameMeta.SetClipsChildren then
+		frameMeta.SetClipsChildren = function() end -- noop
+	end
+end
+
+-- math.round polyfill (not in Lua 5.1)
+if not math.round then
+	math.round = function(n) return math.floor(n + 0.5) end
+end
+
+-- Gold Guide compatibility shims (inline since external files may not load)
+ZGV.Gold = {}
+function ZGV:GetItemInfo(itemID) return GetItemInfo(itemID) end
+ZGV.Font = STANDARD_TEXT_FONT
+ZGV.FontBold = STANDARD_TEXT_FONT
+ZGV.IMAGESDIR = DIR .. "\\Skins"
+ZGV.F = {}
+ZGV._messages = {}
+function ZGV:AddMessageHandler(msg, handler)
+	if not self._messages[msg] then self._messages[msg] = {} end
+	table.insert(self._messages[msg], handler)
+end
+function ZGV:SendMessage(msg, ...)
+	if self._messages and self._messages[msg] then
+		for _, handler in ipairs(self._messages[msg]) do handler(...) end
+	end
+end
+function ZGV:AddEventHandler(event, handler)
+	if self.RegisterEvent then self:RegisterEvent(event, handler) end
+end
+function ZGV.GetMoneyString(copper, colorize)
+	if not copper or copper == 0 then return "0" end
+	local g = math.floor(copper / 10000)
+	local s = math.floor((copper % 10000) / 100)
+	local c = copper % 100
+	local r = ""
+	if g > 0 then r = r .. g .. "g " end
+	if s > 0 or g > 0 then r = r .. s .. "s " end
+	r = r .. c .. "c"
+	return r
+end
+function ZGV.HTMLColor(hex)
+	if not hex then return 1,1,1,1 end
+	hex = hex:gsub("^#","")
+	local r = tonumber(hex:sub(1,2), 16) or 255
+	local g = tonumber(hex:sub(3,4), 16) or 255
+	local b = tonumber(hex:sub(5,6), 16) or 255
+	local a = #hex >= 8 and (tonumber(hex:sub(7,8), 16) or 255) or 255
+	return r/255, g/255, b/255, a/255
+end
+ZGV.F.HTMLColor = ZGV.HTMLColor
+ZGV.F.AssignButtonTexture = function(button, texture, num, total)
+	if not button or not texture then return end
+	if total and total > 0 and num then
+		local l, r = (num-1)/total, num/total
+		-- Use CreateTextureWithCoords (3.3.5a compatible - creates texture object directly)
+		button:SetNormalTexture(CreateTextureWithCoords(button, texture, l, r, 0, 0.25))
+		button:SetPushedTexture(CreateTextureWithCoords(button, texture, l, r, 0.25, 0.5))
+		button:SetHighlightTexture(CreateTextureWithCoords(button, texture, l, r, 0.5, 0.75))
+	else
+		button:SetNormalTexture(texture)
+	end
+end
+function ZGV.CreateFrameWithBG(frameType, name, parent, template)
+	local f = CreateFrame(frameType or "Frame", name, parent or UIParent, template)
+	f:SetBackdrop({bgFile="Interface\\Buttons\\white8x8", edgeFile="Interface\\Buttons\\white8x8", tile=true, tileSize=16, edgeSize=1, insets={left=1,right=1,top=1,bottom=1}})
+	f:SetBackdropColor(0.1,0.1,0.1,0.9)
+	f:SetBackdropBorderColor(0.3,0.3,0.3,0.9)
+	return f
+end
+function ZGV:GetPlayerPreciseLevel() return UnitLevel("player") or 1 end
+if not ZGV.ShowDump then function ZGV:ShowDump(t,title) print((title or "Dump")..": "..tostring(t):sub(1,500)) end end
+if not ZGV.RefreshOptions then function ZGV:RefreshOptions() end end
+if not ZGV.Professions then ZGV.Professions = {} end
+if not ZGV.Professions.GetSkill then
+	ZGV.Professions.GetSkill = function(self, name)
+		return {level = 0, max = 0, skillID = 0, parentskillID = 0, name = name or ""}
+	end
+end
+if not ZGV.Professions.AllRecipes then ZGV.Professions.AllRecipes = {} end
+if not ZGV.Professions.tradeskills then ZGV.Professions.tradeskills = {} end
+if not ZGV.CacheSkills then function ZGV:CacheSkills() end end
+if not ZGV.NotificationCenter then ZGV.NotificationCenter = {AddNotification=function() end} end
+if not ZGV.GuideMenu then
+	ZGV.GuideMenu = {
+		Show = function(self, section)
+			if ZGV.ToggleGuideManagerFrame then
+				ZGV:ToggleGuideManagerFrame(section or "home")
+			end
+		end,
+		Hide = function() end,
+	}
+end
+-- ItemScore infrastructure shims for 3.3.5a
+-- LE_ITEM_CLASS constants (may not exist in 3.3.5a)
+if not LE_ITEM_CLASS_ARMOR then LE_ITEM_CLASS_ARMOR = 4 end
+if not LE_ITEM_CLASS_WEAPON then LE_ITEM_CLASS_WEAPON = 2 end
+
+-- GetMaxPlayerLevel (3.3.5a: always 80)
+if not GetMaxPlayerLevel then
+	GetMaxPlayerLevel = function() return 80 end
+end
+
+-- GetDetailedItemLevelInfo shim (3.3.5a: use GetItemInfo)
+if not GetDetailedItemLevelInfo then
+	GetDetailedItemLevelInfo = function(itemlink)
+		local _,_,_,itemLevel = GetItemInfo(itemlink)
+		return itemLevel, false, itemLevel
+	end
+end
+
+-- GetItemUniqueness shim (3.3.5a: not available, return nil)
+if not GetItemUniqueness then
+	GetItemUniqueness = function(itemid) return nil, nil end
+end
+
+-- GetClassInfo shim (3.3.5a: not available as global)
+if not GetClassInfo then
+	local classInfoCache = {}
+	GetClassInfo = function(classID)
+		if classInfoCache[classID] then return unpack(classInfoCache[classID]) end
+		-- Build from FillLocalizedClassList if available, or hardcode
+		local classes = {"WARRIOR","PALADIN","HUNTER","ROGUE","PRIEST","DEATHKNIGHT","SHAMAN","MAGE","WARLOCK","DRUID"}
+		local names = {LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE["WARRIOR"] or "Warrior",
+			LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE["PALADIN"] or "Paladin",
+			LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE["HUNTER"] or "Hunter",
+			LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE["ROGUE"] or "Rogue",
+			LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE["PRIEST"] or "Priest",
+			LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE["DEATHKNIGHT"] or "Death Knight",
+			LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE["SHAMAN"] or "Shaman",
+			LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE["MAGE"] or "Mage",
+			LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE["WARLOCK"] or "Warlock",
+			LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE["DRUID"] or "Druid"}
+		if classID and classID >= 1 and classID <= 10 then
+			classInfoCache[classID] = {names[classID], classes[classID], classID}
+			return names[classID], classes[classID], classID
+		end
+		return nil, nil, nil
+	end
+end
+
+-- ExplodeString: split string by delimiter
+if not ZGV.ExplodeString then
+	function ZGV.ExplodeString(delimiter, str)
+		local result = {}
+		for match in (str .. delimiter):gmatch("(.-)" .. delimiter:gsub("([%(%)%.%%%+%-%*%?%[%]%^%$])", "%%%1")) do
+			table.insert(result, match)
+		end
+		return result
+	end
+end
+
+-- ClassToNumber: map class tag to numeric ID
+if not ZGV.ClassToNumber then
+	ZGV.ClassToNumber = {
+		WARRIOR = 1, PALADIN = 2, HUNTER = 3, ROGUE = 4, PRIEST = 5,
+		DEATHKNIGHT = 6, SHAMAN = 7, MAGE = 8, WARLOCK = 9, DRUID = 10,
+	}
+end
+
+-- SpecByNumber: map class tag + spec index to spec name
+if not ZGV.SpecByNumber then
+	ZGV.SpecByNumber = {
+		WARRIOR = {[1]="Arms", [2]="Fury", [3]="Prot"},
+		PALADIN = {[1]="Holy", [2]="Protection", [3]="Retribution"},
+		HUNTER = {[1]="Beast Mastery", [2]="Marksmanship", [3]="Survival"},
+		ROGUE = {[1]="Assassination", [2]="Combat", [3]="Subtlety"},
+		PRIEST = {[1]="Discipline", [2]="Holy", [3]="Shadow"},
+		DEATHKNIGHT = {[1]="Blood", [2]="Frost", [3]="Unholy"},
+		SHAMAN = {[1]="Elemental", [2]="Enhancement", [3]="Restoration"},
+		MAGE = {[1]="Arcane", [2]="Fire", [3]="Frost"},
+		WARLOCK = {[1]="Affliction", [2]="Demonology", [3]="Destruction"},
+		DRUID = {[1]="Balance", [2]="Feral DPS", [3]="Feral TANK", [4]="Restoration"},
+	}
+end
+
+-- UpdateCentral: simple handler queue processed each frame
+if not ZGV.UpdateCentral then
+	ZGV.UpdateCentral = {
+		handlers = {},
+		AddHandler = function(self, handler)
+			table.insert(self.handlers, handler)
+		end,
+	}
+	-- Create a frame that runs handlers each frame
+	local ucFrame = CreateFrame("Frame")
+	ucFrame:SetScript("OnUpdate", function()
+		for _, handler in ipairs(ZGV.UpdateCentral.handlers) do
+			handler()
+		end
+	end)
+end
+
+-- PopupHandler: simplified popup system for ItemScore
+if not ZGV.PopupHandler then
+	ZGV.PopupHandler = {
+		NewPopup = function(self, name, popupType, style)
+			local f = ZGV.CreateFrameWithBG("Frame", name, UIParent)
+			f:SetFrameStrata("DIALOG")
+			f:SetWidth(300)
+			f:SetHeight(200)
+			f:SetPoint("CENTER")
+			f:EnableMouse(true)
+			f:SetMovable(true)
+			f:RegisterForDrag("LeftButton")
+			f:SetScript("OnDragStart", f.StartMoving)
+			f:SetScript("OnDragStop", f.StopMovingOrSizing)
+			f:Hide()
+
+			-- Logo (hidden by default)
+			f.logo = f:CreateTexture()
+			f.logo:SetSize(1,1)
+			f.logo:SetPoint("TOP", f, "TOP", 0, -5)
+			f.logo:Hide()
+
+			-- Title/text
+			f.text = f:CreateFontString(nil, "OVERLAY")
+			f.text:SetFont(ZGV.Font, 13)
+			f.text:SetWidth(f:GetWidth() - 20)
+			f.text:SetPoint("TOP", f.logo, "BOTTOM", 0, -5)
+			f.text:SetJustifyH("CENTER")
+
+			-- Text2 for secondary text
+			f.text2 = f:CreateFontString(nil, "OVERLAY")
+			f.text2:SetFont(ZGV.Font, 11)
+			f.text2:SetWidth(f:GetWidth() - 20)
+			f.text2:SetJustifyH("CENTER")
+
+			-- Accept button
+			f.acceptbutton = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
+			f.acceptbutton:SetSize(100, 22)
+			f.acceptbutton:SetText((L and L["popup_accept"]) or "Accept")
+			f.acceptbutton:SetScript("OnClick", function() if f.OnAccept then f:OnAccept() end f:Hide() end)
+
+			-- Decline button
+			f.declinebutton = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
+			f.declinebutton:SetSize(100, 22)
+			f.declinebutton:SetText((L and L["popup_decline"]) or "Decline")
+			f.declinebutton:SetScript("OnClick", function() if f.OnDecline then f:OnDecline() end f:Hide() end)
+
+			-- Position buttons
+			f.acceptbutton:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 10, 10)
+			f.declinebutton:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -10, 10)
+
+			-- SetText method
+			function f:SetText(t1, t2)
+				if self.text then self.text:SetText(t1 or "") end
+				if self.text2 then self.text2:SetText(t2 or "") end
+			end
+
+			-- Minimize stub
+			f.private = {
+				Minimize = function() end,
+			}
+
+			-- AdjustSize stub
+			if not f.AdjustSize then
+				f.AdjustSize = function(self)
+					-- Auto-resize based on content
+				end
+			end
+
+			return f
+		end,
+		GetNCTextureInfo = function(self, name)
+			return "Interface\\Icons\\INV_Misc_QuestionMark", {0,1,0,1}
+		end,
+	}
+end
+
+-- NotificationCenter: upgrade stub to support ItemScore
+if not ZGV.NotificationCenter.AddEntry then
+	ZGV.NotificationCenter.AddEntry = function(self, name, title, text, ...) end
+	ZGV.NotificationCenter.RemoveEntry = function(self, name) end
+	ZGV.NotificationCenter.RemoveButton = function(self, name) end
+	ZGV.NotificationCenter.EntryExists = function(self, name) return false end
+	ZGV.NotificationCenter.GetTooltipPosition = function(self) return "ANCHOR_CURSOR", 0, 0 end
+end
+
+-- IsPlayerInCombat shim
+if not ZGV.IsPlayerInCombat then
+	function ZGV:IsPlayerInCombat()
+		return UnitAffectingCombat("player")
+	end
+end
+
+-- C_QuestLog shim for 3.3.5a
+if not C_QuestLog then
+	C_QuestLog = {}
+end
+if not C_QuestLog.IsQuestFlaggedCompleted then
+	C_QuestLog.IsQuestFlaggedCompleted = function(questID)
+		return IsQuestFlaggedCompleted and IsQuestFlaggedCompleted(questID) or false
+	end
+end
+if not C_QuestLog.IsOnQuest then
+	C_QuestLog.IsOnQuest = function(questID)
+		-- Check quest log for this quest
+		for i = 1, GetNumQuestLogEntries() do
+			local _, _, _, _, _, _, _, questLogQuestID = GetQuestLogTitle(i)
+			if questLogQuestID == questID then return true end
+		end
+		return false
+	end
+end
+
+-- Dungeons table is created by Dungeons.lua, Data-WOTLK/Dungeons.lua provides the data
+
+-- Stubs for retail systems not present in RM
+do
+	-- Helper: create a functional icon object that assigns WoW textures to buttons
+	local function MakeIcon(texture, l, r, t, b)
+		return {
+			texcoord = {l or 0, r or 1, t or 0, b or 1},
+			texture = texture,
+			AssignToButton = function(self, button)
+				if not button then return end
+				if self.texture then
+					button:SetNormalTexture(self.texture)
+					local nt = button:GetNormalTexture()
+					if nt and self.texcoord then nt:SetTexCoord(unpack(self.texcoord)) end
+				end
+			end,
+			AssignToTexture = function(self, tex)
+				if not tex then return end
+				if self.texture then
+					tex:SetTexture(self.texture)
+					if self.texcoord then tex:SetTexCoord(unpack(self.texcoord)) end
+				end
+			end,
+		}
+	end
+
+	-- Retail titlebuttons: Nx4 grid, NO padding
+	-- Same texture used by both ButtonSets and F.AssignButtonTexture
+	-- Column count = 32 (confirmed by Auctiontools calls: AssignButtonTexture(btn,tex,6,32))
+	local TB = DIR.."\\Skins\\gold-titlebuttons"
+	local TB_COLS = 64
+	local function TBIcon(n)
+		local l, r = (n-1)/TB_COLS, n/TB_COLS
+		return {
+			texture = TB,
+			texcoord = {l, r, 0, 0.25},
+			AssignToButton = function(self, button)
+				if not button then return end
+				button:SetNormalTexture(TB)
+				button:SetPushedTexture(TB)
+				button:SetHighlightTexture(TB)
+				local nt = button:GetNormalTexture()
+				local pt = button:GetPushedTexture()
+				local ht = button:GetHighlightTexture()
+				if nt then nt:SetTexCoord(l, r, 0, 0.25) end
+				if pt then pt:SetTexCoord(l, r, 0.25, 0.5) end
+				if ht then ht:SetTexCoord(l, r, 0.5, 0.75) ht:SetBlendMode("ADD") end
+			end,
+			AssignToTexture = function(self, tex)
+				if not tex then return end
+				tex:SetTexture(TB)
+				tex:SetTexCoord(l, r, 0, 0.25)
+			end,
+		}
+	end
+
+	local defaultIcon = MakeIcon("Interface\\Icons\\INV_Misc_QuestionMark")
+
+	-- Icon positions confirmed from Auctiontools-View.lua: close=6, settings=5, info=18, goldguide=22
+	local titleButtons = {
+		QUESTION = TBIcon(1), NOTIFICATIONS = TBIcon(2),
+		LOCK_OFF = TBIcon(3), LOCK_ON = TBIcon(4),
+		SETTINGS = TBIcon(5), CLOSE = TBIcon(6),
+		DOTS = TBIcon(7), FRAME = TBIcon(8),
+		STEP_PREV = TBIcon(9), STEP_NEXT = TBIcon(10),
+		LOADGUIDE = TBIcon(11), QUESTCLEANUP = TBIcon(12),
+		MORETABS = TBIcon(13), STEPREPORT = TBIcon(14),
+		BUGREPORT = TBIcon(15), LIST = TBIcon(16),
+		BURGER = TBIcon(17), INFO = TBIcon(18),
+		DROPDOWN = TBIcon(19), SMALLX = TBIcon(20),
+		INLINETRAVEL = TBIcon(21), GOLDGUIDE = TBIcon(22),
+		ADDGUIDE = TBIcon(23), SHARE = TBIcon(24),
+		MAPMARKER = TBIcon(25), CHANGEGUIDE = TBIcon(26),
+		RIGHTRIGHT = TBIcon(27), PLUS = TBIcon(28),
+		MINUS = TBIcon(29), RELOAD = TBIcon(30),
+		FLASH = TBIcon(31), SEARCH = TBIcon(32),
+		MINIMIZE = TBIcon(6), GEAR = TBIcon(5), LOAD = TBIcon(11),
+	}
+
+	-- GoldGuideIcons spritesheet: 8 columns x 2 rows
+	local GGI = DIR.."\\Skins\\goldguideicons"
+	local function GGIcon(col, row)
+		return MakeIcon(GGI, (col-1)/8, col/8, (row-1)/2, row/2)
+	end
+	local goldGuideIcons = {
+		GOLD = GGIcon(1,1), FARM = GGIcon(2,1), FARMING = GGIcon(2,1),
+		GATHER = GGIcon(3,1), GATHERING = GGIcon(3,1),
+		CRAFT = GGIcon(4,1), CRAFTING = GGIcon(4,1),
+		AUCTION = GGIcon(5,1), AUCTIONS = GGIcon(5,1),
+		QUEST = GGIcon(6,1), BASKET = GGIcon(7,1), SHOVEL = GGIcon(8,1),
+	}
+	-- Price status icons: goldpricestatusicons.tga is 16 columns x 1 row
+	local statusTex = DIR.."\\Skins\\goldpricestatusicons"
+	local function PriceIcon(n)
+		return MakeIcon(statusTex, (n-1)/16, n/16, 0, 1)
+	end
+	local priceIcons = setmetatable({
+		UP1      = PriceIcon(1),
+		UP2      = PriceIcon(2),
+		UP3      = PriceIcon(3),
+		DOWN1    = PriceIcon(4),
+		DOWN2    = PriceIcon(5),
+		DOWN3    = PriceIcon(6),
+		BULLET   = PriceIcon(7),
+		CROSSH   = PriceIcon(8),
+		NOPE     = PriceIcon(9),
+		QUESTION = PriceIcon(10),
+		DELETE   = PriceIcon(11),
+		ADD      = PriceIcon(12),
+	}, {__index = function() return defaultIcon end})
+
+	if not ZGV.ButtonSets then
+		ZGV.ButtonSets = {
+			TitleButtons = setmetatable(titleButtons, {__index = function() return defaultIcon end}),
+		}
+		setmetatable(ZGV.ButtonSets, {__index = function() return setmetatable({}, {__index = function() return defaultIcon end}) end})
+	end
+	if not ZGV.IconSets then
+		ZGV.IconSets = {
+			Create = function() end,
+			AuctionToolsPriceIcons = priceIcons,
+			GoldGuideIcons = setmetatable(goldGuideIcons, {__index = function() return defaultIcon end}),
+		}
+		setmetatable(ZGV.IconSets, {__index = function() return setmetatable({}, {__index = function() return defaultIcon end}) end})
+	end
+	if not ZGV.GoldGuideIcons then
+		ZGV.GoldGuideIcons = setmetatable(goldGuideIcons, {__index = function() return defaultIcon end})
+	end
+end
+if not ZGV.PetBattle then
+	ZGV.PetBattle = {
+		GetPetFakeIdByLink = function() return nil end,
+		GetPetFallbackId = function(self, id) return id end,
+		GetPetBreedBySlot = function() return nil, nil end,
+	}
+end
+if not ZGV.StackSizes then ZGV.StackSizes = {} end
+ZGV.GuideMenuTier = ZGV.GuideMenuTier or "WLK"
+if not ZGV.ItemLink or type(ZGV.ItemLink) ~= "table" then
+	ZGV.ItemLink = {
+		StripBlizzExtras = function(link) return link end,
+		GetItemID = function(link)
+			if not link then return nil end
+			return tonumber(link:match("item:(%d+)"))
+		end,
+	}
+end
+ZGV.OrderedPairs = function(t)
+	local keys = {} for k in pairs(t) do table.insert(keys,k) end
+	table.sort(keys, function(a,b) if type(a)==type(b) then return a<b end return tostring(a)<tostring(b) end)
+	local i = 0
+	return function() i=i+1 local k=keys[i] if k~=nil then return k,t[k] end end
+end
+ZGV.OrderedPairsCleanFast = ZGV.OrderedPairs
+
+-- Version flags for compatibility with retail code paths
+ZGV.IsClassicWOTLK = true
+ZGV.IsClassic = false
+ZGV.IsClassicTBC = false
+ZGV.IsRetail = false
+
+-- API compatibility shims for retail-only functions
+if not GetItemInfoInstant then
+	GetItemInfoInstant = function(itemID)
+		local name, link, quality, iLevel, reqLevel, class, subclass, maxStack, equipSlot, icon, vendorPrice = GetItemInfo(itemID)
+		return name, link, quality, iLevel, reqLevel, class, subclass
+	end
+end
+if not C_Container then
+	C_Container = {}
+	C_Container.ContainerIDToInventoryID = function(bag)
+		return ContainerIDToInventoryID and ContainerIDToInventoryID(bag) or (19 + bag)
+	end
+	C_Container.GetContainerNumSlots = function(bag)
+		return GetContainerNumSlots and GetContainerNumSlots(bag) or 0
+	end
+	C_Container.GetContainerItemInfo = function(bag, slot)
+		if GetContainerItemInfo then
+			local texture, count, locked, quality, readable, lootable, link = GetContainerItemInfo(bag, slot)
+			return {iconFileID=texture, stackCount=count, isLocked=locked, quality=quality, isReadable=readable, hasLoot=lootable, hyperlink=link}
+		end
+	end
+	C_Container.GetContainerItemLink = function(bag, slot)
+		return GetContainerItemLink and GetContainerItemLink(bag, slot)
+	end
+end
+if not C_PetJournal then
+	C_PetJournal = {}
+	C_PetJournal.GetPetInfoBySpeciesID = function(speciesId)
+		return nil, nil -- pets not available in 3.3.5a
+	end
+end
+
+-- Skin system: registry + helpers
+ZGV.SkinRegistry = {}
+ZGV.SkinOrder = {}
+
+function ZGV:RegisterSkin(id, data)
+	data.id = id
+	self.SkinRegistry[id] = data
+	local found = false
+	for _, v in ipairs(self.SkinOrder) do
+		if v == id then
+			found = true
+			break
+		end
+	end
+	if not found then
+		table.insert(self.SkinOrder, id)
+	end
+end
+
+function ZGV:GetSkin(id)
+	return self.SkinRegistry[id]
+end
+
+function ZGV:GetCurrentSkin()
+	local skinId = self.db and self.db.profile and self.db.profile.skinstyle
+	if not skinId then
+		local oldSkin = self.db and self.db.profile and self.db.profile.skin
+		if oldSkin == "remaster" or not oldSkin then
+			skinId = "remaster"
+		else
+			return nil
+		end
+	end
+	return self.SkinRegistry[skinId]
+end
+
+function ZGV:GetCurrentVariant()
+	local skin = self:GetCurrentSkin()
+	if not skin then return nil end
+	local variantId = self.db and self.db.profile and self.db.profile.skinvariant
+	if not variantId then
+		local rc = self.db and self.db.profile and self.db.profile.remastercolor
+		if rc == "goals" then rc = "goldaccent" end
+		variantId = rc or skin.defaultVariant or "dark"
+	end
+	if skin.variants and skin.variants[variantId] then
+		return variantId
+	end
+	return skin.defaultVariant
+end
+
+function ZGV:GetCurrentTheme()
+	local skin = self:GetCurrentSkin()
+	if not skin or not skin.theme then return nil end
+	local theme = {}
+	for k, v in pairs(skin.theme) do
+		theme[k] = v
+	end
+	local variantId = self:GetCurrentVariant()
+	if variantId and skin.variants and skin.variants[variantId] then
+		local variant = skin.variants[variantId]
+		if variant.themeOverrides then
+			for k, v in pairs(variant.themeOverrides) do
+				theme[k] = v
+			end
+		end
+	end
+	return theme
+end
+
+function ZGV:GetCurrentVariantColors()
+	local skin = self:GetCurrentSkin()
+	if not skin then return {0.9, 0.92, 0.98}, {0.08, 0.09, 0.12} end
+	local variantId = self:GetCurrentVariant()
+	if variantId and skin.variants and skin.variants[variantId] then
+		local v = skin.variants[variantId]
+		return v.text or {0.9, 0.92, 0.98}, v.back or {0.08, 0.09, 0.12}
+	end
+	return {0.9, 0.92, 0.98}, {0.08, 0.09, 0.12}
+end
+
+function ZGV:IsRemasterSkin()
+	local skin = self:GetCurrentSkin()
+	if skin then
+		return skin.useRemasterFrames == true
+	end
+	return self.db and self.db.profile and self.db.profile.skin == "remaster"
+end
+
+function ZGV:BuildSkinDropdownValues()
+	local values = {}
+	for _, skinId in ipairs(self.SkinOrder) do
+		local skin = self.SkinRegistry[skinId]
+		if skin and skin.variants then
+			for varId, varData in pairs(skin.variants) do
+				local key = skinId .. "_" .. varId
+				local label = varData.label or (skin.name .. " " .. varId)
+				values[key] = label
+			end
+		elseif skin then
+			values[skinId] = skin.dropdownLabel or skin.name
+		end
+	end
+	values["legacy_blue"] = "|cff88b3ffBlue|r (legacy)"
+	values["legacy_green"] = "|cff88ff88Green|r (legacy)"
+	values["legacy_orange"] = "|cffffcc66Orange|r (legacy)"
+	values["legacy_violet"] = "|cffff99ffViolet|r (legacy)"
+	return values
+end
+
+function ZGV:ParseSkinDropdownKey(key)
+	if not key then return "remaster", "dark" end
+	if key:match("^legacy_") then
+		local color = key:gsub("^legacy_", "")
+		return "legacy", color
+	end
+	for _, skinId in ipairs(self.SkinOrder) do
+		local prefix = skinId .. "_"
+		if key:sub(1, #prefix) == prefix then
+			local variantId = key:sub(#prefix + 1)
+			return skinId, variantId
+		end
+	end
+	return "remaster", "dark"
+end
+
+function ZGV:GetSkinDropdownKey()
+	local skin = self:GetCurrentSkin()
+	if not skin then
+		local oldSkin = self.db and self.db.profile and self.db.profile.skin or "remaster"
+		if oldSkin ~= "remaster" then
+			return "legacy_" .. oldSkin
+		end
+		return "remaster_dark"
+	end
+	local variantId = self:GetCurrentVariant()
+	if variantId then
+		return skin.id .. "_" .. variantId
+	end
+	return skin.id
+end
+
+function ZGV:ApplySkinFromDropdownKey(key)
+	local skinId, variantId = self:ParseSkinDropdownKey(key)
+	if skinId == "legacy" then
+		self.db.profile.skinstyle = nil
+		self.db.profile.skinvariant = nil
+		self.db.profile.skin = variantId
+		self.db.profile.remastercolor = nil
+		local legacyColors = {
+			blue = {text = {0.7, 0.8, 1.0}, back = {0.08, 0.11, 0.24}},
+			green = {text = {0.5, 1.0, 0.5}, back = {0.09, 0.20, 0.07}},
+			orange = {text = {1.0, 0.8, 0.0}, back = {0.23, 0.11, 0.07}},
+			violet = {text = {0.95, 0.65, 1.0}, back = {0.17, 0.07, 0.20}},
+		}
+		self.db.profile.skincolors = legacyColors[variantId] or legacyColors.blue
+		return false
+	end
+	local skin = self.SkinRegistry[skinId]
+	if not skin then
+		skinId = "remaster"
+		variantId = "dark"
+		skin = self.SkinRegistry[skinId]
+	end
+	self.db.profile.skinstyle = skinId
+	self.db.profile.skinvariant = variantId
+	self.db.profile.skin = "remaster"
+	self.db.profile.remastercolor = variantId
+	if skin and skin.variants and skin.variants[variantId] then
+		local v = skin.variants[variantId]
+		self.db.profile.skincolors = {text = v.text, back = v.back}
+	end
+	return true
+end
+
+-- Register built-in skins
+do
+	local BACKDROP_SIMPLE = {
+		bgFile = "Interface\\Buttons\\white8x8",
+		edgeFile = "Interface\\Buttons\\white8x8",
+		tile = true, tileSize = 16, edgeSize = 1,
+		insets = { left = 1, right = 1, top = 1, bottom = 1 },
+	}
+
+	ZGV:RegisterSkin("remaster", {
+		name = "Remaster",
+		useRemasterFrames = true,
+		theme = {
+			frameBorder    = { 0.18, 0.18, 0.20, 0.92 },
+			frameLight     = { 0.28, 0.28, 0.30, 0.18 },
+			insetBg        = { 0.10, 0.10, 0.11, 0.95 },
+			insetBorder    = { 0.20, 0.20, 0.22, 0.90 },
+			buttonBack     = { 0.13, 0.13, 0.14, 0.95 },
+			buttonHover    = { 0.19, 0.19, 0.21, 0.98 },
+			buttonBorder   = { 0.27, 0.27, 0.30, 0.95 },
+			separator      = { 0.32, 0.32, 0.35, 0.80 },
+			textPrimary    = { 0.86, 0.86, 0.88, 1.00 },
+			textMeta       = { 0.72, 0.72, 0.75, 0.90 },
+		},
+		variants = {
+			dark = {
+				label = "|cffcfd6e8Remaster Dark|r",
+				text = { 0.90, 0.92, 0.98 },
+				back = { 0.08, 0.09, 0.12 },
+			},
+			goldaccent = {
+				label = "|cffebd199Remaster Gold Accent|r",
+				text = { 0.92, 0.80, 0.50 },
+				back = { 0.07, 0.08, 0.10 },
+				themeOverrides = {
+					frameBorder  = { 0.17, 0.15, 0.10, 0.88 },
+					frameLight   = { 0.12, 0.10, 0.07, 0.42 },
+					insetBg      = { 0.05, 0.05, 0.06, 0.97 },
+					insetBorder  = { 0.22, 0.18, 0.10, 0.90 },
+					buttonBack   = { 0.09, 0.08, 0.07, 0.96 },
+					buttonHover  = { 0.22, 0.17, 0.08, 0.98 },
+					buttonBorder = { 0.50, 0.40, 0.18, 0.95 },
+					separator    = { 0.90, 0.74, 0.40, 0.62 },
+					textPrimary  = { 0.92, 0.80, 0.50, 1.00 },
+					textMeta     = { 0.78, 0.70, 0.55, 0.92 },
+				},
+				rootBackOverride = { 0.04, 0.04, 0.05 },
+				headerBgOverride = { 0, 0, 0, 0.58 },
+				toolbarBgOverride = { 0, 0, 0, 0.42 },
+			},
+			blue = {
+				label = "|cff88b3ffRemaster Blue|r",
+				text = { 0.70, 0.80, 1.00 },
+				back = { 0.08, 0.11, 0.24 },
+			},
+			green = {
+				label = "|cff88ff88Remaster Green|r",
+				text = { 0.50, 1.00, 0.50 },
+				back = { 0.09, 0.20, 0.07 },
+			},
+			orange = {
+				label = "|cffffcc66Remaster Orange|r",
+				text = { 1.00, 0.80, 0.00 },
+				back = { 0.23, 0.11, 0.07 },
+			},
+			violet = {
+				label = "|cffff99ffRemaster Violet|r",
+				text = { 0.95, 0.65, 1.00 },
+				back = { 0.17, 0.07, 0.20 },
+			},
+		},
+		defaultVariant = "dark",
+		layout = {
+			headerHeight = 34, toolbarHeight = 28, footerHeight = 14,
+			contentPadding = 10, rootPadding = 6,
+			buttonSize = { 22, 20 }, guideButtonSize = { 70, 20 },
+		},
+		fonts = {
+			title = { file = "\\Skins\\segoeuib.ttf", size = 13, fallback = "\\Skins\\segoeui.ttf" },
+			meta  = { file = "\\Skins\\segoeui.ttf", size = 11 },
+			step  = { file = "\\Skins\\segoeui.ttf", size = 11 },
+		},
+		goalColors = {
+			incomplete  = { r = 0.18, g = 0.20, b = 0.25, a = 0.65 },
+			progressing = { r = 0.18, g = 0.28, b = 0.35, a = 0.75 },
+			complete    = { r = 0.12, g = 0.24, b = 0.20, a = 0.75 },
+			impossible  = { r = 0.18, g = 0.18, b = 0.18, a = 0.60 },
+			aux         = { r = 0.15, g = 0.22, b = 0.32, a = 0.60 },
+			obsolete    = { r = 0.15, g = 0.22, b = 0.32, a = 0.60 },
+			stepAlpha   = 0.2,
+		},
+		progressBar = {
+			bg   = { 1, 1, 1, 0.10 },
+			fill = { 0.28, 0.82, 0.36, 0.98 },
+		},
+		backdrops = {
+			root = BACKDROP_SIMPLE, content = BACKDROP_SIMPLE, button = BACKDROP_SIMPLE,
+		},
+	})
+
+	ZGV:RegisterSkin("retail", {
+		name = "Retail",
+		useRemasterFrames = true,
+		theme = {
+			frameBorder    = { 0.12, 0.12, 0.14, 0.95 },
+			frameLight     = { 0.16, 0.16, 0.18, 0.25 },
+			insetBg        = { 0.06, 0.06, 0.08, 0.97 },
+			insetBorder    = { 0.14, 0.14, 0.16, 0.90 },
+			buttonBack     = { 0.10, 0.10, 0.12, 0.95 },
+			buttonHover    = { 0.18, 0.22, 0.30, 0.98 },
+			buttonBorder   = { 0.20, 0.24, 0.32, 0.95 },
+			separator      = { 0.24, 0.28, 0.36, 0.70 },
+			textPrimary    = { 0.92, 0.92, 0.94, 1.00 },
+			textMeta       = { 0.60, 0.65, 0.72, 0.90 },
+		},
+		variants = {
+			default = {
+				label = "|cff4499ffRetail|r",
+				text = { 0.92, 0.92, 0.94 },
+				back = { 0.04, 0.04, 0.06 },
+			},
+			blue = {
+				label = "|cff3388ffRetail Blue|r",
+				text = { 0.80, 0.88, 1.00 },
+				back = { 0.03, 0.05, 0.10 },
+				themeOverrides = {
+					frameBorder  = { 0.10, 0.14, 0.22, 0.95 },
+					buttonHover  = { 0.14, 0.20, 0.34, 0.98 },
+					buttonBorder = { 0.18, 0.26, 0.42, 0.95 },
+					separator    = { 0.20, 0.30, 0.50, 0.70 },
+				},
+			},
+			dark = {
+				label = "|cff888888Retail Dark|r",
+				text = { 0.82, 0.82, 0.84 },
+				back = { 0.02, 0.02, 0.03 },
+				themeOverrides = {
+					frameBorder  = { 0.08, 0.08, 0.10, 0.98 },
+					frameLight   = { 0.10, 0.10, 0.12, 0.20 },
+					insetBg      = { 0.03, 0.03, 0.04, 0.98 },
+					insetBorder  = { 0.10, 0.10, 0.12, 0.92 },
+					buttonBack   = { 0.06, 0.06, 0.08, 0.96 },
+				},
+			},
+		},
+		defaultVariant = "default",
+		layout = {
+			headerHeight = 36, toolbarHeight = 30, footerHeight = 16,
+			contentPadding = 10, rootPadding = 6,
+			buttonSize = { 24, 22 }, guideButtonSize = { 74, 22 },
+		},
+		fonts = {
+			title = { file = "\\Skins\\segoeuib.ttf", size = 13, fallback = "\\Skins\\segoeui.ttf" },
+			meta  = { file = "\\Skins\\segoeui.ttf", size = 11 },
+			step  = { file = "\\Skins\\segoeui.ttf", size = 11 },
+		},
+		goalColors = {
+			incomplete  = { r = 0.14, g = 0.16, b = 0.22, a = 0.70 },
+			progressing = { r = 0.12, g = 0.22, b = 0.32, a = 0.80 },
+			complete    = { r = 0.10, g = 0.22, b = 0.16, a = 0.80 },
+			impossible  = { r = 0.14, g = 0.14, b = 0.16, a = 0.65 },
+			aux         = { r = 0.12, g = 0.18, b = 0.28, a = 0.65 },
+			obsolete    = { r = 0.12, g = 0.18, b = 0.28, a = 0.65 },
+			stepAlpha   = 0.15,
+		},
+		progressBar = {
+			bg   = { 1, 1, 1, 0.08 },
+			fill = { 0.20, 0.60, 0.90, 0.98 },
+		},
+		backdrops = {
+			root = BACKDROP_SIMPLE, content = BACKDROP_SIMPLE, button = BACKDROP_SIMPLE,
+		},
+	})
+end
+
 ZYGORGUIDESVIEWER_COMMAND = "zygor"
 
 ZYGORGUIDESVIEWERFRAME_TITLE = "ZygorGuidesViewer"
@@ -55,6 +924,61 @@ BINDING_HEADER_ZYGORGUIDES = L["name_plain"]
 BINDING_NAME_ZYGORGUIDES_OPENGUIDE = L["binding_togglewindow"]
 BINDING_NAME_ZYGORGUIDES_PREV = L["binding_prev"]
 BINDING_NAME_ZYGORGUIDES_NEXT = L["binding_next"]
+
+-- Gold Guide slash command
+SLASH_ZYGORGOLD1 = "/zgold"
+SLASH_ZGOLDSTATUS1 = "/zgoldstatus"
+SlashCmdList["ZGOLDSTATUS"] = function()
+	local scanData = ZGV.db and ZGV.db.factionrealm and ZGV.db.factionrealm.gold_scan_data
+	local scanTime = ZGV.db and ZGV.db.factionrealm and ZGV.db.factionrealm.gold_scan_time
+	local trends = ZGV.Gold and ZGV.Gold.servertrends
+	local items = trends and trends.items
+	local scanItems = scanData and scanData[1]
+	local scanItemCount = 0
+	if scanItems then for _ in pairs(scanItems) do scanItemCount = scanItemCount + 1 end end
+	local trendItemCount = 0
+	if items then for _ in pairs(items) do trendItemCount = trendItemCount + 1 end end
+	print("|cffff8800=== Zygor Gold Status ===|r")
+	print("  load_gold: " .. tostring(ZGV.db and ZGV.db.profile and ZGV.db.profile.load_gold))
+	print("  Scan datasets: " .. (scanData and #scanData or "none"))
+	print("  Scan[1] items: " .. scanItemCount)
+	print("  Scan time: " .. (scanTime and scanTime[1] and date("%Y-%m-%d %H:%M", scanTime[1]) or "none"))
+	print("  Trends date: " .. (trends and trends.date and date("%Y-%m-%d %H:%M", trends.date) or "none"))
+	print("  Trend items: " .. trendItemCount)
+	print("  Goldguide initialized: " .. tostring(ZGV.Goldguide ~= nil))
+	print("  Gold.guides_loaded: " .. tostring(ZGV.Gold and ZGV.Gold.guides_loaded))
+	local goldCount = 0
+	local goldTitles = {}
+	for _, guide in ipairs(ZGV.registeredguides) do
+		if guide.type == "GOLD" then
+			goldCount = goldCount + 1
+			if goldCount <= 5 then table.insert(goldTitles, guide.title_short or guide.title) end
+		end
+	end
+	print("  GOLD-type guides: " .. goldCount)
+	if #goldTitles > 0 then print("  First 5: " .. table.concat(goldTitles, ", ")) end
+	local chores = ZGV.Goldguide and ZGV.Goldguide.Chores
+	if chores then
+		print("  Farming chores: " .. #chores.Farming)
+		print("  Gathering chores: " .. #chores.Gathering)
+		print("  Crafting chores: " .. #chores.Crafting)
+		print("  Auction chores: " .. #chores.Auctions)
+	else
+		print("  Chores: not initialized")
+	end
+end
+SlashCmdList["ZYGORGOLD"] = function(msg)
+	if ZGV.db and ZGV.db.profile and not ZGV.db.profile.load_gold then
+		ZGV.db.profile.load_gold = true
+		print("|cffff8800Zygor Gold Guide|r: Enabled! Type /reload then /zgold again.")
+		return
+	end
+	if ZGV.Goldguide and ZGV.Goldguide.ShowWindow then
+		ZGV.Goldguide:ShowWindow()
+	else
+		print("|cffff8800Zygor Gold Guide|r: Not initialized. Try /reload first.")
+	end
+end
 
 local _,_,_,ver = GetBuildInfo()
 local WotLK = (ver>=30000)
@@ -87,6 +1011,43 @@ me.CartographerDatabase = { }
 
 
 me.startups = {}
+
+-- Auto-sell grey items and auto-repair when visiting a merchant
+tinsert(me.startups, {"AutoSellRepair", function(self)
+	local merchantFrame = CreateFrame("Frame")
+	merchantFrame:RegisterEvent("MERCHANT_SHOW")
+	merchantFrame:SetScript("OnEvent", function()
+		-- Auto-sell grey items
+		if ZGV.db.profile.autosellgrey then
+			local totalSold = 0
+			for bag = 0, 4 do
+				for slot = 1, GetContainerNumSlots(bag) do
+					local link = GetContainerItemLink(bag, slot)
+					if link then
+						local _, _, quality, _, _, _, _, _, _, _, vendorPrice = GetItemInfo(link)
+						if quality == 0 and vendorPrice and vendorPrice > 0 then
+							local _, count = GetContainerItemInfo(bag, slot)
+							totalSold = totalSold + (vendorPrice * (count or 1))
+							UseContainerItem(bag, slot)
+						end
+					end
+				end
+			end
+			if totalSold > 0 then
+				ZGV:Print("Sold grey items for " .. ZGV.GetMoneyString(totalSold))
+			end
+		end
+
+		-- Auto-repair
+		if ZGV.db.profile.autorepair and ZGV.db.profile.autorepair > 1 and CanMerchantRepair() then
+			local cost = GetRepairAllCost()
+			if cost > 0 and cost <= GetMoney() then
+				RepairAllItems()
+				ZGV:Print("Repaired all items for " .. ZGV.GetMoneyString(cost))
+			end
+		end
+	end)
+end})
 
 me.StepLimit = 20
 me.stepframes = {}
@@ -548,22 +1509,6 @@ do
 		if goal.target then return AB_SafeName(goal.target) end
 	end
 
-	function me:GetNPCIDByName(name)
-		if not name or name == "" or not ZygorGuidesNPCs then return end
-		local cache = self.npcIdByNameCache
-		if not cache then
-			cache = {}
-			for id, data in pairs(ZygorGuidesNPCs) do
-				local npcName = data and data:match(".|(.-)|")
-				if npcName and npcName ~= "" then
-					cache[strlower(npcName)] = id
-				end
-			end
-			self.npcIdByNameCache = cache
-		end
-		return cache[strlower(name)]
-	end
-
 	function me:ActionButtonCanMark()
 		if InCombatLockdown() or not UnitExists("target") then return false end
 		return true
@@ -658,8 +1603,7 @@ do
 			local target = self:GetGoalActionTargetName(goal)
 			local macrotext = AB_BuildTargetMacro(target, 4)
 			if macrotext then
-				local npcid = goal.npcid or self:GetNPCIDByName(target)
-				return { kind = "talk", type = "macro", macrotext = macrotext, icon = TALK_ICON, target = target, npcid = npcid, marker = 4, tooltip = "talk", signature = "talk:" .. tostring(npcid or target) }
+				return { kind = "talk", type = "macro", macrotext = macrotext, icon = TALK_ICON, target = target, marker = 4, tooltip = "talk", signature = "talk:" .. tostring(goal.npcid or target) }
 			end
 		end
 
@@ -680,8 +1624,7 @@ do
 			local macrotext, candidates = AB_BuildTargetMacroCandidates(target, singular, 8)
 			local canonical = (candidates and candidates[#candidates]) or singular or target
 			if macrotext then
-				local creatureid = goal.targetid or self:GetNPCIDByName(canonical) or self:GetNPCIDByName(singular) or self:GetNPCIDByName(target)
-				return { kind = "kill", type = "macro", macrotext = macrotext, icon = KILL_ICON, target = canonical, creatureid = creatureid, targetaliases = candidates, marker = 8, tooltip = "kill", signature = "kill:" .. tostring(creatureid or canonical) }
+				return { kind = "kill", type = "macro", macrotext = macrotext, icon = KILL_ICON, target = canonical, targetaliases = candidates, marker = 8, tooltip = "kill", signature = "kill:" .. tostring(goal.targetid or canonical) }
 			end
 		end
 
@@ -1010,13 +1953,13 @@ do
 		local backc = self.db.profile.skincolors and self.db.profile.skincolors.back or {0.08, 0.09, 0.12}
 		local backalpha = self.db.profile.backopacity or 0.3
 		local opacitymain = self.db.profile.opacitymain or 1.0
-		local remastercolor = self.db.profile.remastercolor or "dark"
-		local isGoldAccent = (remastercolor == "goldaccent" or remastercolor == "goals")
-		local border = { 0.18, 0.18, 0.20, 0.92 }
-
-		if isGoldAccent then
-			backc = { 0.04, 0.04, 0.05 }
-			border = { 0.17, 0.15, 0.10, 0.88 }
+		local abTheme = ZGV:GetCurrentTheme()
+		local abVariantId = ZGV:GetCurrentVariant()
+		local abSkin = ZGV:GetCurrentSkin()
+		local abVariantData = abSkin and abSkin.variants and abSkin.variants[abVariantId]
+		local border = (abTheme and abTheme.frameBorder) or { 0.18, 0.18, 0.20, 0.92 }
+		if abVariantData and abVariantData.rootBackOverride then
+			backc = abVariantData.rootBackOverride
 		end
 
 		bar:SetAlpha(opacitymain)
@@ -1445,7 +2388,7 @@ function me:EnsureSectionTitleFont()
 		return
 	end
 	local size = 11
-	if self.db and self.db.profile and self.db.profile.skin == "remaster" then
+	if self.db and self.db.profile and self:IsRemasterSkin() then
 		size = 13
 		if safeSetFont(title, ZGV.DIR.."\\Skins\\segoeuib.ttf", size) then
 			return
@@ -1592,7 +2535,7 @@ function me:GetCompactGuideLayoutMetrics()
 
 	if self.db
 	and self.db.profile
-	and self.db.profile.skin == "remaster"
+	and self:IsRemasterSkin()
 	and self.db.profile.displaymode == "guide"
 	and not self.db.profile.showallsteps
 	then
@@ -1633,7 +2576,7 @@ function me:GetGuideProgressAnchorStepFrame()
 end
 
 function me:GetVisibleStepContentHeight(limit)
-	if self.db and self.db.profile and self.db.profile.skin == "remaster" and not self.db.profile.showallsteps then
+	if self.db and self.db.profile and self:IsRemasterSkin() and not self.db.profile.showallsteps then
 		local currentLimit = self.db.profile.showcountsteps or 1
 		if currentLimit < 1 then currentLimit = 1 end
 		if (not limit) or limit == currentLimit or limit == self.StepLimit then
@@ -1671,7 +2614,7 @@ end
 
 function me:GetGuideStepContentWidth(frame)
 	local width = 0
-	if self.db and self.db.profile and self.db.profile.skin == "remaster" then
+	if self.db and self.db.profile and self:IsRemasterSkin() then
 		if ZygorGuidesViewerFrameScrollChild and ZygorGuidesViewerFrameScrollChild.GetWidth then
 			width = ZygorGuidesViewerFrameScrollChild:GetWidth() or 0
 		end
@@ -1730,7 +2673,7 @@ end
 function me:RelayoutRemasterCompactVisibleSteps()
 	if not self.db
 	or not self.db.profile
-	or self.db.profile.skin ~= "remaster"
+	or not self:IsRemasterSkin()
 	or self.db.profile.displaymode ~= "guide"
 	or self.db.profile.showallsteps
 	then
@@ -1860,7 +2803,7 @@ function me:UpdateGuideProgressWidgets()
 	local parentFrame = ZygorGuidesViewerFrame or self.Frame or stepframe
 	bar:SetParent(parentFrame)
 	bar:ClearAllPoints()
-	if self.db and self.db.profile and self.db.profile.skin == "remaster" and not self.db.profile.showallsteps then
+	if self.db and self.db.profile and self:IsRemasterSkin() and not self.db.profile.showallsteps then
 		local metrics = self:GetCompactGuideLayoutMetrics()
 		local footerFrame = self.RemasterFrames and self.RemasterFrames.footer
 		if footerFrame and footerFrame.IsShown and not footerFrame:IsShown() then
@@ -1883,11 +2826,14 @@ function me:UpdateGuideProgressWidgets()
 	bar:SetFrameLevel(stepframe:GetFrameLevel() + 20)
 
 	if bar.bg then
-		if self.db and self.db.profile and self.db.profile.skin == "remaster" then
+		local pbSkin = ZGV:GetCurrentSkin()
+		local pbColors = pbSkin and pbSkin.progressBar
+		if self.db and self.db.profile and self:IsRemasterSkin() then
+			local bgc = pbColors and pbColors.bg or {1, 1, 1, 0.10}
 			if bar.bg.SetColorTexture then
-				bar.bg:SetColorTexture(1, 1, 1, 0.10)
+				bar.bg:SetColorTexture(bgc[1], bgc[2], bgc[3], bgc[4])
 			else
-				bar.bg:SetTexture(1, 1, 1, 0.10)
+				bar.bg:SetTexture(bgc[1], bgc[2], bgc[3], bgc[4])
 			end
 		else
 			if bar.bg.SetColorTexture then
@@ -1899,11 +2845,14 @@ function me:UpdateGuideProgressWidgets()
 	end
 
 	if bar.fill then
-		if self.db and self.db.profile and self.db.profile.skin == "remaster" then
+		local pbSkin2 = ZGV:GetCurrentSkin()
+		local pbColors2 = pbSkin2 and pbSkin2.progressBar
+		if self.db and self.db.profile and self:IsRemasterSkin() then
+			local fillc = pbColors2 and pbColors2.fill or {0.28, 0.82, 0.36, 0.98}
 			if bar.fill.SetColorTexture then
-				bar.fill:SetColorTexture(0.28, 0.82, 0.36, 0.98)
+				bar.fill:SetColorTexture(fillc[1], fillc[2], fillc[3], fillc[4])
 			else
-				bar.fill:SetTexture(0.28, 0.82, 0.36, 0.98)
+				bar.fill:SetTexture(fillc[1], fillc[2], fillc[3], fillc[4])
 			end
 		else
 			if bar.fill.SetColorTexture then
@@ -2765,10 +3714,17 @@ function me:OnEnable()
 
 	-- startup 'modules'
 	for i,startup in ipairs(self.startups) do
-		startup(self)
+		if type(startup) == "function" then
+			startup(self)
+		elseif type(startup) == "table" and type(startup[2]) == "function" then
+			startup[2](self)
+		end
 	end
 
 	self.deferredWorldStartupPending = true
+
+	-- Travel Advisor (lightweight cross-zone routing, no heavy node graph)
+	-- Initialized in Waypoints.lua
 
 	self.Log.entries = self.db.char.debuglog
 	self.Log:Add("Viewer started. ---------------------------")
@@ -2908,10 +3864,13 @@ end
 
 function me:SetGuide(name,step,temp)
 	if not name then return end
-	self:Debug("SetGuide "..name.." ("..tostring(step))
+	self:Debug("SetGuide "..tostring(type(name)=="table" and (name.title or "table") or name).." ("..tostring(step))
 
 	local guide
-	if type(name)=="number" then
+	if type(name)=="table" then
+		-- Guide object passed directly (e.g. from Gold Guide)
+		guide = name
+	elseif type(name)=="number" then
 		local num = name
 		if self.registeredguides[num] then
 			guide = self.registeredguides[num]
@@ -2922,8 +3881,8 @@ function me:SetGuide(name,step,temp)
 	else
 		guide = self:GetGuideByTitle(name)
 		if not guide then
-			self:Print("Cannot find guide: "..name)
-			self:Debug("Cannot find guide: "..name)
+			self:Print("Cannot find guide: "..tostring(name))
+			self:Debug("Cannot find guide: "..tostring(name))
 			return false
 		end
 	end
@@ -3021,6 +3980,9 @@ function me:FocusStep(num,quiet)
 
 	self:ClearRecentActivities()
 
+	-- Abort any pending LibRover pathfinding from previous step
+	if self.ClearLibRoverPath then self:ClearLibRoverPath() end
+
 	self.CurrentStep:PrepareCompletion()
 
 	self.stepchanged = true
@@ -3039,7 +4001,7 @@ function me:FocusStep(num,quiet)
 		self:UpdateCooldowns()
 		local isRemasterCompactGuide = self.db
 			and self.db.profile
-			and self.db.profile.skin == "remaster"
+			and self:IsRemasterSkin()
 			and self.db.profile.displaymode == "guide"
 			and not self.db.profile.showallsteps
 		if self.ScheduleTimer and not isRemasterCompactGuide then
@@ -3388,7 +4350,7 @@ function me:UpdateLocking()
 		ZygorGuidesViewerFrame_Border_LockButton.htx:SetTexCoord(0.250,0.375,0.50,0.75)
 	end
 
-	if self.db.profile.skin == "remaster" and self.RemasterFrames and self.RemasterFrames.lockButton then
+	if self:IsRemasterSkin() and self.RemasterFrames and self.RemasterFrames.lockButton then
 		local btn = self.RemasterFrames.lockButton
 		btn:SetNormalTexture(nil)
 		btn:SetPushedTexture(nil)
@@ -3539,7 +4501,7 @@ function me:UpdateFrame(full,onupdate,nonsecure_only)
 	end
 
 	self:EnsureSectionTitleFont()
-	if self.db and self.db.profile and self.db.profile.skin == "remaster" then
+	if self.db and self.db.profile and self:IsRemasterSkin() then
 		if not self.remasterApplied then
 			self:ApplyRemasterSkin()
 		end
@@ -3674,7 +4636,7 @@ function me:UpdateFrame(full,onupdate,nonsecure_only)
 			local frame
 			local stepnum,stepdata
 
-			if self.db.profile.skin == "remaster" and ZygorGuidesViewerFrameScrollChild and ZygorGuidesViewerFrameScroll then
+			if self:IsRemasterSkin() and ZygorGuidesViewerFrameScrollChild and ZygorGuidesViewerFrameScroll then
 				local sw = ZygorGuidesViewerFrameScroll:GetWidth() or 0
 				if sw > 20 then
 					local scrollbarPad = self.db.profile.showallsteps and 39 or 20
@@ -3726,7 +4688,7 @@ function me:UpdateFrame(full,onupdate,nonsecure_only)
 					frame.step = stepdata
 					--#### position step frame
 
-					if self.db.profile.skin ~= "remaster" then
+					if not self:IsRemasterSkin() then
 						frame:SetWidth(self.db.profile.showallsteps and ZygorGuidesViewerFrameScrollChild:GetWidth() or ZygorGuidesViewerFrameScroll:GetWidth()) -- this is needed so the text lines below can access proper widths
 					end
 
@@ -4089,7 +5051,7 @@ function me:UpdateFrame(full,onupdate,nonsecure_only)
 
 			self.stepchanged=false
 
-			if self.db.profile.skin == "remaster" and ZygorGuidesViewerFrameScrollChild and ZygorGuidesViewerFrameScroll then
+			if self:IsRemasterSkin() and ZygorGuidesViewerFrameScrollChild and ZygorGuidesViewerFrameScroll then
 				local scrollHeight = ZygorGuidesViewerFrameScroll:GetHeight() or 0
 				local contentHeight = self.compactContentHeight or self:GetVisibleStepContentHeight(self.StepLimit)
 				local childHeight = math.max(contentHeight + 4, scrollHeight)
@@ -4111,7 +5073,7 @@ function me:UpdateFrame(full,onupdate,nonsecure_only)
 			-- set minimum frame size to one step
 			minh = self.stepframes[1]:GetHeight() + 40
 
-			if self.db.profile.skin ~= "remaster" then
+			if not self:IsRemasterSkin() then
 				ZygorGuidesViewerFrame_Skipper:Show()
 				ZygorGuidesViewerFrame_Skipper.mustbevisible=true
 			else
@@ -4506,7 +5468,7 @@ function me:UpdateFrame(full,onupdate,nonsecure_only)
 	and not onupdate
 	and self.db
 	and self.db.profile
-	and self.db.profile.skin == "remaster"
+	and self:IsRemasterSkin()
 	and self.db.profile.displaymode == "guide"
 	and not self.db.profile.showallsteps
 	then
@@ -4514,7 +5476,7 @@ function me:UpdateFrame(full,onupdate,nonsecure_only)
 	end
 	if self.db
 	and self.db.profile
-	and self.db.profile.skin == "remaster"
+	and self:IsRemasterSkin()
 	and self.db.profile.displaymode == "guide"
 	and not self.db.profile.showallsteps
 	and not self.compactHeightRelayoutInProgress
@@ -4684,7 +5646,7 @@ function me:UpdateFrameCurrent(nonsecure_only)
 		local defaultInlineSize = math.max((self.db and self.db.profile and self.db.profile.fontsize or 11) + 4, 15)
 		if self.db
 		and self.db.profile
-		and self.db.profile.skin == "remaster"
+		and self:IsRemasterSkin()
 		and self.db.profile.displaymode == "guide"
 		and not self.db.profile.showallsteps
 		then
@@ -4989,7 +5951,7 @@ function me:UpdateFrameCurrent(nonsecure_only)
 				local iconsize = math.max(self.db.profile.fontsize * 1.45, 15)
 				if self.db
 				and self.db.profile
-				and self.db.profile.skin == "remaster"
+				and self:IsRemasterSkin()
 				and self.db.profile.displaymode == "guide"
 				and not self.db.profile.showallsteps
 				then
@@ -5112,7 +6074,7 @@ function me:ReanchorFrame()
 end
 
 function me:AlignFrame()
-	if self.db and self.db.profile and self.db.profile.skin == "remaster" then
+	if self.db and self.db.profile and self:IsRemasterSkin() then
 		if self.ApplyRemasterSkin then
 			self:ApplyRemasterSkin(self.visualSkinRefreshOnly)
 		end
@@ -5491,7 +6453,7 @@ function me:UpdateSkin(visualOnly)
 
 	self.visualSkinRefreshOnly = visualOnly and true or nil
 
-	if self.db.profile.skin == "remaster" then
+	if self:IsRemasterSkin() then
 		self:ApplyRemasterSkin(visualOnly)
 	else
 		self:RestoreLegacySkin()
@@ -5651,8 +6613,6 @@ function me:ApplyRemasterSkin(visualOnly)
 		local backc = self.db.profile.skincolors and self.db.profile.skincolors.back or {0.08, 0.09, 0.12}
 		local backalpha = self.db.profile.backopacity or 0.3
 		local opacitymain = self.db.profile.opacitymain or 1.0
-		local remastercolor = self.db.profile.remastercolor or "dark"
-		local isGoldAccent = (remastercolor == "goldaccent" or remastercolor == "goals")
 		local function setTexColor(tex, r, g, b, a)
 			if not tex then return end
 			if tex.SetColorTexture then
@@ -5662,7 +6622,7 @@ function me:ApplyRemasterSkin(visualOnly)
 			end
 		end
 
-		local theme = {
+		local theme = ZGV:GetCurrentTheme() or {
 			frameBorder = { 0.18, 0.18, 0.20, 0.92 },
 			frameLight = { 0.28, 0.28, 0.30, 0.18 },
 			insetBg = { 0.10, 0.10, 0.11, 0.95 },
@@ -5674,25 +6634,12 @@ function me:ApplyRemasterSkin(visualOnly)
 			textPrimary = { 0.86, 0.86, 0.88, 1.00 },
 			textMeta = { 0.72, 0.72, 0.75, 0.90 },
 		}
-
-		if isGoldAccent then
-			theme.frameBorder = { 0.17, 0.15, 0.10, 0.88 }
-			theme.frameLight = { 0.12, 0.10, 0.07, 0.42 }
-			theme.insetBg = { 0.05, 0.05, 0.06, 0.97 }
-			theme.insetBorder = { 0.22, 0.18, 0.10, 0.90 }
-			theme.buttonBack = { 0.09, 0.08, 0.07, 0.96 }
-			theme.buttonHover = { 0.22, 0.17, 0.08, 0.98 }
-			theme.buttonBorder = { 0.50, 0.40, 0.18, 0.95 }
-			theme.separator = { 0.90, 0.74, 0.40, 0.62 }
-			theme.textPrimary = { 0.92, 0.80, 0.50, 1.00 }
-			theme.textMeta = { 0.78, 0.70, 0.55, 0.92 }
-		end
+		local skinData = ZGV:GetCurrentSkin()
+		local currentVariantId = ZGV:GetCurrentVariant()
+		local currentVariantData = skinData and skinData.variants and skinData.variants[currentVariantId]
 		if remasterFrames.root then
 			remasterFrames.root:SetAlpha(opacitymain)
-			local rootc = backc
-			if isGoldAccent then
-				rootc = { 0.04, 0.04, 0.05 }
-			end
+			local rootc = (currentVariantData and currentVariantData.rootBackOverride) or backc
 			remasterFrames.root:SetBackdropColor(rootc[1], rootc[2], rootc[3], backalpha)
 			remasterFrames.root:SetBackdropBorderColor(theme.frameBorder[1], theme.frameBorder[2], theme.frameBorder[3], theme.frameBorder[4] or 1)
 		end
@@ -5703,16 +6650,18 @@ function me:ApplyRemasterSkin(visualOnly)
 			remasterFrames.content:SetBackdropBorderColor(theme.insetBorder[1], theme.insetBorder[2], theme.insetBorder[3], theme.insetBorder[4] or 1)
 		end
 		if remasterFrames.headerBg then
-			if isGoldAccent then
-				setTexColor(remasterFrames.headerBg, 0, 0, 0, 0.58)
+			local headerOverride = currentVariantData and currentVariantData.headerBgOverride
+			if headerOverride then
+				setTexColor(remasterFrames.headerBg, headerOverride[1], headerOverride[2], headerOverride[3], headerOverride[4] or 1)
 			else
 				local c = theme.frameLight
 				setTexColor(remasterFrames.headerBg, c[1], c[2], c[3], c[4] or 1)
 			end
 		end
 		if remasterFrames.toolbarBg then
-			if isGoldAccent then
-				setTexColor(remasterFrames.toolbarBg, 0, 0, 0, 0.42)
+			local toolbarOverride = currentVariantData and currentVariantData.toolbarBgOverride
+			if toolbarOverride then
+				setTexColor(remasterFrames.toolbarBg, toolbarOverride[1], toolbarOverride[2], toolbarOverride[3], toolbarOverride[4] or 1)
 			else
 				local c = theme.frameLight
 				setTexColor(remasterFrames.toolbarBg, c[1], c[2], c[3], (c[4] or 1) * 0.8)
@@ -5910,13 +6859,15 @@ function me:ApplyRemasterSkin(visualOnly)
 	end
 
 	if self.db and self.db.profile then
-		self.db.profile.goalbackincomplete = { r = 0.18, g = 0.20, b = 0.25, a = 0.65 }
-		self.db.profile.goalbackprogressing = { r = 0.18, g = 0.28, b = 0.35, a = 0.75 }
-		self.db.profile.goalbackcomplete = { r = 0.12, g = 0.24, b = 0.20, a = 0.75 }
-		self.db.profile.goalbackimpossible = { r = 0.18, g = 0.18, b = 0.18, a = 0.6 }
-		self.db.profile.goalbackaux = { r = 0.15, g = 0.22, b = 0.32, a = 0.6 }
-		self.db.profile.goalbackobsolete = { r = 0.15, g = 0.22, b = 0.32, a = 0.6 }
-		self.db.profile.stepbackalpha = 0.2
+		local skinData = ZGV:GetCurrentSkin()
+		local gc = skinData and skinData.goalColors or nil
+		self.db.profile.goalbackincomplete = gc and gc.incomplete or { r = 0.18, g = 0.20, b = 0.25, a = 0.65 }
+		self.db.profile.goalbackprogressing = gc and gc.progressing or { r = 0.18, g = 0.28, b = 0.35, a = 0.75 }
+		self.db.profile.goalbackcomplete = gc and gc.complete or { r = 0.12, g = 0.24, b = 0.20, a = 0.75 }
+		self.db.profile.goalbackimpossible = gc and gc.impossible or { r = 0.18, g = 0.18, b = 0.18, a = 0.6 }
+		self.db.profile.goalbackaux = gc and gc.aux or { r = 0.15, g = 0.22, b = 0.32, a = 0.6 }
+		self.db.profile.goalbackobsolete = gc and gc.obsolete or { r = 0.15, g = 0.22, b = 0.32, a = 0.6 }
+		self.db.profile.stepbackalpha = gc and gc.stepAlpha or 0.2
 	end
 
 	-- On reload, some layers can momentarily reappear before OnUpdate runs.
@@ -6106,7 +7057,7 @@ function me:RestoreLegacySkin()
 end
 
 function me:ResizeFrame()
-	if self.db and self.db.profile and self.db.profile.skin == "remaster" then
+	if self.db and self.db.profile and self:IsRemasterSkin() then
 		if ZGV and ZGV.framemoving then
 			return
 		end
@@ -6669,7 +7620,7 @@ function me:Frame_OnShow()
 		self:ForceHideBorderNow()
 	elseif self.RefreshAutoHideBorderState and not self.suspendRemasterShowRefresh then
 		self:RefreshAutoHideBorderState()
-		if self.db.profile.skin ~= "remaster" then
+		if not self:IsRemasterSkin() then
 			-- Re-apply once shortly after show to catch post-layout frame updates on reload.
 			self:ScheduleTimer(function()
 				if ZGV and ZGV.RefreshAutoHideBorderState then
@@ -7135,6 +8086,56 @@ function me:OpenQuickMenu(anchor)
 		--]]
 	}
 
+	-- Gear Advisor submenu
+	table.insert(menu, { text = "", notCheckable = true, disabled = true }) -- separator
+	table.insert(menu, {
+		text = "|cffffd200Gear Advisor|r",
+		notCheckable = true,
+		hasArrow = true,
+		menuList = {
+			{
+				text = "Enable Gear Advisor",
+				checked = function() return self.db.profile.autogear end,
+				func = function()
+					self.db.profile.autogear = not self.db.profile.autogear
+					if ZGV.ItemScore and ZGV.ItemScore.GearFinder and ZGV.ItemScore.GearFinder.UpdateSystemTab then
+						ZGV.ItemScore.GearFinder:UpdateSystemTab()
+					end
+				end,
+				keepShownOnClick = true,
+			},
+			{
+				text = "Show ItemScore on Tooltips",
+				checked = function() return self.db.profile.itemscore_tooltips end,
+				func = function() self.db.profile.itemscore_tooltips = not self.db.profile.itemscore_tooltips end,
+				keepShownOnClick = true,
+			},
+			{
+				text = "Auto-equip Upgrades",
+				checked = function() return self.db.profile.autogearauto end,
+				func = function() self.db.profile.autogearauto = not self.db.profile.autogearauto end,
+				keepShownOnClick = true,
+			},
+			{
+				text = "Auto-sell Grey Items",
+				checked = function() return self.db.profile.autosellgrey end,
+				func = function() self.db.profile.autosellgrey = not self.db.profile.autosellgrey end,
+				keepShownOnClick = true,
+			},
+			{ text = "", notCheckable = true, disabled = true },
+			{
+				text = "Gear Advisor Settings...",
+				notCheckable = true,
+				func = function() self:OpenOptions("gear") end,
+			},
+			{
+				text = "Edit Stat Weights...",
+				notCheckable = true,
+				func = function() self:OpenOptions("itemscore") end,
+			},
+		},
+	})
+
 	if anchor then
 		UIDropDownMenu_SetAnchor(ZGVFMenu, 0, 0, "TOPRIGHT", anchor, "BOTTOMRIGHT")
 		EasyMenu(menu,ZGVFMenu,nil,0,0,"MENU",3)
@@ -7285,6 +8286,39 @@ function me:RegisterGuide(title,data,extra)
 	end
 
 	local guide = {['title']=title,['title_short']=tit or title,['rawdata']=data,['extra']=extra,realm=guideRealm}
+
+	-- Support retail-style guide registration: RegisterGuide("TITLE", {meta=..., items=..., maps=...}, [[steps]])
+	if type(data) == "table" then
+		guide.headerdata = data
+		guide.rawdata = extra or ""
+		guide.extra = nil
+		-- Extract metadata from retail table format into flat guide fields
+		if data.author then guide.author = data.author end
+		if data.image then guide.image = data.image end
+		if data.next then guide.next = data.next end
+		if data.startlevel then guide.startlevel = data.startlevel end
+		if data.endlevel then guide.endlevel = data.endlevel end
+		-- Derive guide type from title path
+		if title:match("^GOLD") or title:match("^Gold") or title:match("Farming") or title:match("Gathering") or title:match("Gold Runs") then
+			guide.type = "GOLD"
+		elseif title:match("^Leveling") then
+			guide.type = "leveling"
+		elseif title:match("^Dungeon") or title:match("^Gear") then
+			guide.type = "dungeon"
+		elseif title:match("^Dailies") or title:match("^Daily") then
+			guide.type = "daily"
+		elseif title:match("^Profession") then
+			guide.type = "profession"
+		elseif title:match("^Reputation") then
+			guide.type = "reputation"
+		elseif title:match("^Title") then
+			guide.type = "title"
+		elseif title:match("^Event") then
+			guide.type = "event"
+		elseif title:match("^Pets") or title:match("^Mount") or title:match("^Hunter Pet") then
+			guide.type = "petsmounts"
+		end
+	end
 
 	tinsert(group.guides,{full=title,short=tit or title,num=#self.registeredguides+1})
 	tinsert(self.registeredguides,guide)
@@ -7976,7 +9010,6 @@ end
 
 function me:PruneNPCs()
 	if not ZygorGuidesNPCs then return end
-	self.npcIdByNameCache = nil
 	local faction,_ = UnitFactionGroup("player")
 	if not faction then return end
 	local badf = (faction=="Alliance") and "H" or "A"
@@ -8128,5 +9161,4 @@ end
 
 --hooksecurefunc("WorldMapFrame_UpdateQuests",function() if not InCombatLockdown() then text=nil end end)
 --hooksecurefunc("QuestInfo_Display",function() if not InCombatLockdown() then shownFrame=nil bottomShownFrame=nil end end)
-
 

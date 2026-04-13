@@ -17,7 +17,7 @@ local function GetQuestBoundGoalCount(goal, questGoalData)
 
 	-- Some Wrath quest-item objectives lag or under-report in the quest log.
 	-- For item-style goals, prefer the higher live bag count when available.
-	if goal.action=="get" or goal.action=="collect" or goal.action=="buy" then
+	if goal.action=="get" or goal.action=="collect" or goal.action=="goldcollect" or goal.action=="buy" then
 		local item = goal.targetid or goal.target
 		if item then
 			local liveCount = GetItemCount(item) or 0
@@ -67,6 +67,7 @@ function Goal:IsCompleteable()
 	or self.action=="accept"
 	or self.action=="turnin"
 	or self.action=="collect"
+	or self.action=="goldcollect"
 	or self.action=="buy"
 	or self.action=="fpath"
 	or self.action=="home"
@@ -83,6 +84,7 @@ function Goal:IsCompleteable()
 	or self.action=="skillmax"
 	or self.action=="learn"
 	or self.action=="confirm"
+	or self.action=="trash"
 	 then return true end
 	if self.action=="goto" then
 		-- this one is tricky.
@@ -133,7 +135,7 @@ function Goal:IsComplete()
 		local complete = ZGV.completedQuests[self.questid]
 		    or ZGV.questsbyid[self.questid]
 		    or (ZGV.instantQuests[self.questid] and ZGV.completedQuestTitles[self.quest])
-		    or (not ZGV.CurrentGuide.daily and ZGV.db.char.permaCompletedDailies[self.questid])
+		    or (ZGV.CurrentGuide and not ZGV.CurrentGuide.daily and ZGV.db.char.permaCompletedDailies[self.questid])
 		return complete, complete or possible     --[[or ZGV.recentlyAcceptedQuests[id] --]]
 
 	elseif self.action=="turnin" then
@@ -240,7 +242,16 @@ function Goal:IsComplete()
 	end
 
 
-	if self.action=="ding" then
+	if self.action=="trash" then
+		-- Complete when the item is no longer in bags
+		local itemid = self.targetid
+		if itemid then
+			local count = GetItemCount(itemid)
+			return count == 0, true
+		end
+		return false, true
+
+	elseif self.action=="ding" then
 		local percent
 		local level = UnitLevel("player")
 		if ZGV.db.char.fakelevel and ZGV.db.char.fakelevel>0 then level=ZGV.db.char.fakelevel end
@@ -336,7 +347,7 @@ function Goal:IsComplete()
 		return ZGV.recentlyHomeChanged, true
 	elseif self.action=="fpath" then
 		return (ZGV.db.char.taxis[ZGV.LibTaxi.TaxiNames_English[self.param]] --[[or ZGV.recentlyDiscoveredFlightpath--]]), true
-	elseif self.action=="collect" or self.action=="buy" then
+	elseif self.action=="collect" or self.action=="goldcollect" or self.action=="buy" then
 		local got = GetItemCount(self.target)
 		local progress = got/self.count
 		if self.exact then
@@ -519,7 +530,7 @@ function Goal:AutoTranslate()
 				end
 			end
 			self.L=true
-		elseif self.action=="collect" or self.action=="get" or self.action=="buy" or self.action=="use" then
+		elseif self.action=="collect" or self.action=="goldcollect" or self.action=="get" or self.action=="buy" or self.action=="use" then
 			local item = ZGV:GetItemData(self.targetid)
 			if item then
 				--if GetLocale()~="enUS" then
@@ -611,6 +622,8 @@ function Goal:GetText(showcompleteness)
 	elseif self.action=='kill' then text = L["stepgoal_kill"]:format(COLOR_MONSTER(plural(self.target,self.plural and 2 or 1)))
 	elseif self.action=='collect' and self.count and self.count>1 then text = L["stepgoal_collect #"]:format(self.count,COLOR_ITEM(plural(self.target,self.count)))
 	elseif self.action=='collect' then text = L["stepgoal_collect"]:format(COLOR_ITEM(plural(self.target,self.plural and 2 or 1)))
+	elseif self.action=='goldcollect' and self.count and self.count>1 then text = L["stepgoal_collect #"]:format(self.count,COLOR_ITEM(plural(self.target,self.count)))
+	elseif self.action=='goldcollect' then text = ("Farm %s"):format(COLOR_ITEM(plural(self.target,self.plural and 2 or 1)))
 	elseif self.action=='buy' then text = L["stepgoal_buy"]:format(self.count,COLOR_ITEM(plural(self.target,self.count)))
 	elseif self.action=='goal' and self.count and self.count>1 then text = L["stepgoal_goal #"]:format(self.count>0 and self.count or "?",COLOR_GOAL(plural(self.target,self.count)))
 	elseif self.action=='goal' then text = L["stepgoal_goal"]:format(COLOR_GOAL(self.target))
@@ -725,7 +738,7 @@ function Goal:GetText(showcompleteness)
 		text = text .. L['stepgoal_at_suff']:format(COLOR_LOC(L['coords']:format(self.x,self.y)))
 	end
 
-	if self.force_nocomplete and self.action~="collect" and self.action~="buy" then showcompleteness=false end
+	if self.force_nocomplete and self.action~="collect" and self.action~="goldcollect" and self.action~="buy" then showcompleteness=false end
 
 	if showcompleteness then
 		local desc = ""
@@ -778,7 +791,7 @@ function Goal:GetText(showcompleteness)
 				desc = L["stepgoal_location_onlyzone"]:format(goal.gozone or "?")
 			end
 			--]]
-		elseif self.action=="collect" or self.action=="buy" then
+		elseif self.action=="collect" or self.action=="goldcollect" or self.action=="buy" then
 			desc = L["completion_collect"]:format(GetItemCount(self.target),self.count)
 		elseif self.action=="rep" then
 			desc = L["completion_rep"]:format(ZGV:GetReputation(self.faction):Going())

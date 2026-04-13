@@ -41,7 +41,7 @@
 					</Anchors>
 					<TexCoords left="0.501953125" right="0.625" top="0" bottom="1"/>
 				</Texture>			
-				<Texture name="$parentTopRight" file="Interface\PaperDollInfoFrame\UI-GearManager-Border">
+				<Texture name="$parentTopRight" parentKey="TopRight" file="Interface\PaperDollInfoFrame\UI-GearManager-Border">
 					<Size x="64" y="64"/>
 					<Anchors>
 						<Anchor point="TOPRIGHT"/>
@@ -145,7 +145,7 @@
 			</Layer>
 		</Layers>
 		<Frames>
-			<Button name="$parentCloseButton" inherits="UIPanelCloseButton">
+			<Button name="$parentCloseButton" parentKey="CloseButton" inherits="UIPanelCloseButton">
 				<Size x="32" y="32"/>
 				<Anchors>
 					<Anchor point="TOPRIGHT"><Offset x="2" y="1"/></Anchor>

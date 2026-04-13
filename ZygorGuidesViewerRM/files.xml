@@ -15,6 +15,20 @@
 
 	<Script file="QuestAutoAccept.lua"/>
 
+	<!-- Dungeon data (needed by Gear Finder) -->
+	<Script file="Dungeons.lua"/>
+	<Script file="Data-WOTLK\Dungeons.lua"/>
+
+	<!-- ItemScore & Gear Finder system -->
+	<Script file="Code-WOTLK\Item-DataTables.lua"/>
+	<Script file="Data-WOTLK\Item-Statweights.lua"/>
+	<Script file="Item-ItemScore.lua"/>
+	<Script file="Code-WOTLK\Item-ItemScore.lua"/>
+	<Script file="Item-Upgrades.lua"/>
+	<Script file="Item-GearFinder.lua"/>
+	<Script file="Code-WOTLK\Item-GearFinder.lua"/>
+	<Script file="Item-Quest.lua"/>
+
 	<Include file="ZygorTalentAdvisor\Localization\load.xml"/>
 	<Include file="ZygorTalentAdvisor\files.xml"/>
 	<Include file="ZygorTalentAdvisor\Builds\Autoload.xml"/>
@@ -39,4 +53,8 @@
 	<Include file="ZygorMapIcon.xml" />
 	<Include file="ZygorGuidesViewerFrame.xml" />
 	<!-- <Include file="ZygorGuidesViewerMiniFrame.xml"/> -->
+
+	<!-- UI Widget Framework + Gold Guide (must load AFTER main frame) -->
+	<Include file="UiWidgets\files.xml"/>
+	<Include file="GoldUI\Gold.xml"/>
 </Ui>

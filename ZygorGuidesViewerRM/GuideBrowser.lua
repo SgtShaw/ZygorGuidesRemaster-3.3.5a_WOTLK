@@ -990,6 +990,7 @@ end
 local GUIDE_MANAGER_TOP_TABS = {
 	{ id = "home", label = LT("gb_tab_home") },
 	{ id = "featured", label = LT("gb_tab_featured") },
+	{ id = "whatsnew", label = "What's New" },
 	{ id = "current", label = LT("gb_tab_current") },
 	{ id = "recent", label = LT("gb_tab_recent") },
 }
@@ -1011,25 +1012,31 @@ local GUIDE_MANAGER_LEFT_MENU = {
 
 local GUIDE_MANAGER_OPTIONS_APPS = {
 	{ id = "general", label = LT("gb_opt_guides"), app = "ZygorGuidesViewer", desc = LT("gb_opt_desc_guides") },
+	{ id = "skin", label = "Skin", app = "ZygorGuidesViewer-Skin", desc = "Choose the visual theme for the guide viewer." },
 	{ id = "stepdisplay", label = LT("gb_opt_stepdisplay"), app = "ZygorGuidesViewer-StepDisplay", desc = LT("gb_opt_desc_stepdisplay") },
 	{ id = "progress", label = LT("gb_opt_progress"), app = "ZygorGuidesViewer-Progress", desc = LT("gb_opt_desc_progress") },
 	{ id = "travel", label = LT("gb_opt_travel"), app = "ZygorGuidesViewer-Travel", desc = LT("gb_opt_desc_travel") },
 	{ id = "map", label = LT("gb_opt_map"), app = "ZygorGuidesViewer-Maps", desc = LT("gb_opt_desc_map") },
+	{ id = "optimization", label = LT("gb_opt_optimization"), app = "ZygorGuidesViewer-Optimization", desc = LT("gb_opt_desc_optimization") },
 	{ id = "notifications", label = LT("gb_opt_notifications"), app = "ZygorGuidesViewer-Notifications", desc = LT("gb_opt_desc_notifications") },
 	{ id = "actionbuttons", label = LT("gb_opt_actionbuttons"), app = "ZygorGuidesViewer-ActionButtons", desc = LT("gb_opt_desc_actionbuttons") },
 	{ id = "convenience", label = LT("gb_opt_convenience"), app = "ZygorGuidesViewer-Conv", desc = LT("gb_opt_desc_convenience") },
 	{ id = "accessibility", label = LT("gb_opt_accessibility"), app = "ZygorGuidesViewer-Accessibility", desc = LT("gb_opt_desc_accessibility") },
+	{ id = "gear", label = "Gear Advisor", app = "ZygorGuidesViewer-Gear", desc = "Configure gear scoring, upgrade popups, auto-sell, and auto-repair." },
+	{ id = "itemscore", label = "Stat Weights", app = "ZygorGuidesViewer-ItemScore", desc = "Edit stat weights per class and spec for item scoring." },
 	{ id = "profile", label = LT("gb_opt_profile"), app = "ZygorGuidesViewer-Profile", desc = LT("gb_opt_desc_profile") },
 	{ id = "about", label = LT("gb_opt_about"), app = "ZygorGuidesViewer-About", desc = LT("gb_opt_desc_about") },
 }
 
 local GUIDE_MANAGER_OPTIONS_ICONS = {
 	["ZygorGuidesViewer"] = "Interface\\Icons\\INV_Misc_Gear_01",
+	["ZygorGuidesViewer-Skin"] = "Interface\\Icons\\INV_Misc_Desecrated_ClothPants",
 	["ZygorGuidesViewer-Display"] = "Interface\\Icons\\INV_Misc_Spyglass_03",
 	["ZygorGuidesViewer-StepDisplay"] = "Interface\\Icons\\INV_Misc_Book_11",
 	["ZygorGuidesViewer-Progress"] = "Interface\\Icons\\INV_Misc_Book_11",
 	["ZygorGuidesViewer-Travel"] = "Interface\\Icons\\INV_Misc_Map_01",
 	["ZygorGuidesViewer-Maps"] = "Interface\\Icons\\INV_Misc_Map_01",
+	["ZygorGuidesViewer-Optimization"] = "Interface\\Icons\\INV_Gizmo_01",
 	["ZygorGuidesViewer-Notifications"] = "Interface\\Icons\\INV_Misc_Note_01",
 	["ZygorGuidesViewer-ActionButtons"] = "Interface\\Icons\\INV_Misc_QuestionMark",
 	["ZygorGuidesViewer-Conv"] = "Interface\\Icons\\INV_Misc_Toy_10",
@@ -1037,6 +1044,8 @@ local GUIDE_MANAGER_OPTIONS_ICONS = {
 	["ZygorGuidesViewer-Profile"] = "Interface\\Icons\\INV_Misc_Book_09",
 	["ZygorGuidesViewer-About"] = "Interface\\Icons\\INV_Misc_Note_05",
 	["ZygorGuidesViewer-Debug"] = "Interface\\Icons\\INV_Misc_QuestionMark",
+	["ZygorGuidesViewer-Gear"] = "Interface\\Icons\\INV_Chest_Chain_04",
+	["ZygorGuidesViewer-ItemScore"] = "Interface\\Icons\\INV_Misc_Gear_01",
 }
 
 local function BuildGuideManagerOptionsApps(self)
@@ -1088,6 +1097,7 @@ local function GetOptionsAppSearchHay(self, appName)
 	elseif appName=="ZygorGuidesViewer-Progress" then src=self.optionsprogress
 	elseif appName=="ZygorGuidesViewer-Travel" then src=self.optionstravelsystem
 	elseif appName=="ZygorGuidesViewer-Maps" then src=self.optionsmapswaypoints
+	elseif appName=="ZygorGuidesViewer-Optimization" then src=self.optionsoptimization
 	elseif appName=="ZygorGuidesViewer-Notifications" then src=self.optionsnotifications
 	elseif appName=="ZygorGuidesViewer-ActionButtons" then src=self.optionsactionbuttons
 	elseif appName=="ZygorGuidesViewer-Conv" then src=self.optionsconv
@@ -1165,11 +1175,13 @@ end
 
 local GUIDE_MANAGER_OPTIONS_APP_ICON = {
 	["ZygorGuidesViewer"] = "general",
+	["ZygorGuidesViewer-Skin"] = "display",
 	["ZygorGuidesViewer-Display"] = "display",
 	["ZygorGuidesViewer-StepDisplay"] = "stepdisplay",
 	["ZygorGuidesViewer-Progress"] = "notification",
 	["ZygorGuidesViewer-Travel"] = "travelsystem",
 	["ZygorGuidesViewer-Maps"] = "maps",
+	["ZygorGuidesViewer-Optimization"] = "extras",
 	["ZygorGuidesViewer-Notifications"] = "notification",
 	["ZygorGuidesViewer-ActionButtons"] = "actionbuttons",
 	["ZygorGuidesViewer-Conv"] = "automation",
@@ -1177,6 +1189,8 @@ local GUIDE_MANAGER_OPTIONS_APP_ICON = {
 	["ZygorGuidesViewer-Profile"] = "profile",
 	["ZygorGuidesViewer-About"] = "about",
 	["ZygorGuidesViewer-Debug"] = "about",
+	["ZygorGuidesViewer-Gear"] = "gear",
+	["ZygorGuidesViewer-ItemScore"] = "itemscore",
 }
 
 local function StripColorCodes(text)
@@ -2386,6 +2400,698 @@ local function ResolveGuideHeroImage(guide, category, section)
 	return ResolveGuideHeroFallback(inferred or category, section)
 end
 
+-- ===== WHAT'S NEW FEATURED SYSTEM =====
+-- Retail-style 3-column card grid for the "What's New" tab
+-- NOTE: ZGV.ChainCall, ZGV.UI, etc. are NOT yet available at file-load time
+-- (Functions.lua and UiWidgets load after GuideBrowser.lua).
+-- All references are resolved lazily at first use via wn_env().
+
+local WN_COLUMN_WIDTH = 263
+local WN_FULL_WIDTH = 805
+
+local wn_ZGV, wn_CHAIN, wn_ui, wn_SkinData, wn_FONT, wn_FONTBOLD
+local function wn_env()
+	if not wn_ZGV then
+		wn_ZGV = me
+		wn_CHAIN = wn_ZGV.ChainCall
+		wn_ui = wn_ZGV.UI
+		wn_SkinData = wn_ZGV.UI.SkinData
+		wn_FONT = wn_ZGV.Font
+		wn_FONTBOLD = wn_ZGV.FontBold
+	end
+end
+
+local WHATSNEW_SECTION_ICONS = {
+	LEVELING = "Interface\\Icons\\INV_Misc_Book_11",
+	DUNGEONS = "Interface\\Icons\\INV_Misc_GroupNeedMore",
+	DAILIES = "Interface\\Icons\\Achievement_Daily_5",
+	PROFESSIONS = "Interface\\Icons\\INV_Pick_02",
+	REPUTATIONS = "Interface\\Icons\\Achievement_Reputation_01",
+}
+
+-- Featured data (from retail GuideMenu-Featured.lua, WOTLK + TBC)
+local WhatsNewData = {}
+
+table.insert(WhatsNewData, {
+title="Wrath of the Lich King", group="wotlk",
+
+{"section", text=[[LEVELING]]},
+	{"banner", image=ZGV.IMAGESDIR.."\\WOTLKLeveling",showcaseonly=true},
+
+	{"content", text=[[Complete Your Starter Guide or Boosted Character Guide]]},
+	{"text", text=[[If you are creating a new character in WotLK, use the appropriate starter or boosted guide for your character.]]},
+	{"columns",
+	{"item", text="**Death Knight Starter (55-58)**", guide="Leveling Guides\\Starter Guides (1-12) & Death Knight (55-58)\\Death Knight Starter (55-58)"},
+	},
+
+	{"content", text=[[Go to Northrend and Level to 80]]},
+	{"text", text=[[Once you've reached level 69 you're ready to go to Northrend. We recommend going at 69 and not 68 so you won't encounter much grinding (if at all).]]},
+	{"item", text="**Howling Fjord (69-71)**", guide="Leveling Guides\\Northrend (69-80)\\Howling Fjord (69-71)"},
+	{"item", text="**Borean Tundra (70-72)**", guide="Leveling Guides\\Northrend (69-80)\\Borean Tundra (70-72)"},
+	{"item", text="**Dragonblight (72-74)**", guide="Leveling Guides\\Northrend (69-80)\\Dragonblight (72-74)"},
+	{"item", text="**Grizzly Hills (74-75)**", guide="Leveling Guides\\Northrend (69-80)\\Grizzly Hills (74-75)"},
+	{"item", text="**Zul'Drak (75-77)**", guide="Leveling Guides\\Northrend (69-80)\\Zul'Drak (75-77)"},
+	{"item", text="**Sholazar Basin (77-78)**", guide="Leveling Guides\\Northrend (69-80)\\Sholazar Basin (77-78)"},
+	{"item", text="**The Storm Peaks (78-79)**", guide="Leveling Guides\\Northrend (69-80)\\The Storm Peaks (78-79)"},
+	{"item", text="**Icecrown (79-80)**", guide="Leveling Guides\\Northrend (69-80)\\Icecrown (79-80)"},
+
+	{"section", text=[[DUNGEONS]]},
+	{"banner", image=ZGV.IMAGESDIR.."\\WOTLKDungeons",showcaseonly=true},
+
+	{"content", text=[[Dungeon Boss Strategy Guides]]},
+	{"text", text=[[These guides will walk you through defeating the bosses in the Northrend dungeons.]]},
+	{"item", text="**Ahn'kahet: The Old Kingdom (73-75)**", guide="Dungeon Guides\\Wrath of the Lich King\\Ahn'kahet: The Old Kingdom (73-75)"},
+	{"item", text="**Azjol-Nerub (72-74)**", guide="Dungeon Guides\\Wrath of the Lich King\\Azjol-Nerub (72-74)"},
+	{"item", text="**The Culling of Stratholme (78-80)**", guide="Dungeon Guides\\Wrath of the Lich King\\The Culling of Stratholme (78-80)"},
+	{"item", text="**Drak'Tharon Keep (74-76)**", guide="Dungeon Guides\\Wrath of the Lich King\\Drak'Tharon Keep (74-76)"},
+	{"item", text="**Gundrak (76-78)**", guide="Dungeon Guides\\Wrath of the Lich King\\Gundrak (76-78)"},
+	{"item", text="**The Nexus (69-73)**", guide="Dungeon Guides\\Wrath of the Lich King\\The Nexus (69-73)"},
+	{"item", text="**The Oculus (79-80)**", guide="Dungeon Guides\\Wrath of the Lich King\\The Oculus (79-80)"},
+	{"item", text="**Violet Hold (75-77)**", guide="Dungeon Guides\\Wrath of the Lich King\\Violet Hold (75-77)"},
+	{"item", text="**Utgarde Keep (69-72)**", guide="Dungeon Guides\\Wrath of the Lich King\\Utgarde Keep (69-72)"},
+	{"item", text="**Utgarde Pinnacle (79-80)**", guide="Dungeon Guides\\Wrath of the Lich King\\Utgarde Pinnacle (79-80)"},
+
+	{"content", text=[[Dungeon Quest Guides (BETA)]]},
+	{"text", text=[[These guides will walk you through completing the Northrend dungeon quests.]]},
+	{"item", text="**Ahn'kahet: The Old Kingdom Quests**", guide="Dungeon Guides\\Wrath of the Lich King\\Ahn'kahet: The Old Kingdom Quests"},
+	{"item", text="**Azjol-Nerub Quests**", guide="Dungeon Guides\\Wrath of the Lich King\\Azjol-Nerub Quests"},
+	{"item", text="**The Culling of Stratholme Quests**", guide="Dungeon Guides\\Wrath of the Lich King\\The Culling of Stratholme Quests"},
+	{"item", text="**Drak'Tharon Keep Quests**", guide="Dungeon Guides\\Wrath of the Lich King\\Drak'Tharon Keep Quests"},
+	{"item", text="**Gundrak Quests**", guide="Dungeon Guides\\Wrath of the Lich King\\Gundrak Quests"},
+	{"item", text="**Halls of Lightning Quests**", guide="Dungeon Guides\\Wrath of the Lich King\\Halls of Lightning Quests"},
+	{"item", text="**The Nexus Quests**", guide="Dungeon Guides\\Wrath of the Lich King\\The Nexus Quests"},
+	{"item", text="**The Oculus Quests**", guide="Dungeon Guides\\Wrath of the Lich King\\The Oculus Quests"},
+	{"item", text="**Utgarde Keep Quests**", guide="Dungeon Guides\\Wrath of the Lich King\\Utgarde Keep Quests"},
+	{"item", text="**Utgarde Pinnacle Quests**", guide="Dungeon Guides\\Wrath of the Lich King\\Utgarde Pinnacle Quests"},
+	{"item", text="**The Violet Hold Quests**", guide="Dungeon Guides\\Wrath of the Lich King\\The Violet Hold Quests"},
+
+	{"section", text=[[DAILIES]]},
+	{"banner", image=ZGV.IMAGESDIR.."\\WOTLKDailies",showcaseonly=true},
+
+	{"content", text=[[Daily Quest Guides]]},
+	{"item", text="**Dalaran Fishing Dailies**", guide="Dailies Guides\\Wrath of the Lich King\\Dalaran Fishing Dailies"},
+	{"item", text="**Dalaran Cooking Dailies**", guide="Dailies Guides\\Wrath of the Lich King\\Dalaran Cooking Dailies"},
+	{"item", text="**Frenzyheart Tribe Dailies**", guide="Dailies Guides\\Wrath of the Lich King\\The Oracles/Frenzyheart Dailies\\Frenzyheart Tribe Dailies"},
+	{"item", text="**Jewelcrafting Dailies**", guide="Dailies Guides\\Wrath of the Lich King\\Jewelcrafting Dailies"},
+	{"item", text="**The Kalu'ak Dailies**", guide="Dailies Guides\\Wrath of the Lich King\\The Kalu'ak Dailies"},
+	{"item", text="**The Oracles Dailies**", guide="Dailies Guides\\Wrath of the Lich King\\The Oracles/Frenzyheart Dailies\\The Oracles Dailies"},
+	{"item", text="**The Sons of Hodir Dailies**", guide="Dailies Guides\\Wrath of the Lich King\\The Sons of Hodir\\The Sons of Hodir Dailies"},
+	{"item", text="**Wyrmrest Accord Dailies**", guide="Dailies Guides\\Wrath of the Lich King\\Wyrmrest Accord Dailies"},
+
+	{"section", text=[[PROFESSIONS]]},
+	{"banner", image=ZGV.IMAGESDIR.."\\WOTLKProfessions",showcaseonly=true},
+
+	{"content", text=[[Profession Leveling Guides]]},
+	{"text", text=[[These guides will walk you through leveling up your professions to the new max skill level of 450.]]},
+	{"item", text=[[**Inscription (1-350)**]], guide="PROFESSIONS\\Inscription\\Inscription (1-350)"},
+	{"item", text=[[**Alchemy (1-450)**]], guide="PROFESSIONS\\Alchemy\\Alchemy (1-450)"},
+	{"item", text=[[**Blacksmithing (1-450)**]], guide="PROFESSIONS\\Blacksmithing\\Blacksmithing (1-450)"},
+	{"item", text=[[**Cooking (1-450)**]], guide="PROFESSIONS\\Cooking\\Cooking (1-450)"},
+	{"item", text=[[**Enchanting (1-450)**]], guide="PROFESSIONS\\Enchanting\\Enchanting (1-450)"},
+	{"item", text=[[**Engineering (1-450)**]], guide="PROFESSIONS\\Engineering\\Engineering (1-450)"},
+	{"item", text=[[**First Aid (1-450)**]], guide="PROFESSIONS\\First Aid\\First Aid (1-450)"},
+	{"item", text=[[**Herbalism (1-450)**]], guide="PROFESSIONS\\Herbalism\\Herbalism (1-450)"},
+	{"item", text=[[**Jewelcrafting (1-450)**]], guide="PROFESSIONS\\Jewelcrafting\\Jewelcrafting (1-450)"},
+	{"item", text=[[**Leatherworking (1-450)**]], guide="PROFESSIONS\\Leatherworking\\Leatherworking (1-450)"},
+	{"item", text=[[**Mining (1-450)**]], guide="PROFESSIONS\\Mining\\Mining (1-450)"},
+	{"item", text=[[**Skinning (1-450)**]], guide="PROFESSIONS\\Skinning\\Skinning (1-450)"},
+	{"item", text=[[**Tailoring (1-450)**]], guide="PROFESSIONS\\Tailoring\\Tailoring (1-450)"},
+
+	{"content", text=[[Fishing Farming Guides]]},
+	{"columns",
+	{"item", text=[[**Barrelhead Goby**]], guide="PROFESSIONS\\Fishing\\Farming Guides\\Barrelhead Goby"},
+	{"item", text=[[**Bonescale Snapper**]], guide="PROFESSIONS\\Fishing\\Farming Guides\\Bonescale Snapper"},
+	{"item", text=[[**Borean Man O' War**]], guide="PROFESSIONS\\Fishing\\Farming Guides\\Borean Man O' War"},
+	{"item", text=[[**Deep Sea Monsterbelly**]], guide="PROFESSIONS\\Fishing\\Farming Guides\\Deep Sea Monsterbelly"},
+	{"item", text=[[**Dragonfin Angelfish**]], guide="PROFESSIONS\\Fishing\\Farming Guides\\Dragonfin Angelfish"},
+	{"item", text=[[**Fangtooth Herring**]], guide="PROFESSIONS\\Fishing\\Farming Guides\\Fangtooth Herring"},
+	{"item", text=[[**Glacial Salmon**]], guide="PROFESSIONS\\Fishing\\Farming Guides\\Glacial Salmon"},
+	{"item", text=[[**Glassfin Minnow**]], guide="PROFESSIONS\\Fishing\\Farming Guides\\Glassfin Minnow"},
+	{"item", text=[[**Imperial Manta Ray**]], guide="PROFESSIONS\\Fishing\\Farming Guides\\Imperial Manta Ray"},
+	},
+
+	{"content", text=[[Herbalism Farming Guides]]},
+	{"columns",
+	{"item", text=[[**Adder's Tongue**]], guide="PROFESSIONS\\Herbalism\\Farming Guides\\Adder's Tongue"},
+	{"item", text=[[**Deadnettle**]], guide="PROFESSIONS\\Herbalism\\Farming Guides\\Deadnettle"},
+	{"item", text=[[**Goldclover**]], guide="PROFESSIONS\\Herbalism\\Farming Guides\\Goldclover"},
+	{"item", text=[[**Icethorn**]], guide="PROFESSIONS\\Herbalism\\Farming Guides\\Icethorn"},
+	{"item", text=[[**Lichbloom**]], guide="PROFESSIONS\\Herbalism\\Farming Guides\\Lichbloom"},
+	{"item", text=[[**Talandra's Rose**]], guide="PROFESSIONS\\Herbalism\\Farming Guides\\Talandra's Rose"},
+	{"item", text=[[**Tiger Lily**]], guide="PROFESSIONS\\Herbalism\\Farming Guides\\Tiger Lily"},
+	},
+
+	{"content", text=[[Mining Farming Guides]]},
+	{"columns",
+	{"item", text=[[**Cobalt Ore**]], guide="PROFESSIONS\\Mining\\Farming Guides\\Cobalt Ore"},
+	{"item", text=[[**Saronite Ore**]], guide="PROFESSIONS\\Mining\\Farming Guides\\Saronite Ore"},
+	{"item", text=[[**Titanium Ore**]], guide="PROFESSIONS\\Mining\\Farming Guides\\Titanium Ore"},
+	},
+
+	{"content", text=[[Skinning and Tailoring Farming Guides]]},
+	{"columns",
+	{"item", text=[[**Borean Leather**]], guide="PROFESSIONS\\Skinning\\Farming Guides\\Borean Leather"},
+	{"item", text=[[**Frostweave Cloth**]], guide="PROFESSIONS\\Tailoring\\Farming Guides\\Frostweave Cloth"},
+	},
+
+	{"content", text=[[Cooking Farming Guides]]},
+	{"columns",
+	{"item", text=[[**Chilled Meat**]], guide="PROFESSIONS\\Cooking\\Farming Guides\\Chilled Meat"},
+	{"item", text=[[**Chunk o' Mammoth**]], guide="PROFESSIONS\\Cooking\\Farming Guides\\Chunk o' Mammoth"},
+	{"item", text=[[**Northern Egg**]], guide="PROFESSIONS\\Cooking\\Farming Guides\\Northern Egg"},
+	{"item", text=[[**Rhino Meat**]], guide="PROFESSIONS\\Cooking\\Farming Guides\\Rhino Meat"},
+	{"item", text=[[**Shoveltusk Flank**]], guide="PROFESSIONS\\Cooking\\Farming Guides\\Shoveltusk Flank"},
+	{"item", text=[[**Worm Meat**]], guide="PROFESSIONS\\Cooking\\Farming Guides\\Worm Meat"},
+	},
+
+	{"content", text=[[Elements Farming Guides]]},
+	{"columns",
+	{"item", text=[[**Crystallized Air**]], guide="PROFESSIONS\\Elements\\Farming Guides\\Crystallized Air"},
+	{"item", text=[[**Crystallized Earth**]], guide="PROFESSIONS\\Elements\\Farming Guides\\Crystallized Earth"},
+	{"item", text=[[**Crystallized Fire**]], guide="PROFESSIONS\\Elements\\Farming Guides\\Crystallized Fire"},
+	{"item", text=[[**Crystallized Life**]], guide="PROFESSIONS\\Elements\\Farming Guides\\Crystallized Life"},
+	{"item", text=[[**Crystallized Shadow**]], guide="PROFESSIONS\\Elements\\Farming Guides\\Crystallized Shadow"},
+	{"item", text=[[**Crystallized Water**]], guide="PROFESSIONS\\Elements\\Farming Guides\\Crystallized Water"},
+	},
+})
+
+table.insert(WhatsNewData, {
+title="The Burning Crusade", group="tbc",
+
+{"section", text=[[LEVELING]]},
+	{"banner", image=ZGV.IMAGESDIR.."\\TBCLeveling",showcaseonly=true},
+
+	{"content", text=[[Complete Your Starter or Boosted Character guide]]},
+	{"text", text=[[If you are creating a new character in TBC, use the appropriate starter or boosted guide for your character.]]},
+	{"columns",
+	{"item", text="**Human Starter (1-11)**", guide="LEVELING\\Starter Guides (1-11)\\Human Starter (1-11)",faction="A"},
+	{"item", text="**Dwarf & Gnome (1-11)**", guide="LEVELING\\Starter Guides (1-11)\\Dwarf & Gnome Starter (1-11)",faction="A"},
+	{"item", text="**Night Elf Starter (1-11)**", guide="LEVELING\\Starter Guides (1-11)\\Night Elf Starter (1-11)",faction="A"},
+	{"item", text="**Draenei Starter (1-11)**", guide="LEVELING\\Starter Guides (1-11)\\Draenei Starter (1-11)",faction="A"},
+	{"item", text="**Durotar (1-12) [Orc & Troll Starter]**", guide="LEVELING\\Starter Guides (1-12)\\Durotar (1-12) [Orc & Troll Starter]", faction="H"},
+	{"item", text="**Mulgore (1-12) [Tauren Starter]**", guide="LEVELING\\Starter Guides (1-12)\\Mulgore (1-12) [Tauren Starter]", faction="H"},
+	{"item", text="**Tirisfal Glades (1-12) [Undead Starter]**", guide="LEVELING\\Starter Guides (1-12)\\Tirisfal Glades (1-12) [Undead Starter]", faction="H"},
+	{"item", text="**Eversong Woods (1-13) [Blood Elf Starter]**", guide="LEVELING\\Starter Guides (1-12)\\Eversong Woods (1-13) [Blood Elf Starter]", faction="H"},
+	},
+
+	{"content", text=[[Reach Level 58 or Higher]]},
+	{"text", text=[[Use the main leveling guides to reach level 58 or higher in order to go to Outland.]]},
+
+	{"content", text=[[Reach Level 70]]},
+	{"text", text=[[Journey to Outland using the guides below and reach the max level of 70.]]},
+	{"columns",
+	{"item", text=[[**Hellfire Peninsula (58-62)**]], guide="LEVELING\\The Burning Crusade (58-70)\\Hellfire Peninsula (58-62)"},
+	{"item", text=[[**Zangarmarsh (62-63)**]], guide="LEVELING\\The Burning Crusade (58-70)\\Zangarmarsh (62-63)"},
+	{"item", text=[[**Terokkar Forest (63-65)**]], guide="LEVELING\\The Burning Crusade (58-70)\\Terokkar Forest (63-65)"},
+	{"item", text=[[**Nagrand (65-67)**]], guide="LEVELING\\The Burning Crusade (58-70)\\Nagrand (65-67)"},
+	{"item", text=[[**Blade's Edge Mountains (67-68)**]], guide="LEVELING\\The Burning Crusade (58-70)\\Blade's Edge Mountains (67-68)"},
+	{"item", text=[[**Netherstorm (68-70)**]], guide="LEVELING\\The Burning Crusade (58-70)\\Netherstorm (68-70)"},
+	{"item", text=[[**Shadowmoon Valley (70-70)**]], guide="LEVELING\\The Burning Crusade (58-70)\\Shadowmoon Valley (70-70)"},
+	},
+
+	{"section", text=[[DUNGEONS]]},
+	{"banner", image=ZGV.IMAGESDIR.."\\TBCDungeons",showcaseonly=true},
+
+	{"content", text=[[Dungeon Boss Strategy Guides]]},
+	{"text", text=[[These guides will walk you through defeating the bosses in the Outland dungeons.]]},
+	{"columns",
+	{"item", text=[[**Hellfire Ramparts (60-70)**]], guide="DUNGEONS\\The Burning Crusade\\Hellfire Ramparts (60-70)"},
+	{"item", text=[[**The Blood Furnace (61-70)**]], guide="DUNGEONS\\The Burning Crusade\\The Blood Furnace (61-70)"},
+	{"item", text=[[**The Slave Pens (62-70)**]], guide="DUNGEONS\\The Burning Crusade\\The Slave Pens (62-70)"},
+	{"item", text=[[**The Underbog (63-70)**]], guide="DUNGEONS\\The Burning Crusade\\The Underbog (63-70)"},
+	{"item", text=[[**Mana-Tombs (64-70)**]], guide="DUNGEONS\\The Burning Crusade\\Mana-Tombs (64-70)"},
+	{"item", text=[[**Auchenai Crypts (65-70)**]], guide="DUNGEONS\\The Burning Crusade\\Auchenai Crypts (65-70)"},
+	{"item", text=[[**Sethekk Halls (67-70)**]], guide="DUNGEONS\\The Burning Crusade\\Sethekk Halls (67-70)"},
+	{"item", text=[[**Old Hillsbrad Foothills (66-70)**]], guide="DUNGEONS\\The Burning Crusade\\Old Hillsbrad Foothills (66-70)"},
+	{"item", text=[[**The Black Morass (68-70)**]], guide="DUNGEONS\\The Burning Crusade\\The Black Morass (68-70)"},
+	{"item", text=[[**The Mechanar (70)**]], guide="DUNGEONS\\The Burning Crusade\\The Mechanar (70)"},
+	{"item", text=[[**The Shattered Halls (70)**]], guide="DUNGEONS\\The Burning Crusade\\The Shattered Halls (70)"},
+	{"item", text=[[**The Steamvault (70)**]], guide="DUNGEONS\\The Burning Crusade\\The Steamvault (70)"},
+	},
+
+	{"content", text=[[Dungeon Quest Guides]]},
+	{"text", text=[[These guides will walk you through completing the Outland dungeon quests.]]},
+	{"columns",
+	{"item", text=[[**Hellfire Ramparts Quests**]], guide="DUNGEONS\\The Burning Crusade\\Hellfire Ramparts Quests"},
+	{"item", text=[[**The Slave Pens Quests**]], guide="DUNGEONS\\The Burning Crusade\\The Slave Pens Quests"},
+	{"item", text=[[**The Underbog Quests**]], guide="DUNGEONS\\The Burning Crusade\\The Underbog Quests"},
+	{"item", text=[[**Mana-Tombs Quests**]], guide="DUNGEONS\\The Burning Crusade\\Mana-Tombs Quests"},
+	{"item", text=[[**Auchenai Crypts Quests**]], guide="DUNGEONS\\The Burning Crusade\\Auchenai Crypts Quests"},
+	{"item", text=[[**Sethekk Halls Quests**]], guide="DUNGEONS\\The Burning Crusade\\Sethekk Halls Quests"},
+	{"item", text=[[**Old Hillsbrad Foothills Quests**]], guide="DUNGEONS\\The Burning Crusade\\Old Hillsbrad Foothills Quests"},
+	{"item", text=[[**The Black Morass Quests**]], guide="DUNGEONS\\The Burning Crusade\\The Black Morass Quests"},
+	},
+
+	{"content", text=[[Dungeon Attunement Guides]]},
+	{"text", text=[[These guides will walk you through becoming attuned with the following dungeons.]]},
+	{"columns",
+	{"item", text=[[**Karazhan Attunement**]], guide="DUNGEONS\\The Burning Crusade\\Karazhan Attunement"},
+	{"item", text=[[**Hellfire Citadel Attunement**]], guide="DUNGEONS\\The Burning Crusade\\Hellfire Citadel Attunement"},
+	{"item", text=[[**Serpentshrine Cavern Attunement**]], guide="DUNGEONS\\The Burning Crusade\\Serpentshrine Cavern Attunement"},
+	{"item", text=[[**Tempest Keep Attunement**]], guide="DUNGEONS\\The Burning Crusade\\Tempest Keep Attunement"},
+	},
+
+	{"section", text=[[DAILIES]]},
+	{"banner", image=ZGV.IMAGESDIR.."\\TBCDailies",showcaseonly=true},
+
+	{"content", text=[[Daily Quest Guides]]},
+	{"columns",
+	{"item", text=[[**Ogri'la Daily Quests**]], guide="DAILIES\\The Burning Crusade\\Ogri'la\\Ogri'la Daily Quests"},
+	{"item", text=[[**Sha'tari Skyguard Daily Quests**]], guide="DAILIES\\The Burning Crusade\\Sha'tari Skyguard\\Sha'tari Skyguard Daily Quests"},
+	},
+
+	{"section", text=[[PROFESSIONS]]},
+	{"banner", image=ZGV.IMAGESDIR.."\\TBCProfessions",showcaseonly=true},
+
+	{"content", text=[[Profession Leveling Guides]]},
+	{"text", text=[[These guides will walk you through leveling up your professions to the new max skill level of 375.]]},
+	{"columns",
+	{"item", text=[[**Alchemy (1-375)**]], guide="PROFESSIONS\\Alchemy\\Alchemy (1-375)"},
+	{"item", text=[[**Blacksmithing (1-375)**]], guide="PROFESSIONS\\Blacksmithing\\Blacksmithing (1-375)"},
+	{"item", text=[[**Cooking (1-375)**]], guide="PROFESSIONS\\Cooking\\Cooking (1-375)"},
+	{"item", text=[[**Enchanting (1-375)**]], guide="PROFESSIONS\\Enchanting\\Enchanting (1-375)"},
+	{"item", text=[[**Engineering (1-375)**]], guide="PROFESSIONS\\Engineering\\Engineering (1-375)"},
+	{"item", text=[[**First Aid (1-375)**]], guide="PROFESSIONS\\First Aid\\First Aid (1-375)"},
+	{"item", text=[[**Herbalism (1-375)**]], guide="PROFESSIONS\\Herbalism\\Herbalism (1-375)"},
+	{"item", text=[[**Jewelcrafting (1-375)**]], guide="PROFESSIONS\\Jewelcrafting\\Jewelcrafting (1-375)"},
+	{"item", text=[[**Leatherworking (1-375)**]], guide="PROFESSIONS\\Leatherworking\\Leatherworking (1-375)"},
+	{"item", text=[[**Mining (1-375)**]], guide="PROFESSIONS\\Mining\\Mining (1-375)"},
+	{"item", text=[[**Skinning (1-375)**]], guide="PROFESSIONS\\Skinning\\Skinning (1-375)"},
+	{"item", text=[[**Tailoring (1-375)**]], guide="PROFESSIONS\\Tailoring\\Tailoring (1-375)"},
+	},
+
+	{"section", text=[[REPUTATIONS]]},
+	{"banner", image=ZGV.IMAGESDIR.."\\TBCReputations",showcaseonly=true},
+
+	{"content", text=[[Reputation Guides]]},
+	{"text", text=[[These guides will walk you through reaching Exalted with various Outland factions.]]},
+	{"columns",
+	{"item", text=[[**Honor Hold**]], guide="REPUTATIONS\\The Burning Crusade\\Honor Hold",faction="A"},
+	{"item", text=[[**Cenarion Expedition**]], guide="REPUTATIONS\\The Burning Crusade\\Cenarion Expedition"},
+	{"item", text=[[**Lower City**]], guide="REPUTATIONS\\The Burning Crusade\\Lower City"},
+	{"item", text=[[**The Scryers**]], guide="REPUTATIONS\\The Burning Crusade\\The Scryers"},
+	{"item", text=[[**The Aldor**]], guide="REPUTATIONS\\The Burning Crusade\\The Aldor"},
+	{"item", text=[[**Ogri'la**]], guide="REPUTATIONS\\The Burning Crusade\\Ogri'la"},
+	{"item", text=[[**Sha'tari Skyguard**]], guide="REPUTATIONS\\The Burning Crusade\\Sha'tari Skyguard"},
+	},
+})
+
+-- Text formatter (retail featured_colourise equivalent)
+local function wn_colourise(str, gray, dev)
+	if not str then return "" end
+	if not (gray or dev) then
+		str = str:gsub("[**]+([^\*]+)[**]+", "|cfffe6100%1|r")
+		str = str:gsub("[==]+([^\=]+)[==]+", "|cffbbbbbb%1|r")
+	elseif dev then
+		str = str:gsub("[**]+([^\*]+)[**]+", "|cffff9a5c%1|r")
+		str = str:gsub("[==]+([^\=]+)[==]+", "|cffbbbbbb%1|r")
+	else
+		str = str:gsub("[**]+([^\*]+)[**]+", "|cffaaaaaa%1|r")
+		str = str:gsub("[==]+([^\=]+)[==]+", "|cffaaaaaa%1|r")
+	end
+	return str
+end
+
+-- Player faction for filtering
+local wn_faction = (UnitFactionGroup("player") or "A"):sub(1, 1)
+
+-- What's New parser namespace
+local WNP = {}
+
+WNP.generic = function(parent, e)
+	wn_env()
+	local object = wn_CHAIN(wn_ui:Create("Button", parent))
+		:SetNormalBackdropColor(0, 0, 0, 0)
+		:SetBackdropBorderColor(0, 0, 0, 0)
+		:RegisterForClicks("AnyUp")
+		:SetPoint("LEFT")
+		:SetScript("OnEnter", function(self)
+			if self.onenterfunc then
+				self:onenterfunc()
+			elseif self.tooltip then
+				GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
+				GameTooltip:AddLine(type(self.tooltip) == "function" and self.tooltip() or self.tooltip)
+				GameTooltip:Show()
+			end
+		end)
+		:SetScript("OnLeave", function(self)
+			if self.onleavefunc then
+				self:onleavefunc()
+			else
+				GameTooltip:Hide()
+			end
+		end)
+	.__END
+	object.text = wn_CHAIN(object:GetFontString())
+		:SetFont(wn_FONT, 13)
+		:ClearAllPoints()
+		:SetPoint("LEFT")
+		:SetPoint("RIGHT")
+		:SetJustifyH("LEFT")
+	.__END
+
+	object.tooltip = e.tooltip
+
+	if e.guide then
+		if not e.text then
+			local guide = me:GetGuideByTitle(e.guide)
+			if guide and not guide.missing then
+				e.text = "**" .. (guide.title_short or e.guide) .. "**"
+			else
+				local folder, title = e.guide:match("^(.+)\\(.-)$")
+				e.text = "**" .. (title or e.guide) .. "**"
+			end
+		end
+		local guide = me:GetGuideByTitle(e.guide)
+		if guide and not guide.missing then
+			object:SetScript("OnClick", function()
+				me:SetGuide(e.guide)
+			end)
+		end
+	else
+		object:SetPushedTextOffset(0, 0)
+	end
+	return object
+end
+
+WNP.section = function(parent, e, width)
+	local space = e.space or 10
+	width = width or WN_COLUMN_WIDTH
+	local object = wn_CHAIN(WNP.generic(parent, e))
+		:SetWidth(width)
+		:SetText(wn_colourise(e.text))
+		:SetFont(wn_FONTBOLD, 14)
+	.__END
+	local text_height = object.text:GetStringHeight()
+	object:SetHeight(text_height)
+	object.ztype = "section"
+	object.space = space
+	return object, text_height, space
+end
+
+WNP.banner = function(parent, e, width)
+	local space = e.space or 16
+	width = width or WN_COLUMN_WIDTH
+	local object = wn_CHAIN(WNP.generic(parent, e))
+		:SetSize(width, e.height or 109)
+	.__END
+	object:SetTexture(e.image)
+	object.ztype = "banner"
+	object.space = space
+	return object, e.height or 109, space
+end
+
+WNP.text = function(parent, e, width)
+	local space = e.space or 5
+	width = width or WN_COLUMN_WIDTH
+	local object = wn_CHAIN(WNP.generic(parent, e))
+		:SetFont(wn_FONT, 13)
+		:SetWidth(width)
+		:SetText(wn_colourise(e.text))
+	.__END
+	wn_CHAIN(object.text)
+		:SetJustifyH("LEFT")
+		:SetWordWrap(true)
+		:SetWidth(width)
+		:SetSpacing(6)
+		:ClearAllPoints()
+		:SetPoint("LEFT", 2, 0)
+	local text_height = object.text:GetStringHeight()
+	object:SetHeight(text_height)
+	object.ztype = "text"
+	object.space = space
+	return object, text_height, space
+end
+
+WNP.item = function(parent, e, width, mode)
+	local space = e.space or 5
+	mode = mode or e.mode
+	width = width or WN_COLUMN_WIDTH
+	local object = wn_CHAIN(WNP.generic(parent, e))
+		:SetWidth(width)
+		:SetFont(wn_FONT, 13)
+	.__END
+
+	local guide = e.guide and me:GetGuideByTitle(e.guide)
+	if guide and not guide.missing then
+		object:SetText(wn_colourise(e.text))
+	else
+		object:SetText(wn_colourise(e.text, (e.guide)))
+	end
+
+	if not mode or mode == "overview" then
+		wn_CHAIN(object)
+			:SetBackdrop(wn_SkinData("Backdrop"))
+			:SetBackdropColor(me.F.HTMLColor("#222222"))
+			:SetBackdropBorderColor(0, 0, 0, 0)
+		function object:onenterfunc()
+			local g = me:GetGuideByTitle(e.guide)
+			if g and not g.missing and g.description and g.description ~= "" then
+				GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
+				GameTooltip:AddLine(g.description, 1, 1, 1, true)
+				GameTooltip:Show()
+			end
+		end
+		function object:onleavefunc()
+			GameTooltip:Hide()
+		end
+	end
+
+	wn_CHAIN(object.text)
+		:ClearAllPoints()
+		:SetPoint("LEFT", 6, 0)
+		:SetWidth(width - 12)
+		:SetWordWrap(mode ~= "overview")
+		:SetSpacing(4)
+
+	local text_height = object.text:GetStringHeight() + 5
+	if not mode then
+		text_height = text_height + 10
+		space = 0
+	end
+	object:SetHeight(text_height)
+	object.ztype = "item"
+	object.space = space
+	return object, text_height, space
+end
+
+WNP.columns = function(parent, e, width)
+	wn_env()
+	width = width or WN_COLUMN_WIDTH
+	local space = 5
+	local object = wn_CHAIN(CreateFrame("Frame", nil, parent))
+		:SetWidth(width)
+		:SetHeight(20)
+	.__END
+	object.Columns = {}
+
+	local count = 0
+	for i = 2, #e do
+		if (not e[i].faction or (e[i].faction == wn_faction)) then
+			count = count + 1
+		end
+	end
+	if count == 0 then count = 1 end
+	count = math.min((e.count or 2), count)
+	local c_width = math.floor((width - 5 * (count - 1)) / count)
+
+	for i = 1, count do
+		local column = wn_CHAIN(CreateFrame("Frame", nil, object)):SetWidth(c_width).__END
+		column.Elements = {}
+		table.insert(object.Columns, column)
+		if #object.Columns == 1 then
+			column:SetPoint("TOPLEFT", object, "TOPLEFT", -3, 0)
+		else
+			column:SetPoint("TOPLEFT", object.Columns[#object.Columns - 1], "TOPRIGHT", 5, 0)
+		end
+	end
+
+	local prev = {}
+	local height = 0
+	local max_height = 0
+	local padding = 5
+	local validcount = 1
+
+	for i = 2, #e do
+		local element = e[i]
+		if (not element.faction or (element.faction == wn_faction)) then
+			validcount = validcount + 1
+			local position = (validcount - 2) % count + 1
+			local subobject, s_height, s_space
+			if WNP[element[1]] then
+				subobject, s_height, s_space = WNP[element[1]](object.Columns[position], element, c_width)
+			end
+			if subobject then
+				table.insert(object.Columns[position].Elements, subobject)
+				element.object = subobject
+				if prev[position] then
+					subobject:SetPoint("TOPLEFT", prev[position], "BOTTOMLEFT", 0, -padding)
+				else
+					subobject:SetPoint("TOPLEFT", object.Columns[position], "TOPLEFT", 0, -padding)
+				end
+				if position == 1 then height = height + s_height + padding end
+				prev[position] = subobject
+				max_height = math.max(max_height, height)
+			end
+		end
+	end
+
+	max_height = max_height + padding
+	for i, column in ipairs(object.Columns) do
+		column:SetHeight(max_height)
+	end
+	object:SetHeight(max_height + space)
+	object.ztype = "columns"
+	object.space = space
+	return object, max_height, space
+end
+
+WNP.content = function(parent, e, width, onToggle)
+	local space = e.space or 10
+	width = width or WN_COLUMN_WIDTH
+	local object = wn_CHAIN(WNP.generic(parent, e))
+		:SetWidth(width)
+		:SetText(wn_colourise(e.text))
+		:SetFont(wn_FONTBOLD, 16)
+	.__END
+	object.text:SetWordWrap(false)
+
+	object.Toggle = wn_CHAIN(parent:CreateTexture())
+		:SetTexture(me.ButtonSets.TitleButtons.file)
+		:SetSize(14, 14)
+		:SetVertexColor(1, 1, 1, 1)
+		:SetPoint("RIGHT", object, "RIGHT", 0, 0)
+	.__END
+
+	object.displayed = true
+	function object:UpdateText()
+		if self.displayed then
+			object.Toggle:SetTexCoord(unpack(me.ButtonSets.TitleButtons['MINUS'].texcoord))
+		else
+			object.Toggle:SetTexCoord(unpack(me.ButtonSets.TitleButtons['PLUS'].texcoord))
+		end
+	end
+	object:UpdateText()
+
+	object:SetScript("OnClick", function(self)
+		self.displayed = not self.displayed
+		self:UpdateText()
+		if onToggle then onToggle() end
+	end)
+
+	object.Decor = wn_CHAIN(parent:CreateTexture())
+		:SetTexture("Interface\\Buttons\\WHITE8x8")
+		:SetSize(width, 1)
+		:SetVertexColor(0.21, 0.21, 0.21, 1)
+		:SetPoint("TOP", object, "BOTTOM", 0, 5)
+	.__END
+
+	object.Elements = {}
+
+	local text_height = object.text:GetStringHeight() + 30
+	object:SetHeight(text_height)
+	object.ztype = "content"
+	object.space = space
+	return object, text_height, space
+end
+
+WNP.separator = function(parent)
+	wn_env()
+	local object = wn_CHAIN(parent:CreateTexture())
+		:SetTexture("Interface\\Buttons\\WHITE8x8")
+		:SetSize(WN_COLUMN_WIDTH, 1)
+		:SetVertexColor(0, 0, 0, 0)
+	.__END
+	object.ztype = "separator"
+	object.space = 15
+	return object, 1, 15
+end
+
+-- Showcase container header (category card header with icon + arrow)
+WNP.showcase_container = function(parent, e, width)
+	local space = e.space or 10
+	width = width or WN_COLUMN_WIDTH
+	local object = wn_CHAIN(WNP.generic(parent, e))
+		:SetWidth(width)
+		:SetText(wn_colourise(e.text))
+		:SetFont(wn_FONTBOLD, 14)
+	.__END
+
+	-- Category icon
+	local iconPath = WHATSNEW_SECTION_ICONS[e.type] or WHATSNEW_SECTION_ICONS[e.text]
+	if iconPath then
+		object.catIcon = wn_CHAIN(object:CreateTexture(nil, "ARTWORK"))
+			:SetSize(18, 18)
+			:SetPoint("LEFT", 0, 0)
+			:SetTexture(iconPath)
+		.__END
+		object.text:ClearAllPoints()
+		object.text:SetPoint("LEFT", object.catIcon, "RIGHT", 5, 0)
+		object.text:SetPoint("RIGHT", -18, 0)
+	end
+
+	-- Forward arrow
+	object.nexticon = wn_CHAIN(object:CreateTexture(nil, "ARTWORK"))
+		:SetSize(12, 12)
+		:SetPoint("RIGHT", 0, 0)
+		:SetTexture(me.ButtonSets.TitleButtons.file)
+		:SetTexCoord(unpack(me.ButtonSets.TitleButtons['STEP_NEXT'].texcoord))
+	.__END
+
+	local text_height = object.text:GetStringHeight()
+	object:SetHeight(text_height)
+	object.ztype = "section"
+	object.space = space
+	return object, text_height, space
+end
+
+-- Expanded container header (back arrow + title)
+WNP.expanded_container = function(parent, e, width)
+	wn_env()
+	width = width or WN_FULL_WIDTH
+	local object = wn_CHAIN(CreateFrame("Frame", nil, parent))
+		:SetPoint("TOP", 0, -5)
+		:SetPoint("LEFT", 5, 0)
+		:SetWidth(width)
+		:SetHeight(100)
+		:Hide()
+	.__END
+	local header, h_height, hspace = WNP.section(object, e)
+	header:SetPoint("TOPLEFT", 10, -10)
+	object.header = header
+	if e.title then header:SetText(wn_colourise(e.title)) end
+
+	-- Back arrow
+	header.backicon = wn_CHAIN(header:CreateTexture(nil, "ARTWORK"))
+		:SetSize(12, 12)
+		:SetPoint("LEFT", 0, 0)
+		:SetTexture(me.ButtonSets.TitleButtons.file)
+		:SetTexCoord(unpack(me.ButtonSets.TitleButtons['STEP_PREV'].texcoord))
+	.__END
+	wn_CHAIN(header.text)
+		:ClearAllPoints()
+		:SetPoint("LEFT", header.backicon, "RIGHT", 5, 0)
+		:SetFont(wn_FONTBOLD, 15)
+
+	object.ztype = "expanded_container"
+	object.space = hspace + 10
+	object.storedheight = h_height + 10
+	return object, h_height + 10, hspace + 10
+end
+
+-- Grab featured items from element tree
+local function wn_grab_featured(element, array, hash)
+	if (element[1] == "item") and (element.guide) and (not element.faction or (element.faction == wn_faction)) then
+		if not hash[element.guide] then
+			table.insert(array, {"item", guide = element.guide, text = element.text})
+			hash[element.guide] = true
+			return 1
+		end
+	end
+	return 0
+end
+-- ===== END WHAT'S NEW DATA AND PARSERS =====
+
 local function EnsureGuideManagerStandaloneFrame(self)
 	if self.GuideManagerStandaloneFrame then return self.GuideManagerStandaloneFrame end
 
@@ -3102,6 +3808,329 @@ local function EnsureGuideManagerStandaloneFrame(self)
 		rb:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight")
 		frame.featuredRoadmapRows[i] = rb
 	end
+
+	-- ===== WHAT'S NEW PANE =====
+	local whatsnewPane = CreateFrame("Frame", nil, center)
+	whatsnewPane:SetPoint("TOPLEFT", headerLine, "BOTTOMLEFT", 0, -2)
+	whatsnewPane:SetPoint("BOTTOMRIGHT", center, "BOTTOMRIGHT", -2, 2)
+	whatsnewPane:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8x8" })
+	whatsnewPane:SetBackdropColor(0, 0, 0, 0)
+	whatsnewPane:Hide()
+	frame.whatsnewPane = whatsnewPane
+
+	-- Title header
+	local wnTitle = whatsnewPane:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+	wnTitle:SetPoint("TOPLEFT", whatsnewPane, "TOPLEFT", 8, -6)
+	wnTitle:SetJustifyH("LEFT")
+	wnTitle:SetText("|cffdfe3ebFeatured Guides|r")
+	ApplyRetailFont(wnTitle, 16, "", true)
+	frame.whatsnewTitle = wnTitle
+
+	-- Dataset dropdown (WOTLK / TBC)
+	local wnDropdown = CreateFrame("Frame", "ZGVWhatsNewDropdown", whatsnewPane, "UIDropDownMenuTemplate")
+	wnDropdown:SetPoint("TOPRIGHT", whatsnewPane, "TOPRIGHT", 10, -1)
+	UIDropDownMenu_SetWidth(wnDropdown, 180)
+	frame.whatsnewDropdown = wnDropdown
+
+	-- Scroll frame for what's new content
+	local wnScroll = CreateFrame("ScrollFrame", "ZGVWhatsNewScroll", whatsnewPane)
+	wnScroll:SetPoint("TOPLEFT", wnTitle, "BOTTOMLEFT", 0, -6)
+	wnScroll:SetPoint("BOTTOMRIGHT", whatsnewPane, "BOTTOMRIGHT", -18, 2)
+	wnScroll:EnableMouseWheel(true)
+	wnScroll:SetScript("OnMouseWheel", function(self, delta)
+		local sc = self:GetVerticalScroll() - 40 * delta
+		sc = math.max(0, math.min(sc, math.max(0, self.child:GetHeight() - self:GetHeight())))
+		self:SetVerticalScroll(sc)
+		if self.scrollbar then self.scrollbar:SetValue(sc) end
+	end)
+	frame.whatsnewScroll = wnScroll
+
+	-- Scroll bar
+	local wnScrollBar = CreateFrame("Slider", "ZGVWhatsNewScrollBar", wnScroll)
+	wnScrollBar:SetWidth(16)
+	wnScrollBar:SetPoint("TOPRIGHT", whatsnewPane, "TOPRIGHT", -2, -30)
+	wnScrollBar:SetPoint("BOTTOMRIGHT", whatsnewPane, "BOTTOMRIGHT", -2, 2)
+	wnScrollBar:SetMinMaxValues(0, 1)
+	wnScrollBar:SetValueStep(1)
+	wnScrollBar:SetValue(0)
+	wnScrollBar:SetThumbTexture("Interface\\Buttons\\UI-ScrollBar-Knob")
+	wnScrollBar:SetScript("OnValueChanged", function(self, value)
+		wnScroll:SetVerticalScroll(value)
+	end)
+	wnScroll.scrollbar = wnScrollBar
+
+	-- Inner content frame
+	local wnInner = CreateFrame("Frame", nil, wnScroll)
+	wnInner:SetWidth(wnScroll:GetWidth() or 600)
+	wnInner:SetHeight(200)
+	wnScroll:SetScrollChild(wnInner)
+	wnScroll.child = wnInner
+	frame.whatsnewInner = wnInner
+
+	-- State tracking
+	frame.whatsnewBuilt = {}
+	frame.whatsnewActiveIndex = 1
+	frame.whatsnewActiveSection = nil
+
+	-- Build/show the What's New content
+	frame.RenderWhatsNewPane = function(frm, dataIndex, sectionIndex)
+		wn_env()
+		dataIndex = dataIndex or frm.whatsnewActiveIndex or 1
+		frm.whatsnewActiveIndex = dataIndex
+		frm.whatsnewActiveSection = sectionIndex
+
+		local data = WhatsNewData[dataIndex]
+		if not data then return end
+
+		frm.whatsnewTitle:SetText("|cffdfe3ebFeatured: " .. (data.title or "") .. "|r")
+
+		local inner = frm.whatsnewInner
+		inner:SetWidth(wnScroll:GetWidth() > 0 and wnScroll:GetWidth() or 600)
+
+		-- Hide previous content
+		for _, dataset in ipairs(WhatsNewData) do
+			if dataset._wn_blocks then
+				for _, block in ipairs(dataset._wn_blocks) do block:Hide() end
+			end
+			if dataset._wn_expanded then
+				for _, exp in pairs(dataset._wn_expanded) do exp:Hide() end
+			end
+			if dataset._wn_elements then
+				for _, obj in ipairs(dataset._wn_elements) do if obj.Hide then obj:Hide() end end
+			end
+		end
+
+		-- Build if not already done
+		if not data._wn_built then
+			local auto_featured_limit = 10
+
+			-- Phase 1: Parse data into sections
+			local currentSection = nil
+			for ei, element in ipairs(data) do
+				if element[1] == "section" then
+					if element.text ~= "SHOWCASE" then
+						data[element.text] = data[element.text] or {}
+						currentSection = element.text
+					end
+				elseif currentSection then
+					table.insert(data[currentSection], element)
+					if element[1] == "banner" and element.showcaseonly then
+						data[currentSection].featuredbanner = element
+					end
+				end
+			end
+
+			-- Extract featured items per section
+			for sname, category in pairs(data) do
+				if type(category) == "table" and not category.featured then
+					category.featured = {}
+					local hash = {}
+					local count = 0
+					for _, element in ipairs(category) do
+						if element[1] == "columns" then
+							for si = 2, #element do
+								if count < auto_featured_limit then
+									count = count + wn_grab_featured(element[si], category.featured, hash)
+								end
+							end
+						elseif count < auto_featured_limit then
+							count = count + wn_grab_featured(element, category.featured, hash)
+						end
+					end
+					-- Faction filter
+					for i = #category.featured, 1, -1 do
+						local e = category.featured[i]
+						if e.faction and e.faction ~= wn_faction then
+							table.remove(category.featured, i)
+						end
+					end
+				end
+			end
+
+			-- Phase 2: Build showcase blocks (3-column grid)
+			-- Collect section order from data
+			local sectionOrder = {}
+			local sectionSeen = {}
+			for _, element in ipairs(data) do
+				if element[1] == "section" and element.text ~= "SHOWCASE" and not sectionSeen[element.text] then
+					sectionSeen[element.text] = true
+					table.insert(sectionOrder, element.text)
+				end
+			end
+
+			data._wn_blocks = {}
+			data._wn_elements = {}
+			data._wn_separators = {}
+			local blockindex = 0
+
+			for _, secName in ipairs(sectionOrder) do
+				local category = data[secName]
+				if category and category.featured and #category.featured > 0 then
+					blockindex = blockindex + 1
+					local parentindex = ((blockindex - 1) % 3) + 1
+					local block = wn_CHAIN(CreateFrame("Frame", nil, inner))
+						:SetPoint("TOP", 0, -5)
+						:SetPoint("LEFT", WN_COLUMN_WIDTH * (parentindex - 1) + 5 + (5 * parentindex - 5), 0)
+						:SetWidth(WN_COLUMN_WIDTH)
+						:SetBackdrop({
+							bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+							edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+							edgeSize = 12,
+							insets = { left = 2, right = 2, top = 2, bottom = 2 },
+						})
+						:SetBackdropColor(0.09, 0.10, 0.12, 0.95)
+						:SetBackdropBorderColor(0.22, 0.24, 0.28, 0.90)
+						:Hide()
+					.__END
+					block.type = secName
+					block.text = secName
+					block.title = secName
+					block.blockindex = blockindex
+					data._wn_blocks[blockindex] = block
+
+					-- Header
+					local header, h_height, h_space = WNP.showcase_container(block, {text = secName, type = secName}, 252)
+					local sectionIdx = blockindex
+					header:SetScript("OnClick", function() frm:RenderWhatsNewPane(dataIndex, sectionIdx) end)
+					header:SetPoint("TOPLEFT", block, "TOPLEFT", 5, -7)
+					local prev = header
+					local height = h_height + 14
+
+					-- Banner
+					if category.featuredbanner then
+						local bobj, b_height, b_space = WNP.banner(block, category.featuredbanner, 252)
+						bobj:SetScript("OnClick", function() frm:RenderWhatsNewPane(dataIndex, sectionIdx) end)
+						bobj:SetPoint("TOPLEFT", prev, "BOTTOMLEFT", 0, -b_space)
+						prev = bobj
+						height = height + b_height + b_space
+					end
+
+					-- Featured items (up to 10)
+					for j, e in ipairs(category.featured) do
+						local iobj, i_height, i_space = WNP.item(block, e, 252, "overview")
+						iobj:SetPoint("TOPLEFT", prev, "BOTTOMLEFT", 0, -i_space)
+						prev = iobj
+						height = height + i_height + i_space
+					end
+
+					block._height = height
+
+					-- Row separators for height equalization
+					local row = math.floor((blockindex - 1) / 3) + 1
+					if blockindex % 3 == 1 then
+						local sep = wn_CHAIN(inner:CreateTexture(nil, "ARTWORK"))
+							:SetTexture("Interface\\Buttons\\WHITE8x8")
+							:SetSize(WN_COLUMN_WIDTH, 1)
+							:SetVertexColor(0, 0, 0, 0)
+							:SetPoint("TOP", block, "BOTTOM", 0, 0)
+						.__END
+						sep.rowheight = 0
+						data._wn_separators[row] = sep
+					end
+					data._wn_separators[row].rowheight = math.max(data._wn_separators[row].rowheight or 0, height)
+					if row > 1 and data._wn_separators[row - 1] then
+						block:SetPoint("TOP", data._wn_separators[row - 1], "BOTTOM", 0, -5)
+					end
+				end
+			end
+
+			-- Phase 3: Build expanded views
+			data._wn_expanded = {}
+			for bi, block in ipairs(data._wn_blocks) do
+				local secName = block.type
+				local exp_frame, exp_height, exp_space = WNP.expanded_container(inner, {text = secName, title = secName}, WN_FULL_WIDTH)
+				exp_frame.header:SetScript("OnClick", function() frm:RenderWhatsNewPane(dataIndex) end)
+				data._wn_expanded[bi] = exp_frame
+				exp_frame.Elements = {}
+
+				local currentContent = nil
+				for ci, element in ipairs(data[secName]) do
+					if (not element.faction or (element.faction == wn_faction)) and (not element.showcaseonly) then
+						local obj
+						if WNP[element[1]] then
+							if element[1] == "content" then
+								obj = WNP.content(exp_frame, element, WN_FULL_WIDTH - 20, function()
+									frm:RenderWhatsNewPane(dataIndex, bi)
+								end)
+								currentContent = obj
+							else
+								obj = WNP[element[1]](exp_frame, element, WN_FULL_WIDTH - 20)
+							end
+						end
+						if obj then
+							if currentContent and element[1] ~= "content" then
+								table.insert(currentContent.Elements, obj)
+								obj.parentblock = currentContent
+							end
+							table.insert(exp_frame.Elements, obj)
+						end
+					end
+				end
+			end
+
+			data._wn_built = true
+		end
+
+		-- Display
+		if not sectionIndex then
+			-- Overview mode: show 3-column grid
+			for i, block in ipairs(data._wn_blocks) do
+				local row = math.floor((i - 1) / 3) + 1
+				block:SetHeight(data._wn_separators[row].rowheight)
+				block:Show()
+			end
+			local total_height = 0
+			for _, sep in pairs(data._wn_separators) do
+				total_height = total_height + sep.rowheight + 5
+			end
+			total_height = math.max(total_height, 200)
+			inner:SetHeight(total_height)
+			wnScrollBar:SetMinMaxValues(0, math.max(0, total_height - wnScroll:GetHeight()))
+			wnScrollBar:SetValue(0)
+			wnScroll:SetVerticalScroll(0)
+		else
+			-- Expanded mode: show single section detail
+			local exp_frame = data._wn_expanded[sectionIndex]
+			if not exp_frame then return end
+
+			local total_height = exp_frame.storedheight + exp_frame.space
+			local prev = exp_frame.header
+			for ci, element in ipairs(exp_frame.Elements) do
+				if not element.parentblock or element.parentblock.displayed then
+					element:Show()
+					total_height = total_height + element:GetHeight() + element.space
+					element:SetPoint("TOPLEFT", prev, "BOTTOMLEFT", 0, -element.space - (ci == 1 and 5 or 0))
+					prev = element
+				else
+					element:Hide()
+				end
+			end
+
+			exp_frame:SetHeight(total_height)
+			exp_frame:Show()
+			inner:SetHeight(total_height)
+			wnScrollBar:SetMinMaxValues(0, math.max(0, total_height - wnScroll:GetHeight()))
+			wnScrollBar:SetValue(0)
+			wnScroll:SetVerticalScroll(0)
+		end
+	end
+
+	-- Initialize dropdown
+	UIDropDownMenu_Initialize(wnDropdown, function(self, level)
+		for i, dataset in ipairs(WhatsNewData) do
+			local info = UIDropDownMenu_CreateInfo()
+			info.text = dataset.title
+			info.value = i
+			info.func = function(btn)
+				UIDropDownMenu_SetSelectedValue(wnDropdown, btn.value)
+				frame:RenderWhatsNewPane(btn.value)
+			end
+			UIDropDownMenu_AddButton(info)
+		end
+	end)
+	UIDropDownMenu_SetSelectedValue(wnDropdown, 1)
+	UIDropDownMenu_SetText(wnDropdown, WhatsNewData[1] and WhatsNewData[1].title or "")
+	-- ===== END WHAT'S NEW PANE =====
 
 	local guideImage = details:CreateTexture(nil, "ARTWORK")
 	guideImage:SetPoint("TOPLEFT", details, "TOPLEFT", 1, -1)
@@ -4195,6 +5224,9 @@ local function EnsureGuideManagerStandaloneFrame(self)
 		end
 		frame.detailTitle:SetText(guide.title_short or guide.title or sel)
 		local detailMeta = LT("gb_detail_meta_format", steps, author, nextg)
+		if guide.headerdata then
+			detailMeta = detailMeta .. "\n|cff00ccffSource: Retail WOTLK Guide|r"
+		end
 		if frame.currentSection == "featured" then
 			local featuredMeta = frame.featuredMetaByTitle and frame.featuredMetaByTitle[guide.title]
 			if featuredMeta then
@@ -4322,6 +5354,8 @@ local function EnsureGuideManagerStandaloneFrame(self)
 			title = LT("gb_tab_recent")
 		elseif section == "featured" then
 			title = LT("gb_tab_featured")
+		elseif section == "whatsnew" then
+			title = "What's New"
 		elseif section == "options" then
 			title = LT("gb_tab_options")
 		end
@@ -4371,11 +5405,13 @@ local function EnsureGuideManagerStandaloneFrame(self)
 	local function SetSectionMode(section)
 		local isOptions = (section == "options")
 		local isFeatured = (section == "featured")
+		local isWhatsNew = (section == "whatsnew")
 		if isOptions then
 			center:Hide()
 			details:Hide()
 			list:Show()
 			if frame.featuredPane then frame.featuredPane:Hide() end
+			if frame.whatsnewPane then frame.whatsnewPane:Hide() end
 			optionsPane:Show()
 			leftSearchLabel:Hide()
 			leftSearchBox:Hide()
@@ -4412,14 +5448,30 @@ local function EnsureGuideManagerStandaloneFrame(self)
 				frame.optionsAceWidget = nil
 			end
 			center:Show()
-			details:Show()
 			optionsPane:Hide()
-			if isFeatured then
+			if isWhatsNew then
+				details:Hide()
+				center:ClearAllPoints()
+				center:SetPoint("TOPLEFT", content, "TOPLEFT", 10, -10)
+				center:SetPoint("BOTTOMRIGHT", content, "BOTTOMRIGHT", -10, 10)
 				list:Hide()
-				if frame.featuredPane then frame.featuredPane:Show() end
-			else
-				list:Show()
 				if frame.featuredPane then frame.featuredPane:Hide() end
+				if frame.whatsnewPane then frame.whatsnewPane:Show() end
+			else
+				details:Show()
+				center:ClearAllPoints()
+				center:SetPoint("TOPLEFT", content, "TOPLEFT", 10, -10)
+				center:SetPoint("BOTTOMLEFT", content, "BOTTOMLEFT", 10, 10)
+				center:SetWidth(560)
+				if isFeatured then
+					list:Hide()
+					if frame.featuredPane then frame.featuredPane:Show() end
+					if frame.whatsnewPane then frame.whatsnewPane:Hide() end
+				else
+					list:Show()
+					if frame.featuredPane then frame.featuredPane:Hide() end
+					if frame.whatsnewPane then frame.whatsnewPane:Hide() end
+				end
 			end
 			leftSearchLabel:Show()
 			leftSearchBox:Show()
@@ -4537,6 +5589,8 @@ local function EnsureGuideManagerStandaloneFrame(self)
 			-- header is handled by UpdateCenterHeader
 		elseif section == "featured" then
 			-- header is handled by UpdateCenterHeader
+		elseif section == "whatsnew" then
+			-- header is handled by UpdateCenterHeader
 		elseif section == "current" then
 			-- header is handled by UpdateCenterHeader
 		elseif section == "recent" then
@@ -4560,6 +5614,8 @@ local function EnsureGuideManagerStandaloneFrame(self)
 			end
 			if section == "featured" and frame.RenderFeaturedPane then
 				frame:RenderFeaturedPane()
+			elseif section == "whatsnew" and frame.RenderWhatsNewPane then
+				frame:RenderWhatsNewPane()
 			else
 				self:RefreshGuideManagerPanel(treePanel)
 			end

@@ -81,7 +81,7 @@ end
 
 function Pointer:IsRetailRemasterArrowEnabled()
 	return ZGV and ZGV.db and ZGV.db.profile and (
-		ZGV.db.profile.skin == "remaster"
+		ZGV:IsRemasterSkin()
 		or ZGV.db.profile.remasterpointeronlegacy
 	)
 end
@@ -893,6 +893,7 @@ function Pointer:ClearWaypoints (waytype)
 			self:RemoveWaypoint(way)
 		end
 	end
+	if self.ClearAnts then self:ClearAnts() end
 	return n
 end
 
@@ -1859,9 +1860,31 @@ local oldangle = 0
 
 local arrowctrl_elapsed=0
 
+function Pointer:GetArrowRefreshRate()
+	local profile = ZGV and ZGV.db and ZGV.db.profile
+	return (profile and profile.arrow_refresh_rate) or 20
+end
+
+function Pointer:GetArrowRefreshInterval()
+	local rate = self:GetArrowRefreshRate()
+	if rate == 0 then return 0 end
+	if rate == 60 then return 1/60 end
+	if rate == 30 then return 1/30 end
+	return 0.05
+end
+
+function Pointer:ResetArrowRefreshThrottle()
+	arrowctrl_elapsed = 0
+end
+
 function Pointer.ArrowFrameControl_OnUpdate(self,elapsed)
+	local interval = Pointer:GetArrowRefreshInterval()
+	if interval <= 0 then
+		Pointer.ArrowFrame_OnUpdate(Pointer.ArrowFrame,elapsed)
+		return
+	end
 	arrowctrl_elapsed = arrowctrl_elapsed + elapsed
-	if arrowctrl_elapsed >= 0.05 then
+	if arrowctrl_elapsed >= interval then
 		Pointer.ArrowFrame_OnUpdate(Pointer.ArrowFrame,arrowctrl_elapsed)
 		arrowctrl_elapsed = 0
 	end
@@ -2370,3 +2393,264 @@ function Pointer:SetCorpseArrow()
 	end
 end
 
+-- ===== ANT TRAIL SYSTEM =====
+-- Draws animated dot trails between route/path waypoints on the minimap and world map.
+
+do
+	local ANT_SPACING = 0.012 -- spacing in zone-fraction units (0-1 scale)
+	local ANT_SIZE_MINI = 6
+	local ANT_SIZE_WORLD = 8
+	local ANT_ALPHA = 0.55
+	local ANT_MOVE_SPEED = 0.25 -- phase cycles per second
+	local ANT_COLOR = {254/255, 97/255, 0, 1} -- Zygor orange
+	local ANT_MAX = 300
+
+	-- Travel mode colors for LibRover multi-hop paths
+	local ANT_MODE_COLORS = {
+		walk     = {1.0, 1.0, 1.0, 1},       -- white
+		fly      = {0.6, 0.8, 1.0, 1},       -- light blue
+		taxi     = {0.2, 1.0, 0.2, 1},       -- green
+		ship     = {0.3, 0.5, 1.0, 1},       -- blue
+		zeppelin = {0.3, 0.5, 1.0, 1},       -- blue
+		portal   = {0.7, 0.3, 1.0, 1},       -- purple
+		teleport = {0.7, 0.3, 1.0, 1},       -- purple
+		hearth   = {1.0, 0.8, 0.2, 1},       -- gold
+	}
+
+	local antFrames = {} -- pool of ant minimap frames
+	local antWorldFrames = {} -- pool of ant world map frames
+	local antActiveCount = 0
+	local antPoints = {} -- computed interpolated positions {c,z,x,y}
+
+	local function GetOrCreateAntFrame(index)
+		if not antFrames[index] then
+			local f = CreateFrame("Frame", nil, GetMinimapMarkerParent())
+			f:SetSize(ANT_SIZE_MINI, ANT_SIZE_MINI)
+			f:SetFrameStrata("HIGH")
+			f:SetFrameLevel(Minimap:GetFrameLevel() + 5)
+			f.icon = f:CreateTexture(nil, "OVERLAY")
+			f.icon:SetAllPoints()
+			f.icon:SetTexture("Interface\\Buttons\\WHITE8x8")
+			f.icon:SetVertexColor(unpack(ANT_COLOR))
+			f.icon:SetAlpha(ANT_ALPHA)
+			f.icon:SetBlendMode("ADD")
+			f:Hide()
+			f.isZygorAnt = true
+			antFrames[index] = f
+		end
+		if not antWorldFrames[index] then
+			local wf = CreateFrame("Frame", nil, ZGV.Pointer.OverlayFrame or WorldMapButton or WorldMapFrame)
+			wf:SetSize(ANT_SIZE_WORLD, ANT_SIZE_WORLD)
+			wf:SetFrameLevel(WorldMapFrame:GetFrameLevel() + 5)
+			wf.icon = wf:CreateTexture(nil, "OVERLAY")
+			wf.icon:SetAllPoints()
+			wf.icon:SetTexture("Interface\\Buttons\\WHITE8x8")
+			wf.icon:SetVertexColor(unpack(ANT_COLOR))
+			wf.icon:SetAlpha(ANT_ALPHA)
+			wf.icon:SetBlendMode("ADD")
+			wf:Hide()
+			antWorldFrames[index] = wf
+		end
+		return antFrames[index], antWorldFrames[index]
+	end
+
+	local function HideAllAnts()
+		for i = 1, antActiveCount do
+			if antFrames[i] then
+				Astrolabe:RemoveIconFromMinimap(antFrames[i])
+				antFrames[i]:Hide()
+			end
+			if antWorldFrames[i] then
+				antWorldFrames[i]:Hide()
+			end
+		end
+		antActiveCount = 0
+		wipe(antPoints)
+	end
+
+	-- segmentModes: optional table mapping segment index -> mode string for coloring
+	local function InterpolateRouteAnts(waypoints, loop, phase, segmentModes)
+		wipe(antPoints)
+		if not waypoints or #waypoints < 2 then return end
+
+		local count = 0
+		local nw = #waypoints
+		local segments = loop and nw or (nw - 1)
+
+		for i = 1, segments do
+			local w1 = waypoints[i]
+			local w2 = waypoints[(i % nw) + 1]
+			if not w1 or not w2 or not w1.c or not w1.z or not w1.x or not w1.y then break end
+			if not w2.c or not w2.z or not w2.x or not w2.y then break end
+			if w1.c ~= w2.c or w1.z ~= w2.z then break end -- skip cross-zone segments
+
+			local dx = w2.x - w1.x
+			local dy = w2.y - w1.y
+			local dist = math.sqrt(dx * dx + dy * dy)
+			if dist < 0.001 then dist = 0.001 end
+
+			local nAnts = math.floor(dist / ANT_SPACING)
+			if nAnts < 1 then nAnts = 1 end
+			if nAnts > 40 then nAnts = 40 end
+
+			local mode = segmentModes and segmentModes[i]
+
+			-- phase offsets the starting position within each segment for marching effect
+			local stepT = 1 / nAnts
+			for j = 0, nAnts - 1 do
+				if count >= ANT_MAX then return end
+				local t = (j + phase) * stepT
+				if t >= 1 then t = t - 1 end
+				count = count + 1
+				antPoints[count] = {
+					c = w1.c,
+					z = w1.z,
+					x = w1.x + t * dx,
+					y = w1.y + t * dy,
+					mode = mode,
+				}
+			end
+		end
+	end
+
+	function Pointer:UpdateAnts()
+		if not self.ready then return end
+
+		-- Gather route waypoints from the current step
+		local step = ZGV.CurrentStep
+		if not step or not step.goals then
+			HideAllAnts()
+			return
+		end
+
+		-- Collect route-group goto goals
+		local routeWaypoints = {}
+		local isLoop = step._pathopts and step._pathopts.loop
+		for _, goal in ipairs(step.goals) do
+			if goal.routegroup and goal.x and goal.y then
+				local gmap = goal.map or step.map
+				local c, z
+				if gmap then
+					c, z = ZGV:GetMapZoneNumbers(gmap)
+				end
+				if c and z and c > 0 then
+					tinsert(routeWaypoints, {c = c, z = z, x = goal.x / 100, y = goal.y / 100})
+				end
+			end
+		end
+
+		-- Also check for LibRover multi-hop path
+		local lrPath = ZGV.GetLibRoverPath and ZGV:GetLibRoverPath()
+		local hasLibRoverPath = lrPath and #lrPath >= 2
+		local libRoverWaypoints = {}
+		local libRoverSegmentModes = {} -- mode string per segment index
+
+		if hasLibRoverPath then
+			for i, wp in ipairs(lrPath) do
+				local mapID = wp.m or wp.map
+				local x, y = wp.x, wp.y
+				if mapID and x and y then
+					local c, z
+					if ZGV.MapCoords and ZGV.MapCoords.GetAstrolabeCoords then
+						c, z = ZGV.MapCoords:GetAstrolabeCoords(mapID)
+					end
+					if not c and wp.mapname then
+						c, z = ZGV:GetMapZoneNumbers(wp.mapname)
+					end
+					if c and c > 0 then
+						tinsert(libRoverWaypoints, {c = c, z = z or 0, x = x, y = y})
+						-- Store the travel mode for this segment
+						local mode = (wp.type == "taxi" and "taxi")
+							or (wp.type == "portal" and "portal")
+							or (wp.type == "portalauto" and "portal")
+							or (wp.type == "ship" and "ship")
+							or (wp.type == "zeppelin" and "zeppelin")
+							or (wp.type == "hearth" and "hearth")
+							or (wp.type == "teleport" and "teleport")
+							or (wp.mode == "fly" and "fly")
+							or "walk"
+						libRoverSegmentModes[#libRoverWaypoints] = mode
+					end
+				end
+			end
+		end
+
+		-- Use LibRover path if available and has more waypoints, otherwise use route goals
+		local useLibRover = #libRoverWaypoints >= 2
+
+		if #routeWaypoints < 2 and not useLibRover then
+			HideAllAnts()
+			return
+		end
+
+		-- Compute ant positions with animated phase offset
+		local phase = (GetTime() * ANT_MOVE_SPEED) % 1
+		if useLibRover then
+			InterpolateRouteAnts(libRoverWaypoints, false, phase, libRoverSegmentModes)
+		else
+			InterpolateRouteAnts(routeWaypoints, isLoop, phase)
+		end
+
+		-- Place ant frames
+		local lc, lz = GetCurrentMapContinentAndZone()
+		for i = 1, #antPoints do
+			local pt = antPoints[i]
+			local mf, wf = GetOrCreateAntFrame(i)
+
+			-- Apply travel mode color if available, otherwise default orange
+			local color = (pt.mode and ANT_MODE_COLORS[pt.mode]) or ANT_COLOR
+			mf.icon:SetVertexColor(color[1], color[2], color[3], color[4] or 1)
+			wf.icon:SetVertexColor(color[1], color[2], color[3], color[4] or 1)
+
+			-- Minimap: place via Astrolabe
+			if pt.c == lc and pt.z == lz then
+				Astrolabe:PlaceIconOnMinimap(mf, pt.c, pt.z, pt.x, pt.y)
+				mf:Show()
+			else
+				Astrolabe:RemoveIconFromMinimap(mf)
+				mf:Hide()
+			end
+
+			-- World map: place if overlay is showing
+			if ZGV.Pointer.OverlayFrame and ZGV.Pointer.OverlayFrame:IsShown() then
+				local wx, wy = Astrolabe:PlaceIconOnWorldMap(ZGV.Pointer.OverlayFrame, wf, pt.c, pt.z, pt.x, pt.y)
+				if wx and wy and wx >= 0 and wx <= 1 and wy >= 0 and wy <= 1 then
+					wf:Show()
+				else
+					wf:Hide()
+				end
+			else
+				wf:Hide()
+			end
+		end
+
+		-- Hide excess ants from previous frame
+		for i = #antPoints + 1, antActiveCount do
+			if antFrames[i] then
+				Astrolabe:RemoveIconFromMinimap(antFrames[i])
+				antFrames[i]:Hide()
+			end
+			if antWorldFrames[i] then
+				antWorldFrames[i]:Hide()
+			end
+		end
+		antActiveCount = #antPoints
+	end
+
+	function Pointer:ClearAnts()
+		HideAllAnts()
+	end
+
+	-- Hook into the existing update loop
+	local antUpdateFrame = CreateFrame("Frame")
+	local antElapsed = 0
+	antUpdateFrame:SetScript("OnUpdate", function(self, elapsed)
+		antElapsed = antElapsed + elapsed
+		if antElapsed < 0.15 then return end -- ~7 FPS for ants
+		antElapsed = 0
+		if ZGV.Pointer and ZGV.Pointer.ready then
+			ZGV.Pointer:UpdateAnts()
+		end
+	end)
+end
+-- ===== END ANT TRAIL SYSTEM =====

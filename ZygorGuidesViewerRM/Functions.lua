@@ -113,3 +113,44 @@ function BigFixDropDownMenuFrameLevelBug()
 end
 hooksecurefunc("ToggleDropDownMenu",BigFixDropDownMenuFrameLevelBug) -- should this become slow, make it fire once and hope for the best...
 
+-- ChainCall: method chaining helper used by Gold Guide UI and other systems.
+-- Usage: CHAIN(frame):SetSize(100,50):SetPoint("CENTER").__END
+function ZGV.ChainCall(obj)
+	return setmetatable({},{__index=function(self,fun)
+		if fun=="__END" then return obj end
+		return function(self,...)
+			assert(obj[fun],fun.." missing in object")
+			if fun=="SetFont" then
+				local font, size, flags = ...
+				if flags == nil then flags = "" end
+				obj[fun](obj, font, size, flags)
+			else
+				obj[fun](obj,...)
+			end
+			return self
+		end
+	end})
+end
+
+do
+	local function WrapperCall(self,...)
+		local obj=self.__self
+		local fun=self.__fun
+		fun(obj,...)
+		return self
+	end
+	local function ChainInternalCall(self,fun)
+		local obj=self.__self
+		if fun=="__END" then return obj end
+		assert(obj[fun],fun.." missing in object")
+		self.__fun = obj[fun]
+		return WrapperCall
+	end
+	local T,TM={},{__index=ChainInternalCall}
+	function ZGV.ChainCallClean(obj)
+		table.wipe(T)
+		T.__self=obj
+		return setmetatable(T,TM)
+	end
+end
+

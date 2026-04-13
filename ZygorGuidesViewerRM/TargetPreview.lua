@@ -12,21 +12,27 @@ local PREVIEW_SNAP_THRESHOLD_Y = 90
 local PREVIEW_CLOSE_SIZE = 16
 local PREVIEW_ROTATION_SPEED = 0.012
 local PREVIEW_TARGET_CAM_DISTANCE = 2.0
-local PREVIEW_MODEL_REFRESH_INTERVAL = 0.08
-local PREVIEW_MODEL_REFRESH_TICKS = 4
-
-local PREVIEW_MODEL_FRAMING = {
-	Humanoid = { cam = 1.35, facing = 0.00 },
-	Undead = { cam = 1.50, facing = 0.00 },
-	Demon = { cam = 1.65, facing = 0.00 },
-	Elemental = { cam = 1.75, facing = 0.00 },
-	Beast = { cam = 3.10, facing = 0.00 },
-	Critter = { cam = 2.60, facing = 0.00 },
-	Dragonkin = { cam = 3.25, facing = 0.00 },
-	default = { cam = PREVIEW_TARGET_CAM_DISTANCE, facing = 0.00 },
-}
 
 me.targetPreviewSafeModelReady = me.targetPreviewSafeModelReady or false
+
+local function TP_GetModelCamDistance(unit)
+	if not unit or not UnitExists(unit) then
+		return PREVIEW_TARGET_CAM_DISTANCE
+	end
+
+	local creatureType = UnitCreatureType and UnitCreatureType(unit)
+	if creatureType == "Humanoid" then
+		return 1.35
+	elseif creatureType == "Undead" or creatureType == "Demon" or creatureType == "Elemental" then
+		return 1.6
+	elseif creatureType == "Beast" or creatureType == "Critter" or creatureType == "Dragonkin" then
+		return 2.5
+	elseif creatureType == "Giant" or creatureType == "Mechanical" then
+		return 2.2
+	end
+
+	return PREVIEW_TARGET_CAM_DISTANCE
+end
 
 local function TP_ApplyIcon(texture, icon)
 	if not texture then return end
@@ -50,19 +56,20 @@ end
 local function TP_GetClassificationText(unit)
 	if not unit or not UnitExists(unit) then return nil end
 	local class = UnitClassification(unit)
-	if class == "worldboss" then return "Boss" end
-	if class == "elite" then return "Elite" end
-	if class == "rareelite" then return "Rare Elite" end
-	if class == "rare" then return "Rare" end
+	if class == "worldboss" then return L["targetpreview_class_boss"] end
+	if class == "elite" then return L["targetpreview_class_elite"] end
+	if class == "rareelite" then return L["targetpreview_class_rareelite"] end
+	if class == "rare" then return L["targetpreview_class_rare"] end
 end
 
 local function TP_GetLevelText(unit)
 	if not unit or not UnitExists(unit) then return nil end
 	local level = UnitLevel(unit)
+	local levelLabel = LEVEL or L["targetpreview_level"] or "Level"
 	if not level or level < 0 then
-		return (LEVEL or "Level") .. " ??"
+		return levelLabel .. " ??"
 	end
-	return string.format("%s %d", LEVEL or "Level", level)
+	return string.format("%s %d", levelLabel, level)
 end
 
 local function TP_GetReactionColor(unit)
@@ -114,28 +121,6 @@ local function TP_CopySubject(spec, step)
 		signature = spec.signature,
 		goal = spec.goal,
 		step = step,
-	}
-end
-
-local function TP_TryModelCall(model, methodName, ...)
-	if not model then return false end
-	local method = model[methodName]
-	if type(method) ~= "function" then return false end
-	return pcall(method, model, ...)
-end
-
-local function TP_GetModelFraming(unit, subject, model)
-	local creatureType = UnitCreatureType and UnitCreatureType(unit)
-	local profile = PREVIEW_MODEL_FRAMING[creatureType] or PREVIEW_MODEL_FRAMING.default
-	return {
-		cam = profile.cam or PREVIEW_TARGET_CAM_DISTANCE,
-		facing = profile.facing or 0,
-		key = table.concat({
-			tostring((UnitGUID and UnitGUID(unit)) or UnitName(unit) or ""),
-			tostring(creatureType or "unknown"),
-			tostring(profile.cam or PREVIEW_TARGET_CAM_DISTANCE),
-			tostring(profile.facing or 0),
-		}, ":"),
 	}
 end
 
@@ -542,18 +527,16 @@ function me:TargetPreview_ApplyTheme()
 	local backc = self.db.profile.skincolors and self.db.profile.skincolors.back or {0.08, 0.09, 0.12}
 	local backalpha = self.db.profile.backopacity or 0.3
 	local opacitymain = self.db.profile.opacitymain or 1.0
-	local remastercolor = self.db.profile.remastercolor or "dark"
-	local isGoldAccent = (remastercolor == "goldaccent" or remastercolor == "goals")
-	local border = { 0.18, 0.18, 0.20, 0.92 }
-	local insetBg = { 0.10, 0.10, 0.11, 0.95 }
-	local insetBorder = { 0.20, 0.20, 0.22, 0.90 }
-	local rolec = { 1.0, 0.86, 0.45, 1 }
-	if isGoldAccent then
-		backc = { 0.04, 0.04, 0.05 }
-		border = { 0.17, 0.15, 0.10, 0.88 }
-		insetBg = { 0.05, 0.05, 0.06, 0.97 }
-		insetBorder = { 0.22, 0.18, 0.10, 0.90 }
-		rolec = { 0.92, 0.80, 0.50, 1.00 }
+	local tpTheme = ZGV:GetCurrentTheme()
+	local tpVariantId = ZGV:GetCurrentVariant()
+	local tpSkin = ZGV:GetCurrentSkin()
+	local tpVariantData = tpSkin and tpSkin.variants and tpSkin.variants[tpVariantId]
+	local border = (tpTheme and tpTheme.frameBorder) or { 0.18, 0.18, 0.20, 0.92 }
+	local insetBg = (tpTheme and tpTheme.insetBg) or { 0.10, 0.10, 0.11, 0.95 }
+	local insetBorder = (tpTheme and tpTheme.insetBorder) or { 0.20, 0.20, 0.22, 0.90 }
+	local rolec = (tpTheme and tpTheme.textPrimary) or { 1.0, 0.86, 0.45, 1 }
+	if tpVariantData and tpVariantData.rootBackOverride then
+		backc = tpVariantData.rootBackOverride
 	end
 	frame:SetAlpha(opacitymain)
 	frame:SetBackdropColor(backc[1], backc[2], backc[3], backalpha)
@@ -586,43 +569,6 @@ function me:TargetPreview_GetUnitData(subject)
 	}
 end
 
-function me:TargetPreview_ClearModelState(frame)
-	if not frame then return end
-	frame.modelSubjectKey = nil
-	frame.modelFramingKey = nil
-	frame.modelFramingTicks = nil
-	frame.modelFramingElapsed = nil
-end
-
-function me:TargetPreview_ScheduleModelFraming(frame)
-	if not frame then return end
-	frame.modelFramingKey = nil
-	frame.modelFramingTicks = PREVIEW_MODEL_REFRESH_TICKS
-	frame.modelFramingElapsed = 0
-end
-
-function me:TargetPreview_ApplyModelFraming(force)
-	local frame = self.TargetPreviewPane
-	local model = frame and frame.model
-	if not frame or not model or not UnitExists("target") then return false end
-	if not frame.previewSubject or not TP_SubjectMatchesTarget(frame.previewSubject) then return false end
-
-	local framing = TP_GetModelFraming("target", frame.previewSubject, model)
-	if not framing then return false end
-	if not force and frame.modelFramingKey == framing.key then return true end
-
-	TP_TryModelCall(model, "SetCamDistanceScale", framing.cam)
-	if model.SetFacing then
-		if frame.modelFacing == nil then
-			frame.modelFacing = framing.facing or 0
-		end
-		TP_TryModelCall(model, "SetFacing", frame.modelFacing)
-	end
-
-	frame.modelFramingKey = framing.key
-	return true
-end
-
 function me:TargetPreview_ShowModel(subject)
 	if not self.targetPreviewSafeModelReady then return false end
 	if not subject or not subject.target then return false end
@@ -633,17 +579,24 @@ function me:TargetPreview_ShowModel(subject)
 	if not model or not model.SetUnit then return false end
 
 	local targetGUID = UnitGUID and UnitGUID("target")
-	local subjectKey = (subject.signature or subject.target or "target") .. ":" .. "unit:" .. tostring(targetGUID or UnitName("target") or "")
+	local subjectKey = (subject.signature or subject.target or "target") .. ":" .. tostring(targetGUID or UnitName("target") or "")
 
 	if frame.modelSubjectKey ~= subjectKey then
 		if model.ClearModel then model:ClearModel() end
 		model:SetUnit("target")
+		if model.SetCamDistanceScale then
+			local scale = TP_GetModelCamDistance("target")
+			pcall(model.SetCamDistanceScale, model, scale)
+		end
+		if model.SetFacing then
+			frame.modelFacing = 0
+			model:SetFacing(frame.modelFacing)
+		end
 		frame.modelSubjectKey = subjectKey
-		frame.modelFacing = nil
-		self:TargetPreview_ScheduleModelFraming(frame)
+	elseif model.SetFacing then
+		frame.modelFacing = frame.modelFacing or 0
+		model:SetFacing(frame.modelFacing)
 	end
-
-	self:TargetPreview_ApplyModelFraming(frame.modelFramingKey == nil)
 
 	return true
 end
@@ -664,13 +617,13 @@ function me:TargetPreview_ApplySubject(subject)
 	local allowFallbackCard = subject and self:TargetPreview_IsFocusedSubject(subject)
 
 	if mode == "model" and not canShowModel then
-		self:TargetPreview_ClearModelState(frame)
+		frame.modelSubjectKey = nil
 		return false
 	end
 	if mode ~= "card" and not hasLiveTarget and not allowFallbackCard then
 		if frame.model.ClearModel then frame.model:ClearModel() end
 		frame.model:Hide()
-		self:TargetPreview_ClearModelState(frame)
+		frame.modelSubjectKey = nil
 		return false
 	end
 
@@ -693,7 +646,7 @@ function me:TargetPreview_ApplySubject(subject)
 	else
 		if frame.model.ClearModel then frame.model:ClearModel() end
 		frame.model:Hide()
-		self:TargetPreview_ClearModelState(frame)
+		frame.modelSubjectKey = nil
 		frame.placeholderIcon:Show()
 		if hasSubject then
 			frame.hintText:SetText(L["targetpreview_hint"])
@@ -741,17 +694,6 @@ function me:TargetPreview_CreatePane()
 			selfFrame.modelRotateCursorX = cx
 			selfFrame.modelFacing = (selfFrame.modelFacing or 0) + (delta * PREVIEW_ROTATION_SPEED)
 			selfFrame.model:SetFacing(selfFrame.modelFacing)
-		end
-		if selfFrame.modelFramingTicks and selfFrame.modelFramingTicks > 0 then
-			selfFrame.modelFramingElapsed = (selfFrame.modelFramingElapsed or 0) + (elapsed or 0)
-			if selfFrame.modelFramingElapsed >= PREVIEW_MODEL_REFRESH_INTERVAL then
-				selfFrame.modelFramingElapsed = 0
-				if me:TargetPreview_ApplyModelFraming(true) then
-					selfFrame.modelFramingTicks = selfFrame.modelFramingTicks - 1
-				else
-					selfFrame.modelFramingTicks = nil
-				end
-			end
 		end
 		if me.db.profile.targetpreview_locked then return end
 		if selfFrame.draggingManual then
@@ -860,7 +802,6 @@ function me:TargetPreview_CreatePane()
 		if not owner then return end
 		owner.modelRotating = nil
 		owner.modelRotateCursorX = nil
-		me:TargetPreview_ClearModelState(owner)
 	end)
 	frame.placeholderIcon = frame.viewport:CreateTexture(nil, "ARTWORK")
 	frame.hintText = frame.viewport:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")

@@ -107,7 +107,7 @@ function ZGV:ApplyFrameLayout()
 
 	CaptureDefaultLayout()
 
-	local useRemaster = self.db.profile.skin == "remaster"
+	local useRemaster = self:IsRemasterSkin()
 	local layout = useRemaster and REMASTER_LAYOUT or self.FrameLayoutDefaults
 
 	self.STEP_SPACING = layout.STEP_SPACING
@@ -658,7 +658,7 @@ function ZygorGuidesViewerFrame_OnLoad(self)
 	ZygorGuidesViewerFrame_Skipper_PrevButton:RegisterForClicks("LeftButtonUp", "RightButtonUp")
 	ZygorGuidesViewerFrame_Skipper_NextButton:RegisterForClicks("LeftButtonUp", "RightButtonUp")
 
-	if ZGV and ZGV.db and ZGV.db.profile and ZGV.db.profile.skin == "remaster" then
+	if ZGV and ZGV.db and ZGV.db.profile and ZGV:IsRemasterSkin() then
 		SafeSetFont(ZygorGuidesViewerFrame_Border_SectionTitle, REMASTER_LAYOUT.SECTION_FONT, REMASTER_LAYOUT.SECTION_FONT_SIZE)
 	else
 		local ok = pcall(ZygorGuidesViewerFrame_Border_SectionTitle.SetFontObject, ZygorGuidesViewerFrame_Border_SectionTitle, "GameFontNormalSmall")
@@ -746,7 +746,7 @@ function ZGV:RefreshAutoHideBorderState()
 	if not ZGVF or not self.db or not self.db.profile then return end
 	local hideborder = self.db.profile.hideborder
 	local opacity = self.db.profile.opacitymain or 1.0
-	local isRemaster = self.db.profile.skin == "remaster"
+	local isRemaster = self:IsRemasterSkin()
 	local remasterFrames = isRemaster and self.RemasterFrames
 	local remasterHeader = remasterFrames and remasterFrames.header
 	local remasterToolbar = remasterFrames and remasterFrames.toolbar
@@ -810,7 +810,7 @@ end
 
 function ZGV:ForceHideBorderNow()
 	if not self.db or not self.db.profile or not self.db.profile.hideborder then return end
-	local isRemaster = self.db.profile.skin == "remaster"
+	local isRemaster = self:IsRemasterSkin()
 	local remasterFrames = isRemaster and self.RemasterFrames
 	if isRemaster and remasterFrames then
 		SetRemasterChromeHidden(remasterFrames, true, true)
@@ -861,7 +861,7 @@ function ZygorGuidesViewerFrame_OnUpdate(self,elapsed)
 
 	local locked = ZGV.db.profile.windowlocked
 
-	local isRemaster = ZGV.db and ZGV.db.profile and ZGV.db.profile.skin == "remaster"
+	local isRemaster = ZGV.db and ZGV.db.profile and ZGV:IsRemasterSkin()
 	local remasterFrames = isRemaster and ZGV.RemasterFrames
 	local remasterHeader = remasterFrames and remasterFrames.header
 	local remasterToolbar = remasterFrames and remasterFrames.toolbar

@@ -157,6 +157,7 @@ function me:Options_RegisterDefaults()
 			arrowcolorcustom_near = {r=0.0,g=1.0,b=0.0},
 			arrowoutline = false,
 			arrowoutlinemode = "default",
+			arrow_refresh_rate = 20,
 			simplifyarrownouncolors = false,
 			remasterpointeronlegacy = false,
 			arrowscale = 1.0,
@@ -176,9 +177,40 @@ function me:Options_RegisterDefaults()
 
 			--colorborder = true,
 
-			-- hidden
+			-- LibRover pathfinding
+			pathfinding = true,
+			pathfinding_speed = 1,
+			pathfinding_comfort = 0,
+			pathfinding_preferfly = true,
+			travelusehs = true,
+			traveluseghs = false,
+			travelusedhs = false,
+			traveluseitems = true,
+			travelusewhistle = false,
+			travelusespells = true,
+			force_travel_cache = false,
+			travel_do_full_linking_at_startup = false,
 
+			-- hidden
 			displaymode = "guide",
+
+			-- ItemScore & Gear Finder
+			autogear = true,
+			autogearauto = false,
+			autogear_keepheirlooms = true,
+			itemscore_tooltips = true,
+			questitemcache = {},
+
+			-- Gold Guide tooltips
+			gold_tooltips_show = true,
+			gold_tooltips_ah = 2,
+			gold_tooltips_out = 1,
+			gold_tooltips_shift = true,
+			gold_tooltips_guide = 2,
+
+			-- Auto-sell grey items & auto-repair
+			autosellgrey = true,
+			autorepair = 2, -- 1=off, 2=own gold, 3=guild then own, 4=own then guild
 
 		}
 	})
@@ -449,7 +481,7 @@ function me:Options_DefineOptions()
 							end
 							local frame = ZygorGuidesViewerFrame
 							local handler = frame and frame.GetScript and frame:GetScript("OnSizeChanged")
-							if self.db.profile.skin == "remaster" and frame and handler then
+							if self:IsRemasterSkin() and frame and handler then
 								self.forceRemasterRelayout = true
 								handler(frame)
 							else
@@ -471,59 +503,30 @@ function me:Options_DefineOptions()
 						name = L["opt_skin"],
 						desc = L["opt_skin_desc"],
 						type = "select",
-						values = {
-							remaster_dark="|cffcfd6e8Dark|r",
-							remaster_goldaccent="|cffebd199Gold Accent|r",
-							remaster_blue="|cff88b3ffBlue|r",
-							remaster_green="|cff88ff88Green|r",
-							remaster_orange="|cffffcc66Orange|r",
-							remaster_violet="|cffff99ffViolet|r",
-							blue=L["opt_skin_blue"].." (legacy)",
-							green=L["opt_skin_green"].." (legacy)",
-							orange=L["opt_skin_orange"].." (legacy)",
-							violet=L["opt_skin_violet"].." (legacy)",
-						},
+						values = function()
+								return self:BuildSkinDropdownValues()
+							end,
 						get = function()
-							if self.db.profile.skin == "remaster" then
-								local rc = self.db.profile.remastercolor or "dark"
-								if rc == "goals" then rc = "goldaccent" end
-								return "remaster_"..rc
-							end
-							return self.db.profile.skin
+							return self:GetSkinDropdownKey()
 						end,
-						set = function(_,n)
-							local colors = {
-										remaster_dark={text={0.90,0.92,0.98},back={0.08,0.09,0.12}},
-										remaster_goldaccent={text={0.92,0.80,0.50},back={0.07,0.08,0.10}},
-										remaster_blue={text={0.70,0.80,1.00},back={0.08,0.11,0.24}},
-										remaster_green={text={0.50,1.00,0.50},back={0.09,0.20,0.07}},
-										remaster_orange={text={1.00,0.80,0.00},back={0.23,0.11,0.07}},
-										remaster_violet={text={0.95,0.65,1.00},back={0.17,0.07,0.20}},
-										violet={text={0.95,0.65,1.0},back={0.17,0.07,0.20}},
-										blue={text={0.7,0.8,1.0},back={0.08,0.11,0.24}},
-										green={text={0.5,1.0,0.5},back={0.09,0.20,0.07}},
-										orange={text={1.0,0.8,0.0},back={0.23,0.11,0.07}}}
-							local oldskin = self.db.profile.skin
-							local oldremaster = self.db.profile.remastercolor
-							local oldresizeup = self.db.profile.resizeup
-							if n:match("^remaster_") then
-								self.db.profile.skin = "remaster"
-								local rc = n:gsub("^remaster_", "")
-								if rc == "goals" then rc = "goldaccent" end
-								self.db.profile.remastercolor = rc
-								self.db.profile.skincolors = colors["remaster_"..rc] or colors.remaster_dark
-							else
-								self.db.profile.skin = n
-								self.db.profile.skincolors = colors[self.db.profile.skin]
-							end
-							local visualOnly = (oldskin == self.db.profile.skin) and (self.db.profile.skin == "remaster") and (oldresizeup == self.db.profile.resizeup) and (oldremaster ~= self.db.profile.remastercolor)
+						set = function(_, n)
+							local oldSkinStyle = self.db.profile.skinstyle
+							local oldVariant = self.db.profile.skinvariant
+							local oldSkin = self.db.profile.skin
+							local oldResizeup = self.db.profile.resizeup
+							local isRemaster = self:ApplySkinFromDropdownKey(n)
+							local visualOnly = isRemaster
+								and (oldSkin == self.db.profile.skin)
+								and (oldResizeup == self.db.profile.resizeup)
+								and (oldSkinStyle == self.db.profile.skinstyle or oldSkinStyle == nil)
+								and (oldVariant ~= self.db.profile.skinvariant)
 							self:UpdateSkin(visualOnly)
 							if not visualOnly then
 								self:AlignFrame()
 								self:ScrollToCurrentStep()
 							end
 							self:UpdateLocking()
-						      end,
+						end,
 						order=1.1,
 						width="normal",
 					},
@@ -539,7 +542,7 @@ function me:Options_DefineOptions()
 						type = 'range',
 						set = function(i,v)
 							Setter_Simple(i,v)
-							if self.db and self.db.profile and self.db.profile.skin=="remaster" then
+							if self.db and self.db.profile and self:IsRemasterSkin() then
 								self:UpdateSkin(true)
 								if self.ActionButtons_ApplyProfile then self:ActionButtons_ApplyProfile() end
 								if self.TargetPreview_ApplyProfile then self:TargetPreview_ApplyProfile() end
@@ -573,7 +576,7 @@ function me:Options_DefineOptions()
 						type = 'range',
 						set = function(i,v)
 							Setter_Simple(i,v)
-							self:UpdateSkin(self.db and self.db.profile and self.db.profile.skin=="remaster")
+							self:UpdateSkin(self.db and self.db.profile and self:IsRemasterSkin())
 						end,
 						min=0.0,
 						max=1.0,
@@ -1499,16 +1502,267 @@ function me:Options_DefineOptions()
 				stepArgs.showcountsteps.order = 2.2
 				stepArgs.showcountsteps.width = "normal"
 			end
-			if stepWindowArgs.skin then
-				stepArgs.skin = CloneOptionNode(stepWindowArgs.skin)
-				stepArgs.skin.order = 2.3
-				stepArgs.skin.width = "normal"
-			end
 			stepWindowArgs.showcountsteps = nil
 			stepWindowArgs.skin = nil
 			stepWindowArgs.sep_window_row1 = nil
 		end
 	end
+
+	self.optionsskin = {
+		name = "Skin",
+		desc = "Choose the visual theme for the guide viewer.",
+		type = "group",
+		order = 1.5,
+		handler = self,
+		get = Getter_Simple,
+		set = Setter_Simple,
+		args = {
+			intro = {
+				type = "description",
+				name = "Choose the overall viewer look first, then fine-tune size, opacity, and text. Remaster remains the recommended default skin, while Retail offers a more Blizzard-like treatment.",
+				order = 1,
+				fontSize = "medium",
+			},
+			skin = {
+				name = "Skin",
+				desc = "Choose a skin and color variant.",
+				type = "select",
+				values = function()
+					return self:BuildSkinDropdownValues()
+				end,
+				get = function()
+					return self:GetSkinDropdownKey()
+				end,
+				set = function(_, n)
+					local oldSkinStyle = self.db.profile.skinstyle
+					local oldVariant = self.db.profile.skinvariant
+					local oldSkin = self.db.profile.skin
+					local oldResizeup = self.db.profile.resizeup
+					local isRemaster = self:ApplySkinFromDropdownKey(n)
+					local visualOnly = isRemaster
+						and (oldSkin == self.db.profile.skin)
+						and (oldResizeup == self.db.profile.resizeup)
+						and (oldSkinStyle == self.db.profile.skinstyle or oldSkinStyle == nil)
+						and (oldVariant ~= self.db.profile.skinvariant)
+					self:UpdateSkin(visualOnly)
+					if not visualOnly then
+						self:AlignFrame()
+						self:ScrollToCurrentStep()
+					end
+					self:UpdateLocking()
+				end,
+				order = 2,
+				width = "double",
+			},
+			appearance_header = {
+				type = "header",
+				name = "Appearance",
+				order = 3,
+				width = "full",
+			},
+			appearance_desc = {
+				type = "description",
+				name = "Adjust viewer scale, text sizing, and frame opacity.",
+				order = 3.1,
+				width = "full",
+			},
+			framescale = {
+				name = L["opt_framescale"],
+				desc = L["opt_framescale_desc"],
+				type = "range",
+				set = function(i,v) Setter_Simple(i,v) self.Frame:SetScale(ZGV.db.profile.framescale) end,
+				min = 0.5,
+				max = 2.0,
+				step = 0.1,
+				bigStep = 0.1,
+				isPercent = true,
+				order = 3.2,
+				width = "normal",
+			},
+			fontsize = {
+				name = L["opt_fontsize"],
+				desc = L["opt_fontsize_desc"],
+				type = "range",
+				set = function(i,v) Setter_Simple(i,v) self:AlignFrame() self:UpdateFrame() end,
+				min = 7,
+				max = 16,
+				step = 1,
+				bigStep = 1,
+				order = 3.3,
+				width = "normal",
+			},
+			fontsecsize = {
+				name = L["opt_fontsecsize"],
+				desc = L["opt_fontsecsize_desc"],
+				type = "range",
+				set = function(i,v) Setter_Simple(i,v) self:AlignFrame() self:UpdateFrame() end,
+				min = 5,
+				max = 14,
+				step = 1,
+				bigStep = 1,
+				order = 3.4,
+				width = "normal",
+			},
+			opacitymain = {
+				name = L["opt_opacitymain"],
+				desc = L["opt_opacitymain_desc"],
+				type = "range",
+				set = function(i,v)
+					Setter_Simple(i,v)
+					if self.db and self.db.profile and self:IsRemasterSkin() then
+						self:UpdateSkin(true)
+						if self.ActionButtons_ApplyProfile then self:ActionButtons_ApplyProfile() end
+						if self.TargetPreview_ApplyProfile then self:TargetPreview_ApplyProfile() end
+					else
+						self:AlignFrame()
+					end
+				end,
+				min = 0,
+				max = 1.0,
+				isPercent = true,
+				step = 0.01,
+				bigStep = 0.1,
+				order = 3.5,
+				width = "normal",
+			},
+			colors_header = {
+				type = "header",
+				name = "Colors",
+				order = 4,
+				width = "full",
+			},
+			colors_desc = {
+				type = "description",
+				name = "Tune the frame background strength for the selected skin variant.",
+				order = 4.1,
+				width = "full",
+			},
+			backopacity = {
+				name = L["opt_backopacity"],
+				desc = L["opt_backopacity_desc"],
+				type = "range",
+				set = function(i,v)
+					Setter_Simple(i,v)
+					self:UpdateSkin(self.db and self.db.profile and self:IsRemasterSkin())
+				end,
+				min = 0.0,
+				max = 1.0,
+				isPercent = true,
+				step = 0.01,
+				bigStep = 0.1,
+				order = 4.2,
+				width = "normal",
+			},
+			advanced_header = {
+				type = "header",
+				name = "Advanced",
+				order = 5,
+				width = "full",
+			},
+			advanced_desc = {
+				type = "description",
+				name = "Lower-frequency display controls that affect frame layout and step presentation.",
+				order = 5.1,
+				width = "full",
+			},
+			showcountsteps = {
+				name = L["opt_showcountsteps"],
+				desc = L["opt_showcountsteps_desc"],
+				type = "select",
+				values = {
+					[0]=L["opt_showcountsteps_all"],
+					"1","2","3","4","5"
+				},
+				get = function() return self.db.profile.showallsteps and 0 or self.db.profile.showcountsteps end,
+				set = function(_,n)
+					if n==0 then
+						self.db.profile.showallsteps = true
+						local targetHeight = self.db.profile.fullheight or 0
+						if targetHeight <= 0 and ZygorGuidesViewerFrame and ZygorGuidesViewerFrame.GetHeight then
+							local h = ZygorGuidesViewerFrame:GetHeight() or 0
+							if h > 0 then
+								self.db.profile.fullheight = math.max(self.db.profile.fullheight or 0, h)
+								targetHeight = self.db.profile.fullheight
+							end
+						end
+						if targetHeight > 0 then ZygorGuidesViewerFrame:SetHeight(targetHeight) end
+					else
+						self.db.profile.showallsteps=false
+						self.db.profile.showcountsteps=n
+					end
+					local frame = ZygorGuidesViewerFrame
+					local handler = frame and frame.GetScript and frame:GetScript("OnSizeChanged")
+					if self:IsRemasterSkin() and frame and handler then
+						self.forceRemasterRelayout = true
+						handler(frame)
+					else
+						self:UpdateFrame(true)
+						self:AlignFrame()
+						self:UpdateLocking()
+						self:ScrollToCurrentStep()
+						if not self.db.profile.showallsteps then
+							if ZygorGuidesViewerFrameScrollScrollBar then
+								ZygorGuidesViewerFrameScrollScrollBar:SetValue(0)
+							end
+							self:ResizeFrame()
+						end
+					end
+				end,
+				order = 5.2,
+				width = "normal",
+			},
+			hideborder = {
+				name = L["opt_hideborder"],
+				desc = L["opt_hideborder_desc"],
+				type = "toggle",
+				set = function(i,v)
+					self.db.profile.hideborder = v
+					ZGV.borderfadedout = nil
+					if self.RefreshAutoHideBorderState then
+						self:RefreshAutoHideBorderState()
+					end
+					if not v then
+						if ZygorGuidesViewerFrame_Border then
+							ZygorGuidesViewerFrame_Border:Show()
+							ZygorGuidesViewerFrame_Border:SetAlpha(ZGV.db.profile.opacitymain or 1.0)
+						end
+						if ZygorGuidesViewerFrame_Skipper and ZygorGuidesViewerFrame_Skipper.mustbevisible then
+							ZygorGuidesViewerFrame_Skipper:Show()
+							ZygorGuidesViewerFrame_Skipper:SetAlpha(ZGV.db.profile.opacitymain or 1.0)
+						end
+					end
+				end,
+				order = 5.3,
+				width = "normal",
+			},
+			hidestepborders = {
+				name = L["opt_hidestepborders"],
+				desc = L["opt_hidestepborders_desc"],
+				type = "toggle",
+				set = function(i,v) Setter_Simple(i,v) self:UpdateFrame() end,
+				order = 5.4,
+				width = "normal",
+			},
+			windowlocked = {
+				name = L['opt_windowlocked'],
+				desc = L['opt_windowlocked_desc'],
+				type = 'toggle',
+				set = function(i,v) Setter_Simple(i,v) self:UpdateLocking() end,
+				order = 5.5,
+				width = "normal",
+			},
+			resizeup = {
+				name = L["opt_miniresizeup"],
+				desc = L["opt_miniresizeup_desc"],
+				type = 'toggle',
+				set = function(i,v)
+					self:SetResizeUp(v)
+				end,
+				order = 5.6,
+				width = "normal",
+			},
+		},
+	}
 
 	self.optionstravelsystem = {
 		name = L["gb_opt_travel"],
@@ -1530,6 +1784,86 @@ function me:Options_DefineOptions()
 		get = Getter_Simple,
 		set = Setter_Simple,
 		args = BuildSplitOptionsArgs(self.optionsmap.args, {"minicons","transparency","scale","foglight","_internal","resetarrowposition"}, L["opt_mapswaypoints_intro"]),
+	}
+
+	self.optionsoptimization = {
+		name = L["gb_opt_optimization"],
+		desc = L["gb_opt_desc_optimization"],
+		type = "group",
+		order = 2.35,
+		handler = self,
+		get = Getter_Simple,
+		set = Setter_Simple,
+		args = {
+			intro = {
+				order = 1,
+				type = "description",
+				name = L["opt_optimization_intro"],
+			},
+			arrow_header = {
+				order = 10,
+				type = "header",
+				name = L["opt_optimization_arrow_header"],
+			},
+			arrow_desc = {
+				order = 11,
+				type = "description",
+				name = L["opt_optimization_arrow_desc"],
+			},
+			arrow_refresh_rate = {
+				order = 12,
+				type = "select",
+				name = L["opt_arrow_refresh_rate"],
+				desc = L["opt_arrow_refresh_rate_desc"],
+				width = "double",
+				values = {
+					[20] = L["opt_arrow_refresh_rate_20"],
+					[30] = L["opt_arrow_refresh_rate_30"],
+					[60] = L["opt_arrow_refresh_rate_60"],
+					[0] = L["opt_arrow_refresh_rate_unlimited"],
+				},
+				get = function()
+					return self.db.profile.arrow_refresh_rate or 20
+				end,
+				set = function(_,v)
+					self.db.profile.arrow_refresh_rate = tonumber(v) or 20
+					if ZGV.Pointer and ZGV.Pointer.ResetArrowRefreshThrottle then
+						ZGV.Pointer:ResetArrowRefreshThrottle()
+					end
+					if self.db.profile.waypointaddon == "internal" and ZGV.Pointer and ZGV.Pointer.ArrowFrame and ZGV.Pointer.ArrowFrame:IsShown() then
+						ZGV:SetWaypoint()
+					end
+				end,
+				disabled = function()
+					return self.db.profile.waypointaddon ~= "internal"
+				end,
+			},
+			arrow_note = {
+				order = 13,
+				type = "description",
+				name = L["opt_optimization_internal_only"],
+			},
+			memory_header = {
+				order = 20,
+				type = "header",
+				name = L["opt_optimization_memory_header"],
+			},
+			memory_desc = {
+				order = 21,
+				type = "description",
+				name = L["opt_optimization_memory_desc"],
+			},
+			diagnostics_header = {
+				order = 30,
+				type = "header",
+				name = L["opt_optimization_diagnostics_header"],
+			},
+			diagnostics_desc = {
+				order = 31,
+				type = "description",
+				name = L["opt_optimization_diagnostics_desc"],
+			},
+		},
 	}
 
 	self.optionsnotifications = {
@@ -1903,16 +2237,403 @@ function me:Options_DefineOptions()
 			}
 		},
 	}
-	
+
+	-- ===================== GEAR ADVISOR =====================
+	self.optionsgear = {
+		name = "Gear Advisor",
+		desc = "Gear scoring and upgrade detection",
+		type = 'group',
+		order = 4.1,
+		handler = self,
+		get = Getter_Simple,
+		set = Setter_Simple,
+		args = {
+			desc = {
+				order = 1,
+				type = "description",
+				name = "Set how Zygor detects upgrades, how it prompts you, and which sources Gear Finder should search.",
+			},
+			detection_header = {
+				order = 1.5,
+				type = "header",
+				name = "Detection",
+			},
+			autogear = {
+				order = 2,
+				name = "Enable Gear Advisor",
+				desc = "Enable item scoring and upgrade detection",
+				type = "toggle",
+				width = "full",
+				set = function(i,v)
+					Setter_Simple(i,v)
+					if ZGV.ItemScore and ZGV.ItemScore.GearFinder and ZGV.ItemScore.GearFinder.UpdateSystemTab then
+						ZGV.ItemScore.GearFinder:UpdateSystemTab()
+					end
+				end,
+			},
+			itemscore_tooltips = {
+				order = 3,
+				name = "Show ItemScore on Tooltips",
+				desc = "Show upgrade percentage on item tooltips",
+				type = "toggle",
+				width = "full",
+				disabled = function() return not self.db.profile.autogear end,
+			},
+			prompting_header = {
+				order = 3.5,
+				type = "header",
+				name = "Prompting",
+			},
+			autogearauto = {
+				order = 4,
+				name = "Auto-equip Upgrades",
+				desc = "Automatically equip upgrades without asking (notification only)",
+				type = "toggle",
+				width = "full",
+				disabled = function() return not self.db.profile.autogear end,
+			},
+			vendorheader = {
+				order = 6,
+				type = "header",
+				name = "Vendor & Convenience",
+			},
+			autosellgrey = {
+				order = 7,
+				name = "Auto-sell Grey Items",
+				desc = "Automatically sell grey (junk) items when visiting a vendor",
+				type = "toggle",
+				width = "full",
+			},
+			autorepair = {
+				order = 8,
+				name = "Auto-repair",
+				desc = "Automatically repair gear when visiting a vendor",
+				type = "select",
+				values = {
+					[1] = "Off",
+					[2] = "Use own gold",
+					[3] = "Guild bank first, then own",
+					[4] = "Own gold first, then guild",
+				},
+				width = "double",
+			},
+			sources_desc = {
+				order = 9,
+				type = "description",
+				name = "Choose which dungeon and raid difficulties Gear Finder can suggest.",
+			},
+			dungeonheader = {
+				order = 10,
+				type = "header",
+				name = "Gear Finder Sources",
+			},
+			gear_1 = {
+				order = 11,
+				name = "Normal Dungeons",
+				type = "toggle",
+				width = "double",
+				set = function(i,v) Setter_Simple(i,v) if ZGV.ItemScore then ZGV.ItemScore.GearFinder:ClearResults() end end,
+				disabled = function() return not self.db.profile.autogear end,
+			},
+			gear_2 = {
+				order = 12,
+				name = "Heroic Dungeons",
+				type = "toggle",
+				width = "double",
+				set = function(i,v) Setter_Simple(i,v) if ZGV.ItemScore then ZGV.ItemScore.GearFinder:ClearResults() end end,
+				disabled = function() return not self.db.profile.autogear end,
+			},
+			gear_14 = {
+				order = 13,
+				name = "Normal Raids",
+				type = "toggle",
+				width = "double",
+				set = function(i,v) Setter_Simple(i,v) self.db.profile.gear_3=v self.db.profile.gear_4=v if ZGV.ItemScore then ZGV.ItemScore.GearFinder:ClearResults() end end,
+				disabled = function() return not self.db.profile.autogear end,
+			},
+			gear_15 = {
+				order = 14,
+				name = "Heroic Raids",
+				type = "toggle",
+				width = "double",
+				set = function(i,v) Setter_Simple(i,v) self.db.profile.gear_5=v self.db.profile.gear_6=v if ZGV.ItemScore then ZGV.ItemScore.GearFinder:ClearResults() end end,
+				disabled = function() return not self.db.profile.autogear end,
+			},
+			maintenance_header = {
+				order = 15,
+				type = "header",
+				name = "Maintenance",
+			},
+			clearnotupgrades = {
+				order = 16,
+				name = "Reset Declined Upgrades",
+				desc = "Clear the list of items you previously declined",
+				type = "execute",
+				func = function()
+					if ZGV.db.char.badupgrade then
+						wipe(ZGV.db.char.badupgrade)
+					end
+					ZGV:Print("Declined upgrades list cleared.")
+				end,
+				disabled = function() return not self.db.profile.autogear end,
+			},
+		},
+	}
+
+	-- ===================== STAT WEIGHTS (ITEMSCORE) =====================
+	do
+		local IS_args = {
+			desc = {
+				order = 1,
+				type = "description",
+				name = "Adjust how strongly each stat affects item scoring for a selected class and spec. Higher values make the stat more important.",
+			},
+			warning = {
+				order = 2,
+				type = "description",
+				name = "|cffff6600Warning:|r Changing stat weights is for advanced users. Incorrect values may cause bad gear suggestions.\n",
+			},
+			classdesc = {
+				order = 3,
+				type = "header",
+				name = "Class & Spec Selection",
+			},
+		}
+
+		-- Class selector
+		IS_args.gear_selected_class = {
+			order = 4,
+			type = "select",
+			name = "Class",
+			values = function()
+				local t = {}
+				for i = 1, 10 do
+					local name, tag, id = GetClassInfo(i)
+					if name then t[i] = name end
+				end
+				return t
+			end,
+			set = function(i,v)
+				ZGV.db.char.gear_selected_class = v
+				Setter_Simple(i,v)
+				if ZGV.ItemScore and v == ZGV.ItemScore.playerclassNum then
+					ZGV.db.char.gear_selected_build = ZGV.db.char.gear_active_build or 1
+				else
+					ZGV.db.char.gear_selected_build = 1
+				end
+			end,
+			get = function()
+				if not ZGV.db.char.gear_selected_class then
+					ZGV.db.char.gear_selected_class = ZGV.ItemScore and ZGV.ItemScore.playerclassNum or 1
+					ZGV.db.char.gear_selected_build = 1
+				end
+				return ZGV.db.char.gear_selected_class
+			end,
+			width = "normal",
+		}
+
+		-- Spec/build selector
+		IS_args.gear_selected_build = {
+			order = 5,
+			type = "select",
+			name = "Spec",
+			values = function()
+				if not ZGV.ItemScore or not ZGV.ItemScore.Builds then return {} end
+				return ZGV.ItemScore.Builds[ZGV.db.char.gear_selected_class or 1] or {}
+			end,
+			get = function() return ZGV.db.char.gear_selected_build or 1 end,
+			set = function(i,v) Setter_Simple(i,v) ZGV.db.char.gear_selected_build = v end,
+			width = "normal",
+		}
+
+		-- "Use this spec" button
+		IS_args.activatebuild = {
+			order = 6,
+			type = "execute",
+			name = "Set as Active Spec Weight",
+			desc = "Use these stat weights for gear scoring",
+			func = function()
+				ZGV.db.char.gear_active_build = ZGV.db.char.gear_selected_build
+				if ZGV.ItemScore then ZGV.ItemScore:DelayedRefreshUserData() end
+				ZGV:Print("Active stat weight set changed.")
+			end,
+			hidden = function()
+				if not ZGV.ItemScore then return true end
+				local isOwnClass = (tonumber(ZGV.db.char.gear_selected_class) == ZGV.ItemScore.playerclassNum)
+				local isActiveBuild = (tonumber(ZGV.db.char.gear_active_build) == tonumber(ZGV.db.char.gear_selected_build))
+				return not isOwnClass or isActiveBuild
+			end,
+			width = "double",
+		}
+
+		IS_args.activelabel = {
+			order = 6.1,
+			type = "description",
+			name = "|cff00ff00This is your active stat weight set.|r",
+			hidden = function()
+				if not ZGV.ItemScore then return true end
+				local isOwnClass = (tonumber(ZGV.db.char.gear_selected_class) == ZGV.ItemScore.playerclassNum)
+				local isActiveBuild = (tonumber(ZGV.db.char.gear_active_build) == tonumber(ZGV.db.char.gear_selected_build))
+				return not (isOwnClass and isActiveBuild)
+			end,
+		}
+
+		IS_args.visibilityheader = {
+			order = 7,
+			type = "header",
+			name = "Visibility",
+		}
+
+		IS_args.showallstats = {
+			order = 8,
+			name = "Show All Stats",
+			desc = "Show all stat weight fields, even those not used by this spec",
+			type = "toggle",
+			width = "full",
+			get = function() return ZGV.db.profile.gearshowallstats end,
+			set = function(i,v) ZGV.db.profile.gearshowallstats = v end,
+		}
+
+		IS_args.weightsheader = {
+			order = 9,
+			type = "header",
+			name = "Stat Weights",
+		}
+		IS_args.spacer = { order = 9.1, type = "description", name = "Edit the weight for each stat below. Higher values make the stat more valuable for scoring.\n" }
+
+		-- Build stat weight entries for every class/spec combo
+		local order = 100
+		if ZGV.ItemScore and ZGV.ItemScore.Defaults then
+			for class, classdata in pairs(ZGV.ItemScore.Defaults) do
+				for specnum, specdata in pairs(classdata) do
+					local classNum = ZGV.ClassToNumber[class]
+
+					-- Header for this spec
+					IS_args["hdr_"..class.."_"..specnum] = {
+						order = order,
+						type = "header",
+						name = function()
+							local buildName = ZGV.ItemScore.Builds[classNum] and ZGV.ItemScore.Builds[classNum][specnum] or ("Spec "..specnum)
+							return buildName .. " Stat Weights"
+						end,
+						hidden = function()
+							return not ((tonumber(ZGV.db.char.gear_selected_class) == classNum) and (tonumber(ZGV.db.char.gear_selected_build) == specnum))
+						end,
+					}
+					order = order + 1
+
+					-- Custom weights indicator
+					IS_args["custom_"..class.."_"..specnum] = {
+						order = order,
+						type = "description",
+						name = "|cffff8800You are using customised stat weights.|r",
+						hidden = function()
+							if not ((tonumber(ZGV.db.char.gear_selected_class) == classNum) and (tonumber(ZGV.db.char.gear_selected_build) == specnum)) then return true end
+							return not (ZGV.ItemScore and ZGV.ItemScore.UsesCustomWeights and ZGV.ItemScore:UsesCustomWeights(class, specnum))
+						end,
+					}
+					order = order + 1
+
+					-- One input for each stat keyword
+					for index = 1, #ZGV.ItemScore.Keywords do
+						local stat = ZGV.ItemScore.Keywords[index]
+						if not stat.multi then
+							local groupname = "gear_"..class.."_"..specnum
+							local statblizz = stat.blizz
+							local statdisplay = stat.zgvdisplay
+
+							IS_args[groupname.."_"..statblizz] = {
+								order = order,
+								type = "input",
+								name = statdisplay,
+								width = "half",
+								get = function()
+									local prefix = "gear_"..class.."_"..specnum.."_"
+									local statset = ZGV.ItemScore.rules[class][specnum].stats
+									local profile = ZGV.db.profile
+									if profile[prefix..statblizz] and profile[prefix..statblizz] ~= "" and profile[prefix..statblizz] ~= "0" then
+										return tostring(profile[prefix..statblizz])
+									end
+									if statset[statblizz] then return tostring(statset[statblizz]) end
+									return nil
+								end,
+								set = function(i,v)
+									local prefix = "gear_"..class.."_"..specnum.."_"
+									if v == "" or v == nil then v = 0 end
+									ZGV.db.profile[prefix..statblizz] = tostring(tonumber(v or 0))
+
+									-- Check if weights match defaults; if so, clean up saved overrides
+									if ZGV.ItemScore and not ZGV.ItemScore:UsesCustomWeights(class, specnum) then
+										for idx = 1, #ZGV.ItemScore.Keywords do
+											ZGV.db.profile[prefix..ZGV.ItemScore.Keywords[idx].blizz] = nil
+										end
+									else
+										for sname, sval in pairs(ZGV.ItemScore.rules[class][specnum].stats) do
+											ZGV.db.profile[prefix..sname] = ZGV.db.profile[prefix..sname] or sval
+										end
+									end
+									if ZGV.ItemScore then ZGV.ItemScore:DelayedRefreshUserData() end
+								end,
+								hidden = function()
+									if not ((tonumber(ZGV.db.char.gear_selected_class) == classNum) and (tonumber(ZGV.db.char.gear_selected_build) == specnum)) then return true end
+									if ZGV.db.profile.gearshowallstats then return false end
+									local prefix = "gear_"..class.."_"..specnum.."_"
+									local statset = ZGV.ItemScore.rules[class][specnum].stats
+									local pv = ZGV.db.profile[prefix..statblizz]
+									if pv and pv ~= "" and pv ~= "0" then return false end
+									if statset[statblizz] then return false end
+									return true
+								end,
+							}
+							order = order + 1
+						end
+					end
+
+					-- Reset button
+					IS_args["reset_"..class.."_"..specnum] = {
+						order = order,
+						type = "execute",
+						name = "Reset to Defaults",
+						func = function()
+							local prefix = "gear_"..class.."_"..specnum.."_"
+							for idx, kw in pairs(ZGV.ItemScore.Keywords) do
+								ZGV.db.profile[prefix..kw.blizz] = nil
+							end
+							if ZGV.ItemScore then ZGV.ItemScore:DelayedRefreshUserData() end
+						end,
+						hidden = function()
+							return not ((tonumber(ZGV.db.char.gear_selected_class) == classNum) and (tonumber(ZGV.db.char.gear_selected_build) == specnum))
+						end,
+						width = "normal",
+					}
+					order = order + 1
+				end
+			end
+		end
+
+		self.optionsitemscore = {
+			name = "Stat Weights",
+			desc = "Edit stat weights for item scoring",
+			type = 'group',
+			order = 4.2,
+			handler = self,
+			get = Getter_Simple,
+			set = Setter_Simple,
+			args = IS_args,
+		}
+	end
+
 end
 
 function me:Options_SetupConfig()
 	LibStub("AceConfig-3.0"):RegisterOptionsTable("ZygorGuidesViewer", self.options, ZYGORGUIDESVIEWER_COMMAND );
 	LibStub("AceConfig-3.0"):RegisterOptionsTable("ZygorGuidesViewer-Display", self.optionsdisplay, "zgdisplay");
 	LibStub("AceConfig-3.0"):RegisterOptionsTable("ZygorGuidesViewer-StepDisplay", self.optionsstepdisplay, "zgstepdisplay");
+	LibStub("AceConfig-3.0"):RegisterOptionsTable("ZygorGuidesViewer-Skin", self.optionsskin, "zgskin");
 	LibStub("AceConfig-3.0"):RegisterOptionsTable("ZygorGuidesViewer-Progress", self.optionsprogress, "zgprogress");
 	LibStub("AceConfig-3.0"):RegisterOptionsTable("ZygorGuidesViewer-Travel", self.optionstravelsystem, "zgtravel");
 	LibStub("AceConfig-3.0"):RegisterOptionsTable("ZygorGuidesViewer-Maps", self.optionsmapswaypoints, "zgmaps");
+	LibStub("AceConfig-3.0"):RegisterOptionsTable("ZygorGuidesViewer-Optimization", self.optionsoptimization, "zgoptimize");
 	LibStub("AceConfig-3.0"):RegisterOptionsTable("ZygorGuidesViewer-Notifications", self.optionsnotifications, "zgnotify");
 	LibStub("AceConfig-3.0"):RegisterOptionsTable("ZygorGuidesViewer-ActionButtons", self.optionsactionbuttons, "zgaction");
 	LibStub("AceConfig-3.0"):RegisterOptionsTable("ZygorGuidesViewer-Map", self.optionsmap, "zgmap");
@@ -1922,6 +2643,8 @@ function me:Options_SetupConfig()
 	LibStub("AceConfig-3.0"):RegisterOptionsTable("ZygorGuidesViewer-Debug", self.optionsdebug, "zgdebug");
 	--LibStub("AceConfig-3.0"):RegisterOptionsTable("ZygorGuidesViewer-Data", self.optionsdata, "--[[#$$#]]");
 	LibStub("AceConfig-3.0"):RegisterOptionsTable("ZygorGuidesViewer-Profile", self.optionsprofile, "zgprofile");
+	if self.optionsgear then LibStub("AceConfig-3.0"):RegisterOptionsTable("ZygorGuidesViewer-Gear", self.optionsgear, "zggear") end
+	if self.optionsitemscore then LibStub("AceConfig-3.0"):RegisterOptionsTable("ZygorGuidesViewer-ItemScore", self.optionsitemscore, "zgitemscore") end
 end
 
 function me:Options_SetupBlizConfig()
@@ -1930,10 +2653,12 @@ function me:Options_SetupBlizConfig()
 	LibStub("AceConfigDialog-3.0"):SetDefaultSize("ZygorGuidesViewer", 600, 400)
 	local rootpanel = LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer", self.options.name)
 	self.blizRootPanel = rootpanel
+	self.blizSkinPanel = LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Skin", self.optionsskin.name, self.options.name)
 	self.blizStepDisplayPanel = LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-StepDisplay", self.optionsstepdisplay.name, self.options.name)
 	self.blizProgressPanel = LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Progress", self.optionsprogress.name, self.options.name);
 	self.blizTravelPanel = LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Travel", self.optionstravelsystem.name, self.options.name)
 	self.blizMapsPanel = LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Maps", self.optionsmapswaypoints.name, self.options.name)
+	self.blizOptimizationPanel = LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Optimization", self.optionsoptimization.name, self.options.name)
 	self.blizNotificationsPanel = LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Notifications", self.optionsnotifications.name, self.options.name)
 	self.blizActionButtonsPanel = LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-ActionButtons", self.optionsactionbuttons.name, self.options.name)
 	self.blizConvPanel = LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Conv", self.optionsconv.name, self.options.name)
@@ -1944,6 +2669,8 @@ function me:Options_SetupBlizConfig()
 	end
 	--LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Data", self.optionsdata.name, self.options.name)
 	self.blizProfilePanel = LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Profile", self.optionsprofile.name, self.options.name)
+	if self.optionsgear then self.blizGearPanel = LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-Gear", self.optionsgear.name, self.options.name) end
+	if self.optionsitemscore then self.blizItemScorePanel = LibStub("AceConfigDialog-3.0"):AddToBlizOptions("ZygorGuidesViewer-ItemScore", self.optionsitemscore.name, self.options.name) end
 end
 
 function me:EnsureBlizConfig()
@@ -2075,11 +2802,30 @@ end
 
 
 
-function me:OpenOptions()
-	--self:OpenConfigMenu()
+function me:OpenOptions(section)
+	-- Prefer guide manager UI if available
+	if self.ToggleGuideManagerFrame and (section == "gear" or section == "itemscore") then
+		if self.db and self.db.profile then
+			self.db.profile.guidebrowseroptionsapp = section == "gear" and "ZygorGuidesViewer-Gear" or "ZygorGuidesViewer-ItemScore"
+		end
+		self:SelectGuideManagerSection("options")
+		local frame = _G["ZGVGuideManagerFrame"]
+		if frame and not frame:IsShown() then frame:Show() end
+		return
+	end
+
+	-- Fallback to Blizzard Interface Options
 	if self.EnsureBlizConfig then self:EnsureBlizConfig() end
-	local panel = self.blizRootPanel or ((self.options and self.options.name) or "Zygor Guides Viewer Remastered")
+	local panel
+	if section == "gear" and self.blizGearPanel then
+		panel = self.blizGearPanel
+	elseif section == "itemscore" and self.blizItemScorePanel then
+		panel = self.blizItemScorePanel
+	else
+		panel = self.blizRootPanel or ((self.options and self.options.name) or "Zygor Guides Viewer Remastered")
+	end
 	InterfaceOptionsFrame_OpenToCategory(panel)
+	InterfaceOptionsFrame_OpenToCategory(panel) -- called twice to work around Blizz bug
 end
 
 

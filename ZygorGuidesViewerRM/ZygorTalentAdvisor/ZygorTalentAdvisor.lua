@@ -101,6 +101,10 @@ function me:OnEnable()
 
 	hooksecurefunc("TalentFrame_Update",function() self:PlayTalented() end)
 
+	if PlayerTalentFrame_ShowGlyphFrame then
+		hooksecurefunc("PlayerTalentFrame_ShowGlyphFrame",function() self:ShowGlyphSuggestions() end)
+	end
+
 	hooksecurefunc("ResetGroupPreviewTalentPoints",function()
 		if PlayerTalentFrame then
 			self:UpdateSuggestions(PlayerTalentFrame.pet)
@@ -617,6 +621,73 @@ function me:FormatGlyphs()
 		s=s.."\n"..(found and "|cffffffff" or "|cffaaaaaa")..glyphs[i].."|r"
 	end
 	return s
+end
+
+function me.ShowGlyphTooltip(icon)
+	GameTooltip:SetOwner(icon, "ANCHOR_CURSOR")
+	if icon.glyphspell then
+		GameTooltip:SetSpellByID(icon.glyphspell)
+		GameTooltip:AddLine("|cffaaddffZygor suggests this glyph|r")
+	elseif icon.glyphname then
+		GameTooltip:SetText(icon.glyphname)
+		GameTooltip:AddLine("|cffaaddffZygor suggests this glyph|r")
+	end
+	GameTooltip:Show()
+end
+
+function me:ShowGlyphSuggestions()
+	if not GlyphFrame then return end
+
+	-- Create icon overlays on each glyph socket (once)
+	if not self.GlyphSuggestionIcons then
+		self.GlyphSuggestionIcons = {}
+		local major_pool = {}
+		local minor_pool = {}
+		local major = {[1]=true, [4]=true, [6]=true}
+		local minor = {[2]=true, [3]=true, [5]=true}
+
+		for i = 1, 6 do
+			local blizz_glyph = _G["GlyphFrameGlyph"..i]
+			if blizz_glyph then
+				local icon = CreateFrame("Button", nil, blizz_glyph)
+				icon:SetSize(30, 30)
+				icon:SetPoint("TOPRIGHT")
+				icon:SetNormalTexture("Interface\\OptionsFrame\\UI-OptionsFrame-NewFeatureIcon")
+				icon:SetFrameStrata("HIGH")
+				icon:SetFrameLevel(76)
+				icon:SetScript("OnEnter", function(self) me.ShowGlyphTooltip(self) end)
+				icon:SetScript("OnLeave", function(self) GameTooltip:Hide() end)
+				icon:Hide()
+				if major[i] then table.insert(major_pool, icon) end
+				if minor[i] then table.insert(minor_pool, icon) end
+			end
+		end
+
+		for _, v in ipairs(major_pool) do table.insert(self.GlyphSuggestionIcons, v) end
+		for _, v in ipairs(minor_pool) do table.insert(self.GlyphSuggestionIcons, v) end
+	end
+
+	-- Hide all first
+	for _, icon in ipairs(self.GlyphSuggestionIcons) do
+		icon:Hide()
+	end
+
+	-- Show suggestions if we have glyph data for current build
+	if self.currentBuildGlyphs then
+		for i, glyphData in ipairs(self.currentBuildGlyphs) do
+			if self.GlyphSuggestionIcons[i] then
+				local icon = self.GlyphSuggestionIcons[i]
+				if type(glyphData) == "table" then
+					icon.glyphname = glyphData.name
+					icon.glyphspell = glyphData.spell or (self.GlyphsToSpells and self.GlyphsToSpells[glyphData.name])
+				elseif type(glyphData) == "string" then
+					icon.glyphname = glyphData
+					icon.glyphspell = self.GlyphsToSpells and self.GlyphsToSpells[glyphData]
+				end
+				icon:Show()
+			end
+		end
+	end
 end
 
 function me:PlayTalented()

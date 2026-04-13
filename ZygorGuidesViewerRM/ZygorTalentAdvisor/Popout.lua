@@ -175,6 +175,12 @@ function ZygorTalentAdvisorPopout_OnUpdate(self)
 		self.needsResizing=nil
 		ZygorTalentAdvisorPopout_UpdateDocking()
 	end
+
+	-- Live docking detection during drag
+	if self.moving then
+		ZTA.db.profile.windowdocked = ZygorTalentAdvisorPopout_InDockingRange()
+		ZygorTalentAdvisorPopout_UpdateDocking()
+	end
 end
 
 function ZygorTalentAdvisorPopout_OnLoad(self)
@@ -201,27 +207,32 @@ function ZygorTalentAdvisorPopout_OnLoad(self)
 	--]]
 end
 
+function ZygorTalentAdvisorPopout_InDockingRange()
+	local pop = ZygorTalentAdvisorPopout
+	return PlayerTalentFrame
+		and PlayerTalentFrame:IsShown()
+		and pop:IsShown()
+		and pop:GetLeft()
+		and abs(pop:GetLeft() - PlayerTalentFrame:GetRight() + 36) < 20
+		and pop:GetTop() - PlayerTalentFrame:GetTop() < 20
+		and pop:GetTop() - PlayerTalentFrame:GetTop() > -200
+end
+
 function ZygorTalentAdvisorPopout_OnDragStart(self)
 	ZTA.db.profile.windowdocked = false
-	--ZygorTalentAdvisorPopout_Reparent()
-	ZygorTalentAdvisorPopout_UpdateDocking()
+	ZygorTalentAdvisorPopout_UpdateDocking(false)
+	self:ClearAllPoints()
 	self:StartMoving()
-	self.moving=true
-	--print("dragstart")
+	self.moving = true
 end
 
 function ZygorTalentAdvisorPopout_OnDragStop(self)
-	--print("dragstop")
 	self:StopMovingOrSizing()
-	self.moving=nil
-	--	((self:GetLeft()>PlayerTalentFrame:GetLeft() and self:GetLeft()-PlayerTalentFrame:GetRight()+42<20 and abs(self:GetTop()-PlayerTalentFrame:GetTop()+10)<20 then
-	if PlayerTalentFrame and PlayerTalentFrame:IsShown() and abs(self:GetLeft()-PlayerTalentFrame:GetRight()+42)<20 and abs(self:GetTop()-PlayerTalentFrame:GetTop()+10)<20 then
-		ZTA.db.profile.windowdocked = true
-	else
-		ZTA.db.profile.windowdocked = false
-	end
+	self.moving = nil
+	local docked = ZygorTalentAdvisorPopout_InDockingRange()
+	ZTA.db.profile.windowdocked = docked
 	ZygorTalentAdvisorPopout_Reparent()
-	ZygorTalentAdvisorPopout_UpdateDocking()
+	ZygorTalentAdvisorPopout_UpdateDocking(docked)
 end
 
 function ZygorTalentAdvisorPopout_Update()
@@ -392,8 +403,9 @@ function ZygorTalentAdvisorPopout_Hook()
 	ZygorTalentAdvisorPopout_UpdateDocking()
 end
 
-function ZygorTalentAdvisorPopout_UpdateDocking()
+function ZygorTalentAdvisorPopout_UpdateDocking(set)
 	local self=ZygorTalentAdvisorPopout
+	if set ~= nil then ZTA.db.profile.windowdocked = set end
 
 	if PlayerSpecTab1 and PlayerSpecTab1:IsShown() then
 		if ZTA.db.profile.windowdocked and self:IsShown() then
@@ -401,6 +413,22 @@ function ZygorTalentAdvisorPopout_UpdateDocking()
 		else
 			PlayerSpecTab1:SetPoint("TOPLEFT",PlayerTalentFrame,"TOPRIGHT",-32,-65)
 		end
+	end
+
+	-- When docked, hide close button and swap corner texture (retail behavior)
+	local DIR = ZGV and ZGV.DIR or ""
+	if ZTA.db.profile.windowdocked then
+		if self.TopRight then
+			self.TopRight:SetTexture(DIR.."\\Skins\\popout-noclose")
+			self.TopRight:SetTexCoord(0,1,0,1)
+		end
+		if self.CloseButton then self.CloseButton:Hide() end
+	else
+		if self.TopRight then
+			self.TopRight:SetTexture("Interface\\PaperDollInfoFrame\\UI-GearManager-Border")
+			self.TopRight:SetTexCoord(0.625,0.75,0,1)
+		end
+		if self.CloseButton then self.CloseButton:Show() end
 	end
 end
 
