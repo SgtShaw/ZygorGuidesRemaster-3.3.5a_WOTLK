@@ -164,7 +164,12 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
-### Revision 115 - 3.0.115
+### Revision 117 - 3.0.117
+
+- Updated All Versions to 3.0.117 to be in line with github revision number.
+- No other changes were done on this pass.
+
+### Revision 116 - 3.0.116
 
 - Added a dedicated `Optimization` options tab.
 - Added configurable internal waypoint arrow refresh rate options (`20 FPS`, `30 FPS`, `60 FPS`, `Unlimited`).
