@@ -48,6 +48,7 @@ function me:Options_RegisterDefaults()
 			-- convenience
 			autoaccept = false,
 			autoturnin = false,
+			autoquestreward = false,
 			fixblizzardautoaccept = false,
 			analyzereps = false,
 			colorblindmode = "off",
@@ -1051,6 +1052,14 @@ function me:Options_DefineOptions()
 				set = function(i,v) Setter_Simple(i,v)  end,
 				width = "full",
 				order = 3.5,
+			},
+			autoquestreward = {
+				name = L["opt_autoquestreward"],
+				desc = L["opt_autoquestreward_desc"],
+				type = 'toggle',
+				set = function(i,v) Setter_Simple(i,v) end,
+				width = "full",
+				order = 3.55,
 			},
 			fixblizzardautoaccept = {
 				name = L["opt_fixblizzardautoaccept"],
@@ -2457,6 +2466,16 @@ function me:Options_DefineOptions()
 
 	-- ===================== STAT WEIGHTS (ITEMSCORE) =====================
 	do
+		local function GetSelectedBuildInfo()
+			if not ZGV.ItemScore then return "Unknown class", "Unknown spec", nil, nil end
+			local classNum = tonumber(ZGV.db.char.gear_selected_class) or ZGV.ItemScore.playerclassNum or 1
+			local buildNum = tonumber(ZGV.db.char.gear_selected_build) or tonumber(ZGV.db.char.gear_active_build) or 1
+			local classToken = ZGV.NumberToClass and ZGV.NumberToClass[classNum]
+			local className = (LOCALIZED_CLASS_NAMES_MALE and classToken and LOCALIZED_CLASS_NAMES_MALE[classToken]) or (LOCALIZED_CLASS_NAMES_FEMALE and classToken and LOCALIZED_CLASS_NAMES_FEMALE[classToken]) or classToken or "Unknown class"
+			local buildName = (ZGV.ItemScore.Builds and ZGV.ItemScore.Builds[classNum] and ZGV.ItemScore.Builds[classNum][buildNum]) or ("Spec "..buildNum)
+			return className, buildName, classToken, buildNum
+		end
+
 		local IS_args = {
 			desc = {
 				order = 1,
@@ -2467,6 +2486,23 @@ function me:Options_DefineOptions()
 				order = 2,
 				type = "description",
 				name = "|cffff6600Warning:|r Changing stat weights is for advanced users. Incorrect values may cause bad gear suggestions.\n",
+			},
+			curated = {
+				order = 2.1,
+				type = "description",
+				name = "|cff88ccffRecommended defaults:|r Wrath stat weights are curated baselines intended for 3.3.5a and reviewed against local references such as Pawn and RatingBuster. Most players should start here and only customize when they have a clear reason.\n",
+			},
+			selectedsummary = {
+				order = 2.2,
+				type = "description",
+				name = function()
+					local className, buildName, classToken, buildNum = GetSelectedBuildInfo()
+					local status = "Curated defaults"
+					if ZGV.ItemScore and classToken and buildNum and ZGV.ItemScore.UsesCustomWeights and ZGV.ItemScore:UsesCustomWeights(classToken, buildNum) then
+						status = "Customized weights"
+					end
+					return ("|cffccccccSelected profile:|r %s - %s\n|cffccccccSource:|r %s\n"):format(className, buildName, status)
+				end,
 			},
 			classdesc = {
 				order = 3,
@@ -2594,6 +2630,14 @@ function me:Options_DefineOptions()
 			name = "Stat Weights",
 		}
 		IS_args.spacer = { order = 9.1, type = "description", name = "Edit the weight for each stat below. Higher values make the stat more valuable for scoring.\n" }
+		IS_args.recommendedsummary = {
+			order = 9.2,
+			type = "description",
+			name = function()
+				local className, buildName = GetSelectedBuildInfo()
+				return ("|cff88ccffRecommended Weights|r\nThese values are the curated WotLK baseline for %s - %s. Use the reset button to return to this baseline after experimenting.\n"):format(className, buildName)
+			end,
+		}
 
 		-- Build stat weight entries for every class/spec combo
 		local order = 100

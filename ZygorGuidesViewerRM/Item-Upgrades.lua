@@ -49,6 +49,158 @@ local RED = "|cffff0000"
 
 Upgrades.UniqueEquipped = {}
 
+local function round_score(value)
+	if not value then return 0 end
+	return math.floor((value * 10) + 0.5) / 10
+end
+
+local function copy_stats(stats)
+	local out = {}
+	if not stats then return out end
+	for k,v in pairs(stats) do out[k] = v end
+	return out
+end
+
+local function build_stat_delta(item1, item2, item3, mode_new, mode_old)
+	if not item1 then return false end
+
+	local item1_details = ItemScore:GetItemDetails(item1)
+	local item2_details = item2 and ItemScore:GetItemDetails(item2)
+	local item3_details = item3 and ItemScore:GetItemDetails(item3)
+
+	local item1_stats = item1_details and copy_stats(item1_details.stats)
+	local item2_stats = item2_details and copy_stats(item2_details.stats)
+	local item3_stats = item3_details and copy_stats(item3_details.stats)
+
+	if not item1_stats then return false end
+	if item2 and not item2_stats then return false end
+	if item3 and not item3_stats then return false end
+
+	local delta
+	if not item3 and not (mode_old or mode_new) then
+		if item1 and item2 then
+			delta = {}
+			for i,v in pairs(item1_stats) do delta[i] = 0 end
+			for i,v in pairs(item2_stats) do delta[i] = 0 end
+			for i,v in pairs(delta) do delta[i] = (item1_stats[i] or 0) - (item2_stats[i] or 0) end
+		else
+			delta = item1_stats
+		end
+	else
+		delta = {}
+		for i,v in pairs(item1_stats) do delta[i] = 0 end
+		for i,v in pairs(item2_stats or {}) do delta[i] = 0 end
+		for i,v in pairs(item3_stats or {}) do delta[i] = 0 end
+
+		if mode_old == "artifact" then
+			for i,v in pairs(item3_stats or {}) do item3_stats[i] = v * ARTIFACT_MULTIPLIER end
+		end
+		if mode_new == "artifact" then
+			for i,v in pairs(item1_stats) do item1_stats[i] = v * ARTIFACT_MULTIPLIER end
+		end
+
+		if mode_new == "equip_pair" then
+			for i,v in pairs(delta) do delta[i] = (item1_stats[i] or 0) + (item2_stats[i] or 0) - (item3_stats[i] or 0) end
+		else
+			for i,v in pairs(delta) do delta[i] = (item1_stats[i] or 0) - (item2_stats[i] or 0) - (item3_stats[i] or 0) end
+		end
+	end
+
+	return delta
+end
+
+function Upgrades:GetActiveBuildName()
+	local classTag = ItemScore and ItemScore.playerclass
+	local activeBuild = ZGV.db and ZGV.db.char and ZGV.db.char.gear_active_build
+	local classNum = ItemScore and ItemScore.playerclassNum
+	if classNum and ZGV.ItemScore and ZGV.ItemScore.Builds and ZGV.ItemScore.Builds[classNum] and activeBuild then
+		return ZGV.ItemScore.Builds[classNum][activeBuild] or ("Spec "..tostring(activeBuild))
+	end
+	if classTag and ZGV.SpecByNumber and ZGV.SpecByNumber[classTag] and activeBuild then
+		return ZGV.SpecByNumber[classTag][activeBuild] or ("Spec "..tostring(activeBuild))
+	end
+	return "Spec "..tostring(activeBuild or 1)
+end
+
+function Upgrades:GetUpgradeMetrics(slot, newitem, change, secondnewitem)
+	local candidateScore = newitem and (newitem.artifactscore or newitem.score or 0) or 0
+	local baselineScore = 0
+	local current = Upgrades.EquippedItems[slot]
+	baselineScore = current and (current.artifactscore or current.score or 0) or 0
+
+	if secondnewitem and (slot == INVSLOT_MAINHAND or slot == INVSLOT_OFFHAND) then
+		candidateScore = candidateScore + (secondnewitem.artifactscore or secondnewitem.score or 0)
+		local mh = Upgrades.EquippedItems[INVSLOT_MAINHAND]
+		local oh = Upgrades.EquippedItems[INVSLOT_OFFHAND]
+		baselineScore = (mh and (mh.artifactscore or mh.score or 0) or 0) + (oh and (oh.artifactscore or oh.score or 0) or 0)
+	end
+
+	local deltaScore = candidateScore - baselineScore
+	if baselineScore <= 0 then
+		return deltaScore, nil, true
+	end
+	local percent = ((candidateScore * 100 / baselineScore) - 100)
+	if change ~= nil and math.abs(percent - change) < 0.01 then
+		percent = change
+	end
+	return deltaScore, percent, false
+end
+
+function Upgrades:GetUpgradeRationale(delta)
+	if not delta then return nil end
+
+	local reasons = {}
+	if (delta.DAMAGE_PER_SECOND or 0) > 0 then
+		reasons[#reasons + 1] = ItemScore.KnownKeyWords.DAMAGE_PER_SECOND or "Weapon DPS"
+	end
+
+	local weighted = {}
+	for stat, value in pairs(delta) do
+		if value and value > 0 and stat ~= "DAMAGE_PER_SECOND" and ItemScore.KnownKeyWords[stat] then
+			local weight = math.abs((ItemScore.ActiveRuleSet and ItemScore.ActiveRuleSet.stats and ItemScore.ActiveRuleSet.stats[stat]) or 0)
+			weighted[#weighted + 1] = {
+				name = ItemScore.KnownKeyWords[stat],
+				score = (weight > 0 and weight or 0.01) * value,
+				value = value,
+			}
+		end
+	end
+	table.sort(weighted, function(a,b)
+		if a.score == b.score then return a.value > b.value end
+		return a.score > b.score
+	end)
+
+	for i = 1, math.min(2, #weighted) do
+		local name = weighted[i].name
+		local seen
+		for _, existing in ipairs(reasons) do
+			if existing == name then seen = true break end
+		end
+		if not seen then reasons[#reasons + 1] = name end
+	end
+
+	if #reasons == 0 then return nil end
+	return table.concat(reasons, ", ")
+end
+
+function Upgrades:FormatUpgradeSummary(slot, newitem, change, secondnewitem, delta)
+	local scoreDelta, percent, isNewItem = self:GetUpgradeMetrics(slot, newitem, change, secondnewitem)
+	local parts = {}
+	if isNewItem then
+		parts[#parts + 1] = "|cff44ff44"..(L["gearfinder_label_new_item"] or "New item").."|r"
+	else
+		parts[#parts + 1] = ("|cff44ff44"..(L["gearfinder_label_delta_score"] or "%+.1f score").."|r"):format(round_score(scoreDelta))
+		if percent and percent > 0 then
+			parts[#parts + 1] = ("|cff44ff44"..(L["gearfinder_upgrade_percent_short"] or "%+.1f%%").."|r"):format(percent)
+		end
+	end
+	local rationale = self:GetUpgradeRationale(delta)
+	if rationale then
+		parts[#parts + 1] = (L["gearfinder_label_best_gains"] or "Best gains: %s"):format(rationale)
+	end
+	return table.concat(parts, "  "), rationale
+end
+
 function Upgrades:ScoreEquippedItems()
 	if not ZGV.db.profile.autogear then return end -- disabled
 	ZGV:Debug("&itemscore ScoreEquippedItems")
@@ -344,49 +496,8 @@ end
 --	mode_new - string, optional - special modes for handling more complex cases, values "equip_pair", "artifact"
 function Upgrades:GetStatChange(item1,item2,item3,mode_new,mode_old)
 	if not item1 then return false end -- something went wrong. we need at least one item
-	local delta
 	local changes = ""
-
-	local item1_details = ItemScore:GetItemDetails(item1)
-	local item2_details = item2 and ItemScore:GetItemDetails(item2)
-	local item3_details = item3 and ItemScore:GetItemDetails(item3)
-
-	local item1_stats = item1_details and item1_details.stats
-	local item2_stats = item2_details and item2_details.stats
-	local item3_stats = item3_details and item3_details.stats
-
-	if not item1_stats then return false end
-	if item2 and not item2_stats then return false end
-	if item3 and not item3_stats then return false end
-
-	if not item3 and not (mode_old or mode_new) then -- ok, we only have one or two items, and they are not artifacts, so we can just compare stats
-		if item1 and item2 then
-			delta = {}
-			for i,v in pairs(item1_stats) do delta[i]=0 end
-			for i,v in pairs(item2_stats) do delta[i]=0 end
-			for i,v in pairs(delta) do delta[i] = (item1_stats[i] or 0) - (item2_stats[i] or 0) end
-		else
-			delta = item1_stats
-		end
-	else -- sigh. three items or an artifact, here comes the pain
-		delta = {}
-		for i,v in pairs(item1_stats) do delta[i]=0 end
-		for i,v in pairs(item2_stats) do delta[i]=0 end
-		for i,v in pairs(item3_stats) do delta[i]=0 end
-
-		-- if it is a pair of artifact weapons, we need to double its stats
-		if mode_old=="artifact" then for i,v in pairs(item3_stats) do item3_stats[i]=v*ARTIFACT_MULTIPLIER end end
-		if mode_new=="artifact" then for i,v in pairs(item1_stats) do item1_stats[i]=v*ARTIFACT_MULTIPLIER end end
-
-		-- calculate values
-		if mode_new=="equip_pair" then
-			-- item1 and item2 are new, item3 is old
-			for i,v in pairs(delta) do delta[i] = (item1_stats[i] or 0) + (item2_stats[i] or 0) - (item3_stats[i] or 0) end
-		else
-			-- item1 is new, item2 and item3 are old
-			for i,v in pairs(delta) do delta[i] = (item1_stats[i] or 0) - (item2_stats[i] or 0) - (item3_stats[i] or 0) end
-		end
-	end
+	local delta = build_stat_delta(item1,item2,item3,mode_new,mode_old)
 
 	if not delta then return false end -- something went wrong. we should have at least single item stats
 
@@ -719,26 +830,52 @@ function Upgrades:ScoreBagsItems()
 				local is_upgrade, slot, change, score, validfuture, comment, slot_2, change_2 = Upgrades:IsUpgrade(item.itemlink)
 				if is_upgrade then
 					local upgrade_slot = Upgrades.UpgradeQueue[slot]
-					if Upgrades:CanUseUniqueItem(itemlink,slot) and (((score or 0) > (upgrade_slot.score or 0)) or ((score or 0)==0 and (upgrade_slot.score or 0)==0)) then
-						ZGV:Debug("&itemscore SBFU armor upgrade %d %s %d",slot,itemlink,score or 0)
+					local deltaScore = select(1, Upgrades:GetUpgradeMetrics(slot, item, change))
+					local queuedDelta = upgrade_slot.deltascore
+					if queuedDelta == nil and upgrade_slot.itemlink then
+						local queuedItem = ItemScore:GetItemDetails(upgrade_slot.itemlink)
+						if queuedItem then
+							queuedDelta = select(1, Upgrades:GetUpgradeMetrics(slot, queuedItem, upgrade_slot.change, upgrade_slot.pair))
+						end
+					end
+					deltaScore = deltaScore or 0
+					queuedDelta = queuedDelta or -math.huge
+					if Upgrades:CanUseUniqueItem(itemlink,slot) and (deltaScore > queuedDelta or (deltaScore == queuedDelta and (((score or 0) > (upgrade_slot.score or 0)) or ((score or 0)==0 and (upgrade_slot.score or 0)==0)))) then
+						ZGV:Debug("&itemscore SBFU armor upgrade slot=%d item=%s delta=%.2f score=%.2f replacing=%s olddelta=%.2f oldscore=%.2f",slot,itemlink,deltaScore,score or 0,upgrade_slot.itemlink or "",queuedDelta,upgrade_slot.score or 0)
 						upgrade_slot.itemlink = itemlink
 						upgrade_slot.score = score or 0 
 						upgrade_slot.change = change or 0
+						upgrade_slot.deltascore = deltaScore
 						upgrade_slot.bagnum = item.bagnum
 						upgrade_slot.bagslot = item.bagslot
 						upgrade_slot.slot = slot
 						if comment=="quest item" then upgrade_slot.quest=true end
+					else
+						ZGV:Debug("&itemscore SBFU armor reject slot=%d item=%s delta=%.2f score=%.2f current=%s currentdelta=%.2f currentscore=%.2f",slot,itemlink,deltaScore,score or 0,upgrade_slot.itemlink or "",queuedDelta,upgrade_slot.score or 0)
 					end
 					if slot_2 then -- upgrade for both slots (rings, trinkets, weapons)
 						local upgrade_slot = Upgrades.UpgradeQueue[slot_2]
-						if Upgrades:CanUseUniqueItem(itemlink,slot_2) and (((score or 0) > (upgrade_slot.score or 0)) or ((score or 0)==0 and (upgrade_slot.score or 0)==0)) then
-							ZGV:Debug("&itemscore SBFU second slot %d",slot_2)
+						local deltaScore2 = select(1, Upgrades:GetUpgradeMetrics(slot_2, item, change_2))
+						local queuedDelta2 = upgrade_slot.deltascore
+						if queuedDelta2 == nil and upgrade_slot.itemlink then
+							local queuedItem2 = ItemScore:GetItemDetails(upgrade_slot.itemlink)
+							if queuedItem2 then
+								queuedDelta2 = select(1, Upgrades:GetUpgradeMetrics(slot_2, queuedItem2, upgrade_slot.change, upgrade_slot.pair))
+							end
+						end
+						deltaScore2 = deltaScore2 or 0
+						queuedDelta2 = queuedDelta2 or -math.huge
+						if Upgrades:CanUseUniqueItem(itemlink,slot_2) and (deltaScore2 > queuedDelta2 or (deltaScore2 == queuedDelta2 and (((score or 0) > (upgrade_slot.score or 0)) or ((score or 0)==0 and (upgrade_slot.score or 0)==0)))) then
+							ZGV:Debug("&itemscore SBFU second slot=%d item=%s delta=%.2f score=%.2f replacing=%s olddelta=%.2f oldscore=%.2f",slot_2,itemlink,deltaScore2,score or 0,upgrade_slot.itemlink or "",queuedDelta2,upgrade_slot.score or 0)
 							upgrade_slot.itemlink = itemlink
 							upgrade_slot.score = score or 0
 							upgrade_slot.change = change_2 or 0
+							upgrade_slot.deltascore = deltaScore2
 							upgrade_slot.bagnum = item.bagnum
 							upgrade_slot.bagslot = item.bagslot
 							upgrade_slot.slot = slot_2
+						else
+							ZGV:Debug("&itemscore SBFU second reject slot=%d item=%s delta=%.2f score=%.2f current=%s currentdelta=%.2f currentscore=%.2f",slot_2,itemlink,deltaScore2,score or 0,upgrade_slot.itemlink or "",queuedDelta2,upgrade_slot.score or 0)
 						end
 					end
 				end
@@ -1443,7 +1580,7 @@ function Upgrades:ShowEquipmentChangePopup(slot)
 	F.item_double.itemlink1:SetText("")
 	F.item_double.itemlink2:SetText("")
 
-	local changes
+	local changes, delta, summary
 	if current_item then
 		F:SetText(L['itemscore_ae_equip1'])
 
@@ -1458,12 +1595,16 @@ function Upgrades:ShowEquipmentChangePopup(slot)
 				F.item1:SetItem(current_item,1)
 				F.item2:SetItem(new_item)	
 
+				delta = build_stat_delta(new_item.itemlink,current_item.itemlink,pair_item.itemlink,mode_new,"equip_pair")
+				summary = Upgrades:FormatUpgradeSummary(slot, new_item, n_item.change, nil, delta)
 				changes = Upgrades:GetStatChange(new_item.itemlink,current_item.itemlink,pair_item.itemlink,mode_new,"equip_pair")
 			else
 				F.layoutMode = "old_to_new"
 				F.item1:SetItem(current_item)	
 				F.item2:SetItem(new_item)
 
+				delta = build_stat_delta(new_item.itemlink,pair_item.itemlink,current_item.itemlink,"equip_pair",mode_old)
+				summary = Upgrades:FormatUpgradeSummary(slot, new_item, n_item.change, pair_item, delta)
 				changes = Upgrades:GetStatChange(new_item.itemlink,pair_item.itemlink,current_item.itemlink,"equip_pair",mode_old)
 			end
 			F.item2:Show()
@@ -1478,6 +1619,8 @@ function Upgrades:ShowEquipmentChangePopup(slot)
 
 			F.item2:Show()
 
+			delta = build_stat_delta(new_item and new_item.itemlink,current_item and current_item.itemlink)
+			summary = Upgrades:FormatUpgradeSummary(slot, new_item, n_item.change, nil, delta)
 			changes = Upgrades:GetStatChange(new_item and new_item.itemlink,current_item and current_item.itemlink)
 		end
 	else
@@ -1488,6 +1631,8 @@ function Upgrades:ShowEquipmentChangePopup(slot)
 		F.stattext:Show()		
 		F.AnchorTo(F.stattext,F.item1)
 
+		delta = build_stat_delta(new_item and new_item.itemlink)
+		summary = Upgrades:FormatUpgradeSummary(slot, new_item, n_item.change, nil, delta)
 		changes = Upgrades:GetStatChange(new_item and new_item.itemlink)
 	end
 
@@ -1496,11 +1641,17 @@ function Upgrades:ShowEquipmentChangePopup(slot)
 	-- 3.3.5a: no player ilvl system to worry about
 
 	if n_item.quest then
-		changes = "Quest item"
+		summary = "|cff88ccffQuest item|r"
 	end
-	
 
-	F.stattext:SetText(changes)
+	local stattext = changes
+	if summary and summary ~= "" then
+		stattext = ("|cffcccccc%s: %s|r\n%s\n\n%s"):format(L["itemscore_ae_build"] or "Build", Upgrades:GetActiveBuildName(), summary, changes)
+	else
+		stattext = ("|cffcccccc%s: %s|r\n\n%s"):format(L["itemscore_ae_build"] or "Build", Upgrades:GetActiveBuildName(), changes)
+	end
+
+	F.stattext:SetText(stattext)
 	F.stattext:SetWidth((F:GetWidth() or 300) - 24)
 	F.stattext:SetHeight(F.stattext:GetStringHeight() + 4)
 

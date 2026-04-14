@@ -185,10 +185,22 @@ function me:QUEST_COMPLETE()
 	--self:RecordData(self.questIndicesByTitle[GetTitleText()], 'finish', QuestFrameNpcNameText:GetText())
 
 	if self.db.profile.autoturnin then
-		if (GetNumQuestChoices()>0) then return end
 		local title = GetTitleText()
 		for i,goal in ipairs(self.CurrentStep.goals) do
 			if goal.quest==title then
+				if GetNumQuestChoices()>0 then
+					local questItem = self.ItemScore and self.ItemScore.QuestItem
+					if questItem and questItem.ApplyRewardRecommendation then
+						if self.db.profile.autoquestreward then
+							self:Print("Choosing best quest reward")
+							self.questAutoAdvancePauseUntil = GetTime() + 0.45
+							questItem:ApplyRewardRecommendation(true)
+						else
+							questItem:ApplyRewardRecommendation(false)
+						end
+					end
+					return
+				end
 				self:Print("Turning in quest")
 				self.questAutoAdvancePauseUntil = GetTime() + 0.35
 				GetQuestReward()

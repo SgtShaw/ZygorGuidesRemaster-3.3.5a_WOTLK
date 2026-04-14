@@ -15,35 +15,123 @@ local QuestItem = {}
 ItemScore.QuestItem = QuestItem
 
 -- Selecting Best Quest reward --
+function QuestItem:GetQuestRewardButton(index)
+	if not index then return nil end
+	local candidates = {
+		"QuestInfoRewardsFrameQuestInfoItem"..index,
+		"QuestInfoItem"..index,
+		"QuestRewardItem"..index,
+		"QuestFrameRewardPanelItem"..index,
+	}
+
+	for _,name in ipairs(candidates) do
+		local button = G[name]
+		if button and button:IsShown() then
+			return button
+		end
+	end
+
+	for _,name in ipairs(candidates) do
+		local button = G[name]
+		if button then
+			return button
+		end
+	end
+end
+
 function QuestItem:HideQuestRewardGlow()
 	if self.GlowFrame then
 		self.GlowFrame:Hide()
 		self.GlowFrame:ClearAllPoints()
 	end
+	self.HighlightedRewardIndex = nil
 end
 
 function QuestItem:ShowQuestRewardGlow(index,selling)
 	if not index then return end
-	local b = G["QuestInfoRewardsFrameQuestInfoItem"..index]
+	local b = self:GetQuestRewardButton(index)
+	if not b then return end
 
 	if not self.GlowFrame then
-		self.GlowFrame = CHAIN(ZGV.CreateFrameWithBG("Frame","",QuestFrameRewardPanel))
-			:SetBackdrop({bgFile="",edgeFile=ZGV.DIR.."\\Skins\\glowborder", edgeSize=5})
-			:SetSize(109,45)
+		self.GlowFrame = CHAIN(CreateFrame("Frame", nil, UIParent))
 			:SetFrameStrata("HIGH")
+			:EnableMouse(false)
 		.__END
 
-			--Gold Coin to show that we picked an item because of it's sell value. Not used at the moment
-			--self.GlowFrame.tex = CHAIN(self.GlowFrame:CreateTexture())
-			--	:SetTexture("Interface\\MONEYFRAME\\UI-GoldIcon")
-			--	:SetSize(15,15)
-			--	:SetPoint("TOPRIGHT")
-			--.__END
+		self.GlowFrame.top = CHAIN(self.GlowFrame:CreateTexture(nil,"OVERLAY"))
+			:SetTexture("Interface\\Buttons\\WHITE8x8")
+			:SetVertexColor(1,1,1,0.95)
+			:SetHeight(2)
+		.__END
+		self.GlowFrame.bottom = CHAIN(self.GlowFrame:CreateTexture(nil,"OVERLAY"))
+			:SetTexture("Interface\\Buttons\\WHITE8x8")
+			:SetVertexColor(1,1,1,0.95)
+			:SetHeight(2)
+		.__END
+		self.GlowFrame.left = CHAIN(self.GlowFrame:CreateTexture(nil,"OVERLAY"))
+			:SetTexture("Interface\\Buttons\\WHITE8x8")
+			:SetVertexColor(1,1,1,0.95)
+			:SetWidth(2)
+		.__END
+		self.GlowFrame.right = CHAIN(self.GlowFrame:CreateTexture(nil,"OVERLAY"))
+			:SetTexture("Interface\\Buttons\\WHITE8x8")
+			:SetVertexColor(1,1,1,0.95)
+			:SetWidth(2)
+		.__END
+
+		self.GlowFrame.fill = CHAIN(self.GlowFrame:CreateTexture(nil,"BACKGROUND"))
+			:SetTexture("Interface\\Buttons\\WHITE8x8")
+			:SetVertexColor(1,1,1,0.06)
+		.__END
+
+		self.GlowFrame.markerText = CHAIN(self.GlowFrame:CreateFontString(nil,"OVERLAY"))
+			:SetFont(FONTBOLD or FONT, 16, "OUTLINE")
+			:SetTextColor(0.25, 1.0, 0.25)
+			:SetJustifyH("RIGHT")
+			:SetJustifyV("TOP")
+		.__END
+
+		self.GlowFrame.markerCoin = CHAIN(self.GlowFrame:CreateTexture(nil,"OVERLAY"))
+			:SetTexture("Interface\\MoneyFrame\\UI-GoldIcon")
+			:SetSize(14,14)
+		.__END
 	end
 
-	self.GlowFrame:SetPoint("LEFT",b,"LEFT",37,3)
+	self.GlowFrame:ClearAllPoints()
+	self.GlowFrame:SetParent(UIParent)
+	self.GlowFrame:SetFrameStrata("TOOLTIP")
+	self.GlowFrame:SetFrameLevel((b:GetFrameLevel() or 1) + 30)
+	self.GlowFrame:SetPoint("TOPLEFT",b,"TOPLEFT",-2,2)
+	self.GlowFrame:SetPoint("BOTTOMRIGHT",b,"BOTTOMRIGHT",2,-2)
+
+	self.GlowFrame.top:ClearAllPoints()
+	self.GlowFrame.top:SetPoint("TOPLEFT", self.GlowFrame, "TOPLEFT", 0, 0)
+	self.GlowFrame.top:SetPoint("TOPRIGHT", self.GlowFrame, "TOPRIGHT", 0, 0)
+	self.GlowFrame.bottom:ClearAllPoints()
+	self.GlowFrame.bottom:SetPoint("BOTTOMLEFT", self.GlowFrame, "BOTTOMLEFT", 0, 0)
+	self.GlowFrame.bottom:SetPoint("BOTTOMRIGHT", self.GlowFrame, "BOTTOMRIGHT", 0, 0)
+	self.GlowFrame.left:ClearAllPoints()
+	self.GlowFrame.left:SetPoint("TOPLEFT", self.GlowFrame, "TOPLEFT", 0, 0)
+	self.GlowFrame.left:SetPoint("BOTTOMLEFT", self.GlowFrame, "BOTTOMLEFT", 0, 0)
+	self.GlowFrame.right:ClearAllPoints()
+	self.GlowFrame.right:SetPoint("TOPRIGHT", self.GlowFrame, "TOPRIGHT", 0, 0)
+	self.GlowFrame.right:SetPoint("BOTTOMRIGHT", self.GlowFrame, "BOTTOMRIGHT", 0, 0)
+	self.GlowFrame.fill:ClearAllPoints()
+	self.GlowFrame.fill:SetPoint("TOPLEFT", self.GlowFrame, "TOPLEFT", 2, -2)
+	self.GlowFrame.fill:SetPoint("BOTTOMRIGHT", self.GlowFrame, "BOTTOMRIGHT", -2, 2)
+
+	self.GlowFrame.markerText:ClearAllPoints()
+	self.GlowFrame.markerText:SetPoint("TOPRIGHT", self.GlowFrame, "TOPRIGHT", -5, -3)
+	self.GlowFrame.markerCoin:ClearAllPoints()
+	self.GlowFrame.markerCoin:SetPoint("TOPRIGHT", self.GlowFrame, "TOPRIGHT", -5, -4)
+	self.GlowFrame.markerText:SetShown(not selling)
+	self.GlowFrame.markerCoin:SetShown(selling)
+	if not selling then
+		self.GlowFrame.markerText:SetText("+")
+	end
+
 	self.GlowFrame:Show()
-		--self.GlowFrame.tex:SetShown(selling)
+	self.HighlightedRewardIndex = index
 end
 
 function QuestItem:IsQuestItemsReady()
@@ -119,6 +207,45 @@ function QuestItem:GetQuestRewardIndex()
 	end
 
 	return nil,"Error"
+end
+
+function QuestItem:ApplyRewardRecommendation(forceAutoTurnIn)
+	self:HideQuestRewardGlow()
+
+	local rewardIndex, reason = self:GetQuestRewardIndex()
+	if rewardIndex == -5 then
+		if self.RewardRetryTimer and ZGV.CancelTimer then
+			ZGV:CancelTimer(self.RewardRetryTimer, true)
+			self.RewardRetryTimer = nil
+		end
+		if ZGV.ScheduleTimer then
+			self.RewardRetryTimer = ZGV:ScheduleTimer(function()
+				self.RewardRetryTimer = nil
+				QuestItem:ApplyRewardRecommendation(forceAutoTurnIn)
+			end, 0.15)
+		end
+		return false, reason
+	end
+
+	if not rewardIndex or rewardIndex < 1 then
+		return false, reason
+	end
+
+	self:ShowQuestRewardGlow(rewardIndex, reason == "Item picked because it is worth most money")
+
+	if forceAutoTurnIn and ZGV.db and ZGV.db.profile and ZGV.db.profile.autoturnin and ZGV.db.profile.autoquestreward ~= false then
+		if ZGV.ScheduleTimer then
+			ZGV:ScheduleTimer(function()
+				if GetNumQuestChoices() > 0 then
+					GetQuestReward(rewardIndex)
+				end
+			end, 0.05)
+		else
+			GetQuestReward(rewardIndex)
+		end
+	end
+
+	return true, reason, rewardIndex
 end
 
 --== Suggesting Quest item for current step
@@ -391,6 +518,58 @@ end
 function QuestItem:Startup()
 	AutoEquip = ItemScore.AutoEquip
 	ZGV:AddMessageHandler("ZGV_STEP_CHANGED",QuestItem_StepReset)
+
+	local rewardHook = function()
+		if GetNumQuestChoices and GetNumQuestChoices() and GetNumQuestChoices() > 0 then
+			QuestItem:ApplyRewardRecommendation(false)
+		else
+			QuestItem:HideQuestRewardGlow()
+		end
+	end
+
+	if QuestFrameRewardPanel then
+		QuestFrameRewardPanel:HookScript("OnShow", rewardHook)
+		QuestFrameRewardPanel:HookScript("OnHide", function() QuestItem:HideQuestRewardGlow() end)
+	end
+	if QuestInfoFrame then
+		QuestInfoFrame:HookScript("OnHide", function() QuestItem:HideQuestRewardGlow() end)
+	end
+
+	if not self.EventFrame then
+		self.EventFrame = CreateFrame("Frame")
+		self.EventFrame:RegisterEvent("QUEST_COMPLETE")
+		self.EventFrame:SetScript("OnEvent", function()
+			if self.RewardDisplayTimer and ZGV.CancelTimer then
+				ZGV:CancelTimer(self.RewardDisplayTimer, true)
+				self.RewardDisplayTimer = nil
+			end
+			if ZGV.ScheduleTimer then
+				self.RewardDisplayTimer = ZGV:ScheduleTimer(function()
+					self.RewardDisplayTimer = nil
+					if GetNumQuestChoices and GetNumQuestChoices() and GetNumQuestChoices() > 0 then
+						QuestItem:ApplyRewardRecommendation(false)
+					else
+						QuestItem:HideQuestRewardGlow()
+					end
+				end, 0.05)
+			end
+		end)
+	end
+
+	if not self.GetQuestRewardHooked then
+		hooksecurefunc("GetQuestReward", function()
+			QuestItem:HideQuestRewardGlow()
+			if ItemScore and ItemScore.Upgrades and ZGV.ScheduleTimer then
+				ZGV:ScheduleTimer(function()
+					ItemScore.Upgrades:ScoreEquippedItems()
+				end, 0.2)
+				ZGV:ScheduleTimer(function()
+					ItemScore.Upgrades:ScoreEquippedItems()
+				end, 0.8)
+			end
+		end)
+		self.GetQuestRewardHooked = true
+	end
 end
 
 function QuestItem:Debug(msg,...)

@@ -164,6 +164,22 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
+### Revision 121 - 3.0.121
+
+- Reworked Gear Advisor and Gear Finder presentation to feel more retail-like while keeping the existing WotLK-safe scoring engine.
+- Added shared upgrade summaries with active build, raw score delta, normalized percent, and short rationale text across Gear Advisor, Gear Finder, and item tooltip scoring.
+- Improved upgrade-value accuracy so displayed score deltas and percentages are based on the actual replacement baseline instead of the older brittle percent-only model.
+- Updated the Stat Weights options page to frame the shipped WotLK values as curated defaults, with clearer selected-spec and customized-vs-default context.
+- Fixed bag-upgrade selection so slot winners are chosen using live replacement delta instead of only cached absolute item score.
+- Fixed missed corpse-loot upgrade recommendations by registering `GET_ITEM_INFO_RECEIVED` for item rescans after delayed item info arrives.
+- Added quest reward recommendation support on the WotLK reward frame:
+  - highlights the best reward choice with a white outline
+  - shows a green `+` for upgrades or a gold coin icon for vendor-value picks
+  - keeps the highlight rendering above overlapping reward rows
+- Added a separate `Auto-choose best quest reward` option and set it disabled by default for new profiles.
+- Auto-turn-in can now use the best-reward chooser when enabled, while manual reward selection still gets a visual recommendation when auto-pick is disabled.
+
+
 ### Revision 120 - 3.0.120
 
 - Refined the remastered compact inline viewer layout to fix false extra bottom padding on certain long single-line instructions.

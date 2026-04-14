@@ -67,6 +67,7 @@ function ItemScore:Initialise()
 		:RegisterEvent("PLAYER_LEVEL_UP")
 		:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
 		:RegisterEvent("BAG_UPDATE_DELAYED")
+		:RegisterEvent("GET_ITEM_INFO_RECEIVED")
 
 		:RegisterEvent("PLAYER_REGEN_DISABLED")
 		:RegisterEvent("PLAYER_REGEN_ENABLED")
@@ -703,14 +704,6 @@ end
 
 
 -- set of functions to add zygor item info to tooltip
-local function get_change(old,new) 
-	if old and old>0 then 
-		return math.floor(((new*100/old)-100)*100)/100
-	else 
-		return 100 
-	end 
-end
-
 local function ItemScore_SetTooltipData(tooltip, tooltipobj)
 	if not ZGV.db.profile.autogear then return end
 	if not ZGV.db.profile.itemscore_tooltips then return end
@@ -756,22 +749,38 @@ local function ItemScore_SetTooltipData(tooltip, tooltipobj)
 		end
 		
 		local slot_1,slot_2 = item.slot, item.slot_2
-		local equipped_item_1, equipped_item_2, change_1, change_2
+		local equipped_item_1, equipped_item_2
 		if slot_1 then 
 			equipped_item_1 = ItemScore.Upgrades.EquippedItems[slot_1]
-			if equipped_item_1 and ItemScore:IsValidItem(equipped_item_1.itemlink) then
-				change_1 = get_change(equipped_item_1.artifactscore or equipped_item_1.score,score)
-			else
-				change_1 = 100
-			end
 		end
 		if slot_2 then 
 			equipped_item_2 = ItemScore.Upgrades.EquippedItems[slot_2] 
-			if equipped_item_1 and ItemScore:IsValidItem(equipped_item_1.itemlink) then
-				change_2 = get_change(equipped_item_2.artifactscore or equipped_item_2.score,score)
-			else
-				change_2 = 100
+		end
+
+		local function add_upgrade_line(slotinfo, equipped_item, slotid)
+			if equipped_item and equipped_item.score and itemlink == equipped_item.itemlink then
+				tooltip:AddLine("|r "..slotinfo.."Equipped")
+				return
 			end
+
+			local scoreDelta, percent, isNewItem = ItemScore.Upgrades:GetUpgradeMetrics(slotid, item)
+			local line
+			if isNewItem or not (equipped_item and equipped_item.score) then
+				line = "|r "..slotinfo..(L["gearfinder_label_new_item"] or "New item")
+				if scoreDelta and scoreDelta ~= 0 then
+					line = line .. " |cff00ff00" .. string.format((L["gearfinder_label_delta_score"] or "%+.1f score"), scoreDelta) .. "|r"
+				end
+			elseif scoreDelta then
+				local state = scoreDelta >= 0 and "Upgrade" or "Downgrade"
+				local color = scoreDelta >= 0 and "|cff00ff00" or "|cffff0000"
+				line = "|r "..slotinfo..state.." "..color..string.format((L["gearfinder_label_delta_score"] or "%+.1f score"), scoreDelta).."|r"
+				if percent then
+					line = line .. " "..color.."("..string.format((L["gearfinder_upgrade_percent_short"] or "%+.1f%%"), percent)..")|r"
+				end
+			else
+				line = "|r "..slotinfo.."Equipped"
+			end
+			tooltip:AddLine(line)
 		end
 
 		if valid then
@@ -789,39 +798,17 @@ local function ItemScore_SetTooltipData(tooltip, tooltipobj)
 				local slotinfo2 = slot_2 and "Slot 2: " or ""
 
 				-- item in slot 1
-				if equipped_item_1.score then
-					if itemlink~=equipped_item_1.itemlink then
-						local comment = "|r "..slotinfo1..((change_1 > 0) and "Upgrade |cff00ff00" or "Downgrade |cffff0000")
-						if ZGV.db.profile.debug then comment = comment..(score-equipped_item_1.score).." " end
-						tooltip:AddLine(comment..change_1.."% ")
-						if change_1<0 and (mh and mh.itemlink==itemlink) and (oh and oh.itemlink) then
-							tooltip:AddLine("       Upgrade with "..oh.itemlinkfull)
-						end
-					else
-						tooltip:AddLine("|r "..slotinfo1.."Equipped")
-					end
-				else
-					tooltip:AddLine("|r "..slotinfo1.."Upgrade |cff00ff00100% ")
-				end
+				add_upgrade_line(slotinfo1, equipped_item_1, slot_1)
 
 				if slot_2 and equipped_item_2.score then
-					if itemlink~=equipped_item_2.itemlink then
-						local comment = "|r "..slotinfo2..((change_2 > 0) and "Upgrade |cff00ff00" or "Downgrade |cffff0000")
-						if ZGV.db.profile.debug then comment = comment..(score-equipped_item_2.score).." " end
-						tooltip:AddLine(comment..change_2.."% ")
-						if change_2<0 and (mh and mh.itemlink) and (oh and oh.itemlink==itemlink) then
-							tooltip:AddLine("       Upgrade with "..mh.itemlinkfull)
-						end
-					else
-						tooltip:AddLine("|r "..slotinfo2.."Equipped")
-					end
+					add_upgrade_line(slotinfo2, equipped_item_2, slot_2)
 				elseif slot_2 then
-					tooltip:AddLine("|r "..slotinfo2.."Upgrade |cff00ff00100% ")
+					add_upgrade_line(slotinfo2, equipped_item_2, slot_2)
 				end
 			elseif (score or 0)>0 then
 				tooltip:AddLine(" ")
 				tooltip:AddLine("|cfffe6100Zygor ItemScore:|r")
-				tooltip:AddLine("|r  Upgrade |cff00ff00100% ")
+				add_upgrade_line("", nil, slot_1)
 			end
 			-- 3.3.5a: gem socket suggestions removed
 		else

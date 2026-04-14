@@ -23,6 +23,12 @@ local GearFinder = {}
 ItemScore.GearFinder = GearFinder
 ItemScore.Items = {}
 
+local function GF_FormatFinderSummary(slotID, item, change, secondnewitem)
+	local upgrades = ItemScore and ItemScore.Upgrades
+	if not upgrades or not upgrades.FormatUpgradeSummary then return nil end
+	return upgrades:FormatUpgradeSummary(slotID, item, change, secondnewitem)
+end
+
 -- remove all non-player class drops, and all bosses that do not drop anything for player
 function GearFinder:TrimDatabase() 
 	local player = ZGV.ItemScore.playerclass
@@ -890,8 +896,10 @@ function GearFinder:DisplayResults()
 			button:SetAlpha(dungeonUpgrade.future and 0.5 or 1)
 
 			local dungeon = ZGV.Dungeons[dungeonUpgrade.ident]
-			button.itemdungeon:SetText(("|cff00ff00%s|r %s"):format(L["gearfinder_label_dungeon"], (dungeon and dungeon.name) or L["gearfinder_label_unknown"]))
-			button.itemencounter:SetText(dungeonUpgrade.bossname or "")
+			local summary = GF_FormatFinderSummary(slotID, dungeonUpgrade, dungeonUpgrade.change, dungeonUpgrade.pair)
+			local state = dungeonUpgrade.future and (L["gearfinder_label_future"] or "Future upgrade") or (L["gearfinder_label_found"] or "Best found")
+			button.itemdungeon:SetText(("|cff00ff00%s|r %s"):format(state, (dungeon and dungeon.name) or L["gearfinder_label_unknown"]))
+			button.itemencounter:SetText(summary or dungeonUpgrade.bossname or "")
 
 		elseif hasBagUpgrade then
 			-- Bag upgrade found
@@ -902,9 +910,9 @@ function GearFinder:DisplayResults()
 				button.itemlink:SetText(bagItem.itemlinkfull or bagUpgrade.itemlink)
 				button.link = bagItem.itemlinkfull
 				button:SetAlpha(1)
-				local changeText = bagUpgrade.change and bagUpgrade.change > 0 and ("|cff00ff00" .. L["gearfinder_upgrade_percent"]:format(math.floor(bagUpgrade.change)) .. "|r") or ""
-				button.itemdungeon:SetText(("|cff44ff44%s|r %s"):format(L["gearfinder_label_inbags"], changeText))
-				button.itemencounter:SetText("")
+				local summary = GF_FormatFinderSummary(slotID, bagItem, bagUpgrade.change, bagUpgrade.pair)
+				button.itemdungeon:SetText(("|cff44ff44%s|r"):format(L["gearfinder_label_inbags"]))
+				button.itemencounter:SetText(summary or "")
 			end
 
 		elseif equippedItem then
@@ -913,9 +921,9 @@ function GearFinder:DisplayResults()
 			button.itemlink:SetText(equippedItem.itemlinkfull or equippedLink)
 			button.link = equippedItem.itemlinkfull
 			button:SetAlpha(0.7)
-			local scoreText = equippedScore and equippedScore > 0 and L["gearfinder_label_score"]:format(math.floor(equippedScore)) or ""
-			button.itemdungeon:SetText("|cffaaaaaa"..scoreText.."|r")
-			button.itemencounter:SetText("|cffaaaaaa"..L["gearfinder_label_equipped"].."|r")
+			local scoreText = equippedScore and equippedScore > 0 and (L["gearfinder_label_score_value"] or "%.1f score"):format(equippedScore) or ""
+			button.itemdungeon:SetText("|cffaaaaaa"..L["gearfinder_label_equipped"].."|r")
+			button.itemencounter:SetText(scoreText ~= "" and ("|cffaaaaaa"..scoreText.."|r") or "")
 
 		else
 			-- Empty slot
@@ -923,7 +931,7 @@ function GearFinder:DisplayResults()
 			button.itemlink:SetText(" ")
 			button.link = nil
 			button.itemdungeon:SetText("|cffff8800"..L["gearfinder_label_empty"].."|r")
-			button.itemencounter:SetText(" ")
+			button.itemencounter:SetText("|cffaaaaaa"..(L["gearfinder_label_new_item"] or "New item").."|r")
 			button.itemicon:SetDesaturated(false)
 			button:SetAlpha(0.4)
 		end
