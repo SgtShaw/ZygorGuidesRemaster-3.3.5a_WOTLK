@@ -164,6 +164,16 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
+### Revision 119 - 3.0.119
+
+- Optimized Quest Tracking for Wrath with throttled quest-log rescans, completed-goal synchronization, and a lightweight safety polling pass. 
+- Reduced quest-log event storm overhead while preserving the existing 3.3.5a-safe fixed-entry scan behavior.
+- Improved imported guide condition compatibility by adding missing helpers such as `warlockpet`, `haveq`, `zone`, and `weaponskill`.
+- Fixed mixed and standalone `|only if` parsing so race/class and condition-based retail-import steps hide correctly.
+- Fixed requirement handling for both string and table-based step requirements.
+- Fixed retail-style `goto` parsing so waypoints create correctly for imported guides using `Zone x,y` formatting.
+- Resolved several retail-import progression/runtime errors that were blocking starter and leveling guide flow.
+
 ### Revision 118 - 3.0.118
 
 - Added a hidden `retail` Guide Browser search term for guides loaded from the `Guides/Retail` import set.

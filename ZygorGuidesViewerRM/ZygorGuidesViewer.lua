@@ -4835,7 +4835,9 @@ function me:UpdateFrame(full,onupdate,nonsecure_only)
 
 					if stepdata.requirement or self.db.profile.stepnumbers then
 						local numbertext = self.db.profile.stepnumbers and L['step_num']:format(stepnum)
-						local reqtext = stepdata.requirement and ((stepdata:AreRequirementsMet() and "|cff44aa44" or "|cffbb0000") .. "(" .. (table.concat(stepdata.requirement,L["stepreqor"])):gsub("!([a-zA-Z ]+)",L["req_not"]:format("%1")) .. ")")
+						local reqraw = stepdata.requirement
+						local reqdisplay = type(reqraw)=="table" and table.concat(reqraw,L["stepreqor"]) or tostring(reqraw)
+						local reqtext = reqraw and ((stepdata:AreRequirementsMet() and "|cff44aa44" or "|cffbb0000") .. "(" .. reqdisplay:gsub("!([a-zA-Z ]+)",L["req_not"]:format("%1")) .. ")")
 						local leveltext = (stepdata.level and stepdata.level>0 and self.db.profile.stepnumbers) and L['step_level']:format(stepdata.level or "?")
 
 						frame.lines[line].labelOffsetX = 0

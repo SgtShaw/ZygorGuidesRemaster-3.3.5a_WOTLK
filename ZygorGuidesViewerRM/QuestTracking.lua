@@ -2,12 +2,29 @@ local me = ZygorGuidesViewer
 local ZGV = me
 if not ZGV then return end
 
+local GetQuestLogTitle = GetQuestLogTitle
+local GetNumQuestLeaderBoards = GetNumQuestLeaderBoards
+local GetQuestLogLeaderBoard = GetQuestLogLeaderBoard
+local GetQuestsCompleted = GetQuestsCompleted
+local GetTime = GetTime
+local tonumber = tonumber
+local tostring = tostring
+local ipairs = ipairs
+local pairs = pairs
+local type = type
+local tinsert = table.insert
+local twipe = table.wipe
+
+local lastQuestCacheUpdate = 0
+local QUEST_CACHE_THROTTLE = 0.2
+
 tinsert(ZGV.startups,function(self)
 	self:AddEvent("CHAT_MSG_SYSTEM","CHAT_MSG_SYSTEM_QuestTracking")
 	self:AddEvent("QUEST_LOG_UPDATE","QUEST_LOG_UPDATE_QuestTracking")
 	self:AddEvent("QUEST_QUERY_COMPLETE","QUEST_QUERY_COMPLETE_QuestTracking")
 
 	self:ScheduleRepeatingTimer("QueryQuests", 10)
+	self:ScheduleRepeatingTimer("QuestTracking_SafetyPoll", 2)
 
 	self:QueryQuests()
 end)
@@ -85,7 +102,11 @@ function me:GetQuest(indexortitle)
 	end
 end
 
-function me:QuestTracking_CacheQuestLog()
+function me:QuestTracking_CacheQuestLog(force)
+	local now = GetTime()
+	if not force and (now - lastQuestCacheUpdate) < QUEST_CACHE_THROTTLE then return self.quests end
+	lastQuestCacheUpdate = now
+
 	--self:Debug('CacheQuestLog: '..zone..'/'..subzone)
 	--if not zone or zone=='' then return nil end
 
@@ -136,9 +157,15 @@ function me:QuestTracking_CacheQuestLog()
 				id = questID,
 				index = tonumber(i)
 			}
+			if quest.complete then
+				for _,goal in ipairs(goals) do
+					goal.num = goal.needed
+					goal.complete = true
+				end
+			end
 			tinsert(self.quests,quest)
 			if not self.questsbyid[questID] and not self.recentlyAcceptedQuests[questID] then
-				table.insert(newquests,quest)
+				tinsert(newquests,quest)
 				--self:Debug(dumpquest(quest))
 			end
 
@@ -147,7 +174,7 @@ function me:QuestTracking_CacheQuestLog()
 		end
 	end
 
-	table.wipe(self.questsbyid)
+	twipe(self.questsbyid)
 	for qi,q in pairs(self.quests) do
 		if q.id then
 			self.questsbyid[q.id]=q
@@ -164,7 +191,7 @@ function me:QuestTracking_CacheQuestLog()
 	if #oldquests>0 then
 		for qi,q in pairs(oldquests) do
 			if not self.questsbyid[q.id] and not self.completedQuests[id] then
-				table.insert(lostquests,q)
+				tinsert(lostquests,q)
 				self.recentlyAcceptedQuests[q.id]=nil
 				self.recentlyAcceptedQuests[q.title]=nil
 			end
@@ -235,6 +262,10 @@ function me:QuestTracking_ResetDailies(force)
 	end
 	lastQuestResetTime=QuestResetTime
 	--]]
+end
+
+function me:QuestTracking_SafetyPoll()
+	self:QuestTracking_CacheQuestLog()
 end
 
 --- Use these for instant-type quests. Bad workaround, but hey.
@@ -317,7 +348,7 @@ end
 function me:QUEST_LOG_UPDATE_QuestTracking(event,arg1)
 	--self:Debug('QUEST_LOG_UPDATE: '..tostring(arg1))
 	--if 1 then self:Debug('**BREAK**'); return end
-	self:QuestTracking_CacheQuestLog()
+	self:QuestTracking_CacheQuestLog(not self.questLogInitialized)
 
 	if not self.questLogInitialized then
 		self:OnFirstQuestLogUpdate()
@@ -354,6 +385,7 @@ function me:CHAT_MSG_SYSTEM_QuestTracking(event,text)
 	-- now, OF COURSE it would be better to rely on quest disappearance. But some quests just complete immediately.
 	local quest = string.match(text,detection_complete)
 	if quest then
+		self:QuestTracking_CacheQuestLog(true)
 		local id,_,daily = self:GetQuest(quest)
 		--if not q.id then
 			-- re-query completed quests; nasty, but the only way to fetch this sucker.

@@ -47,14 +47,15 @@ function me:ParseMapXYDist(text)
 	text, ltDist = text:gsub("%s*<%s*([0-9%.]+)%s*$",",%1")
 	-- Strip floor suffix: "Zone/0 x,y" -> "Zone x,y" or "Zone/0" -> "Zone"
 	text = text:gsub("/%d+(%s)","%1"):gsub("/%d+$","")
+	-- space-separated retail form must be tested before generic comma-map parsing,
+	-- otherwise "Zone 43.00,89.40,10" is misread as map="Zone 43.00".
+	if not _ then _,_,map,x,y,dist = string.find(text,"^(.-)%s+([0-9%.]+),([0-9%.]+),([0-9%.]+)$") end
+	if not _ then _,_,map,x,y = string.find(text,"^(.-)%s+([0-9%.]+),([0-9%.]+)$") end
 	-- comma-separated: "Map Name,x,y,dist"
-	_,_,map,x,y,dist = string.find(text,"^(.+),([0-9%.]+),([0-9%.]+),([0-9%.]+)$")
+	if not _ then _,_,map,x,y,dist = string.find(text,"^(.+),([0-9%.]+),([0-9%.]+),([0-9%.]+)$") end
 	if not _ then _,_,x,y,dist = string.find(text,"^([0-9%.]+),([0-9%.]+),([0-9%.]+)$") end
 	if not _ then _,_,map,x,y = string.find(text,"^(.+),([0-9%.]+),([0-9%.]+)$") end
 	if not _ then _,_,x,y = string.find(text,"^([0-9%.]+),([0-9%.]+)$") end
-	-- space-separated: "Map Name x,y,dist" or "Map Name x,y" (retail guide format)
-	if not _ then _,_,map,x,y,dist = string.find(text,"^(.-)%s+([0-9%.]+),([0-9%.]+),([0-9%.]+)$") end
-	if not _ then _,_,map,x,y = string.find(text,"^(.-)%s+([0-9%.]+),([0-9%.]+)$") end
 	if not _ then _,_,dist = string.find(text,"^([0-9%.]+)$") end
 	if not _ then map = text end
 
@@ -252,9 +253,50 @@ ZGV.ConditionEnv = {
 		local s = ZGV:GetSkill(skill)
 		return (s and (s.max or s.level)) or 0
 	end,
+	weaponskill = function(skilltoken)
+		if not skilltoken or skilltoken == "" then return 0 end
+		local aliases = {
+			AXE = {"Axes"},
+			BOW = {"Bows"},
+			CROSSBOW = {"Crossbows"},
+			DAGGER = {"Daggers"},
+			FIST = {"Fist Weapons"},
+			GUN = {"Guns"},
+			MACE = {"Maces"},
+			POLEARM = {"Polearms"},
+			STAFF = {"Staves"},
+			SWORD = {"Swords"},
+			TH_AXE = {"Two-Handed Axes"},
+			TH_MACE = {"Two-Handed Maces"},
+			TH_STAFF = {"Staves"},
+			TH_SWORD = {"Two-Handed Swords"},
+			THROWN = {"Thrown"},
+			UNARMED = {"Unarmed"},
+			WAND = {"Wands"},
+		}
+		local function norm(name)
+			return tostring(name or ""):upper():gsub("[%s%-'\"%.]", "")
+		end
+		local wanted = aliases[skilltoken] or {skilltoken}
+		for i = 1, GetNumSkillLines() do
+			local name, isHeader, _, skillRank = GetSkillLineInfo(i)
+			if name and not isHeader then
+				local lname = norm(name)
+				for _, candidate in ipairs(wanted) do
+					if lname == norm(candidate) then
+						return skillRank or 0
+					end
+				end
+			end
+		end
+		return 0
+	end,
 	-- Retail condition functions
 	subzone = function(name)
 		return GetSubZoneText() == name or GetMinimapZoneText() == name
+	end,
+	zone = function(name)
+		return GetZoneText() == name or GetRealZoneText() == name
 	end,
 	raceclass = function(rc)
 		local _, pclass = UnitClass("player")
@@ -269,9 +311,18 @@ ZGV.ConditionEnv = {
 		end
 		return false
 	end,
+	haveq = function(id)
+		return ZGV.ConditionEnv.havequest(id)
+	end,
 	itemcount = function(item)
 		if not item then return 0 end
 		return GetItemCount(item) or 0
+	end,
+	warlockpet = function(petname)
+		if not petname or petname == "" or not UnitExists("pet") then return false end
+		local family = UnitCreatureFamily("pet")
+		local name = UnitName("pet")
+		return family == petname or name == petname
 	end,
 	hasbuff = function(buff)
 		if not buff then return false end
@@ -323,6 +374,42 @@ local function NormalizeUntilCondition(cond)
 		return ('skill("%s")%s%s'):format(bare,op3,val3)
 	end
 	return c
+end
+
+local RACE_CLASS_ONLYIF_TOKENS = {
+	["HUMAN"]=true, ["DWARF"]=true, ["NIGHT ELF"]=true, ["GNOME"]=true, ["DRAENEI"]=true,
+	["ORC"]=true, ["UNDEAD"]=true, ["SCOURGE"]=true, ["TAUREN"]=true, ["TROLL"]=true, ["BLOOD ELF"]=true,
+	["WARRIOR"]=true, ["PALADIN"]=true, ["HUNTER"]=true, ["ROGUE"]=true, ["PRIEST"]=true,
+	["DEATH KNIGHT"]=true, ["DEATHKNIGHT"]=true, ["SHAMAN"]=true, ["MAGE"]=true, ["WARLOCK"]=true, ["DRUID"]=true,
+}
+
+local function ParseOnlyIfRequirementList(text)
+	if not text then return nil end
+	text = text:gsub("^%s+",""):gsub("%s+$","")
+	if text == "" then return nil end
+	local list = {}
+	for part in text:gmatch("([^,]+)") do
+		part = part:gsub("^%s+",""):gsub("%s+$","")
+		if part ~= "" then
+			list[#list+1] = part
+		end
+	end
+	if #list == 0 then return nil end
+	return (#list == 1) and list[1] or list
+end
+
+local function IsRaceClassOnlyIfText(text)
+	if not text then return false end
+	text = text:gsub("^%s+",""):gsub("%s+$","")
+	if text == "" then return false end
+	for part in text:gmatch("([^,]+)") do
+		part = part:gsub("^%s+",""):gsub("%s+$",""):upper()
+		if part:sub(1,1) == "!" then part = part:sub(2) end
+		if not RACE_CLASS_ONLYIF_TOKENS[part] and not part:find("^[A-Z]+ [A-Z]+$") then
+			return false
+		end
+	end
+	return true
 end
 
 local function ApplyIncludeVars(text,vars)
@@ -531,6 +618,9 @@ function me:ParseEntry(text)
 		local goal={}
 		local generated_goals=nil
 		local routectx=nil
+		local function HasGoalContent(g)
+			return g and next(g) ~= nil
+		end
 		local function AppendGeneratedRoutePoints(points_to_add)
 			if not generated_goals or not points_to_add then return end
 			for _,pt in ipairs(points_to_add) do
@@ -977,6 +1067,7 @@ function me:ParseEntry(text)
 			elseif cmd=="only" then
 				local cond = params:match("^if%s+(.*)$")
 				if cond then
+					local applyToStep = (not generated_goals) and (not HasGoalContent(goal))
 					-- condition match - try as Lua expression first
 					local fun,err = MakeCondition(cond,true)
 					if fun then
@@ -986,31 +1077,45 @@ function me:ParseEntry(text)
 								g.condition_visible=fun
 							end
 						else
-							local subject = goal  if chunkcount==1 then subject=step end
+							local subject = applyToStep and step or goal
 							subject.condition_visible_raw=cond
 							subject.condition_visible=fun
 						end
 					else
-						-- MakeCondition failed - treat as race/class match (e.g. "only if Draenei Hunter")
-						local rcparams = cond:gsub("%s+",",") -- "Draenei Hunter" -> "Draenei,Hunter"
-						if goal.action or goal.text or chunkcount>1 then
-							if not ZGV:RaceClassMatch(split(rcparams,",")) then
-								goal={}
-								break
+						local reqpart, luapart = cond:match("^(.-)%s+and%s+(.+)$")
+						local reqs = reqpart and IsRaceClassOnlyIfText(reqpart) and ParseOnlyIfRequirementList(reqpart) or nil
+						local luafun = luapart and select(1, MakeCondition(luapart,true)) or nil
+						if reqs and luafun then
+							local subject = applyToStep and step or goal
+							subject.requirement = reqs
+							subject.condition_visible_raw = cond
+							subject.condition_visible = function()
+								return ZGV:RaceClassMatch(reqs) and luafun()
+							end
+						elseif IsRaceClassOnlyIfText(cond) then
+							local reqonly = ParseOnlyIfRequirementList(cond)
+							if not applyToStep then
+								if not ZGV:RaceClassMatch(reqonly) then
+									goal={}
+									break
+								end
+							else
+								step.requirement=reqonly
 							end
 						else
-							step.requirement=split(rcparams,",")
+							return nil,err,linecount,chunk
 						end
 					end
 				else
 					-- race/class match
-					if goal.action or goal.text or chunkcount>1 then
-						if not ZGV:RaceClassMatch(split(params,",")) then
+					local reqs = ParseOnlyIfRequirementList(params)
+					if HasGoalContent(goal) then
+						if not ZGV:RaceClassMatch(reqs) then
 							goal={}
 							break
 						end -- skip goal line altogether
 					else
-						step.requirement=split(params,",")
+						step.requirement=reqs
 					end
 				end
 			elseif cmd=="until" then

@@ -88,8 +88,12 @@ end
 function Step:AreRequirementsMet()
 	local raceclass=true
 	if self.requirement then
-		raceclass=false
-		for i,v in pairs(self.requirement) do if ZGV:RaceClassMatch(v) then raceclass=true break end end
+		if type(self.requirement) == "string" then
+			raceclass = ZGV:RaceClassMatch(self.requirement)
+		else
+			raceclass=false
+			for i,v in pairs(self.requirement) do if ZGV:RaceClassMatch(v) then raceclass=true break end end
+		end
 	end
 	if not raceclass then return false end
 
