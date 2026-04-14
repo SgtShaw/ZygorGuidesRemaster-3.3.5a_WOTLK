@@ -71,7 +71,17 @@ local function ApplyLineLayout(line, layout, useRemaster)
 		return
 	end
 
-	line:SetHeight(layout.LINE_HEIGHT)
+	if useRemaster
+	and ZGV
+	and ZGV.db
+	and ZGV.db.profile
+	and ZGV.db.profile.displaymode == "guide"
+	and not ZGV.db.profile.showallsteps
+	then
+		line:SetHeight(1)
+	else
+		line:SetHeight(layout.LINE_HEIGHT)
+	end
 
 	if line.icon then
 		line.icon:SetSize(layout.ICON_SIZE, layout.ICON_SIZE)

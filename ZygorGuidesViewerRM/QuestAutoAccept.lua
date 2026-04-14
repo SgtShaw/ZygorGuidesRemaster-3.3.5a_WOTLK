@@ -190,6 +190,7 @@ function me:QUEST_COMPLETE()
 		for i,goal in ipairs(self.CurrentStep.goals) do
 			if goal.quest==title then
 				self:Print("Turning in quest")
+				self.questAutoAdvancePauseUntil = GetTime() + 0.35
 				GetQuestReward()
 				return
 			end

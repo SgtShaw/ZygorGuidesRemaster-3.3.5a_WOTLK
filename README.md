@@ -164,6 +164,17 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
+### Revision 120 - 3.0.120
+
+- Refined the remastered compact inline viewer layout to fix false extra bottom padding on certain long single-line instructions.
+- Corrected compact line-width measurement so lines such as accept/talk instructions no longer measure as wrapped when they visually fit on one line.
+- Normalized compact row sizing so action-capable rows like `kill` no longer inflate line height unnecessarily.
+- Tuned compact inline action button sizing so kill/talk buttons remain readable without reintroducing spacing issues.
+- Adjusted the remastered inline progress bar width to better match the visible instruction area while preserving its footer placement.
+- Moved remastered previous/next button tooltips to anchor downward so they no longer cover the progress bar.
+- Added temporary `/zgvlinedebug` instrumentation during investigation to capture live compact row metrics for problematic steps.
+
+
 ### Revision 119 - 3.0.119
 
 - Optimized Quest Tracking for Wrath with throttled quest-log rescans, completed-goal synchronization, and a lightweight safety polling pass. 

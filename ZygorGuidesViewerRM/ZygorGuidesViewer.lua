@@ -928,6 +928,7 @@ BINDING_NAME_ZYGORGUIDES_NEXT = L["binding_next"]
 -- Gold Guide slash command
 SLASH_ZYGORGOLD1 = "/zgold"
 SLASH_ZGOLDSTATUS1 = "/zgoldstatus"
+SLASH_ZGVLINEDEBUG1 = "/zgvlinedebug"
 SlashCmdList["ZGOLDSTATUS"] = function()
 	local scanData = ZGV.db and ZGV.db.factionrealm and ZGV.db.factionrealm.gold_scan_data
 	local scanTime = ZGV.db and ZGV.db.factionrealm and ZGV.db.factionrealm.gold_scan_time
@@ -965,6 +966,40 @@ SlashCmdList["ZGOLDSTATUS"] = function()
 		print("  Auction chores: " .. #chores.Auctions)
 	else
 		print("  Chores: not initialized")
+	end
+end
+SlashCmdList["ZGVLINEDEBUG"] = function()
+	local ZGV = ZygorGuidesViewer
+	if not ZGV or not ZGV.CurrentStep or not ZGV.stepframes then
+		print("|cffff8800Zygor Line Debug|r: No active step.")
+		return
+	end
+	local framenum = ZGV.CurrentStepframeNum
+	local stepframe = framenum and ZGV.stepframes[framenum]
+	if not stepframe or not stepframe.lines then
+		print("|cffff8800Zygor Line Debug|r: No active step frame.")
+		return
+	end
+	print("|cffff8800Zygor Line Debug|r: guide=" .. tostring(ZGV.CurrentGuideName) .. " step=" .. tostring(ZGV.CurrentStepNum) .. " frame=" .. tostring(framenum))
+	for i = 1, 20 do
+		local line = stepframe.lines[i]
+		if line and line:IsShown() and line.label then
+			local label = line.label
+			local goal = line.goal
+			local text = label.GetText and label:GetText() or ""
+			local rowh = line.GetHeight and line:GetHeight() or 0
+			local texth = label.GetStringHeight and label:GetStringHeight() or (label.GetHeight and label:GetHeight() or 0)
+			local backh = (line.back and line.back.IsShown and line.back:IsShown() and line.back.GetHeight) and line.back:GetHeight() or 0
+			local iconh = (line.icon and line.icon.IsShown and line.icon:IsShown() and line.icon.GetHeight) and line.icon:GetHeight() or 0
+			local actionh = (line.actionHolder and line.actionHolder.IsShown and line.actionHolder:IsShown() and line.actionHolder.GetHeight) and line.actionHolder:GetHeight() or 0
+			local actionshown = (line.action and line.action.IsShown and line.action:IsShown()) and 1 or 0
+			local petshown = (line.petaction and line.petaction.IsShown and line.petaction:IsShown()) and 1 or 0
+			print(("|cffffff00L%d|r row=%.1f text=%.1f back=%.1f icon=%.1f holder=%.1f action=%d pet=%d goal=%s text=%s"):format(
+				i, rowh or 0, texth or 0, backh or 0, iconh or 0, actionh or 0, actionshown, petshown,
+				goal and tostring(goal.action) or "-",
+				tostring(text):gsub("|c%x%x%x%x%x%x%x%x",""):gsub("|r","")
+			))
+		end
 	end
 end
 SlashCmdList["ZYGORGOLD"] = function(msg)
@@ -2544,9 +2579,9 @@ function me:GetCompactGuideLayoutMetrics()
 		metrics.stepBottomPadding = 0
 		metrics.progressReserve = 14
 		metrics.progressBottomOffset = 6
-		metrics.lastLineReserve = 2
+		metrics.lastLineReserve = 0
 		metrics.iconHeight = math.max(fontsize + 1, 12)
-		metrics.inlineButtonHeight = math.max(fontsize + 2, 14)
+		metrics.inlineButtonHeight = math.max(metrics.iconHeight + 2, 14)
 	end
 
 	return metrics
@@ -2625,6 +2660,9 @@ function me:GetGuideStepContentWidth(frame)
 	if width <= 0 and frame and frame.GetWidth then
 		width = frame:GetWidth() or 0
 	end
+	if self.db and self.db.profile and self:IsRemasterSkin() then
+		return math.max(width - self.ICON_INDENT, 1)
+	end
 	return math.max(width - self.ICON_INDENT - 2 * self.STEPMARGIN_X, 1)
 end
 
@@ -2636,38 +2674,26 @@ function me:ApplyGuideLineLabelLayout(lineframe)
 	label:ClearAllPoints()
 	label:SetPoint("TOPLEFT", x, y)
 	label:SetPoint("TOPRIGHT", 0, y)
+	if self.db
+	and self.db.profile
+	and self:IsRemasterSkin()
+	and self.db.profile.displaymode == "guide"
+	and not self.db.profile.showallsteps
+	then
+		label:SetJustifyV("TOP")
+	else
+		label:SetJustifyV("MIDDLE")
+	end
 end
 
 function me:GetCompactLineVisualHeight(stepdata, lineframe)
 	if not lineframe then return 0 end
 
-	local compactMetrics = self:GetCompactGuideLayoutMetrics()
-	local iconHeight = 0
 	local goal = lineframe.goal
-	if goal and stepdata == self.CurrentStep then
-		iconHeight = compactMetrics.iconHeight or (self.db and self.db.profile and self.db.profile.fontsize or 11)
-		if goal.routegroup and goal.routekind == "loop" then
-			iconHeight = iconHeight * 0.82
-		end
-
-		local needsInlineVisual = false
-		if self:InlineButtonsEnabled() then
-			needsInlineVisual = (goal.IsActionable and goal:IsActionable())
-				or goal.castspell or goal.castspellid
-				or goal.useitem or goal.useitemid
-				or goal.script or goal.petaction
-		end
-		if needsInlineVisual then
-			local inlineHeight = compactMetrics.inlineButtonHeight or 13
-			if inlineHeight > iconHeight then
-				iconHeight = inlineHeight
-			end
-		end
-	elseif lineframe.icon and lineframe.icon.IsShown and lineframe.icon:IsShown() and lineframe.icon.GetHeight then
-		iconHeight = lineframe.icon:GetHeight() or 0
+	if goal and goal.routegroup and lineframe.icon and lineframe.icon.IsShown and lineframe.icon:IsShown() and lineframe.icon.GetHeight then
+		return lineframe.icon:GetHeight() or 0
 	end
-
-	return iconHeight
+	return 0
 end
 
 function me:RelayoutRemasterCompactVisibleSteps()
@@ -2698,19 +2724,35 @@ function me:RelayoutRemasterCompactVisibleSteps()
 				end
 
 				if #visibleLineNums > 0 then
-					local contentWidth = self:GetGuideStepContentWidth(frame)
 					local height = 0
 					for idx, lineNum in ipairs(visibleLineNums) do
 						local lineframe = frame.lines[lineNum]
 						local text = lineframe.label
+						local lineWidth = 0
+						if lineframe.GetWidth then
+							lineWidth = lineframe:GetWidth() or 0
+						end
+						if lineWidth <= 0 and frame.GetWidth then
+							lineWidth = frame:GetWidth() or 0
+						end
+						local contentWidth = math.max(lineWidth - (lineframe.labelOffsetX or ZGV.ICON_INDENT), 1)
 						text:SetWidth(contentWidth)
 						local textheight = text.GetStringHeight and text:GetStringHeight() or text:GetHeight() or 0
-						local lineheight = math.max(textheight or 0, self:GetCompactLineVisualHeight(stepdata, lineframe))
+						local hasVisibleInlineControl =
+							(lineframe.actionHolder and lineframe.actionHolder.IsShown and lineframe.actionHolder:IsShown())
+							or (lineframe.action and lineframe.action.IsShown and lineframe.action:IsShown())
+							or (lineframe.petaction and lineframe.petaction.IsShown and lineframe.petaction:IsShown())
+						local lineheight
+						if hasVisibleInlineControl then
+							lineheight = math.max(textheight or 0, self:GetCompactLineVisualHeight(stepdata, lineframe))
+						else
+							lineheight = textheight or 0
+						end
 						if compactMetrics.lastLineReserve and compactMetrics.lastLineReserve > 0 and idx == #visibleLineNums then
 							lineheight = lineheight + compactMetrics.lastLineReserve
 						end
 						if text.SetHeight then
-							text:SetHeight(math.max(textheight or 0, lineheight))
+							text:SetHeight(textheight or 0)
 						end
 						lineframe:SetHeight(lineheight)
 						height = height + (height > 0 and compactMetrics.lineSpacing or 0) + lineheight
@@ -2806,17 +2848,32 @@ function me:UpdateGuideProgressWidgets()
 	if self.db and self.db.profile and self:IsRemasterSkin() and not self.db.profile.showallsteps then
 		local metrics = self:GetCompactGuideLayoutMetrics()
 		local footerFrame = self.RemasterFrames and self.RemasterFrames.footer
+		local scrollFrame = ZygorGuidesViewerFrameScroll
 		if footerFrame and footerFrame.IsShown and not footerFrame:IsShown() then
 			footerFrame = nil
 		end
 		local contentFrame = footerFrame or (self.RemasterFrames and self.RemasterFrames.content) or parentFrame
 		if footerFrame then
-			bar:SetPoint("LEFT", footerFrame, "LEFT", 8, 0)
-			bar:SetPoint("RIGHT", footerFrame, "RIGHT", -10, 0)
+			local leftInset, rightInset = self.STEPMARGIN_X, self.STEPMARGIN_X
+			if scrollFrame and scrollFrame.GetLeft and scrollFrame.GetRight and footerFrame.GetLeft and footerFrame.GetRight then
+				local scrollLeft, scrollRight = scrollFrame:GetLeft(), scrollFrame:GetRight()
+				local footerLeft, footerRight = footerFrame:GetLeft(), footerFrame:GetRight()
+				if scrollLeft and scrollRight and footerLeft and footerRight then
+					leftInset = math.max(scrollLeft - footerLeft, 0)
+					rightInset = math.max(footerRight - scrollRight, 0)
+				end
+			end
+			bar:SetPoint("LEFT", footerFrame, "LEFT", leftInset, 0)
+			bar:SetPoint("RIGHT", footerFrame, "RIGHT", -rightInset, 0)
 			bar:SetPoint("CENTER", footerFrame, "CENTER", 0, 0)
 		else
-			bar:SetPoint("BOTTOMLEFT", contentFrame, "BOTTOMLEFT", 8, metrics.progressBottomOffset)
-			bar:SetPoint("BOTTOMRIGHT", contentFrame, "BOTTOMRIGHT", -10, metrics.progressBottomOffset)
+			if scrollFrame then
+				bar:SetPoint("BOTTOMLEFT", scrollFrame, "BOTTOMLEFT", 0, metrics.progressBottomOffset)
+				bar:SetPoint("BOTTOMRIGHT", scrollFrame, "BOTTOMRIGHT", 0, metrics.progressBottomOffset)
+			else
+				bar:SetPoint("BOTTOMLEFT", contentFrame, "BOTTOMLEFT", self.STEPMARGIN_X, metrics.progressBottomOffset)
+				bar:SetPoint("BOTTOMRIGHT", contentFrame, "BOTTOMRIGHT", -self.STEPMARGIN_X, metrics.progressBottomOffset)
+			end
 		end
 	else
 		bar:SetPoint("BOTTOMLEFT", stepframe, "BOTTOMLEFT", ZGV.STEPMARGIN_X, 8)
@@ -3348,7 +3405,7 @@ function me:EnsureRemasterFrames()
 		end
 	end)
 	prevButton:SetScript("OnEnter", function(selfBtn)
-		GameTooltip:SetOwner(selfBtn, "ANCHOR_TOPRIGHT")
+		GameTooltip:SetOwner(selfBtn, "ANCHOR_BOTTOMRIGHT")
 		GameTooltip:SetText(ZygorGuidesViewer.L['frame_stepnav_prev'])
 		GameTooltip:AddLine(ZygorGuidesViewer.L['frame_stepnav_prev_click'],0,1,0)
 		GameTooltip:AddLine(ZygorGuidesViewer.L['frame_stepnav_prev_right'],0,1,0,1)
@@ -3371,7 +3428,7 @@ function me:EnsureRemasterFrames()
 		end
 	end)
 	nextButton:SetScript("OnEnter", function(selfBtn)
-		GameTooltip:SetOwner(selfBtn, "ANCHOR_TOPRIGHT")
+		GameTooltip:SetOwner(selfBtn, "ANCHOR_BOTTOMLEFT")
 		GameTooltip:SetText(ZygorGuidesViewer.L['frame_stepnav_next'])
 		GameTooltip:AddLine(ZygorGuidesViewer.L['frame_stepnav_next_click'],0,1,0,1)
 		GameTooltip:AddLine(ZygorGuidesViewer.L['frame_stepnav_next_right'],0,1,0,1)
@@ -4253,6 +4310,9 @@ function me:TryToCompleteStep(force)
 		return
 	end
 	self.completionelapsed = 0
+	if self.questAutoAdvancePauseUntil and GetTime and GetTime() < self.questAutoAdvancePauseUntil then
+		return
+	end
 
 	-- frame hidden? bail.
 	if not self.Frame:IsVisible() or self.Frame:GetAlpha()<0.1 then return end
@@ -5009,7 +5069,7 @@ function me:UpdateFrame(full,onupdate,nonsecure_only)
 								lineheight = lineheight + compactMetrics.lastLineReserve
 							end
 							if text and text.SetHeight then
-								text:SetHeight(math.max(textheight or 0, lineheight))
+								text:SetHeight(textheight or 0)
 							end
 							height = height + (height>0 and compactLineSpacing or 0) + lineheight
 							--text:SetWidth(ZygorGuidesViewerFrameScroll:GetWidth()-30)
@@ -5189,7 +5249,12 @@ function me:UpdateFrame(full,onupdate,nonsecure_only)
 			end
 
 			self:UpdateFrameCurrent(nonsecure_only)
-			if nonsecure_only then
+			if self.db
+			and self.db.profile
+			and self:IsRemasterSkin()
+			and self.db.profile.displaymode == "guide"
+			and not self.db.profile.showallsteps
+			then
 				self:RelayoutRemasterCompactVisibleSteps()
 			end
 
@@ -5781,7 +5846,16 @@ function me:UpdateFrameCurrent(nonsecure_only)
 			holder:SetWidth(size)
 			holder:SetHeight(size)
 			holder:ClearAllPoints()
-			holder:SetPoint("LEFT", row, "LEFT", 0, 0)
+			if self.db
+			and self.db.profile
+			and self:IsRemasterSkin()
+			and self.db.profile.displaymode == "guide"
+			and not self.db.profile.showallsteps
+			then
+				holder:SetPoint("TOPLEFT", row, "TOPLEFT", 0, 0)
+			else
+				holder:SetPoint("LEFT", row, "LEFT", 0, 0)
+			end
 			holder:Show()
 		end
 
@@ -5846,6 +5920,11 @@ function me:UpdateFrameCurrent(nonsecure_only)
 			if line.goal then
 
 				local goal = line.goal
+				local compactSingleStep = self.db
+					and self.db.profile
+					and self:IsRemasterSkin()
+					and self.db.profile.displaymode == "guide"
+					and not self.db.profile.showallsteps
 
 				lastlabel = label
 
@@ -6086,12 +6165,30 @@ function me:UpdateFrameCurrent(nonsecure_only)
 				icon:SetWidth(iconsize)
 				icon:SetHeight(iconsize)
 				icon:ClearAllPoints()
-				icon:SetPoint("LEFT", line, "LEFT", 0, 0)
+				if compactSingleStep then
+					icon:SetPoint("TOPLEFT", line, "TOPLEFT", 0, 0)
+				else
+					icon:SetPoint("LEFT", line, "LEFT", 0, 0)
+				end
+				back:ClearAllPoints()
+				back:SetPoint("TOPLEFT")
+				back:SetPoint("BOTTOMRIGHT")
 				if self.db.profile.goalbackgrounds then back:Show() else back:Hide() end
 				if self.db.profile.goalicons then icon:Show() icon:SetAlpha(1.0) else icon:Hide() end
 
 				if self:InlineButtonsEnabled() then
 					if (action and action:IsShown()) or (petaction and petaction:IsShown()) then icon:Hide() end
+				end
+
+				if compactSingleStep then
+					local hasVisibleInlineControl =
+						(action and action:IsShown())
+						or (petaction and petaction:IsShown())
+						or (actionholder and actionholder:IsShown())
+					if not hasVisibleInlineControl and label and label.GetStringHeight then
+						local compactTextHeight = math.max((label:GetStringHeight() or 0), 1)
+						line:SetHeight(compactTextHeight)
+					end
 				end
 				
 				--clicker:Show()
