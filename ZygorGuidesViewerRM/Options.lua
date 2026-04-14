@@ -288,14 +288,45 @@ function me:Options_DefineOptions()
 				name = L["opt_guide"]:format(self.version),
 				order = 1,
 			},
-			guide = {
+			guidepath = {
 				order = 2.2,
-				type = "select",
-				name = L["opt_legacyguideddropdown"],
-				values = function() return ZGV:GetGuides() end,
-				get = "GetCurrentGuideNum",
-				set = function(info,i) self:SetGuide(i) self:FocusStep(1) end,
+				type = "description",
+				name = function()
+					local title = ZGV.CurrentGuideName or "No guide selected"
+					return ("Current Guide: |cffffff88%s|r"):format(title)
+				end,
+				width = "full",
+			},
+			guidenote = {
+				order = 2.25,
+				type = "description",
+				name = "The legacy guide dropdown was removed from Options because it does not scale well with the full guide library. Use Guide Browser to browse and switch guides.",
 				width = "double",
+			},
+			openguidebrowser = {
+				order = 2.3,
+				type = "execute",
+				name = "Open Guide Browser",
+				func = function()
+					local ACD = LibStub and LibStub("AceConfigDialog-3.0", true)
+					if ACD and ACD.OpenFrames then
+						ACD:Close("ZygorGuidesViewer")
+					end
+					self:ScheduleTimer(function()
+						if self.SelectGuideManagerSection then
+							self:SelectGuideManagerSection("home")
+							local frame = _G["ZGVGuideManagerFrame"]
+							if frame and not frame:IsShown() then
+								frame:Show()
+							end
+						elseif self.OpenGuideBrowser then
+							self:OpenGuideBrowser()
+						elseif self.OpenGuideMenu then
+							self:OpenGuideMenu()
+						end
+					end, 0)
+				end,
+				width = "normal",
 			},
 			steps = {
 				order=3.1,
@@ -2449,13 +2480,22 @@ function me:Options_DefineOptions()
 			order = 4,
 			type = "select",
 			name = "Class",
+			sorting = {1,2,3,4,5,6,7,8,9,11},
 			values = function()
-				local t = {}
-				for i = 1, 10 do
-					local name, tag, id = GetClassInfo(i)
-					if name then t[i] = name end
-				end
-				return t
+				local male = LOCALIZED_CLASS_NAMES_MALE or {}
+				local female = LOCALIZED_CLASS_NAMES_FEMALE or {}
+				return {
+					[1] = male.WARRIOR or female.WARRIOR or "Warrior",
+					[2] = male.PALADIN or female.PALADIN or "Paladin",
+					[3] = male.HUNTER or female.HUNTER or "Hunter",
+					[4] = male.ROGUE or female.ROGUE or "Rogue",
+					[5] = male.PRIEST or female.PRIEST or "Priest",
+					[6] = male.DEATHKNIGHT or female.DEATHKNIGHT or "Death Knight",
+					[7] = male.SHAMAN or female.SHAMAN or "Shaman",
+					[8] = male.MAGE or female.MAGE or "Mage",
+					[9] = male.WARLOCK or female.WARLOCK or "Warlock",
+					[11] = male.DRUID or female.DRUID or "Druid",
+				}
 			end,
 			set = function(i,v)
 				ZGV.db.char.gear_selected_class = v

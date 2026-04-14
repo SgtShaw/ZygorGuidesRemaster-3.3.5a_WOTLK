@@ -164,6 +164,19 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
+### Revision 118 - 3.0.118
+
+- Added a hidden `retail` Guide Browser search term for guides loaded from the `Guides/Retail` import set.
+- Kept retail-imported guides in their correct functional categories instead of splitting them into a separate `Retail` tab.
+- Fixed a Wrath taxi lookup error in waypoint travel advice where taxi entries could be numeric and crash guide progression.
+- Improved Gear Finder refresh behavior so inventory changes can invalidate stale results and rescan more reliably.
+- Reduced Guide Browser open-time lag by avoiding expensive automatic guide-detail work on the default/open state.
+- Improved lazy-guide browser behavior so selected guide details can still populate when needed without restoring eager startup parsing.
+- Replaced the legacy options-page guide dropdown with a lighter current-guide display and an `Open Guide Browser` button.
+- Fixed the new `Open Guide Browser` options button so it opens the Guide Home view instead of throwing an AceConfig error or toggling the browser closed.
+- Added missing condition-environment helpers used by guides, including `hasbuff`, `nobuff`, `invehicle`, `outvehicle`, and `itemcount`.
+- Fixed the `Stat Weights` class dropdown so class names display correctly on Wrath again.
+
 ### Revision 117 - 3.0.117
 
 - Updated All Versions to 3.0.117 to be in line with github revision number.
@@ -180,6 +193,15 @@ This addon is fully open source and can be inspected before use.
 - Reduced login-time memory usage and improved startup responsiveness significantly on Wrath 3.3.5a.
 - Added the ability to close the Gear Finder by pressing your CharacterFrame hotkey `Default: C`.
 
+### Revision 115 - 3.0.115
+
+- Added @Advocaite 's changes and Retail backports:
+- Guide Finder
+- Auction Tool
+- Retail Guides
+- Gear Advisor
+- Stat Weights
+
 ### Revision 114 - 3.0.114
 
 - Restored the safe Wrath 3D target preview framing fix for long-body creature targets without relying on `!!!ClassicAPI`.
@@ -187,94 +209,6 @@ This addon is fully open source and can be inspected before use.
 - Reworked the options layout to better match the retail-style flow while keeping `Remaster` as the default skin.
 - Improved options navigation with better tab ordering/icons and moved duplicate legacy guide copies into `Guides/Archived`.
 
-### v3.0 (Revision 113)
-
-- Bumped addon version/revision to 3.0.113 / 113.
-- Tightened target preview 3D framing by carrying creature IDs through kill/talk action specs and widening creature-type camera distance for long-body targets like stags and serpents.
-- Fixed quest-bound item progress so live bag counts can override under-reported quest-log totals.
-- Increased the default action bar button size slightly and improved full-button cooldown text rendering.
-- Fixed stale inline cooldown overlays carrying onto non-item actionable rows.
-- Improved secure talk/kill raid-marker application in combat.
-- Fixed stale combat action bar state when the current step no longer has needed bar actions.
-- Suppressed generic no-ID kill rows from action bar and target preview when they are not reliably targetable.
-- Added `.from`-driven kill targeting so adjacent generic kill rows and `.from` rows themselves can provide actionable kill buttons and target preview subjects.
-
-### v3.0 (Revision 111)
-
-- Bumped addon version/revision to 3.0.111 / 111.
-- Fixed the Show steps: All nil-frame crash in the viewer update path.
-- Carried forward the recent remaster compact, in-combat viewer, target preview, drag, and localization improvements into the new published revision.
-
-### v3.0 (Revision 110)
-
-- Bumped addon version/revision to 3.0.110 / 110.
-- Tightened remaster compact row spacing and footer fit without changing the remaster skin.
-- Fixed in-combat viewer resizing and stale inline action carry-over during step swaps.
-- Added a target preview growth-direction option with Match Viewer, Grow Up, and Grow Down modes.
-- Reduced the initial viewer drag hitch, kept the action bar following live, and resnapped target preview on drag stop.
-- Kept the guide progress bar green regardless of remaster accent changes or reloads.
-- Added localization entries for the new target preview growth option, including placeholder strings for remaining locales.
-
-### v3.0 (Revision 109)
-
-- Bumped addon version/revision to 3.0.109 / 109.
-- Synced the repo copy with the current live addon files excluding BACKUP and Workspace.
-- Added the 3.0.109 release notes file and aligned runtime metadata with the release version.
-
-### v3.0 (Revision 106)
-
-- Bumped addon version/revision to 3.0.106 / 106.
-- Fixes: https://github.com/ErebusAres/ZygorGuidesRemaster-3.3.5a_WOTLK/issues/12 
-- Fixes: https://github.com/ErebusAres/ZygorGuidesRemaster-3.3.5a_WOTLK/issues/13 
-- Resolved stretched/distorted inline action icons by sanitizing texcoords/insets and mirroring retail anchoring.
-- Ensured inline item specs and icons render even when player has zero of the item, fixed show/hide ordering, and removed residual 
-debug/test code.
-- Prepared and cleaned live files for the 3.0.106 release.
-
-### v3.0 (Revision 105)
-
-- Bumped addon version/revision to 3.0.105 / 105.
-- Finalized the rebuilt viewer branch as the new stable publish state after the GO/Garryowen crash recovery and startup stabilization work.
-- Kept the rebuilt action bar, target preview, and real line-owned inline `talk`/`kill` buttons active while improving objective-progress refreshes and adding an in-view guide progress bar.
-- Updated the active Northrend Alliance leveling guide to include `The Delicate Sound of Thunder##11495`, `News From the East##11501`, and the related `The Clutches of Evil##11157` handoff flow.
-- Carbonite map zoom can still scale its map-side icon differently from built-in Carbonite icons, but the normal waypoint marker remains visible and functional.
-
-### v3.0 (Revision 104)
-
-- Bumped addon version/revision to 3.0.104 / 104.
-- Refined the new Target Preview workflow so selected talk and kill targets drive the 3D preview more reliably while hover stays on the safer fallback-card path.
-- Added preview panel polish including smoother model rotation persistence, reaction-colored names, cleaner hint text wrapping, and preview-subject selection behavior improvements.
-- Tightened inline viewer action handling further by fixing duplicate target-button inconsistencies and slightly reducing the inline viewer kill button size.
-
-### v3.0 (Revision 103)
-
-- Bumped addon version/revision to 3.0.103 / 103.
-- Added an optional Target Preview pane for current talk and kill steps, with hybrid live 3D preview and styled info-card fallback.
-- Added Target Preview snapping, drag/lock behavior, pin-side, sizing, scale, mode, and localization support so it matches the remaster viewer and Action Buttons workflow.
-- Polished the preview and action surfaces further with theme/opacity matching, target-name reaction coloring, smoother model handling, and additional action-target matching fixes.
-- Fixed remaster skin-color changes so they repaint cleanly without the viewer instruction area visibly popping or reflowing.
-
-### v3.0 (Revision 102)
-
-- Bumped addon version/revision to 3.0.102 / 102.
-- Improved remaster "Show steps: All" handling so it behaves more like a true browsing mode instead of a minimal compact-mode toggle.
-- Restored a larger fixed browsing height when entering all-steps mode, kept a stronger minimum height there, and aligned the step scrollbar with the current step on entry.
-- Kept the Step View button behavior consistent with the viewer controls by using left click for the quick step menu and right click for Step Display settings.
-
-### v3.0 (Revision 101)
-
-- Bumped addon version/revision to 3.0.101 / 101.
-- Fixed follow-up regressions from the Action Buttons release, including Wrath client compatibility issues that could be masked by `!!!ClassicAPI`.
-- Restored the unexplored-area display toggle to the map settings surface and tightened remaster single-step viewer sizing to reduce wasted instruction space.
-- Corrected the remaster step-view button behavior so it opens the addon Step Display options instead of forcing the viewer into the wrong layout mode.
-- Synced additional Guide Manager and remaster viewer fixes for step display routing and related option navigation.
-
-### v3.0 (Revision 100)
-
-- Bumped addon version/revision to 3.0.100 / 100.
-- Added the Action Buttons update for current-step actions, including clickable talk/kill targeting alongside existing use, cast, script, and petaction support.
-- Added action bar pin-side control, reset-position control, and safer saved-variable validation/reset handling for stale Action Button profile data.
-- Expanded Action Button localization support across the shipped locale files for the new pin-side and reset-position options.
 ## Notes
 
 - Intended target client is **WotLK 3.3.5a (12340)**.

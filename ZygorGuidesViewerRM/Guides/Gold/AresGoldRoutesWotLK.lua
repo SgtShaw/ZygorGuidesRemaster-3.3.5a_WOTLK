@@ -3,7 +3,7 @@ if not ZygorGuidesViewer then return end
 
 ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Gold\\Gold Route Hub (Starter + Optimized)",[[
 	author ErebusAres
-	type daily
+	type gold
 	startlevel 80
 	description Practical level 80 gold routing for Wrath 3.3.5a.
 	step
@@ -26,7 +26,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Gold\\Gold Route Hub
 
 ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Gold\\Starter 80 Gold Route (Alliance)",[[
 	author ErebusAres
-	type daily
+	type gold
 	faction alliance
 	startlevel 80
 	description Starter-friendly daily gold checklist for Alliance level 80 characters.
@@ -68,7 +68,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Gold\\Starter 80 Gol
 
 ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Gold\\Starter 80 Gold Route (Horde)",[[
 	author ErebusAres
-	type daily
+	type gold
 	faction horde
 	startlevel 80
 	description Starter-friendly daily gold checklist for Horde level 80 characters.
@@ -110,7 +110,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Gold\\Starter 80 Gol
 
 ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Gold\\Optimized 80 Gold Route (Alliance)",[[
 	author ErebusAres
-	type daily
+	type gold
 	faction alliance
 	startlevel 80
 	description High-throughput daily gold route for geared Alliance level 80 characters.
@@ -141,7 +141,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Gold\\Optimized 80 G
 
 ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Gold\\Optimized 80 Gold Route (Horde)",[[
 	author ErebusAres
-	type daily
+	type gold
 	faction horde
 	startlevel 80
 	description High-throughput daily gold route for geared Horde level 80 characters.
@@ -172,7 +172,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Gold\\Optimized 80 G
 
 ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Gold\\Sholazar 30-Min Gathering Circuit",[[
 	author ErebusAres
-	type daily
+	type gold
 	startlevel 80
 	description Repeatable 30-minute gathering loop focused on Saronite and high-demand herbs.
 	daily
@@ -213,7 +213,7 @@ ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Gold\\Sholazar 30-Mi
 
 ZygorGuidesViewer:RegisterGuide("Ares' WotLK 3.3.5a Guides\\Gold\\Icecrown Cloth + Vendor Circuit",[[
 	author ErebusAres
-	type daily
+	type gold
 	startlevel 80
 	description Simple open-world circuit for Frostweave cloth, vendor gold, and trash drops.
 	daily

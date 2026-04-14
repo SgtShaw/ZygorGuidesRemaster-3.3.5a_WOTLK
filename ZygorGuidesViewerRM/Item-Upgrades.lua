@@ -801,6 +801,10 @@ function Upgrades:ScoreBagsItems()
 
 	if onlyscan then return end
 
+	if ItemScore.GearFinder and ItemScore.GearFinder.RefreshForInventoryChange then
+		ItemScore.GearFinder:RefreshForInventoryChange()
+	end
+
 	Upgrades:ProcessPossibleUpgrades()
 end
 

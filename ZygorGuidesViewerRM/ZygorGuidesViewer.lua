@@ -8406,7 +8406,9 @@ function me:RegisterGuide(title,data,extra)
 		group = self.registered_groups
 	end
 
-	local guide = {['title']=title,['title_short']=tit or title,['rawdata']=data,['extra']=extra,realm=guideRealm,parsed=false,parse_failed=nil}
+	local stack = debugstack and debugstack() or ""
+	local isRetailImport = stack:find("Guides\\Retail\\", 1, true) and true or nil
+	local guide = {['title']=title,['title_short']=tit or title,['rawdata']=data,['extra']=extra,realm=guideRealm,parsed=false,parse_failed=nil,is_retail_import=isRetailImport}
 
 	-- Support retail-style guide registration: RegisterGuide("TITLE", {meta=..., items=..., maps=...}, [[steps]])
 	if type(data) == "table" then

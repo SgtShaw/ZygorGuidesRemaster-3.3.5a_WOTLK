@@ -976,6 +976,15 @@ function GearFinder:ClearResults()
 	if not GearFinder.MainFrame then return end
 	local MF = GearFinder.MainFrame
 	GearFinder.ResultsReady = false
+	GearFinder.DungeonItemsScored = false
+	if GearFinder.ScoreTimer then
+		ZGV:CancelTimer(GearFinder.ScoreTimer)
+		GearFinder.ScoreTimer = nil
+	end
+	if GearFinder.AntsTimer then
+		ZGV:CancelTimer(GearFinder.AntsTimer)
+		GearFinder.AntsTimer = nil
+	end
 
 	for i,v in pairs(ItemScore.GearFinder.UpgradeQueue) do 
 		table.wipe(v) 
@@ -1000,4 +1009,11 @@ function GearFinder:ClearResults()
 	end
 
 	MF.overlay:Show()
+end
+
+function GearFinder:RefreshForInventoryChange()
+	GearFinder:ClearResults()
+	if GearFinder.MainFrame and GearFinder.MainFrame:IsVisible() then
+		GearFinder:ScoreDungeonItems()
+	end
 end

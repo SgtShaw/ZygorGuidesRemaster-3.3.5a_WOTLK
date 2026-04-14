@@ -134,7 +134,8 @@ function me:GetGuideBrowserGuideValues()
 	local guides = {}
 	for _,g in ipairs(node.guides or {}) do
 		local label = g.leaf or g.title
-		local hay = strlower((label or "") .. " " .. (g.title or ""))
+		local fullGuide = self:GetGuideByTitle(g.title or "")
+		local hay = strlower((label or "") .. " " .. (g.title or "") .. GetGuideSearchKeywords(fullGuide))
 		if search=="" or strfind(hay, search, 1, true) then
 			tinsert(guides, g)
 		end
@@ -160,7 +161,8 @@ function me:GetGuideBrowserGuides()
 	local search = strlower((self.db and self.db.profile and self.db.profile.guidebrowsersearch) or "")
 	for _,g in ipairs(node.guides or {}) do
 		local label = g.leaf or g.title
-		local hay = strlower((label or "") .. " " .. (g.title or ""))
+		local fullGuide = self:GetGuideByTitle(g.title or "")
+		local hay = strlower((label or "") .. " " .. (g.title or "") .. GetGuideSearchKeywords(fullGuide))
 		if search=="" or strfind(hay, search, 1, true) then
 			tinsert(out, { title=g.title, label=label })
 		end
@@ -188,6 +190,11 @@ local function CollectGuidesRecursive(node, prefix, out)
 		local nextPrefix = prefix ~= "" and (prefix .. "\\" .. name) or name
 		CollectGuidesRecursive(child, nextPrefix, out)
 	end
+end
+
+local function GetGuideSearchKeywords(guide)
+	if not guide then return "" end
+	return guide.is_retail_import and " retail" or ""
 end
 
 local function EnsureGuideBrowserFrame(self)
@@ -336,7 +343,8 @@ local function UpdateGuideBrowser(self)
 		local tmp = {}
 		CollectGuidesRecursive(node, "", tmp)
 		for _,g in ipairs(tmp) do
-			local hay = strlower(g.label .. " " .. (g.title or ""))
+			local fullGuide = self:GetGuideByTitle(g.title or "")
+			local hay = strlower(g.label .. " " .. (g.title or "") .. GetGuideSearchKeywords(fullGuide))
 			if strfind(hay, search, 1, true) then
 				tinsert(guides, g)
 			end
@@ -464,14 +472,14 @@ local function BuildGuideManagerRows(self, search, filterFn, browsePath, useDril
 		local leaf = g.leaf or g.title or ""
 		local title = g.title or ""
 		local full = (prefix ~= "" and (prefix .. "\\" .. leaf)) or leaf
-		local hay = strlower(full .. " " .. title)
-		if needle ~= "" and not strfind(hay, needle, 1, true) then return false end
 		local fullGuide = guideCache[title]
 		if fullGuide == nil then
 			fullGuide = self:GetGuideByTitle(title) or false
 			guideCache[title] = fullGuide
 		end
 		if fullGuide == false then fullGuide = nil end
+		local hay = strlower(full .. " " .. title .. GetGuideSearchKeywords(fullGuide))
+		if needle ~= "" and not strfind(hay, needle, 1, true) then return false end
 		if filterFn and not filterFn(title, full, fullGuide or g) then return false end
 		return true
 	end
@@ -830,8 +838,9 @@ local function EnsureGuideManagerRows(self, panel, wanted)
 				self.db.profile.guidebrowserselectedguide = data.title
 				panel.selectedFolderPath = nil
 				panel.selectedGuideTitle = data.title
+				panel.selectedGuideUserInitiated = true
 				if panel.ownerFrame and panel.ownerFrame.SetSelectedGuide then
-					panel.ownerFrame:SetSelectedGuide(data.title)
+					panel.ownerFrame:SetSelectedGuide(data.title, true)
 				end
 				if panel.loadOnClick ~= false or wasSelected then
 					self:SetGuide(data.title)
@@ -1236,13 +1245,16 @@ local GUIDE_CATEGORY_ALIASES = {
 	leveling = "leveling", level = "leveling", levels = "leveling", questing = "leveling",
 	dungeon = "dungeons", dungeons = "dungeons", instance = "dungeons", instances = "dungeons",
 	daily = "daily", dailies = "daily",
+	d = "daily",
 	event = "events", events = "events", holiday = "events", holidays = "events",
 	reputation = "reputations", reputations = "reputations", rep = "reputations", reps = "reputations",
 	gold = "gold", farming = "gold", farm = "gold", money = "gold",
 	profession = "professions", professions = "professions", tradeskill = "professions", tradeskills = "professions",
+	petsmounts = "petsmounts",
 	pet = "petsmounts", pets = "petsmounts", mount = "petsmounts", mounts = "petsmounts",
 	title = "titles", titles = "titles",
 	achievement = "achievements", achievements = "achievements",
+	misc = "misc",
 }
 
 local function NormalizeGuideCategory(cat)
@@ -1251,13 +1263,91 @@ local function NormalizeGuideCategory(cat)
 	return GUIDE_CATEGORY_ALIASES[cat] or nil
 end
 
+local GUIDE_ROOT_CATEGORY_EXACT = {
+	["Ares' Achievement Guides"] = "achievements",
+	["Ares' Fun Guides"] = "misc",
+	["Ares' GarryOwen Dailies Guide"] = "daily",
+	["Ares' Pets & Mounts Guides"] = "petsmounts",
+	["Dailies Guides"] = "daily",
+	["Ding80's Alliance General Achievements Guide"] = "achievements",
+	["Ding80's Alliance Holidays Guide Achievements"] = "achievements",
+	["Ding80's Alliance Leveling Guides"] = "leveling",
+	["Ding80's Alliance Leveling Guides TBC duo"] = "leveling",
+	["Ding80's Alliance Leveling Guides TBC solo"] = "leveling",
+	["Ding80's Loremaster Alliance Guides"] = "achievements",
+	["Ding80's Quest Instance Guides"] = "dungeons",
+	["Dungeon Guides"] = "dungeons",
+	["Events Guides"] = "events",
+	["GOLD"] = "gold",
+	["Leveling Guides"] = "leveling",
+	["Profession Guides"] = "professions",
+	["Reputation Guides"] = "reputations",
+	["Reputations Guides"] = "reputations",
+	["Titles"] = "titles",
+	["WoW Professions Guides"] = "professions",
+	["Zygor's Alliance Achievements Guides"] = "achievements",
+	["Zygor's Alliance Dailies Guides"] = "daily",
+	["Zygor's Alliance Leveling Guides"] = "leveling",
+	["Zygor's Alliance Pets & Mounts Guide"] = "petsmounts",
+	["Zygor's Horde Achievements Guides"] = "achievements",
+	["Zygor's Horde Dailies Guides"] = "daily",
+	["Zygor's Horde Leveling Guides"] = "leveling",
+	["Zygor's Macros"] = "misc",
+}
+
+local GUIDE_ROOT_CATEGORY_PATTERNS = {
+	{ token = "pets & mounts", category = "petsmounts" },
+	{ token = "pets and mounts", category = "petsmounts" },
+	{ token = "loremaster", category = "achievements" },
+	{ token = "achievement", category = "achievements" },
+	{ token = "holiday", category = "events" },
+	{ token = "event", category = "events" },
+	{ token = "dail", category = "daily" },
+	{ token = "reputation", category = "reputations" },
+	{ token = "profession", category = "professions" },
+	{ token = "tradeskill", category = "professions" },
+	{ token = "leveling", category = "leveling" },
+	{ token = "quest instance", category = "dungeons" },
+	{ token = "dungeon", category = "dungeons" },
+	{ token = "instance", category = "dungeons" },
+	{ token = "gold", category = "gold" },
+	{ token = "farm", category = "gold" },
+	{ token = "title", category = "titles" },
+	{ token = "macro", category = "misc" },
+	{ token = "fun", category = "misc" },
+	{ token = "guide authoring", category = "misc" },
+}
+
+local function GetGuideCategoryFromRoot(full)
+	local parts = SplitGuideTitle(full or "")
+	local root = parts[1] or ""
+	if root == "" then return nil, nil end
+	local exact = GUIDE_ROOT_CATEGORY_EXACT[root]
+	if exact then return exact, "root" end
+	local roothay = strlower(root)
+	for _,entry in ipairs(GUIDE_ROOT_CATEGORY_PATTERNS) do
+		if strfind(roothay, entry.token, 1, true) then
+			return entry.category, "root"
+		end
+	end
+	return nil, nil
+end
+
 local function InferGuideCategory(guide, title, full)
 	if guide then
 		local meta = NormalizeGuideCategory(guide.type)
-		if meta then return meta end
+		if meta then return meta, "type" end
 	end
 
-	local hay = strlower((title or "") .. " " .. (full or "") .. " " .. (guide and guide.title_short or ""))
+	local rootcat, rootsource = GetGuideCategoryFromRoot(full or title)
+	if rootcat then return rootcat, rootsource end
+
+	local parts = SplitGuideTitle(full or title or "")
+	local head = strlower((parts[1] or "") .. " " .. (parts[2] or ""))
+	local hay = head
+	if hay == "" then
+		hay = strlower((title or "") .. " " .. (guide and guide.title_short or ""))
+	end
 	-- Prefer stronger distinctions first.
 	if strfind(hay, "achievement", 1, true) then return "achievements" end
 	if strfind(hay, "reputation", 1, true) or strfind(hay, " rep", 1, true) then return "reputations" end
@@ -1272,11 +1362,36 @@ local function InferGuideCategory(guide, title, full)
 	return nil
 end
 
+function me:AuditGuideCategoryAssignments()
+	local report = {}
+	for _,guide in ipairs(self.registeredguides or {}) do
+		local title = guide and guide.title or ""
+		if title ~= "" then
+			local explicit = NormalizeGuideCategory(guide.type)
+			local rootcat = GetGuideCategoryFromRoot(title)
+			local inferred, source = InferGuideCategory(guide, title, title)
+			if (not explicit) or (rootcat and explicit and rootcat ~= explicit) or (not inferred) then
+				tinsert(report, {
+					title = title,
+					type = guide.type,
+					explicit = explicit,
+					root = rootcat,
+					category = inferred or "misc",
+					source = source or "uncategorized",
+				})
+			end
+		end
+	end
+	table.sort(report, function(a, b) return strlower(a.title or "") < strlower(b.title or "") end)
+	return report
+end
+
 local function CategoryFilterFor(id)
 	if id == "misc" then
 		return function(title, full, guide)
-			-- Explicit audit bucket: no metadata and no confident inferred category.
-			return InferGuideCategory(guide, title, full) == nil
+			local inferred = InferGuideCategory(guide, title, full)
+			-- Keep intentional misc guides, and also surface truly uncategorized guides here.
+			return inferred == "misc" or inferred == nil
 		end
 	end
 	for _,entry in ipairs(GUIDE_MANAGER_LEFT_MENU) do
@@ -1299,9 +1414,9 @@ end
 
 local function CountGuidesForCategory(self, categoryId, searchText)
 	local needle = strlower((searchText or ""):gsub("^%s+", ""):gsub("%s+$", ""))
-	local function includeText(txt)
+	local function includeText(txt, guide)
 		if needle == "" then return true end
-		return strfind(strlower(txt or ""), needle, 1, true) ~= nil
+		return strfind(strlower((txt or "") .. GetGuideSearchKeywords(guide)), needle, 1, true) ~= nil
 	end
 
 	if categoryId == "favorites" then
@@ -1310,7 +1425,7 @@ local function CountGuidesForCategory(self, categoryId, searchText)
 		for title,_ in pairs(fav or {}) do
 			local g = self:GetGuideByTitle(title)
 			local label = (g and g.title_short) or title
-			if includeText((label or "") .. " " .. (title or "")) then
+			if includeText((label or "") .. " " .. (title or ""), g) then
 				n = n + 1
 			end
 		end
@@ -1324,7 +1439,7 @@ local function CountGuidesForCategory(self, categoryId, searchText)
 		if title and title ~= "" then
 			local label = g.title_short or title
 			local full = title
-			local matchesSearch = includeText((label or "") .. " " .. full)
+			local matchesSearch = includeText((label or "") .. " " .. full, g)
 			local matchesCategory = (not filter) or filter(title, full, g)
 			if matchesSearch and matchesCategory then
 				n = n + 1
@@ -1380,16 +1495,16 @@ end
 local function BuildSpecialSectionRows(self, section, searchText)
 	local rows = {}
 	local needle = strlower((searchText or ""):gsub("^%s+", ""):gsub("%s+$", ""))
-	local function includeText(txt)
+	local function includeText(txt, guide)
 		if needle == "" then return true end
-		return strfind(strlower(txt or ""), needle, 1, true) ~= nil
+		return strfind(strlower((txt or "") .. GetGuideSearchKeywords(guide)), needle, 1, true) ~= nil
 	end
 
 	if section == "current" then
 		local g = self.CurrentGuide
 		if g and g.title then
 			local label = (g.title_short and g.title_short ~= "" and g.title_short) or g.title
-			if includeText((label or "") .. " " .. g.title) then
+			if includeText((label or "") .. " " .. g.title, g) then
 				tinsert(rows, { kind = "guide", depth = 0, label = label, title = g.title })
 			end
 		end
@@ -1413,7 +1528,7 @@ local function BuildSpecialSectionRows(self, section, searchText)
 				local label = h.short or full
 				local group = (full:match("^([^\\]+)\\") or LT("gb_other"))
 				local txt = label .. " " .. full .. " " .. group
-				if includeText(txt) then
+				if includeText(txt, self:GetGuideByTitle(full)) then
 					if not grouped[group] then
 						grouped[group] = {}
 					end
@@ -1729,7 +1844,7 @@ local function BuildSpecialSectionRows(self, section, searchText)
 			if title and title ~= "" then
 				local label = g.title_short or title
 				local searchHay = (label or "") .. " " .. title
-				if includeText(searchHay) then
+				if includeText(searchHay, g) then
 					local lowerHay = " " .. strlower(searchHay) .. " "
 					local classAudience = DetectAudience(lowerHay, CLASS_PATTERNS)
 					local raceAudience = DetectAudience(lowerHay, RACE_PATTERNS)
@@ -2089,7 +2204,7 @@ local function BuildCurrentSectionRows(self, searchText)
 		local leaf = entry.leaf or entry.title or ""
 		local title = entry.title or ""
 		local full = (prefix ~= "" and (prefix .. "\\" .. leaf)) or leaf
-		local hay = strlower(full .. " " .. title)
+		local hay = strlower(full .. " " .. title .. GetGuideSearchKeywords(self:GetGuideByTitle(title)))
 		if needle ~= "" and not strfind(hay, needle, 1, true) then return false end
 		return true
 	end
@@ -4557,7 +4672,8 @@ local function EnsureGuideManagerStandaloneFrame(self)
 					local wasSelected = (treePanel.selectedGuideTitle == row.title)
 					treePanel.selectedFolderPath = nil
 					treePanel.selectedGuideTitle = row.title
-					if frame.SetSelectedGuide then frame:SetSelectedGuide(row.title) end
+					treePanel.selectedGuideUserInitiated = true
+					if frame.SetSelectedGuide then frame:SetSelectedGuide(row.title, true) end
 					if wasSelected then
 						self:SetGuide(row.title)
 						self:FocusStep(1)
@@ -4577,7 +4693,8 @@ local function EnsureGuideManagerStandaloneFrame(self)
 
 		if firstTitle and (not treePanel.selectedGuideTitle) then
 			treePanel.selectedGuideTitle = firstTitle
-			if frame.SetSelectedGuide then frame:SetSelectedGuide(firstTitle) end
+			treePanel.selectedGuideUserInitiated = nil
+			if frame.SetSelectedGuide then frame:SetSelectedGuide(firstTitle, false) end
 		end
 	end
 	frame.RenderFeaturedPane = function()
@@ -4605,7 +4722,8 @@ local function EnsureGuideManagerStandaloneFrame(self)
 		local pick = rows[idx]
 		if pick then
 			treePanel.selectedGuideTitle = pick.title
-			if frame.SetSelectedGuide then frame:SetSelectedGuide(pick.title) end
+			treePanel.selectedGuideUserInitiated = true
+			if frame.SetSelectedGuide then frame:SetSelectedGuide(pick.title, true) end
 			RenderFeaturedPane()
 		end
 	end
@@ -4684,6 +4802,10 @@ local function EnsureGuideManagerStandaloneFrame(self)
 	end
 
 	leftSearch:SetScript("OnTextChanged", function()
+		if frame._suppressGuideSearchRefresh then
+			self.db.profile.guidebrowsersearch = leftSearch:GetText() or ""
+			return
+		end
 		self.db.profile.guidebrowsersearch = leftSearch:GetText() or ""
 		FauxScrollFrame_SetOffset(scroll, 0)
 		if frame.currentSection == "featured" and frame.RenderFeaturedPane then
@@ -4751,8 +4873,9 @@ local function EnsureGuideManagerStandaloneFrame(self)
 		local picked = guides[target]
 		if not picked then return end
 		treePanel.selectedGuideTitle = picked.row.title
+		treePanel.selectedGuideUserInitiated = true
 		if treePanel.ownerFrame and treePanel.ownerFrame.SetSelectedGuide then
-			treePanel.ownerFrame:SetSelectedGuide(picked.row.title)
+			treePanel.ownerFrame:SetSelectedGuide(picked.row.title, true)
 		end
 		EnsureSelectionVisible()
 		self:RefreshGuideManagerPanel(treePanel)
@@ -5196,14 +5319,14 @@ local function EnsureGuideManagerStandaloneFrame(self)
 			frame.detailProgressFill:SetWidth(0)
 			return
 		end
-		if not guide.steps and not guide.parse_failed and self.EnsureGuideParsed then
+		if not guide.steps and not guide.parse_failed and self.EnsureGuideParsed and (treePanel.selectedGuideUserInitiated or (self.CurrentGuide and self.CurrentGuide.title == guide.title)) then
 			guide = self:EnsureGuideParsed(guide) or guide
 		end
 		local steps = (guide.steps and #guide.steps) or 0
 		local author = guide.author or LT("gb_unknown")
 		local nextg = guide.next or LT("gb_none")
 		local complete = 0
-		if guide.GetCompletion then
+		if treePanel.selectedGuideUserInitiated and guide.GetCompletion then
 			local ok, _, cur, total = pcall(function() return guide:GetCompletion() end)
 			if ok and total and total > 0 and cur then
 				complete = math.floor((cur / total) * 100 + 0.5)
@@ -5273,7 +5396,15 @@ local function EnsureGuideManagerStandaloneFrame(self)
 			end
 		end
 		frame.detailMeta:SetText(detailMeta)
-		frame.detailImage:SetTexture(ResolveGuideHeroImage(guide, frame.currentCategory, frame.currentSection))
+		local detailImage
+		if treePanel.selectedGuideUserInitiated then
+			detailImage = ResolveGuideHeroImage(guide, frame.currentCategory, frame.currentSection)
+		else
+			local full = (guide.title or "") .. " " .. (guide.title_short or "")
+			detailImage = ResolveGuideHeroImageFromText(full, frame.currentCategory, frame.currentSection, true)
+				or ResolveGuideHeroFallback(frame.currentCategory, frame.currentSection)
+		end
+		frame.detailImage:SetTexture(detailImage)
 		frame.detailProgressLabel:SetText(LT("gb_progress_format", complete))
 		local fillW = math.max(0, math.min(204, math.floor(204 * (complete / 100))))
 		frame.detailProgressFill:SetWidth(fillW)
@@ -5535,12 +5666,12 @@ local function EnsureGuideManagerStandaloneFrame(self)
 				local fav = self.db and self.db.profile and self.db.profile.guidefavorites or {}
 				local needle = strlower((leftSearch:GetText() or ""):gsub("^%s+", ""):gsub("%s+$", ""))
 				for title,_ in pairs(fav or {}) do
-					local g = self:GetGuideByTitle(title)
-					local label = (g and g.title_short) or title
-					local hay = strlower((label or "") .. " " .. title)
-					if needle == "" or strfind(hay, needle, 1, true) then
-						tinsert(rows, { kind = "guide", depth = 0, label = label, title = title })
-					end
+				local g = self:GetGuideByTitle(title)
+				local label = (g and g.title_short) or title
+				local hay = strlower((label or "") .. " " .. title .. GetGuideSearchKeywords(g))
+				if needle == "" or strfind(hay, needle, 1, true) then
+					tinsert(rows, { kind = "guide", depth = 0, label = label, title = title })
+				end
 				end
 				if #rows == 0 then
 					tinsert(rows, { kind = "header", depth = 0, label = LT("gb_empty_no_favorites") })
@@ -5656,6 +5787,7 @@ local function EnsureGuideManagerStandaloneFrame(self)
 		UpdatePanelRowsForContext()
 		FauxScrollFrame_SetOffset(treePanel.scroll, 0)
 		treePanel.selectedGuideTitle = nil
+		treePanel.selectedGuideUserInitiated = nil
 		if frame.UpdateCenterHeader then frame:UpdateCenterHeader() end
 		if frame.currentSection == "featured" and frame.RenderFeaturedPane then
 			frame:RenderFeaturedPane()
@@ -5665,14 +5797,16 @@ local function EnsureGuideManagerStandaloneFrame(self)
 		UpdateDetails()
 	end
 
-	frame.SetSelectedGuide = function(_, title)
+	frame.SetSelectedGuide = function(_, title, userInitiated)
 		treePanel.selectedGuideTitle = title
+		treePanel.selectedGuideUserInitiated = userInitiated and true or nil
 		if title then treePanel.selectedFolderPath = nil end
 		UpdateDetails()
 	end
 
 	frame.SetSelectedFolder = function(_, path)
 		treePanel.selectedGuideTitle = nil
+		treePanel.selectedGuideUserInitiated = nil
 		treePanel.selectedFolderPath = path or treePanel.browsePath or ""
 		UpdateDetails()
 	end
@@ -5682,7 +5816,9 @@ local function EnsureGuideManagerStandaloneFrame(self)
 		if vis < 8 then vis = 8 end
 		treePanel.visibleRows = vis
 		EnsureGuideManagerRows(self, treePanel, treePanel.visibleRows)
+		frame._suppressGuideSearchRefresh = true
 		leftSearch:SetText((self.db.profile.guidebrowsersearch or ""))
+		frame._suppressGuideSearchRefresh = nil
 		if optionsSearch then optionsSearch:SetText("") end
 		frame.currentCategory = self.db.profile.guidebrowsercategory or frame.currentCategory or "leveling"
 		frame.currentSection = self.db.profile.guidebrowsersection or frame.currentSection or "home"
@@ -5690,9 +5826,7 @@ local function EnsureGuideManagerStandaloneFrame(self)
 		treePanel.browsePath = (self.db and self.db.profile and self.db.profile.guidebrowserpath) or ""
 		treePanel.selectedFolderPath = treePanel.browsePath
 		frame:SetSection(frame.currentSection or "home")
-		if not frame.homeShowAll then
-			frame:SetCategory(frame.currentCategory or "leveling")
-		else
+		if frame.homeShowAll then
 			UpdateLeftCategoryCounts()
 		end
 	end)

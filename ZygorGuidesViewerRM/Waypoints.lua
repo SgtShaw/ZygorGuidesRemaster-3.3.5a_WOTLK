@@ -112,7 +112,8 @@ local function GetTravelAdvice(destZone)
 				-- See if any known taxi contains the dest zone name
 				local hasNearby = false
 				for taxiName in pairs(known) do
-					if taxiName:find(destZone, 1, true) then
+					taxiName = type(taxiName) == "string" and taxiName or (type(known[taxiName]) == "string" and known[taxiName]) or nil
+					if taxiName and taxiName:find(destZone, 1, true) then
 						hasNearby = true
 						fpNote = " (FP known)"
 						break

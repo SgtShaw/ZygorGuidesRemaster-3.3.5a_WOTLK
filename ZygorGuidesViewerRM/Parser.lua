@@ -269,6 +269,29 @@ ZGV.ConditionEnv = {
 		end
 		return false
 	end,
+	itemcount = function(item)
+		if not item then return 0 end
+		return GetItemCount(item) or 0
+	end,
+	hasbuff = function(buff)
+		if not buff then return false end
+		for i = 1, 30 do
+			local name, _, tex = UnitBuff("player", i)
+			if name and ((tex and tex:find(buff)) or name:find(buff)) then return true end
+			name, _, tex = UnitDebuff("player", i)
+			if name and ((tex and tex:find(buff)) or name:find(buff)) then return true end
+		end
+		return false
+	end,
+	nobuff = function(buff)
+		return not ZGV.ConditionEnv.hasbuff(buff)
+	end,
+	invehicle = function()
+		return UnitInVehicle("player") and true or false
+	end,
+	outvehicle = function()
+		return not UnitInVehicle("player")
+	end,
 }
 
 local function MakeCondition(cond,forcebool)
