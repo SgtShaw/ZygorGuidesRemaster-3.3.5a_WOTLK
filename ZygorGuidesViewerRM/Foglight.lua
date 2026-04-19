@@ -6,6 +6,8 @@ local ZGV=ZygorGuidesViewer
 local Foglight = {}
 ZGV.Foglight = Foglight
 
+local GetTime = GetTime
+
 Foglight.Debug = ZGV.Debug
 
 Foglight.data = {
@@ -1058,12 +1060,31 @@ function Foglight:TurnOff()
 end
 
 local PreZygor_GetNumMapOverlays = GetNumMapOverlays
+local foglightOverlayCountCache = {}
+local foglightOverlayCountMap = nil
+local foglightOverlayCountTime = 0
 function GetNumMapOverlays()
 	if not ZGV.db.profile.foglight then return PreZygor_GetNumMapOverlays() end
 	local mapfile = GetMapInfo()
 	if not mapfile then return 0 end
 	if not ZGV.Foglight.data[mapfile] then return 0 end
-	return #TableKeys(ZGV.Foglight.data[mapfile])
+	local now = GetTime()
+	if foglightOverlayCountMap == mapfile and (now - foglightOverlayCountTime) < 0.5 then
+		return foglightOverlayCountCache[mapfile] or 0
+	end
+
+	local count = foglightOverlayCountCache[mapfile]
+	if not count then
+		count = 0
+		for _ in pairs(ZGV.Foglight.data[mapfile]) do
+			count = count + 1
+		end
+		foglightOverlayCountCache[mapfile] = count
+	end
+
+	foglightOverlayCountMap = mapfile
+	foglightOverlayCountTime = now
+	return count
 	--[[
 	if NUM_WORLDMAP_OVERLAYS == 0 or not ZGV.db.profile.foglight then
 		return PreZygor_GetNumMapOverlays()

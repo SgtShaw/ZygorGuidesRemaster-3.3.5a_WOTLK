@@ -20,14 +20,6 @@ function MapSpotSet:NewRaw(title,tit,data)
 	return set
 end
 
-local function split(str,sep)
-	local fields = {}
-	str = str..sep
-	local tinsert=tinsert
-	str:gsub("(.-)"..sep, function(c) tinsert(fields, c) end)
-	return fields
-end
-
 --local baditems={}
 --- parse ONE guide section into usable arrays.
 function MapSpotSet:ParseRaw()
@@ -132,10 +124,11 @@ function MapSpotSet:ParseRaw()
 			elseif cmd=="from" then
 				params=params:gsub(",%s+",",")
 				spot.mobsraw = params
-				local mobs = split(params,",")
-				spot.mobspre = mobs
+				spot.mobspre = {}
 				spot.mobs = {}
-				for i,mob in ipairs(mobs) do
+				params = params..","
+				for mob in params:gmatch("%s*(.-)%s*,") do
+					tinsert(spot.mobspre,mob)
 					local name,plural = mob:match("^(.+)(%+)$")
 					if not plural then name=mob end
 

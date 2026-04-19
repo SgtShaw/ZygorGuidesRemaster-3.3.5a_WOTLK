@@ -17,6 +17,16 @@ local twipe = table.wipe
 
 local lastQuestCacheUpdate = 0
 local QUEST_CACHE_THROTTLE = 0.2
+local quest_pool = {}
+local quest_pool_ptr = 0
+
+local function GetPooledQuest()
+	quest_pool_ptr = quest_pool_ptr + 1
+	if not quest_pool[quest_pool_ptr] then
+		quest_pool[quest_pool_ptr] = {}
+	end
+	return quest_pool[quest_pool_ptr]
+end
 
 tinsert(ZGV.startups,function(self)
 	self:AddEvent("CHAT_MSG_SYSTEM","CHAT_MSG_SYSTEM_QuestTracking")
@@ -128,9 +138,18 @@ function me:QuestTracking_CacheQuestLog(force)
 	--local iNumEntries, iNumQuests = GetNumQuestLogEntries() -- this SUCKS. Entries can be muddled by collapsing the quest log, and NumQuests is useless anyway.
 	local iNumEntries = 50 -- WHAT EVER.
 
-	local oldquests=self.quests
-	--for qi,q in pairs(self.quests) do oldquests[qi]=q end
-	self.quests = {}
+	local oldquests = {}
+	for qi,q in pairs(self.quests or {}) do
+		oldquests[qi] = {
+			id = q.id,
+			title = q.title,
+			complete = q.complete,
+		}
+	end
+	self.quests = self.quests or {}
+	twipe(self.quests)
+	self.questsbyid = self.questsbyid or {}
+	quest_pool_ptr = 0
 
 	--local selected = GetQuestLogSelection()
 
@@ -144,19 +163,19 @@ function me:QuestTracking_CacheQuestLog(force)
 			strQuestLogTitleText = strQuestLogTitleText:gsub(" ?\[[0-9D\+]+\] ?","") -- fix for [12] level display
 			local goals,goalsNamed = GetQuestLeaderBoards(i)
 
-			local quest = {
-				title = strQuestLogTitleText,
-				level = strQuestLevel,
-				--objective = obj,
-				--description = desc,
-				complete = (isComplete==1),
-				failed = (isComplete==-1),
-				daily = isDaily,
-				goals = goals,
-				goalsNamed = goalsNamed,
-				id = questID,
-				index = tonumber(i)
-			}
+			local quest = GetPooledQuest()
+			twipe(quest)
+			quest.title = strQuestLogTitleText
+			quest.level = strQuestLevel
+			--objective = obj,
+			--description = desc,
+			quest.complete = (isComplete==1)
+			quest.failed = (isComplete==-1)
+			quest.daily = isDaily
+			quest.goals = goals
+			quest.goalsNamed = goalsNamed
+			quest.id = questID
+			quest.index = tonumber(i)
 			if quest.complete then
 				for _,goal in ipairs(goals) do
 					goal.num = goal.needed
@@ -190,7 +209,7 @@ function me:QuestTracking_CacheQuestLog(force)
 	-- any abandoned?
 	if #oldquests>0 then
 		for qi,q in pairs(oldquests) do
-			if not self.questsbyid[q.id] and not self.completedQuests[id] then
+			if not self.questsbyid[q.id] and not self.completedQuests[q.id] then
 				tinsert(lostquests,q)
 				self.recentlyAcceptedQuests[q.id]=nil
 				self.recentlyAcceptedQuests[q.title]=nil

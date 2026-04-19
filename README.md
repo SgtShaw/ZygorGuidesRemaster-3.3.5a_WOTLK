@@ -164,6 +164,21 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
+### Revision 122 - 3.0.122
+
+- Added broader Wrath 3.3.5a UI compatibility shims for `SetShown`, covering reward recommendation text/texture objects that do not expose newer retail methods on the 12340 client.
+- Fixed the quest reward recommendation error in `Item-Quest.lua` where opening reward windows could throw `attempt to call method 'SetShown' (a nil value)`.
+- Fixed the Optimization options `pathfinding_speed` handler so changing routing speed no longer calls the missing `ShowWaypoints` method.
+- Reduced quest-log cache garbage generation by reusing quest-entry tables during hot quest tracking refreshes while preserving abandoned-quest detection behavior.
+- Fixed a quest tracking logic bug in lost-quest handling that referenced `self.completedQuests[id]` instead of the actual quest ID.
+- Reduced Foglight overlay-count churn by replacing repeated temporary key-table creation with a cached direct count path.
+- Reduced Guide Browser tree-refresh overhead by memoizing subtree match checks during row building.
+- Improved `Stat Weights` options readability for localized clients by forcing key descriptive text to render at full width so long strings can wrap correctly.
+- Fixed remaster skin application so saved goal/background color settings are no longer overwritten on `/reload` or routine skin refreshes when values already exist.
+- Reduced `MapSpotSet` parser garbage by removing the extra temporary mob split-table allocation in `from` parsing while preserving the same retained parse output.
+- Updated addon version metadata to `3.0.122`.
+
+
 ### Revision 121 - 3.0.121
 
 - Reworked Gear Advisor and Gear Finder presentation to feel more retail-like while keeping the existing WotLK-safe scoring engine.

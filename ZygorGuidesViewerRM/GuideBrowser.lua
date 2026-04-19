@@ -462,6 +462,7 @@ local function BuildGuideManagerRows(self, search, filterFn, browsePath, useDril
 	local root = self:BuildGuideBrowserTree()
 	if not root then return rows end
 	local guideCache = {}
+	local matchCache = {}
 
 	self.db.profile.guidebrowsertreeexpanded = self.db.profile.guidebrowsertreeexpanded or {}
 	local expanded = self.db.profile.guidebrowsertreeexpanded
@@ -485,14 +486,26 @@ local function BuildGuideManagerRows(self, search, filterFn, browsePath, useDril
 	end
 
 	local function NodeHasMatches(node, prefix)
+		local cacheKey = tostring(prefix or "")
+		if matchCache[cacheKey] ~= nil then
+			return matchCache[cacheKey]
+		end
+
 		for _,name in ipairs(node.child_order or {}) do
 			local child = node.children and node.children[name]
 			local nextPrefix = (prefix ~= "" and (prefix .. "\\" .. name)) or name
-			if child and NodeHasMatches(child, nextPrefix) then return true end
+			if child and NodeHasMatches(child, nextPrefix) then
+				matchCache[cacheKey] = true
+				return true
+			end
 		end
 		for _,g in ipairs(node.guides or {}) do
-			if GuideMatches(g, prefix) then return true end
+			if GuideMatches(g, prefix) then
+				matchCache[cacheKey] = true
+				return true
+			end
 		end
+		matchCache[cacheKey] = false
 		return false
 	end
 

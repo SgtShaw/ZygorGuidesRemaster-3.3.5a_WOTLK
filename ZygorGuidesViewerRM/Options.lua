@@ -1913,7 +1913,7 @@ function me:Options_DefineOptions()
 					if self.Pointer and self.Pointer.DestinationWaypoint and self.Pointer.DestinationWaypoint.type == "manual" then
 						if self.LibRover and self.LibRover.UpdateNow then self.LibRover:UpdateNow() end
 					else
-						self:ShowWaypoints()
+						self:SetWaypoint()
 					end
 				end,
 				disabled = function()
@@ -2596,6 +2596,7 @@ function me:Options_DefineOptions()
 				local isActiveBuild = (tonumber(ZGV.db.char.gear_active_build) == tonumber(ZGV.db.char.gear_selected_build))
 				return not (isOwnClass and isActiveBuild)
 			end,
+			width = "full",
 		}
 
 		IS_args.visibilityheader = {
@@ -2629,7 +2630,7 @@ function me:Options_DefineOptions()
 			type = "header",
 			name = "Stat Weights",
 		}
-		IS_args.spacer = { order = 9.1, type = "description", name = "Edit the weight for each stat below. Higher values make the stat more valuable for scoring.\n" }
+		IS_args.spacer = { order = 9.1, type = "description", name = "Edit the weight for each stat below. Higher values make the stat more valuable for scoring.\n", width = "full" }
 		IS_args.recommendedsummary = {
 			order = 9.2,
 			type = "description",
@@ -2637,6 +2638,7 @@ function me:Options_DefineOptions()
 				local className, buildName = GetSelectedBuildInfo()
 				return ("|cff88ccffRecommended Weights|r\nThese values are the curated WotLK baseline for %s - %s. Use the reset button to return to this baseline after experimenting.\n"):format(className, buildName)
 			end,
+			width = "full",
 		}
 
 		-- Build stat weight entries for every class/spec combo
@@ -2669,6 +2671,7 @@ function me:Options_DefineOptions()
 							if not ((tonumber(ZGV.db.char.gear_selected_class) == classNum) and (tonumber(ZGV.db.char.gear_selected_build) == specnum)) then return true end
 							return not (ZGV.ItemScore and ZGV.ItemScore.UsesCustomWeights and ZGV.ItemScore:UsesCustomWeights(class, specnum))
 						end,
+						width = "full",
 					}
 					order = order + 1
 

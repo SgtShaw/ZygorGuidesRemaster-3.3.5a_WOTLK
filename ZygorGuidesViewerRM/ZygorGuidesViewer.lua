@@ -36,6 +36,18 @@ do
 			if shown then self:Show() else self:Hide() end
 		end
 	end
+	local fontStringIndex = UIParent and UIParent.CreateFontString and getmetatable(UIParent:CreateFontString()).__index
+	if fontStringIndex and not fontStringIndex.SetShown then
+		fontStringIndex.SetShown = function(self, shown)
+			if shown then self:Show() else self:Hide() end
+		end
+	end
+	local textureIndex = UIParent and UIParent.CreateTexture and getmetatable(UIParent:CreateTexture()).__index
+	if textureIndex and not textureIndex.SetShown then
+		textureIndex.SetShown = function(self, shown)
+			if shown then self:Show() else self:Hide() end
+		end
+	end
 	local cooldownIndex = CreateFrame and CreateFrame("Cooldown")
 	if cooldownIndex and not cooldownIndex.SetDrawSwipe then
 		cooldownIndex.SetDrawSwipe = function() end
@@ -7081,13 +7093,13 @@ function me:ApplyRemasterSkin(visualOnly)
 	if self.db and self.db.profile then
 		local skinData = ZGV:GetCurrentSkin()
 		local gc = skinData and skinData.goalColors or nil
-		self.db.profile.goalbackincomplete = gc and gc.incomplete or { r = 0.18, g = 0.20, b = 0.25, a = 0.65 }
-		self.db.profile.goalbackprogressing = gc and gc.progressing or { r = 0.18, g = 0.28, b = 0.35, a = 0.75 }
-		self.db.profile.goalbackcomplete = gc and gc.complete or { r = 0.12, g = 0.24, b = 0.20, a = 0.75 }
-		self.db.profile.goalbackimpossible = gc and gc.impossible or { r = 0.18, g = 0.18, b = 0.18, a = 0.6 }
-		self.db.profile.goalbackaux = gc and gc.aux or { r = 0.15, g = 0.22, b = 0.32, a = 0.6 }
-		self.db.profile.goalbackobsolete = gc and gc.obsolete or { r = 0.15, g = 0.22, b = 0.32, a = 0.6 }
-		self.db.profile.stepbackalpha = gc and gc.stepAlpha or 0.2
+		if not self.db.profile.goalbackincomplete then self.db.profile.goalbackincomplete = gc and gc.incomplete or { r = 0.18, g = 0.20, b = 0.25, a = 0.65 } end
+		if not self.db.profile.goalbackprogressing then self.db.profile.goalbackprogressing = gc and gc.progressing or { r = 0.18, g = 0.28, b = 0.35, a = 0.75 } end
+		if not self.db.profile.goalbackcomplete then self.db.profile.goalbackcomplete = gc and gc.complete or { r = 0.12, g = 0.24, b = 0.20, a = 0.75 } end
+		if not self.db.profile.goalbackimpossible then self.db.profile.goalbackimpossible = gc and gc.impossible or { r = 0.18, g = 0.18, b = 0.18, a = 0.6 } end
+		if not self.db.profile.goalbackaux then self.db.profile.goalbackaux = gc and gc.aux or { r = 0.15, g = 0.22, b = 0.32, a = 0.6 } end
+		if not self.db.profile.goalbackobsolete then self.db.profile.goalbackobsolete = gc and gc.obsolete or { r = 0.15, g = 0.22, b = 0.32, a = 0.6 } end
+		if self.db.profile.stepbackalpha == nil then self.db.profile.stepbackalpha = gc and gc.stepAlpha or 0.2 end
 	end
 
 	-- On reload, some layers can momentarily reappear before OnUpdate runs.
