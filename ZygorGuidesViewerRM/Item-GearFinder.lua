@@ -254,7 +254,7 @@ local function loot_score_dungeon_thread()
 	if are_all_slots_filled() then 
 		GearFinder.ResultsReady=true 
 		GearFinder.MainFrame.Progress:Hide()
-		ZGV:CancelTimer(GearFinder.AntsTimer) 
+		cancel_gearfinder_timer("AntsTimer")
 		GearFinder:DisplayResults()
 		return
 	else
@@ -327,8 +327,7 @@ local function loot_score_dungeon_thread()
 	GearFinder.ResultsReady=true
 	GearFinder.MainFrame.Progress:Hide()
 
-	ZGV:CancelTimer(GearFinder.AntsTimer) 
-	GearFinder.AntsTimer = nil
+	cancel_gearfinder_timer("AntsTimer")
 	GearFinder:DisplayResults()
 end
 
@@ -356,6 +355,13 @@ local function progress_dots()
 			button.itemdungeon:SetText(L[searchingKey]:format(progress_dots))
 		end
 	end
+end
+
+local function cancel_gearfinder_timer(field)
+	local handle = GearFinder[field]
+	if not handle then return end
+	GearFinder[field] = nil
+	ZGV:CancelTimer(handle, true)
 end
 
 -- prepares item lists for worker thread to work on
@@ -437,13 +443,12 @@ function GearFinder:ScoreDungeonItems()
 
 	GearFinder.ScoreThread = coroutine.create(loot_score_dungeon_thread)
 	if GearFinder.ScoreTimer then 
-		ZGV:CancelTimer(GearFinder.ScoreTimer) 
-		GearFinder.ScoreTimer = nil
+		cancel_gearfinder_timer("ScoreTimer")
 	end
 	GearFinder.ScoreTimer = ZGV:ScheduleRepeatingTimer(function()
 		local ok,ret = coroutine.resume(GearFinder.ScoreThread)
 		if not ok or coroutine.status(GearFinder.ScoreThread)=="dead" then 
-			ZGV:CancelTimer(GearFinder.ScoreTimer) 
+			cancel_gearfinder_timer("ScoreTimer")
 
 		end
 	end,
@@ -986,12 +991,10 @@ function GearFinder:ClearResults()
 	GearFinder.ResultsReady = false
 	GearFinder.DungeonItemsScored = false
 	if GearFinder.ScoreTimer then
-		ZGV:CancelTimer(GearFinder.ScoreTimer)
-		GearFinder.ScoreTimer = nil
+		cancel_gearfinder_timer("ScoreTimer")
 	end
 	if GearFinder.AntsTimer then
-		ZGV:CancelTimer(GearFinder.AntsTimer)
-		GearFinder.AntsTimer = nil
+		cancel_gearfinder_timer("AntsTimer")
 	end
 
 	for i,v in pairs(ItemScore.GearFinder.UpgradeQueue) do 

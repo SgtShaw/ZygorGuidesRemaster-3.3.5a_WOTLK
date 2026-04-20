@@ -209,3 +209,63 @@ ItemScore.rules = {
 		}
 	},
 }
+
+ItemScore.Defaults = ItemScore.Defaults or ItemScore.rules
+
+-- Source metadata for shipped defaults.
+-- These weights are curated local numeric baselines normalized from Wowhead's
+-- Wrath of the Lich King Classic class overview/stat-priority guidance.
+-- Reviewed: 2026-04-20.
+ItemScore.RuleSources = {
+	DEATHKNIGHT = {
+		[1] = {label="Wowhead WotLK Classic Blood DK Overview", url="https://www.wowhead.com/wotlk/guide/classes/death-knight/overview", reviewed="2026-04-20", mode="normalized_priority"},
+		[2] = {label="Wowhead WotLK Classic Frost DK Overview", url="https://www.wowhead.com/wotlk/guide/classes/death-knight/overview", reviewed="2026-04-20", mode="normalized_priority"},
+		[3] = {label="Wowhead WotLK Classic Unholy DK Overview", url="https://www.wowhead.com/wotlk/guide/classes/death-knight/overview", reviewed="2026-04-20", mode="normalized_priority"},
+	},
+	DRUID = {
+		[1] = {label="Wowhead WotLK Classic Balance Druid Overview", url="https://www.wowhead.com/wotlk/guide/classes/druid/overview", reviewed="2026-04-20", mode="normalized_priority"},
+		[2] = {label="Wowhead WotLK Classic Feral DPS Druid Overview", url="https://www.wowhead.com/wotlk/guide/classes/druid/overview", reviewed="2026-04-20", mode="normalized_priority"},
+		[3] = {label="Wowhead WotLK Classic Feral Tank Druid Overview", url="https://www.wowhead.com/wotlk/guide/classes/druid/overview", reviewed="2026-04-20", mode="normalized_priority"},
+		[4] = {label="Wowhead WotLK Classic Restoration Druid Overview", url="https://www.wowhead.com/wotlk/guide/classes/druid/overview", reviewed="2026-04-20", mode="normalized_priority"},
+	},
+	HUNTER = {
+		[1] = {label="Wowhead WotLK Classic Beast Mastery Hunter Overview", url="https://www.wowhead.com/wotlk/guide/classes/hunter/overview", reviewed="2026-04-20", mode="normalized_priority"},
+		[2] = {label="Wowhead WotLK Classic Marksmanship Hunter Overview", url="https://www.wowhead.com/wotlk/guide/classes/hunter/overview", reviewed="2026-04-20", mode="normalized_priority"},
+		[3] = {label="Wowhead WotLK Classic Survival Hunter Overview", url="https://www.wowhead.com/wotlk/guide/classes/hunter/overview", reviewed="2026-04-20", mode="normalized_priority"},
+	},
+	MAGE = {
+		[1] = {label="Wowhead WotLK Classic Arcane Mage Overview", url="https://www.wowhead.com/wotlk/guide/classes/mage/overview", reviewed="2026-04-20", mode="normalized_priority"},
+		[2] = {label="Wowhead WotLK Classic Fire Mage Overview", url="https://www.wowhead.com/wotlk/guide/classes/mage/overview", reviewed="2026-04-20", mode="normalized_priority"},
+		[3] = {label="Wowhead WotLK Classic Frost Mage Overview", url="https://www.wowhead.com/wotlk/guide/classes/mage/overview", reviewed="2026-04-20", mode="normalized_priority"},
+	},
+	PALADIN = {
+		[1] = {label="Wowhead WotLK Classic Holy Paladin Overview", url="https://www.wowhead.com/wotlk/guide/classes/paladin/overview", reviewed="2026-04-20", mode="normalized_priority"},
+		[2] = {label="Wowhead WotLK Classic Protection Paladin Overview", url="https://www.wowhead.com/wotlk/guide/classes/paladin/overview", reviewed="2026-04-20", mode="normalized_priority"},
+		[3] = {label="Wowhead WotLK Classic Retribution Paladin Overview", url="https://www.wowhead.com/wotlk/guide/classes/paladin/overview", reviewed="2026-04-20", mode="normalized_priority"},
+	},
+	PRIEST = {
+		[1] = {label="Wowhead WotLK Classic Discipline Priest Overview", url="https://www.wowhead.com/wotlk/guide/classes/priest/overview", reviewed="2026-04-20", mode="normalized_priority"},
+		[2] = {label="Wowhead WotLK Classic Holy Priest Overview", url="https://www.wowhead.com/wotlk/guide/classes/priest/overview", reviewed="2026-04-20", mode="normalized_priority"},
+		[3] = {label="Wowhead WotLK Classic Shadow Priest Overview", url="https://www.wowhead.com/wotlk/guide/classes/priest/overview", reviewed="2026-04-20", mode="normalized_priority"},
+	},
+	ROGUE = {
+		[1] = {label="Wowhead WotLK Classic Assassination Rogue Overview", url="https://www.wowhead.com/wotlk/guide/classes/rogue/overview", reviewed="2026-04-20", mode="normalized_priority"},
+		[2] = {label="Wowhead WotLK Classic Combat Rogue Overview", url="https://www.wowhead.com/wotlk/guide/classes/rogue/overview", reviewed="2026-04-20", mode="normalized_priority"},
+		[3] = {label="Wowhead WotLK Classic Subtlety Rogue Overview", url="https://www.wowhead.com/wotlk/guide/classes/rogue/overview", reviewed="2026-04-20", mode="normalized_priority"},
+	},
+	SHAMAN = {
+		[1] = {label="Wowhead WotLK Classic Elemental Shaman Overview", url="https://www.wowhead.com/wotlk/guide/classes/shaman/overview", reviewed="2026-04-20", mode="normalized_priority"},
+		[2] = {label="Wowhead WotLK Classic Enhancement Shaman Overview", url="https://www.wowhead.com/wotlk/guide/classes/shaman/overview", reviewed="2026-04-20", mode="normalized_priority"},
+		[3] = {label="Wowhead WotLK Classic Restoration Shaman Overview", url="https://www.wowhead.com/wotlk/guide/classes/shaman/overview", reviewed="2026-04-20", mode="normalized_priority"},
+	},
+	WARLOCK = {
+		[1] = {label="Wowhead WotLK Classic Affliction Warlock Overview", url="https://www.wowhead.com/wotlk/guide/classes/warlock/overview", reviewed="2026-04-20", mode="normalized_priority"},
+		[2] = {label="Wowhead WotLK Classic Demonology Warlock Overview", url="https://www.wowhead.com/wotlk/guide/classes/warlock/overview", reviewed="2026-04-20", mode="normalized_priority"},
+		[3] = {label="Wowhead WotLK Classic Destruction Warlock Overview", url="https://www.wowhead.com/wotlk/guide/classes/warlock/overview", reviewed="2026-04-20", mode="normalized_priority"},
+	},
+	WARRIOR = {
+		[1] = {label="Wowhead WotLK Classic Arms Warrior Overview", url="https://www.wowhead.com/wotlk/guide/classes/warrior/overview", reviewed="2026-04-20", mode="normalized_priority"},
+		[2] = {label="Wowhead WotLK Classic Fury Warrior Overview", url="https://www.wowhead.com/wotlk/guide/classes/warrior/overview", reviewed="2026-04-20", mode="normalized_priority"},
+		[3] = {label="Wowhead WotLK Classic Protection Warrior Overview", url="https://www.wowhead.com/wotlk/guide/classes/warrior/overview", reviewed="2026-04-20", mode="normalized_priority"},
+	},
+}

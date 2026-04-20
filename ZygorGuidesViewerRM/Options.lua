@@ -9,6 +9,21 @@ local LQ = me.LQ
 local LS = me.LS
 local DL = me.DL
 
+local function GetClassTagFromID(classID)
+	if not classID then return nil end
+	if me.NumberToClass and me.NumberToClass[classID] then
+		return me.NumberToClass[classID]
+	end
+	if me.ClassToNumber then
+		for tag, id in pairs(me.ClassToNumber) do
+			if id == classID then
+				return tag
+			end
+		end
+	end
+	return nil
+end
+
 function me:Options_RegisterDefaults()
 	self.db:RegisterDefaults({
 		char = {
@@ -542,20 +557,20 @@ function me:Options_DefineOptions()
 							return self:GetSkinDropdownKey()
 						end,
 						set = function(_, n)
-							local oldSkinStyle = self.db.profile.skinstyle
-							local oldVariant = self.db.profile.skinvariant
-							local oldSkin = self.db.profile.skin
-							local oldResizeup = self.db.profile.resizeup
-							local isRemaster = self:ApplySkinFromDropdownKey(n)
-							local visualOnly = isRemaster
-								and (oldSkin == self.db.profile.skin)
-								and (oldResizeup == self.db.profile.resizeup)
-								and (oldSkinStyle == self.db.profile.skinstyle or oldSkinStyle == nil)
-								and (oldVariant ~= self.db.profile.skinvariant)
-							self:UpdateSkin(visualOnly)
-							if not visualOnly then
-								self:AlignFrame()
-								self:ScrollToCurrentStep()
+							self:ApplySkinFromDropdownKey(n)
+							self:UpdateSkin(false)
+							self:AlignFrame()
+							self:ResizeFrame()
+							self:UpdateFrame(true)
+							self:ScrollToCurrentStep()
+							if self.ScheduleTimer then
+								self:ScheduleTimer(function()
+									if not ZGV then return end
+									ZGV:AlignFrame()
+									ZGV:ResizeFrame()
+									ZGV:UpdateFrame(true)
+									if ZGV.ScrollToCurrentStep then ZGV:ScrollToCurrentStep() end
+								end, 0)
 							end
 							self:UpdateLocking()
 						end,
@@ -1574,20 +1589,20 @@ function me:Options_DefineOptions()
 					return self:GetSkinDropdownKey()
 				end,
 				set = function(_, n)
-					local oldSkinStyle = self.db.profile.skinstyle
-					local oldVariant = self.db.profile.skinvariant
-					local oldSkin = self.db.profile.skin
-					local oldResizeup = self.db.profile.resizeup
-					local isRemaster = self:ApplySkinFromDropdownKey(n)
-					local visualOnly = isRemaster
-						and (oldSkin == self.db.profile.skin)
-						and (oldResizeup == self.db.profile.resizeup)
-						and (oldSkinStyle == self.db.profile.skinstyle or oldSkinStyle == nil)
-						and (oldVariant ~= self.db.profile.skinvariant)
-					self:UpdateSkin(visualOnly)
-					if not visualOnly then
-						self:AlignFrame()
-						self:ScrollToCurrentStep()
+					self:ApplySkinFromDropdownKey(n)
+					self:UpdateSkin(false)
+					self:AlignFrame()
+					self:ResizeFrame()
+					self:UpdateFrame(true)
+					self:ScrollToCurrentStep()
+					if self.ScheduleTimer then
+						self:ScheduleTimer(function()
+							if not ZGV then return end
+							ZGV:AlignFrame()
+							ZGV:ResizeFrame()
+							ZGV:UpdateFrame(true)
+							if ZGV.ScrollToCurrentStep then ZGV:ScrollToCurrentStep() end
+						end, 0)
 					end
 					self:UpdateLocking()
 				end,
@@ -2468,12 +2483,18 @@ function me:Options_DefineOptions()
 	do
 		local function GetSelectedBuildInfo()
 			if not ZGV.ItemScore then return "Unknown class", "Unknown spec", nil, nil end
+			if ZGV.ItemScore.EnsureSelectedWeightTarget then
+				ZGV.ItemScore:EnsureSelectedWeightTarget()
+			end
 			local classNum = tonumber(ZGV.db.char.gear_selected_class) or ZGV.ItemScore.playerclassNum or 1
 			local buildNum = tonumber(ZGV.db.char.gear_selected_build) or tonumber(ZGV.db.char.gear_active_build) or 1
-			local classToken = ZGV.NumberToClass and ZGV.NumberToClass[classNum]
+			local classToken = GetClassTagFromID(classNum)
 			local className = (LOCALIZED_CLASS_NAMES_MALE and classToken and LOCALIZED_CLASS_NAMES_MALE[classToken]) or (LOCALIZED_CLASS_NAMES_FEMALE and classToken and LOCALIZED_CLASS_NAMES_FEMALE[classToken]) or classToken or "Unknown class"
-			local buildName = (ZGV.ItemScore.Builds and ZGV.ItemScore.Builds[classNum] and ZGV.ItemScore.Builds[classNum][buildNum]) or ("Spec "..buildNum)
-			return className, buildName, classToken, buildNum
+			local fakeLevel = tonumber(ZGV.db and ZGV.db.char and ZGV.db.char.fakelevel) or 0
+			local level = (fakeLevel > 0 and fakeLevel) or UnitLevel("player")
+			local resolvedBuild, usesFallback = ZGV.ItemScore:GetResolvedBuild(classToken, level, buildNum)
+			local buildName = ZGV.ItemScore:GetBuildName(classNum, resolvedBuild, level, usesFallback)
+			return className, buildName, classToken, resolvedBuild, usesFallback
 		end
 
 		local IS_args = {
@@ -2490,7 +2511,7 @@ function me:Options_DefineOptions()
 			curated = {
 				order = 2.1,
 				type = "description",
-				name = "|cff88ccffRecommended defaults:|r Wrath stat weights are curated baselines intended for 3.3.5a and reviewed against local references such as Pawn and RatingBuster. Most players should start here and only customize when they have a clear reason.\n",
+				name = "|cff88ccffRecommended defaults:|r Wrath stat weights are source-backed curated baselines intended for 3.3.5a. Most players should start here and only customize when they have a clear reason.\n",
 			},
 			selectedsummary = {
 				order = 2.2,
@@ -2498,10 +2519,11 @@ function me:Options_DefineOptions()
 				name = function()
 					local className, buildName, classToken, buildNum = GetSelectedBuildInfo()
 					local status = "Curated defaults"
+					local source = ZGV.ItemScore and ZGV.ItemScore.GetRuleSourceLabel and ZGV.ItemScore:GetRuleSourceLabel(classToken, buildNum) or "Unverified local baseline"
 					if ZGV.ItemScore and classToken and buildNum and ZGV.ItemScore.UsesCustomWeights and ZGV.ItemScore:UsesCustomWeights(classToken, buildNum) then
 						status = "Customized weights"
 					end
-					return ("|cffccccccSelected profile:|r %s - %s\n|cffccccccSource:|r %s\n"):format(className, buildName, status)
+					return ("|cffccccccSelected profile:|r %s - %s\n|cffccccccStatus:|r %s\n|cffccccccDefault source:|r %s\n"):format(className, buildName, status, source)
 				end,
 			},
 			classdesc = {
@@ -2535,17 +2557,22 @@ function me:Options_DefineOptions()
 			end,
 			set = function(i,v)
 				ZGV.db.char.gear_selected_class = v
+				ZGV.db.char.gear_weights_initialized = true
+				ZGV.db.char.gear_weights_manual_class = true
 				Setter_Simple(i,v)
+				local fakeLevel = tonumber(ZGV.db and ZGV.db.char and ZGV.db.char.fakelevel) or 0
+				local level = (fakeLevel > 0 and fakeLevel) or UnitLevel("player")
 				if ZGV.ItemScore and v == ZGV.ItemScore.playerclassNum then
-					ZGV.db.char.gear_selected_build = ZGV.db.char.gear_active_build or 1
+					ZGV.db.char.gear_selected_build = ZGV.ItemScore:GetResolvedBuild(GetClassTagFromID(v), level, ZGV.db.char.gear_active_build or 1)
 				else
-					ZGV.db.char.gear_selected_build = 1
+					ZGV.db.char.gear_selected_build = ZGV.ItemScore and ZGV.ItemScore:GetResolvedBuild(GetClassTagFromID(v), level, nil) or 1
 				end
 			end,
 			get = function()
-				if not ZGV.db.char.gear_selected_class then
+				if ZGV.ItemScore and ZGV.ItemScore.EnsureSelectedWeightTarget then
+					ZGV.ItemScore:EnsureSelectedWeightTarget()
+				elseif not ZGV.db.char.gear_selected_class then
 					ZGV.db.char.gear_selected_class = ZGV.ItemScore and ZGV.ItemScore.playerclassNum or 1
-					ZGV.db.char.gear_selected_build = 1
 				end
 				return ZGV.db.char.gear_selected_class
 			end,
@@ -2561,8 +2588,19 @@ function me:Options_DefineOptions()
 				if not ZGV.ItemScore or not ZGV.ItemScore.Builds then return {} end
 				return ZGV.ItemScore.Builds[ZGV.db.char.gear_selected_class or 1] or {}
 			end,
-			get = function() return ZGV.db.char.gear_selected_build or 1 end,
-			set = function(i,v) Setter_Simple(i,v) ZGV.db.char.gear_selected_build = v end,
+			get = function()
+				local fakeLevel = tonumber(ZGV.db and ZGV.db.char and ZGV.db.char.fakelevel) or 0
+				local level = (fakeLevel > 0 and fakeLevel) or UnitLevel("player")
+				return ZGV.ItemScore and ZGV.ItemScore:GetResolvedBuild(GetClassTagFromID(ZGV.db.char.gear_selected_class or 1), level, ZGV.db.char.gear_selected_build or 1) or (ZGV.db.char.gear_selected_build or 1)
+			end,
+			set = function(i,v)
+				Setter_Simple(i,v)
+				ZGV.db.char.gear_weights_initialized = true
+				ZGV.db.char.gear_weights_manual_class = true
+				local fakeLevel = tonumber(ZGV.db and ZGV.db.char and ZGV.db.char.fakelevel) or 0
+				local level = (fakeLevel > 0 and fakeLevel) or UnitLevel("player")
+				ZGV.db.char.gear_selected_build = ZGV.ItemScore and ZGV.ItemScore:GetResolvedBuild(GetClassTagFromID(ZGV.db.char.gear_selected_class or 1), level, v) or v
+			end,
 			width = "normal",
 		}
 
@@ -2618,10 +2656,6 @@ function me:Options_DefineOptions()
 				if ACR and ACR.NotifyChange then
 					ACR:NotifyChange("ZygorGuidesViewer-ItemScore")
 				end
-				local gm = _G["ZGVGuideManagerFrame"]
-				if gm and gm.currentSection == "options" and gm.currentOptionsApp == "ZygorGuidesViewer-ItemScore" and gm.RenderOptionsApp then
-					gm:RenderOptionsApp("ZygorGuidesViewer-ItemScore")
-				end
 			end,
 		}
 
@@ -2635,8 +2669,9 @@ function me:Options_DefineOptions()
 			order = 9.2,
 			type = "description",
 			name = function()
-				local className, buildName = GetSelectedBuildInfo()
-				return ("|cff88ccffRecommended Weights|r\nThese values are the curated WotLK baseline for %s - %s. Use the reset button to return to this baseline after experimenting.\n"):format(className, buildName)
+				local className, buildName, classToken, buildNum = GetSelectedBuildInfo()
+				local source = ZGV.ItemScore and ZGV.ItemScore.GetRuleSourceLabel and ZGV.ItemScore:GetRuleSourceLabel(classToken, buildNum) or "Unverified local baseline"
+				return ("|cff88ccffRecommended Weights|r\nThese values are the curated WotLK baseline for %s - %s.\n|cffccccccSource basis:|r %s\nUse the reset button to return to this baseline after experimenting.\n"):format(className, buildName, source)
 			end,
 			width = "full",
 		}

@@ -43,6 +43,30 @@ local function strip_link(itemlink)
 	return false
 end
 ItemScore.strip_link = strip_link
+
+local function add_stat(stats, statname, value)
+	if not statname then return end
+	value = tonumber(value)
+	if not value then return end
+	stats[statname] = (stats[statname] or 0) + value
+end
+
+local function get_class_tag(classRef)
+	if type(classRef) == "string" then return classRef end
+	if type(classRef) == "number" then
+		if ZGV.NumberToClass and ZGV.NumberToClass[classRef] then
+			return ZGV.NumberToClass[classRef]
+		end
+		if ZGV.ClassToNumber then
+			for tag, id in pairs(ZGV.ClassToNumber) do
+				if id == classRef then
+					return tag
+				end
+			end
+		end
+	end
+	return nil
+end
 	
 function ItemScore:Initialise()
 	-- apply lower armor types as viable
@@ -93,6 +117,128 @@ function ItemScore:Initialise()
 	ItemScore:RefreshUserData()
 end
 
+-- Fallback build used before talent-based spec detection is meaningful.
+-- Baseline source: Wowhead WotLK Classic class leveling overviews (accessed 2026-04-20).
+-- This fallback is only for pre-talent / no-points-spent states, so where a guide suggests
+-- an early-level split, prefer the early-game recommendation over the end-to-end spec.
+ItemScore.LevelingBuildFallback = {
+	WARRIOR = 1,
+	PALADIN = 3,
+	HUNTER = 1,
+	ROGUE = 2,
+	PRIEST = 1,
+	DEATHKNIGHT = 3,
+	SHAMAN = 2,
+	MAGE = 3,
+	WARLOCK = 1,
+	DRUID = 2,
+}
+
+function ItemScore:GetFallbackBuildForClass(classToken)
+	return (classToken and self.LevelingBuildFallback[classToken]) or 1
+end
+
+function ItemScore:GetResolvedBuild(classToken, level, buildNum)
+	level = tonumber(level) or level
+	local classRules = classToken and self.rules and self.rules[classToken]
+	if not classRules then
+		return buildNum or 1, false
+	end
+	local fallbackBuild = self:GetFallbackBuildForClass(classToken)
+	if level and level < 10 then
+		return classRules[fallbackBuild] and fallbackBuild or 1, true
+	end
+	if buildNum and classRules[buildNum] then
+		return buildNum, false
+	end
+	return classRules[fallbackBuild] and fallbackBuild or 1, false
+end
+
+function ItemScore:DetectActiveBuild(classToken, level)
+	local fallbackBuild = self:GetFallbackBuildForClass(classToken)
+	if not classToken or (level and level < 10) then
+		return fallbackBuild, true
+	end
+	local bestTree, bestPoints, totalPoints = fallbackBuild, 0, 0
+	for i = 1, GetNumTalentTabs() do
+		local _, _, pointsSpent = GetTalentTabInfo(i)
+		pointsSpent = pointsSpent or 0
+		totalPoints = totalPoints + pointsSpent
+		if pointsSpent > bestPoints then
+			bestPoints = pointsSpent
+			bestTree = i
+		end
+	end
+	if totalPoints <= 0 then
+		return fallbackBuild, true
+	end
+	return bestTree, false
+end
+
+function ItemScore:GetBuildName(classRef, buildNum, level, usesFallback)
+	local classToken, classNum = classRef, nil
+	if type(classRef) == "number" then
+		classNum = classRef
+		classToken = get_class_tag(classNum)
+	elseif type(classRef) == "string" then
+		classNum = ZGV.ClassToNumber and ZGV.ClassToNumber[classRef]
+	end
+	local resolvedBuild = buildNum
+	if classToken then
+		resolvedBuild = self:GetResolvedBuild(classToken, level, buildNum)
+	end
+	local buildLabel = (classNum and self.Builds and self.Builds[classNum] and self.Builds[classNum][resolvedBuild])
+		or (classToken and ZGV.SpecByNumber and ZGV.SpecByNumber[classToken] and ZGV.SpecByNumber[classToken][resolvedBuild])
+		or ("Spec "..tostring(resolvedBuild or 1))
+	if usesFallback then
+		return buildLabel .. " (Leveling baseline)"
+	end
+	return buildLabel
+end
+
+function ItemScore:GetRuleSourceInfo(classRef, buildNum)
+	local classToken = get_class_tag(classRef)
+	if not classToken then return nil end
+	local classSources = self.RuleSources and self.RuleSources[classToken]
+	return classSources and classSources[buildNum] or nil
+end
+
+function ItemScore:GetRuleSourceLabel(classRef, buildNum)
+	local meta = self:GetRuleSourceInfo(classRef, buildNum)
+	if not meta then return "Unverified local baseline" end
+	if meta.mode == "normalized_priority" then
+		return ("%s (normalized stat-priority baseline)"):format(meta.label or "Curated baseline")
+	end
+	return meta.label or "Curated baseline"
+end
+
+function ItemScore:EnsureSelectedWeightTarget(forceReset)
+	local classToken = self.playerclass or (select(2, UnitClass("player")))
+	local classNum = self.playerclassNum or (classToken and ZGV.ClassToNumber and ZGV.ClassToNumber[classToken]) or 1
+	local level = tonumber(self.playerlevel) or UnitLevel("player")
+	local selectedClass = tonumber(ZGV.db.char.gear_selected_class)
+	local selectedBuild = tonumber(ZGV.db.char.gear_selected_build)
+	local selectedClassToken = get_class_tag(selectedClass)
+	local needsInit = forceReset or not ZGV.db.char.gear_weights_initialized or not selectedClass or not selectedClassToken or not ZGV.db.char.gear_weights_manual_class
+
+	if not needsInit and selectedClass == classNum then
+		local resolvedBuild = self:GetResolvedBuild(classToken, level, selectedBuild)
+		if selectedBuild ~= resolvedBuild then
+			needsInit = true
+		end
+	end
+
+	if needsInit then
+		ZGV.db.char.gear_selected_class = classNum
+		ZGV.db.char.gear_selected_build = tonumber(ZGV.db.char.gear_active_build) or self:GetResolvedBuild(classToken, level, nil)
+		ZGV.db.char.gear_weights_initialized = true
+	elseif selectedClass == classNum then
+		ZGV.db.char.gear_selected_build = self:GetResolvedBuild(classToken, level, selectedBuild)
+	end
+
+	return ZGV.db.char.gear_selected_class, ZGV.db.char.gear_selected_build
+end
+
 function ItemScore:OnEvent(event,arg1,arg2,...)
 	if event == "PLAYER_LEVEL_UP" or event == "CHARACTER_POINTS_CHANGED" then
 		-- using timer as delay, since in the same frame PLAYER_LEVEL_UP player is still on previous level
@@ -139,26 +285,26 @@ end
 function ItemScore:SetStatWeights(playerclass,playerspec,playerlevel)
 	self.playerclass = playerclass or (select(2,UnitClass("player")))
 	self.playerclassName = (select(1,UnitClass("player")))
-	self.playerclassNum = (select(3,UnitClass("player")))
-	self.playerlevel = playerlevel or ((ZGV.db.char.fakelevel or 0)>0 and ZGV.db.char.fakelevel) or UnitLevel("player")
+	self.playerclassNum = (self.playerclass and ZGV.ClassToNumber and ZGV.ClassToNumber[self.playerclass]) or 1
+	local fakeLevel = tonumber(ZGV.db.char.fakelevel or 0) or 0
+	self.playerlevel = tonumber(playerlevel) or ((fakeLevel > 0 and fakeLevel) or UnitLevel("player"))
 	self.playerfaction = UnitFactionGroup("player")
 
 	-- 3.3.5a: detect spec from talent tree point distribution
 	self.playeristank = self.playerclass=="DRUID" or self.playerclass=="PALADIN" or self.playerclass=="WARRIOR" or self.playerclass=="DEATHKNIGHT"
 	self.playerishealer = self.playerclass=="DRUID" or self.playerclass=="SHAMAN" or self.playerclass=="PRIEST" or self.playerclass=="PALADIN"
-	if not ZGV.db.char.gear_active_build then
-		-- Auto-detect spec from talent points
-		local bestTree, bestPoints = 1, 0
-		for i = 1, GetNumTalentTabs() do
-			local _, _, pointsSpent = GetTalentTabInfo(i)
-			if pointsSpent > bestPoints then
-				bestPoints = pointsSpent
-				bestTree = i
-			end
-		end
-		ZGV.db.char.gear_selected_build = bestTree
-		ZGV.db.char.gear_active_build = bestTree
+	local detectedBuild, usingFallbackBuild = self:DetectActiveBuild(self.playerclass, self.playerlevel)
+	if usingFallbackBuild or not ZGV.db.char.gear_active_build then
+		ZGV.db.char.gear_active_build = detectedBuild
 	end
+	ZGV.db.char.gear_active_build = self:GetResolvedBuild(self.playerclass, self.playerlevel, ZGV.db.char.gear_active_build)
+	if usingFallbackBuild or not ZGV.db.char.gear_selected_build then
+		ZGV.db.char.gear_selected_build = ZGV.db.char.gear_active_build
+	end
+	ZGV.db.char.gear_selected_build = self:GetResolvedBuild(self.playerclass, self.playerlevel, ZGV.db.char.gear_selected_build)
+	self:EnsureSelectedWeightTarget()
+	self.activeBuildUsesFallback = usingFallbackBuild
+	self.playerspecName = self:GetBuildName(self.playerclass, ZGV.db.char.gear_active_build, self.playerlevel, usingFallbackBuild)
 	ItemScore.Upgrades.BadUpgrades = ZGV.db.char.badupgrade
 
 	-- create a copy so that the arrays in datatables are left untouched, as we will need them to handle custom weights resets
@@ -346,11 +492,14 @@ function ItemScore:GetItemDetailsQueued(itemlink,force)
 		local tooltip = {}
 
 		-- use blizz GetItemStats to get sockets, since tooltip scanning would only detect empty ones
-		local blizzstats = GetItemStats(itemlink)
+		local blizzstats = GetItemStats(itemlinkfull) or GetItemStats(itemlink)
+		local blizz_present_normalized = {}
 		if blizzstats then
 			for i,v in pairs(blizzstats) do
-				if i=="EMPTY_SOCKET_DOMINATION" then stats.EMPTY_SOCKET_DOMINATION = v end
-				if i=="EMPTY_SOCKET_PRISMATIC" then stats.EMPTY_SOCKET_PRISMATIC = v end
+				if type(v) == "number" then
+					add_stat(stats, i, v)
+					blizz_present_normalized[ItemScore:NormaliseStatName(i)] = true
+				end
 			end
 		end
 
@@ -384,9 +533,21 @@ function ItemScore:GetItemDetailsQueued(itemlink,force)
 			if socket_bonus or set_bonus or set2_bonus then line="" end -- skip all extra lines
 
 			local line = (ITEM_SPELL_TRIGGER_ONEQUIP and line:gsub(ITEM_SPELL_TRIGGER_ONEQUIP.." ","") or line):lower()
+			local matchedThisLine = {}
 			for _,statdata in pairs(ItemScore.Keywords) do
-				for _,regex in ipairs(statdata.regexs) do
-					if not stats[statdata.blizz] then
+				local coveredByBlizzard = false
+				if statdata.multi then
+					for _,multiname in ipairs(statdata.multi) do
+						if blizz_present_normalized[ItemScore:NormaliseStatName(multiname)] then
+							coveredByBlizzard = true
+							break
+						end
+					end
+				else
+					coveredByBlizzard = blizz_present_normalized[ItemScore:NormaliseStatName(statdata.blizz)] and true or false
+				end
+				if not coveredByBlizzard and not matchedThisLine[statdata.blizz] then
+					for _,regex in ipairs(statdata.regexs) do
 						local sign,value = line:match(regex)
 						if sign and not value then value = sign end
 
@@ -399,11 +560,13 @@ function ItemScore:GetItemDetailsQueued(itemlink,force)
 							if sign=="-" then value=value*(-1) end
 							if statdata.multi then
 								for _,multiname in ipairs(statdata.multi) do
-									stats[multiname] = tonumber(value)
+									add_stat(stats, multiname, value)
 								end
 							else
-								stats[statdata.blizz] = tonumber(value)
+								add_stat(stats, statdata.blizz, value)
 							end
+							matchedThisLine[statdata.blizz] = true
+							break
 						end
 					end
 				end
@@ -615,8 +778,10 @@ function ItemScore:IsValidItem(itemlink, future)
 		return false, true, item.validstatus
 	end
 
-	-- 3.3.5a: check weapon/armor skill proficiency
-	if (subclass~="JEWELERY") and (ItemScore.Skills[subclass] or 0) == 0 then
+	-- 3.3.5a: armor proficiency is already modeled by class/level itemtype rules above.
+	-- Skill-line caches are unreliable for early armor classes on this client, so only
+	-- enforce explicit skill proficiency for weapons and non-armor equip classes here.
+	if item.class ~= LE_ITEM_CLASS_ARMOR and (subclass~="JEWELERY") and (ItemScore.Skills[subclass] or 0) == 0 then
 		item.validated = true
 		item.valid = false
 		item.validstatus = "no skill "..subclass
@@ -763,7 +928,8 @@ local function ItemScore_SetTooltipData(tooltip, tooltipobj)
 				return
 			end
 
-			local scoreDelta, percent, isNewItem = ItemScore.Upgrades:GetUpgradeMetrics(slotid, item)
+			local comparison = ItemScore.Upgrades:GetUpgradeComparison(slotid, item)
+			local scoreDelta, percent, isNewItem = comparison.deltaScore, comparison.percent, comparison.isNewItem
 			local line
 			if isNewItem or not (equipped_item and equipped_item.score) then
 				line = "|r "..slotinfo..(L["gearfinder_label_new_item"] or "New item")
@@ -771,10 +937,10 @@ local function ItemScore_SetTooltipData(tooltip, tooltipobj)
 					line = line .. " |cff00ff00" .. string.format((L["gearfinder_label_delta_score"] or "%+.1f score"), scoreDelta) .. "|r"
 				end
 			elseif scoreDelta then
-				local state = scoreDelta >= 0 and "Upgrade" or "Downgrade"
-				local color = scoreDelta >= 0 and "|cff00ff00" or "|cffff0000"
+				local state = comparison.state == "downgrade" and "Downgrade" or (comparison.state == "sidegrade" and "Sidegrade" or "Upgrade")
+				local color = comparison.state == "downgrade" and "|cffff0000" or "|cff00ff00"
 				line = "|r "..slotinfo..state.." "..color..string.format((L["gearfinder_label_delta_score"] or "%+.1f score"), scoreDelta).."|r"
-				if percent then
+				if percent and math.abs(percent) >= 0.05 then
 					line = line .. " "..color.."("..string.format((L["gearfinder_upgrade_percent_short"] or "%+.1f%%"), percent)..")|r"
 				end
 			else
@@ -907,9 +1073,11 @@ function ItemScore:ImportPawn(datastring)
 		ZGV:Print("Import: Some of Pawn stat names are not supported by Zygor, and have been skipped.") 
 	end
 
-
-	local name,tag,id = GetClassInfo(ZGV.db.char.gear_selected_class)
-	local groupname = 'gear_'..tag..'_'..ZGV.db.char.gear_selected_spec.."_"
+	local classNum = tonumber(ZGV.db.char.gear_selected_class) or self.playerclassNum or 1
+	local tag = get_class_tag(classNum)
+	local build = tonumber(ZGV.db.char.gear_selected_build) or tonumber(ZGV.db.char.gear_active_build) or 1
+	if not tag then return end
+	local groupname = 'gear_'..tag..'_'..build.."_"
 
 	for index,stat in pairs(ZGV.ItemScore.Keywords) do -- wipe
 		ZGV.db.profile[groupname..stat.blizz] = "0"
@@ -923,8 +1091,11 @@ function ItemScore:ImportPawn(datastring)
 end
 
 function ItemScore:ExportPawn(datastring)
-	local class, spec = ZGV.db.char.gear_selected_class, ZGV.db.char.gear_selected_spec
-	local name,tag,id = GetClassInfo(class)
+	local class = tonumber(ZGV.db.char.gear_selected_class) or self.playerclassNum or 1
+	local spec = tonumber(ZGV.db.char.gear_selected_build) or tonumber(ZGV.db.char.gear_active_build) or 1
+	local tag = get_class_tag(class)
+	local name = (LOCALIZED_CLASS_NAMES_MALE and tag and LOCALIZED_CLASS_NAMES_MALE[tag]) or (LOCALIZED_CLASS_NAMES_FEMALE and tag and LOCALIZED_CLASS_NAMES_FEMALE[tag]) or tostring(tag)
+	if not tag then return end
 	local specname = ZGV.SpecByNumber[tag][spec] -- values taken from parser.lua classtalents
 	local ruleset = ItemScore.rules[tag][spec]
 

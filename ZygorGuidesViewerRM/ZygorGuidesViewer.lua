@@ -2662,12 +2662,7 @@ end
 function me:GetGuideStepContentWidth(frame)
 	local width = 0
 	if self.db and self.db.profile and self:IsRemasterSkin() then
-		if ZygorGuidesViewerFrameScrollChild and ZygorGuidesViewerFrameScrollChild.GetWidth then
-			width = ZygorGuidesViewerFrameScrollChild:GetWidth() or 0
-		end
-		if width <= 0 and ZygorGuidesViewerFrameScroll and ZygorGuidesViewerFrameScroll.GetWidth then
-			width = (ZygorGuidesViewerFrameScroll:GetWidth() or 0) - (self.db.profile.showallsteps and 39 or 20)
-		end
+		width = self:GetRemasterSettledStepFrameWidth()
 	end
 	if width <= 0 and frame and frame.GetWidth then
 		width = frame:GetWidth() or 0
@@ -2676,6 +2671,75 @@ function me:GetGuideStepContentWidth(frame)
 		return math.max(width - self.ICON_INDENT, 1)
 	end
 	return math.max(width - self.ICON_INDENT - 2 * self.STEPMARGIN_X, 1)
+end
+
+function me:GetRemasterSettledStepFrameWidth()
+	local width = 0
+	if ZygorGuidesViewerFrameScrollChild and ZygorGuidesViewerFrameScrollChild.GetWidth then
+		width = ZygorGuidesViewerFrameScrollChild:GetWidth() or 0
+	end
+	if width <= 1 and ZygorGuidesViewerFrameScroll and ZygorGuidesViewerFrameScroll.GetWidth then
+		local scrollbarPad = (self.db and self.db.profile and self.db.profile.showallsteps) and 39 or 20
+		width = math.max((ZygorGuidesViewerFrameScroll:GetWidth() or 0) - scrollbarPad, 1)
+	end
+	return width
+end
+
+function me:GetRemasterWrappedTextPadding(text, textheight)
+	if not self.db
+	or not self.db.profile
+	or not self:IsRemasterSkin()
+	or self.db.profile.displaymode ~= "guide"
+	then
+		return 0
+	end
+	if not text then return 0 end
+	local multiline = false
+	if text.GetNumLines and (text:GetNumLines() or 0) > 1 then
+		multiline = true
+	elseif text.GetLineHeight and textheight then
+		local lineHeight = text:GetLineHeight() or 0
+		if lineHeight > 0 and textheight > lineHeight + 0.5 then
+			multiline = true
+		end
+	end
+	return multiline and 3 or 0
+end
+
+function me:RequestRemasterCompactRelayout()
+	if not self.db
+	or not self.db.profile
+	or not self:IsRemasterSkin()
+	or self.db.profile.displaymode ~= "guide"
+	or self.db.profile.showallsteps
+	then
+		return
+	end
+	if self.pendingRemasterCompactRelayout then return end
+	self.pendingRemasterCompactRelayout = true
+	local function runRelayout()
+		if not ZGV then return end
+		ZGV.pendingRemasterCompactRelayout = nil
+		if not (ZGV.Frame and ZGV.Frame:IsShown()) then return end
+		if not ZGV.db
+		or not ZGV.db.profile
+		or not ZGV:IsRemasterSkin()
+		or ZGV.db.profile.displaymode ~= "guide"
+		or ZGV.db.profile.showallsteps
+		then
+			return
+		end
+		if ZGV.remasterCompactRelayoutInProgress then return end
+		ZGV.remasterCompactRelayoutInProgress = true
+		ZGV:RelayoutRemasterCompactVisibleSteps()
+		if ZGV.ResizeFrame then ZGV:ResizeFrame() end
+		ZGV.remasterCompactRelayoutInProgress = nil
+	end
+	if self.ScheduleTimer then
+		self:ScheduleTimer(runRelayout, 0)
+	else
+		runRelayout()
+	end
 end
 
 function me:ApplyGuideLineLabelLayout(lineframe)
@@ -2740,25 +2804,19 @@ function me:RelayoutRemasterCompactVisibleSteps()
 					for idx, lineNum in ipairs(visibleLineNums) do
 						local lineframe = frame.lines[lineNum]
 						local text = lineframe.label
-						local lineWidth = 0
-						if lineframe.GetWidth then
-							lineWidth = lineframe:GetWidth() or 0
-						end
-						if lineWidth <= 0 and frame.GetWidth then
-							lineWidth = frame:GetWidth() or 0
-						end
-						local contentWidth = math.max(lineWidth - (lineframe.labelOffsetX or ZGV.ICON_INDENT), 1)
+						local contentWidth = self:GetGuideStepContentWidth(frame)
 						text:SetWidth(contentWidth)
 						local textheight = text.GetStringHeight and text:GetStringHeight() or text:GetHeight() or 0
+						local textpadding = self:GetRemasterWrappedTextPadding(text, textheight)
 						local hasVisibleInlineControl =
 							(lineframe.actionHolder and lineframe.actionHolder.IsShown and lineframe.actionHolder:IsShown())
 							or (lineframe.action and lineframe.action.IsShown and lineframe.action:IsShown())
 							or (lineframe.petaction and lineframe.petaction.IsShown and lineframe.petaction:IsShown())
 						local lineheight
 						if hasVisibleInlineControl then
-							lineheight = math.max(textheight or 0, self:GetCompactLineVisualHeight(stepdata, lineframe))
+							lineheight = math.max((textheight or 0) + textpadding, self:GetCompactLineVisualHeight(stepdata, lineframe))
 						else
-							lineheight = textheight or 0
+							lineheight = (textheight or 0) + textpadding
 						end
 						if compactMetrics.lastLineReserve and compactMetrics.lastLineReserve > 0 and idx == #visibleLineNums then
 							lineheight = lineheight + compactMetrics.lastLineReserve
@@ -4836,6 +4894,7 @@ function me:UpdateFrame(full,onupdate,nonsecure_only)
 					local desiredWidth = math.max(sw - scrollbarPad, 1)
 					if math.abs((ZygorGuidesViewerFrameScrollChild:GetWidth() or 0) - desiredWidth) > 1 then
 						ZygorGuidesViewerFrameScrollChild:SetWidth(desiredWidth)
+						self:RequestRemasterCompactRelayout()
 					end
 				end
 			end
@@ -4881,7 +4940,12 @@ function me:UpdateFrame(full,onupdate,nonsecure_only)
 					frame.step = stepdata
 					--#### position step frame
 
-					if not self:IsRemasterSkin() then
+					if self:IsRemasterSkin() then
+						local stepFrameWidth = self:GetRemasterSettledStepFrameWidth()
+						if stepFrameWidth > 1 then
+							frame:SetWidth(stepFrameWidth)
+						end
+					else
 						frame:SetWidth(self.db.profile.showallsteps and ZygorGuidesViewerFrameScrollChild:GetWidth() or ZygorGuidesViewerFrameScroll:GetWidth()) -- this is needed so the text lines below can access proper widths
 					end
 
@@ -5064,7 +5128,8 @@ function me:UpdateFrame(full,onupdate,nonsecure_only)
 						local lineframe = frame.lines[l]
 						local text = lineframe.label
 						if l<line and not frame.truncated then
-							text:SetWidth(self:GetGuideStepContentWidth(frame))
+							local contentWidth = self:GetGuideStepContentWidth(frame)
+							text:SetWidth(contentWidth)
 							if text.SetHeight then
 								text:SetHeight(300)
 							end
@@ -5072,7 +5137,8 @@ function me:UpdateFrame(full,onupdate,nonsecure_only)
 							if textheight and textheight > 0 and text.SetHeight then
 								text:SetHeight(textheight)
 							end
-							local lineheight = (textheight or 0) + compactLineSpacing
+							local textpadding = self:GetRemasterWrappedTextPadding(text, textheight)
+							local lineheight = (textheight or 0) + textpadding
 							local iconheight = self:GetCompactLineVisualHeight(stepdata, lineframe)
 							if iconheight > lineheight then
 								lineheight = iconheight
@@ -7012,6 +7078,7 @@ function me:ApplyRemasterSkin(visualOnly)
 			if cw > 40 then
 				local scrollbarPad = (self.db and self.db.profile and self.db.profile.showallsteps) and 39 or 20
 				ZygorGuidesViewerFrameScrollChild:SetWidth(math.max(cw - scrollbarPad, 1))
+				self:RequestRemasterCompactRelayout()
 			end
 		end
 		if ZygorGuidesViewerFrameScrollChild then
@@ -7107,6 +7174,7 @@ function me:ApplyRemasterSkin(visualOnly)
 	if self.db and self.db.profile and self.db.profile.hideborder and self.ForceHideBorderNow then
 		self:ForceHideBorderNow()
 	end
+	self:RequestRemasterCompactRelayout()
 	self.remasterApplied = true
 end
 
@@ -7347,6 +7415,9 @@ function me:ResizeFrame()
 			if ZygorGuidesViewerFrameScrollChild and ZygorGuidesViewerFrameScroll then
 				local scrollHeight = ZygorGuidesViewerFrameScroll:GetHeight() or 0
 				ZygorGuidesViewerFrameScrollChild:SetHeight(math.max(contentHeight + 4, scrollHeight))
+			end
+			if not self.remasterCompactRelayoutInProgress then
+				self:RequestRemasterCompactRelayout()
 			end
 		else
 			if ZygorGuidesViewerFrame then

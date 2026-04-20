@@ -5230,24 +5230,6 @@ local function EnsureGuideManagerStandaloneFrame(self)
 			frame.optionsFallback:SetText(LT("gb_options_fallback_render_error", tostring(err)))
 			frame.optionsFallback:Show()
 		else
-			local function RefreshOptionsScroll()
-				if not (scroll and scroll.content and frame.optionsContent) then return end
-				local rootH = (root and root.frame and root.frame.GetHeight and root.frame:GetHeight()) or 0
-				local contentH = (scroll.content and scroll.content.GetHeight and scroll.content:GetHeight()) or 0
-				local targetH = math.max(1, rootH, contentH)
-				if scroll.content.SetHeight and targetH > 0 then
-					scroll.content:SetHeight(targetH)
-				end
-				if scroll.FixScroll then pcall(function() scroll:FixScroll() end) end
-			end
-			RefreshOptionsScroll()
-			if scroll and scroll.content and scroll.content.SetHeight then
-				-- Run one deferred pass after AceConfig finishes its initial layout to avoid
-				-- recursive DoLayout/OnSizeChanged loops with other addons' AceGUI copies.
-				self:ScheduleTimer(function()
-					RefreshOptionsScroll()
-				end, 0)
-			end
 			frame.lastRenderedOptionsApp = targetApp
 		end
 	end

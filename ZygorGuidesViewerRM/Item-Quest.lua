@@ -44,94 +44,116 @@ function QuestItem:HideQuestRewardGlow()
 		self.GlowFrame:Hide()
 		self.GlowFrame:ClearAllPoints()
 	end
+	if self.AdvisoryGlowFrame then
+		self.AdvisoryGlowFrame:Hide()
+		self.AdvisoryGlowFrame:ClearAllPoints()
+	end
 	self.HighlightedRewardIndex = nil
 end
 
-function QuestItem:ShowQuestRewardGlow(index,selling)
-	if not index then return end
-	local b = self:GetQuestRewardButton(index)
-	if not b then return end
+local function setup_reward_glow_frame(frame, textColor, borderColor)
+	borderColor = borderColor or textColor
+	frame.top = CHAIN(frame:CreateTexture(nil,"OVERLAY"))
+		:SetTexture("Interface\\Buttons\\WHITE8x8")
+		:SetVertexColor(borderColor[1], borderColor[2], borderColor[3], 0.95)
+		:SetHeight(2)
+	.__END
+	frame.bottom = CHAIN(frame:CreateTexture(nil,"OVERLAY"))
+		:SetTexture("Interface\\Buttons\\WHITE8x8")
+		:SetVertexColor(borderColor[1], borderColor[2], borderColor[3], 0.95)
+		:SetHeight(2)
+	.__END
+	frame.left = CHAIN(frame:CreateTexture(nil,"OVERLAY"))
+		:SetTexture("Interface\\Buttons\\WHITE8x8")
+		:SetVertexColor(borderColor[1], borderColor[2], borderColor[3], 0.95)
+		:SetWidth(2)
+	.__END
+	frame.right = CHAIN(frame:CreateTexture(nil,"OVERLAY"))
+		:SetTexture("Interface\\Buttons\\WHITE8x8")
+		:SetVertexColor(borderColor[1], borderColor[2], borderColor[3], 0.95)
+		:SetWidth(2)
+	.__END
+	frame.fill = CHAIN(frame:CreateTexture(nil,"BACKGROUND"))
+		:SetTexture("Interface\\Buttons\\WHITE8x8")
+		:SetVertexColor(borderColor[1], borderColor[2], borderColor[3], 0.06)
+	.__END
+	frame.markerText = CHAIN(frame:CreateFontString(nil,"OVERLAY"))
+		:SetFont(FONTBOLD or FONT, 16, "OUTLINE")
+		:SetTextColor(textColor[1], textColor[2], textColor[3])
+		:SetJustifyH("RIGHT")
+		:SetJustifyV("TOP")
+	.__END
+	frame.markerCoin = CHAIN(frame:CreateTexture(nil,"OVERLAY"))
+		:SetTexture("Interface\\MoneyFrame\\UI-GoldIcon")
+		:SetSize(14,14)
+	.__END
+end
 
+function QuestItem:GetRewardGlowFrame(kind)
+	if kind == "potential" then
+		if not self.AdvisoryGlowFrame then
+			self.AdvisoryGlowFrame = CHAIN(CreateFrame("Frame", nil, UIParent))
+				:SetFrameStrata("HIGH")
+				:EnableMouse(false)
+			.__END
+			setup_reward_glow_frame(self.AdvisoryGlowFrame, {1.0, 0.82, 0.25}, {1.0, 0.82, 0.25})
+		end
+		return self.AdvisoryGlowFrame
+	end
 	if not self.GlowFrame then
 		self.GlowFrame = CHAIN(CreateFrame("Frame", nil, UIParent))
 			:SetFrameStrata("HIGH")
 			:EnableMouse(false)
 		.__END
+		setup_reward_glow_frame(self.GlowFrame, {0.25, 1.0, 0.25}, {1, 1, 1})
+	end
+	return self.GlowFrame
+end
 
-		self.GlowFrame.top = CHAIN(self.GlowFrame:CreateTexture(nil,"OVERLAY"))
-			:SetTexture("Interface\\Buttons\\WHITE8x8")
-			:SetVertexColor(1,1,1,0.95)
-			:SetHeight(2)
-		.__END
-		self.GlowFrame.bottom = CHAIN(self.GlowFrame:CreateTexture(nil,"OVERLAY"))
-			:SetTexture("Interface\\Buttons\\WHITE8x8")
-			:SetVertexColor(1,1,1,0.95)
-			:SetHeight(2)
-		.__END
-		self.GlowFrame.left = CHAIN(self.GlowFrame:CreateTexture(nil,"OVERLAY"))
-			:SetTexture("Interface\\Buttons\\WHITE8x8")
-			:SetVertexColor(1,1,1,0.95)
-			:SetWidth(2)
-		.__END
-		self.GlowFrame.right = CHAIN(self.GlowFrame:CreateTexture(nil,"OVERLAY"))
-			:SetTexture("Interface\\Buttons\\WHITE8x8")
-			:SetVertexColor(1,1,1,0.95)
-			:SetWidth(2)
-		.__END
+function QuestItem:ShowQuestRewardGlow(index,mode)
+	if not index then return end
+	local b = self:GetQuestRewardButton(index)
+	if not b then return end
+	local frame = self:GetRewardGlowFrame(mode == "potential" and "potential" or "primary")
+	frame:ClearAllPoints()
+	frame:SetParent(UIParent)
+	frame:SetFrameStrata("TOOLTIP")
+	frame:SetFrameLevel((b:GetFrameLevel() or 1) + (mode == "potential" and 20 or 30))
+	frame:SetPoint("TOPLEFT",b,"TOPLEFT",-2,2)
+	frame:SetPoint("BOTTOMRIGHT",b,"BOTTOMRIGHT",2,-2)
 
-		self.GlowFrame.fill = CHAIN(self.GlowFrame:CreateTexture(nil,"BACKGROUND"))
-			:SetTexture("Interface\\Buttons\\WHITE8x8")
-			:SetVertexColor(1,1,1,0.06)
-		.__END
+	frame.top:ClearAllPoints()
+	frame.top:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
+	frame.top:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, 0)
+	frame.bottom:ClearAllPoints()
+	frame.bottom:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 0, 0)
+	frame.bottom:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 0)
+	frame.left:ClearAllPoints()
+	frame.left:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
+	frame.left:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 0, 0)
+	frame.right:ClearAllPoints()
+	frame.right:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, 0)
+	frame.right:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 0)
+	frame.fill:ClearAllPoints()
+	frame.fill:SetPoint("TOPLEFT", frame, "TOPLEFT", 2, -2)
+	frame.fill:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -2, 2)
 
-		self.GlowFrame.markerText = CHAIN(self.GlowFrame:CreateFontString(nil,"OVERLAY"))
-			:SetFont(FONTBOLD or FONT, 16, "OUTLINE")
-			:SetTextColor(0.25, 1.0, 0.25)
-			:SetJustifyH("RIGHT")
-			:SetJustifyV("TOP")
-		.__END
-
-		self.GlowFrame.markerCoin = CHAIN(self.GlowFrame:CreateTexture(nil,"OVERLAY"))
-			:SetTexture("Interface\\MoneyFrame\\UI-GoldIcon")
-			:SetSize(14,14)
-		.__END
+	frame.markerText:ClearAllPoints()
+	frame.markerText:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -5, -3)
+	frame.markerCoin:ClearAllPoints()
+	frame.markerCoin:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -5, -4)
+	frame.markerText:SetShown(mode ~= "vendor")
+	frame.markerCoin:SetShown(mode == "vendor")
+	if mode == "potential" then
+		frame.markerText:SetText("+?")
+	elseif mode ~= "vendor" then
+		frame.markerText:SetText("+")
 	end
 
-	self.GlowFrame:ClearAllPoints()
-	self.GlowFrame:SetParent(UIParent)
-	self.GlowFrame:SetFrameStrata("TOOLTIP")
-	self.GlowFrame:SetFrameLevel((b:GetFrameLevel() or 1) + 30)
-	self.GlowFrame:SetPoint("TOPLEFT",b,"TOPLEFT",-2,2)
-	self.GlowFrame:SetPoint("BOTTOMRIGHT",b,"BOTTOMRIGHT",2,-2)
-
-	self.GlowFrame.top:ClearAllPoints()
-	self.GlowFrame.top:SetPoint("TOPLEFT", self.GlowFrame, "TOPLEFT", 0, 0)
-	self.GlowFrame.top:SetPoint("TOPRIGHT", self.GlowFrame, "TOPRIGHT", 0, 0)
-	self.GlowFrame.bottom:ClearAllPoints()
-	self.GlowFrame.bottom:SetPoint("BOTTOMLEFT", self.GlowFrame, "BOTTOMLEFT", 0, 0)
-	self.GlowFrame.bottom:SetPoint("BOTTOMRIGHT", self.GlowFrame, "BOTTOMRIGHT", 0, 0)
-	self.GlowFrame.left:ClearAllPoints()
-	self.GlowFrame.left:SetPoint("TOPLEFT", self.GlowFrame, "TOPLEFT", 0, 0)
-	self.GlowFrame.left:SetPoint("BOTTOMLEFT", self.GlowFrame, "BOTTOMLEFT", 0, 0)
-	self.GlowFrame.right:ClearAllPoints()
-	self.GlowFrame.right:SetPoint("TOPRIGHT", self.GlowFrame, "TOPRIGHT", 0, 0)
-	self.GlowFrame.right:SetPoint("BOTTOMRIGHT", self.GlowFrame, "BOTTOMRIGHT", 0, 0)
-	self.GlowFrame.fill:ClearAllPoints()
-	self.GlowFrame.fill:SetPoint("TOPLEFT", self.GlowFrame, "TOPLEFT", 2, -2)
-	self.GlowFrame.fill:SetPoint("BOTTOMRIGHT", self.GlowFrame, "BOTTOMRIGHT", -2, 2)
-
-	self.GlowFrame.markerText:ClearAllPoints()
-	self.GlowFrame.markerText:SetPoint("TOPRIGHT", self.GlowFrame, "TOPRIGHT", -5, -3)
-	self.GlowFrame.markerCoin:ClearAllPoints()
-	self.GlowFrame.markerCoin:SetPoint("TOPRIGHT", self.GlowFrame, "TOPRIGHT", -5, -4)
-	self.GlowFrame.markerText:SetShown(not selling)
-	self.GlowFrame.markerCoin:SetShown(selling)
-	if not selling then
-		self.GlowFrame.markerText:SetText("+")
+	frame:Show()
+	if mode ~= "potential" then
+		self.HighlightedRewardIndex = index
 	end
-
-	self.GlowFrame:Show()
-	self.HighlightedRewardIndex = index
 end
 
 function QuestItem:IsQuestItemsReady()
@@ -155,8 +177,9 @@ function QuestItem:GetQuestRewardIndex()
 
 	if not self:IsQuestItemsReady() then return -5,"Items not ready" end
 
-	local best_upgrade_change, best_upgrade_index = 0, 0
+	local best_upgrade_delta, best_upgrade_index = 0, 0
 	local best_sell_value, best_sell_index = 0, 0
+	local best_potential_score, best_potential_index = 0, 0
 
 	local weapons_found = false
 	ItemScore.Upgrades:ResetWeaponQueue("onlytemp")
@@ -168,13 +191,44 @@ function QuestItem:GetQuestRewardIndex()
 
 		if classID==5 and subclassID==2 then return nil,"Context token" end
 
-		local is_upgrade, _, change = ItemScore.Upgrades:IsUpgrade(itemlink)
-
-		if is_upgrade then 
-			if change > best_upgrade_change then
-				best_upgrade_change = change
-				best_upgrade_index = index
+		local item = itemlink and ItemScore:GetItemDetails(itemlink)
+		local is_upgrade, slot, change, score, validfuture, comment, slot_2 = ItemScore.Upgrades:IsUpgrade(itemlink)
+		local bestComparison
+		if item and slot and slot ~= "" then
+			bestComparison = ItemScore.Upgrades:GetUpgradeComparison(slot, item)
+		end
+		if item and slot_2 and slot_2 ~= "" then
+			local secondComparison = ItemScore.Upgrades:GetUpgradeComparison(slot_2, item)
+			if secondComparison and (not bestComparison or secondComparison.deltaScore > bestComparison.deltaScore) then
+				bestComparison = secondComparison
 			end
+		end
+
+		if not bestComparison and item and item.class == LE_ITEM_CLASS_ARMOR then
+			local fallbackSlot = item.slot or slot
+			if fallbackSlot and fallbackSlot ~= "" then
+				bestComparison = ItemScore.Upgrades:GetUpgradeComparison(fallbackSlot, item)
+			end
+		end
+
+		-- Some low-level/classic reward items can still validate as upgrades through the
+		-- legacy path even when the cached comparison payload is incomplete on first pass.
+		-- Preserve that positive signal instead of falling all the way through to vendor value.
+		if not bestComparison and is_upgrade and change and change > 0 then
+			bestComparison = {
+				deltaScore = (score and score > 0) and score or change,
+				rawState = "none",
+				rawScore = 0,
+				legacyUpgradeFallback = true,
+			}
+		end
+
+		if bestComparison and (bestComparison.deltaScore > best_upgrade_delta or (bestComparison.armorFallback and bestComparison.deltaScore > 0 and best_upgrade_delta <= 0)) then
+			best_upgrade_delta = bestComparison.deltaScore
+			best_upgrade_index = index
+		elseif bestComparison and bestComparison.deltaScore <= 0 and bestComparison.rawState ~= "none" and bestComparison.rawScore > best_potential_score then
+			best_potential_score = bestComparison.rawScore
+			best_potential_index = index
 		end
 
 		if sellPrice > best_sell_value then
@@ -189,11 +243,21 @@ function QuestItem:GetQuestRewardIndex()
 	if weapons_found then
 		local mh, oh, th = ItemScore.Upgrades:ProcessWeaponQueue()
 		if (mh or oh or th) then
+			local winningWeapon = th or mh or oh
+			local weaponComparison
+			if th then
+				weaponComparison = ItemScore.Upgrades:GetUpgradeComparison(INVSLOT_MAINHAND, th)
+			elseif mh then
+				weaponComparison = ItemScore.Upgrades:GetUpgradeComparison(INVSLOT_MAINHAND, mh, oh)
+			elseif oh then
+				weaponComparison = ItemScore.Upgrades:GetUpgradeComparison(INVSLOT_OFFHAND, oh, mh)
+			end
 			for index=1, totalrewards do 
 				local itemlink = GetQuestItemLink("choice",index)
 				itemlink = ItemScore.strip_link(itemlink)
-				if (mh and mh.itemlink) == itemlink or (oh and oh.itemlink) == itemlink or (th and th.itemlink) == itemlink then
+				if winningWeapon and winningWeapon.itemlink == itemlink and weaponComparison and weaponComparison.deltaScore > best_upgrade_delta then
 					best_upgrade_index = index
+					best_upgrade_delta = weaponComparison.deltaScore
 				end
 			end
 		end
@@ -201,18 +265,20 @@ function QuestItem:GetQuestRewardIndex()
 
 
 	if best_upgrade_index > 0 then
-		return best_upgrade_index,"New upgrade found"
+		if best_potential_index == best_upgrade_index then best_potential_index = 0 end
+		return best_upgrade_index,"New upgrade found",best_potential_index
 	elseif best_sell_index > 0 then
-		return best_sell_index,"Item picked because it is worth most money"
+		if best_potential_index == best_sell_index then best_potential_index = 0 end
+		return best_sell_index,"Item picked because it is worth most money",best_potential_index
 	end
 
-	return nil,"Error"
+	return nil,"Error",best_potential_index
 end
 
 function QuestItem:ApplyRewardRecommendation(forceAutoTurnIn)
 	self:HideQuestRewardGlow()
 
-	local rewardIndex, reason = self:GetQuestRewardIndex()
+	local rewardIndex, reason, advisoryIndex = self:GetQuestRewardIndex()
 	if rewardIndex == -5 then
 		if self.RewardRetryTimer and ZGV.CancelTimer then
 			ZGV:CancelTimer(self.RewardRetryTimer, true)
@@ -231,7 +297,10 @@ function QuestItem:ApplyRewardRecommendation(forceAutoTurnIn)
 		return false, reason
 	end
 
-	self:ShowQuestRewardGlow(rewardIndex, reason == "Item picked because it is worth most money")
+	self:ShowQuestRewardGlow(rewardIndex, reason == "Item picked because it is worth most money" and "vendor" or "upgrade")
+	if advisoryIndex and advisoryIndex > 0 and advisoryIndex ~= rewardIndex then
+		self:ShowQuestRewardGlow(advisoryIndex, "potential")
+	end
 
 	if forceAutoTurnIn and ZGV.db and ZGV.db.profile and ZGV.db.profile.autoturnin and ZGV.db.profile.autoquestreward ~= false then
 		if ZGV.ScheduleTimer then

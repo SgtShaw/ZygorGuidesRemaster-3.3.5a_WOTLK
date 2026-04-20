@@ -109,23 +109,92 @@ local function build_stat_delta(item1, item2, item3, mode_new, mode_old)
 	return delta
 end
 
+local RAW_POTENTIAL_STATS = {
+	STRENGTH = true,
+	AGILITY = true,
+	INTELLECT = true,
+	SPIRIT = true,
+	STAMINA = true,
+	SPELL_POWER = true,
+	ATTACK_POWER = true,
+	DAMAGE_PER_SECOND = true,
+	FERAL_ATTACK_POWER = true,
+	ARMOR = true,
+	DEFENSE_SKILL = true,
+	DODGE = true,
+	PARRY = true,
+	BLOCK = true,
+	BLOCK_VALUE = true,
+	HIT = true,
+	EXPERTISE = true,
+	CRIT = true,
+	HASTE = true,
+	ARMOR_PENETRATION = true,
+	MANA_REGENERATION = true,
+}
+
+local function get_primary_comparison_delta(slot, newitem, secondnewitem)
+	if not newitem or not newitem.itemlink then return nil end
+	local current = Upgrades.EquippedItems[slot]
+	local currentLink = current and current.itemlink
+	if secondnewitem and secondnewitem.itemlink and (slot == INVSLOT_MAINHAND or slot == INVSLOT_OFFHAND) then
+		return build_stat_delta(newitem.itemlink, secondnewitem.itemlink, currentLink, "equip_pair")
+	end
+	return build_stat_delta(newitem.itemlink, currentLink)
+end
+
+local function has_non_armor_stats(item)
+	if not item or not item.stats then return false end
+	for stat, value in pairs(item.stats) do
+		stat = ItemScore:NormaliseStatName(stat)
+		if value and value ~= 0 and stat ~= "ARMOR" then
+			return true
+		end
+	end
+	return false
+end
+
+local function get_potential_rationale(delta)
+	if not delta then return nil, "none", 0 end
+	local positive, negative = {}, false
+	local score = 0
+	for stat, value in pairs(delta) do
+		if value and value ~= 0 and RAW_POTENTIAL_STATS[stat] and ItemScore.KnownKeyWords[stat] then
+			if value > 0 then
+				positive[#positive + 1] = {name = ItemScore.KnownKeyWords[stat], value = value}
+				score = score + value
+			else
+				negative = true
+			end
+		end
+	end
+	if #positive == 0 then return nil, "none", 0 end
+	table.sort(positive, function(a,b) return a.value > b.value end)
+	local names = {}
+	for i = 1, math.min(2, #positive) do
+		names[#names + 1] = positive[i].name
+	end
+	local state = (#positive >= 2 and not negative) and "broad_upgrade" or "potential"
+	return table.concat(names, ", "), state, score
+end
+
 function Upgrades:GetActiveBuildName()
 	local classTag = ItemScore and ItemScore.playerclass
 	local activeBuild = ZGV.db and ZGV.db.char and ZGV.db.char.gear_active_build
 	local classNum = ItemScore and ItemScore.playerclassNum
-	if classNum and ZGV.ItemScore and ZGV.ItemScore.Builds and ZGV.ItemScore.Builds[classNum] and activeBuild then
-		return ZGV.ItemScore.Builds[classNum][activeBuild] or ("Spec "..tostring(activeBuild))
-	end
-	if classTag and ZGV.SpecByNumber and ZGV.SpecByNumber[classTag] and activeBuild then
-		return ZGV.SpecByNumber[classTag][activeBuild] or ("Spec "..tostring(activeBuild))
+	local level = ItemScore and ItemScore.playerlevel or UnitLevel("player")
+	local usesFallback = ItemScore and ItemScore.activeBuildUsesFallback
+	if ItemScore and classNum and activeBuild then
+		return ItemScore:GetBuildName(classNum, activeBuild, level, usesFallback)
 	end
 	return "Spec "..tostring(activeBuild or 1)
 end
 
-function Upgrades:GetUpgradeMetrics(slot, newitem, change, secondnewitem)
+function Upgrades:GetUpgradeComparison(slot, newitem, secondnewitem)
 	local candidateScore = newitem and (newitem.artifactscore or newitem.score or 0) or 0
 	local baselineScore = 0
 	local current = Upgrades.EquippedItems[slot]
+	local currentDetails = current and current.itemlink and ItemScore:GetItemDetails(current.itemlink)
 	baselineScore = current and (current.artifactscore or current.score or 0) or 0
 
 	if secondnewitem and (slot == INVSLOT_MAINHAND or slot == INVSLOT_OFFHAND) then
@@ -135,15 +204,48 @@ function Upgrades:GetUpgradeMetrics(slot, newitem, change, secondnewitem)
 		baselineScore = (mh and (mh.artifactscore or mh.score or 0) or 0) + (oh and (oh.artifactscore or oh.score or 0) or 0)
 	end
 
+	local armorFallback = false
+	if newitem and currentDetails and newitem.class == LE_ITEM_CLASS_ARMOR and currentDetails.class == LE_ITEM_CLASS_ARMOR and newitem.type ~= "INVTYPE_CLOAK" then
+		local candidateHasStats = has_non_armor_stats(newitem)
+		local currentHasStats = has_non_armor_stats(currentDetails)
+		if not candidateHasStats and not currentHasStats then
+			candidateScore = newitem.stats and (newitem.stats.ARMOR or 0) or 0
+			baselineScore = currentDetails.stats and (currentDetails.stats.ARMOR or 0) or 0
+			armorFallback = true
+		end
+	end
+
 	local deltaScore = candidateScore - baselineScore
-	if baselineScore <= 0 then
-		return deltaScore, nil, true
+	local isNewItem = baselineScore <= 0
+	local percent = not isNewItem and ((candidateScore * 100 / baselineScore) - 100) or nil
+	local state = "sidegrade"
+	if isNewItem then
+		state = "new"
+	elseif deltaScore > 0 then
+		state = armorFallback and "armor_upgrade" or "upgrade"
+	elseif deltaScore < 0 then
+		state = "downgrade"
 	end
-	local percent = ((candidateScore * 100 / baselineScore) - 100)
-	if change ~= nil and math.abs(percent - change) < 0.01 then
-		percent = change
-	end
-	return deltaScore, percent, false
+	local delta = get_primary_comparison_delta(slot, newitem, secondnewitem)
+	local rawRationale, rawState, rawScore = get_potential_rationale(delta)
+	return {
+		candidateScore = candidateScore,
+		baselineScore = baselineScore,
+		deltaScore = deltaScore,
+		percent = percent,
+		isNewItem = isNewItem,
+		state = state,
+		rawState = rawState,
+		rawRationale = rawRationale,
+		rawScore = rawScore,
+		delta = delta,
+		armorFallback = armorFallback,
+	}
+end
+
+function Upgrades:GetUpgradeMetrics(slot, newitem, change, secondnewitem)
+	local comparison = self:GetUpgradeComparison(slot, newitem, secondnewitem)
+	return comparison.deltaScore, comparison.percent, comparison.isNewItem
 end
 
 function Upgrades:GetUpgradeRationale(delta)
@@ -184,19 +286,27 @@ function Upgrades:GetUpgradeRationale(delta)
 end
 
 function Upgrades:FormatUpgradeSummary(slot, newitem, change, secondnewitem, delta)
-	local scoreDelta, percent, isNewItem = self:GetUpgradeMetrics(slot, newitem, change, secondnewitem)
+	local comparison = self:GetUpgradeComparison(slot, newitem, secondnewitem)
+	local scoreDelta, percent, isNewItem = comparison.deltaScore, comparison.percent, comparison.isNewItem
 	local parts = {}
 	if isNewItem then
 		parts[#parts + 1] = "|cff44ff44"..(L["gearfinder_label_new_item"] or "New item").."|r"
 	else
-		parts[#parts + 1] = ("|cff44ff44"..(L["gearfinder_label_delta_score"] or "%+.1f score").."|r"):format(round_score(scoreDelta))
-		if percent and percent > 0 then
-			parts[#parts + 1] = ("|cff44ff44"..(L["gearfinder_upgrade_percent_short"] or "%+.1f%%").."|r"):format(percent)
+		local color = comparison.state == "downgrade" and "|cffff4444" or "|cff44ff44"
+		parts[#parts + 1] = (color..(L["gearfinder_label_delta_score"] or "%+.1f score").."|r"):format(round_score(scoreDelta))
+		if percent and math.abs(percent) >= 0.05 then
+			parts[#parts + 1] = (color..(L["gearfinder_upgrade_percent_short"] or "%+.1f%%").."|r"):format(percent)
 		end
 	end
 	local rationale = self:GetUpgradeRationale(delta)
 	if rationale then
 		parts[#parts + 1] = (L["gearfinder_label_best_gains"] or "Best gains: %s"):format(rationale)
+	end
+	if comparison.armorFallback and comparison.state ~= "downgrade" then
+		parts[#parts + 1] = ("|cff88ccff%s|r"):format(("Armor fallback: %+.0f armor"):format(scoreDelta))
+	end
+	if comparison.rawState ~= "none" and comparison.state ~= "upgrade" and comparison.rawRationale then
+		parts[#parts + 1] = ("|cffffcc66%s|r"):format(("Potential base-stat gains: %s"):format(comparison.rawRationale))
 	end
 	return table.concat(parts, "  "), rationale
 end
@@ -342,6 +452,7 @@ end
 
 local function get_upgrade(newitem,olditem,secondnewitem)
 	local new_item_score = newitem.score or 0
+	local olditem_details = olditem and olditem.itemlink and ItemScore:GetItemDetails(olditem.itemlink)
 	if (secondnewitem and secondnewitem.itemlink) then
 		new_item_score = new_item_score + (secondnewitem.score or 0)
 	end
@@ -378,6 +489,18 @@ local function get_upgrade(newitem,olditem,secondnewitem)
 
 	if olditem and not ItemScore:IsValidItem(olditem.itemlink) then
 		return 100 -- old item is not valid, spec change?
+	end
+
+	if olditem_details and newitem and newitem.class == LE_ITEM_CLASS_ARMOR and olditem_details.class == LE_ITEM_CLASS_ARMOR and newitem.type ~= "INVTYPE_CLOAK" then
+		local candidateHasStats = has_non_armor_stats(newitem)
+		local currentHasStats = has_non_armor_stats(olditem_details)
+		if not candidateHasStats and not currentHasStats then
+			local newArmor = newitem.stats and (newitem.stats.ARMOR or 0) or 0
+			local oldArmor = olditem_details.stats and (olditem_details.stats.ARMOR or 0) or 0
+			if newArmor > oldArmor then
+				return get_change(oldArmor, newArmor)
+			end
+		end
 	end
 
 	if not (olditem and olditem.itemlink) then 
@@ -895,9 +1018,11 @@ function Upgrades:ScoreBagsItems()
 
 	if th then
 		local upgrade_slot = Upgrades.UpgradeQueue[INVSLOT_MAINHAND]
+		local comparison = Upgrades:GetUpgradeComparison(INVSLOT_MAINHAND, th, nil)
 		upgrade_slot.itemlink = th.itemlink
 		upgrade_slot.score = th.score
 		upgrade_slot.change = get_upgrade(th,equipped_weapon_1)
+		upgrade_slot.deltascore = comparison.deltaScore
 		upgrade_slot.bagnum = th.bagnum
 		upgrade_slot.bagslot = th.bagslot
 		upgrade_slot.slot = INVSLOT_MAINHAND
@@ -907,9 +1032,11 @@ function Upgrades:ScoreBagsItems()
 	else
 		if mh then
 			local upgrade_slot = Upgrades.UpgradeQueue[INVSLOT_MAINHAND]
+			local comparison = Upgrades:GetUpgradeComparison(INVSLOT_MAINHAND, mh, oh)
 			upgrade_slot.itemlink = mh.itemlink
 			upgrade_slot.score = mh.score
 			upgrade_slot.change = get_upgrade(mh,equipped_weapon_1,oh)
+			upgrade_slot.deltascore = comparison.deltaScore
 			upgrade_slot.bagnum = mh.bagnum
 			upgrade_slot.bagslot = mh.bagslot
 			upgrade_slot.slot = INVSLOT_MAINHAND
@@ -920,9 +1047,11 @@ function Upgrades:ScoreBagsItems()
 		end
 		if oh then
 			local upgrade_slot = Upgrades.UpgradeQueue[INVSLOT_OFFHAND]
+			local comparison = Upgrades:GetUpgradeComparison(INVSLOT_OFFHAND, oh, mh)
 			upgrade_slot.itemlink = oh.itemlink
 			upgrade_slot.score = oh.score
 			upgrade_slot.change = get_upgrade(oh,equipped_weapon_2,mh)
+			upgrade_slot.deltascore = comparison.deltaScore
 			upgrade_slot.bagnum = oh.bagnum
 			upgrade_slot.bagslot = oh.bagslot
 			upgrade_slot.slot = INVSLOT_OFFHAND
@@ -948,7 +1077,7 @@ end
 function Upgrades:ProcessPossibleUpgrades()
 	if ZGV:IsPlayerInCombat() then return end -- nope, no can do, will retry when combat is done
 
-	local process_slot, max_change = nil,0
+	local process_slot, max_delta = nil,0
 	for slot,newitem in pairs(Upgrades.UpgradeQueue) do 
 		if slot==17 and process_slot then ZGV:Debug("&itemscore PPU slot %d: processed, breaking",slot) break end -- don't look at offhands if we have mainhand queued
 
@@ -957,9 +1086,18 @@ function Upgrades:ProcessPossibleUpgrades()
 				process_slot = slot
 				break
 			else
-				if newitem.change and newitem.change>max_change then
-					ZGV:Debug("&itemscore PPU slot %d: considering change %s",slot,newitem.change)
-					max_change = newitem.change
+				local deltaScore = newitem.deltascore
+				if deltaScore == nil then
+					local queueItem = ItemScore:GetItemDetails(newitem.itemlink)
+					if queueItem then
+						deltaScore = select(1, Upgrades:GetUpgradeMetrics(slot, queueItem, newitem.change, newitem.pair))
+						newitem.deltascore = deltaScore
+					end
+				end
+				deltaScore = deltaScore or 0
+				if deltaScore > max_delta then
+					ZGV:Debug("&itemscore PPU slot %d: considering delta %.2f",slot,deltaScore)
+					max_delta = deltaScore
 					process_slot = slot
 				end
 			end
