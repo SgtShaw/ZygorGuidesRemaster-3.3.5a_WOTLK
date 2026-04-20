@@ -164,6 +164,13 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
+### Revision 123 - 3.0.123
+
+- Fixed a Guide Manager embedded-options recursion issue that could cause `C stack overflow` and AceGUI layout failures for some users running other addons with their own AceGUI copies, including reported xCT+ setups.
+- Removed the self-triggering embedded options resize/layout loop from the Guide Manager options pane and replaced it with a single deferred post-open sizing pass.
+- Preserved the existing embedded options behavior without adding any external dependency or requiring `!!!ClassicAPI`.
+- Updated addon version metadata to `3.0.123`.
+
 ### Revision 122 - 3.0.122
 
 - Added broader Wrath 3.3.5a UI compatibility shims for `SetShown`, covering reward recommendation text/texture objects that do not expose newer retail methods on the 12340 client.

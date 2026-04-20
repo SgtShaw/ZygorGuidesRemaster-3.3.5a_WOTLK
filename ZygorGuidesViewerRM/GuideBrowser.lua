@@ -5232,37 +5232,21 @@ local function EnsureGuideManagerStandaloneFrame(self)
 		else
 			local function RefreshOptionsScroll()
 				if not (scroll and scroll.content and frame.optionsContent) then return end
-				if root and root.DoLayout then pcall(function() root:DoLayout() end) end
 				local rootH = (root and root.frame and root.frame.GetHeight and root.frame:GetHeight()) or 0
 				local contentH = (scroll.content and scroll.content.GetHeight and scroll.content:GetHeight()) or 0
 				local targetH = math.max(1, rootH, contentH)
 				if scroll.content.SetHeight and targetH > 0 then
 					scroll.content:SetHeight(targetH)
 				end
-				if scroll.DoLayout then pcall(function() scroll:DoLayout() end) end
 				if scroll.FixScroll then pcall(function() scroll:FixScroll() end) end
 			end
 			RefreshOptionsScroll()
-			if root and root.frame and root.frame.HookScript then
-				root.frame:HookScript("OnSizeChanged", function()
+			if scroll and scroll.content and scroll.content.SetHeight then
+				-- Run one deferred pass after AceConfig finishes its initial layout to avoid
+				-- recursive DoLayout/OnSizeChanged loops with other addons' AceGUI copies.
+				self:ScheduleTimer(function()
 					RefreshOptionsScroll()
-				end)
-			end
-			if scroll and scroll.content and scroll.content.HookScript then
-				scroll.content:HookScript("OnSizeChanged", function()
-					RefreshOptionsScroll()
-				end)
-			end
-			if host and host.frame then
-				host.frame._zgv_opts_scroll_ticks = 0
-				host.frame:SetScript("OnUpdate", function(f)
-					f._zgv_opts_scroll_ticks = (f._zgv_opts_scroll_ticks or 0) + 1
-					RefreshOptionsScroll()
-					if f._zgv_opts_scroll_ticks >= 20 then
-						f._zgv_opts_scroll_ticks = nil
-						f:SetScript("OnUpdate", nil)
-					end
-				end)
+				end, 0)
 			end
 			frame.lastRenderedOptionsApp = targetApp
 		end
