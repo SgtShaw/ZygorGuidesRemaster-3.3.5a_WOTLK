@@ -3,11 +3,27 @@ if not ZGV then return end
 
 local L = ZGV.L
 local G = _G
+local FONT = ZGV.Font or STANDARD_TEXT_FONT
+local FONTBOLD = ZGV.FontBold or STANDARD_TEXT_FONT
 
 local tinsert,tremove,print,ipairs,pairs,wipe=tinsert,tremove,print,ipairs,pairs,wipe
 local Gratuity = LibStub("LibGratuity-3.0")
 
 local ItemScore = ZGV.ItemScore
+
+local function branded_tooltip_header(label)
+	return ("|cffffff88Z|cffffee66y|cffffdd44g|cffffcc22o|cffffbb00r|r %s:"):format(label)
+end
+
+local function round_score(value)
+	if not value then return 0 end
+	if value >= 0 then
+		return math.floor(value * 10 + 0.5) / 10
+	else
+		return math.ceil(value * 10 - 0.5) / 10
+	end
+end
+
 if not ItemScore then return end
 LibStub("AceHook-3.0"):Embed(ItemScore)
 
@@ -22,6 +38,7 @@ ItemScore.Gear_ZygorToPawn = ItemScore.Gear_ZygorToPawn or {}
 
 local ItemCache = {}
 ItemScore.ItemCache = ItemCache
+ItemScore.PendingLootRolls = ItemScore.PendingLootRolls or {}
 
 local locale=GetLocale()
 if locale=="enGB" then locale="enUS" end  -- just in case.
@@ -49,6 +66,217 @@ local function add_stat(stats, statname, value)
 	value = tonumber(value)
 	if not value then return end
 	stats[statname] = (stats[statname] or 0) + value
+end
+
+local function normalize_label(value)
+	if not value then return nil end
+	value = tostring(value):gsub("^%s+", ""):gsub("%s+$", ""):lower()
+	value = value:gsub("%s+", " ")
+	value = value:gsub("%-$", "")
+	return value
+end
+
+local TYPE_CLASS_ALIASES = {
+	armor = LE_ITEM_CLASS_ARMOR,
+	weapon = LE_ITEM_CLASS_WEAPON,
+}
+
+local EQUIPPABLE_INV_TYPES = {
+	INVTYPE_AMMO = true,
+	INVTYPE_HEAD = true,
+	INVTYPE_NECK = true,
+	INVTYPE_SHOULDER = true,
+	INVTYPE_BODY = true,
+	INVTYPE_CHEST = true,
+	INVTYPE_ROBE = true,
+	INVTYPE_WAIST = true,
+	INVTYPE_LEGS = true,
+	INVTYPE_FEET = true,
+	INVTYPE_WRIST = true,
+	INVTYPE_HAND = true,
+	INVTYPE_FINGER = true,
+	INVTYPE_TRINKET = true,
+	INVTYPE_CLOAK = true,
+	INVTYPE_WEAPON = true,
+	INVTYPE_SHIELD = true,
+	INVTYPE_2HWEAPON = true,
+	INVTYPE_WEAPONMAINHAND = true,
+	INVTYPE_WEAPONOFFHAND = true,
+	INVTYPE_HOLDABLE = true,
+	INVTYPE_RANGED = true,
+	INVTYPE_THROWN = true,
+	INVTYPE_RANGEDRIGHT = true,
+	INVTYPE_RELIC = true,
+	TYPE = true,
+}
+
+local FAMILY_ALIASES = {
+	SWORD = {"sword","swords"},
+	TH_SWORD = {"two-handed sword","two-handed swords"},
+	AXE = {"axe","axes"},
+	TH_AXE = {"two-handed axe","two-handed axes"},
+	MACE = {"mace","maces"},
+	TH_MACE = {"two-handed mace","two-handed maces"},
+	TH_STAFF = {"staff","staves"},
+	DAGGER = {"dagger","daggers"},
+	FIST = {"fist weapon","fist weapons"},
+	TH_POLE = {"polearm","polearms"},
+	BOW = {"bow","bows"},
+	GUN = {"gun","guns"},
+	CROSSBOW = {"crossbow","crossbows"},
+	WAND = {"wand","wands"},
+	THROWN = {"thrown"},
+	FISHPOLE = {"fishing pole","fishing poles"},
+	CLOTH = {"cloth"},
+	LEATHER = {"leather"},
+	MAIL = {"mail"},
+	PLATE = {"plate","plate mail"},
+	SHIELD = {"shield","shields"},
+	JEWELERY = {"miscellaneous","misc", "jewelry", "jewellery"},
+}
+
+local canonical_family_lookup
+local function build_canonical_family_lookup()
+	if canonical_family_lookup then return canonical_family_lookup end
+	canonical_family_lookup = {}
+	for family, skillName in pairs(ItemScore.SkillNames or {}) do
+		local normalized = normalize_label(skillName)
+		if normalized then canonical_family_lookup[normalized] = family end
+	end
+	for family, aliases in pairs(FAMILY_ALIASES) do
+		for _, alias in ipairs(aliases) do
+			canonical_family_lookup[normalize_label(alias)] = family
+		end
+	end
+	return canonical_family_lookup
+end
+
+local function resolve_item_class_id(itemType)
+	if not itemType then return nil end
+	local classID = TYPE_CLASS_ALIASES[normalize_label(itemType)]
+	if classID then return classID end
+	local upper = tostring(itemType):upper()
+	if upper == "ARMOR" then return LE_ITEM_CLASS_ARMOR end
+	if upper == "WEAPON" then return LE_ITEM_CLASS_WEAPON end
+	return nil
+end
+
+local function resolve_item_family(itemClassID, itemSubType)
+	if not itemSubType then return nil, nil end
+	local family = build_canonical_family_lookup()[normalize_label(itemSubType)]
+	if not family then return nil, nil end
+	if itemClassID == LE_ITEM_CLASS_ARMOR then
+		for id, name in pairs(ItemScore.Item_Armor_Types or {}) do
+			if name == family then return family, id end
+		end
+	elseif itemClassID == LE_ITEM_CLASS_WEAPON then
+		for id, name in pairs(ItemScore.Item_Weapon_Types or {}) do
+			if name == family then return family, id end
+		end
+	end
+	return family, nil
+end
+
+local function resolve_family_from_equip_loc(itemEquipLoc)
+	if itemEquipLoc == "INVTYPE_SHIELD" then return "SHIELD", 6 end
+	if itemEquipLoc == "INVTYPE_HOLDABLE" then return "OFFHAND", nil end
+	if itemEquipLoc == "INVTYPE_THROWN" then return "THROWN", 16 end
+	if itemEquipLoc == "INVTYPE_RANGED" or itemEquipLoc == "INVTYPE_RANGEDRIGHT" then return "MISCARM", nil end
+	return nil, nil
+end
+
+local function get_item_family(item)
+	if not item then return nil end
+	local equipFamily = resolve_family_from_equip_loc(item.equiploc or item.type)
+	if equipFamily then return equipFamily end
+	if item.family then return item.family end
+	if item.subtype then
+		local normalizedSubtype = normalize_label(item.subtype)
+		if normalizedSubtype then
+			for family, aliases in pairs(FAMILY_ALIASES) do
+				for _, alias in ipairs(aliases) do
+					local normalizedAlias = normalize_label(alias)
+					if normalizedAlias and (normalizedSubtype == normalizedAlias or normalizedSubtype:find(normalizedAlias, 1, true)) then
+						return family
+					end
+				end
+			end
+		end
+		local subtypeFamily = select(1, resolve_item_family(item.class, item.subtype))
+		if subtypeFamily then return subtypeFamily end
+	end
+	if item.class == LE_ITEM_CLASS_ARMOR then
+		return item_armor_types[item.subclass]
+	elseif item.class == LE_ITEM_CLASS_WEAPON then
+		return item_weapon_types[item.subclass]
+	end
+	return nil
+end
+
+local ARMOR_FAMILY_ORDER = {
+	CLOTH = 1,
+	LEATHER = 2,
+	MAIL = 3,
+	PLATE = 4,
+}
+
+local CLASS_MAX_ARMOR_FAMILY = {
+	WARRIOR = "PLATE",
+	PALADIN = "PLATE",
+	DEATHKNIGHT = "PLATE",
+	HUNTER = "MAIL",
+	SHAMAN = "MAIL",
+	ROGUE = "LEATHER",
+	DRUID = "LEATHER",
+	MAGE = "CLOTH",
+	WARLOCK = "CLOTH",
+	PRIEST = "CLOTH",
+}
+
+local SHIELD_CLASSES = {
+	WARRIOR = true,
+	PALADIN = true,
+	SHAMAN = true,
+}
+
+local function class_can_use_standard_family(classToken, family, level)
+	if not classToken or not family then return nil end
+	if family == "SHIELD" then
+		return SHIELD_CLASSES[classToken] and true or false
+	end
+	local wantedRank = ARMOR_FAMILY_ORDER[family]
+	if not wantedRank then return nil end
+	local maxFamily = CLASS_MAX_ARMOR_FAMILY[classToken]
+	local maxRank = maxFamily and ARMOR_FAMILY_ORDER[maxFamily]
+	if not maxRank then return false end
+	if family == "MAIL" and (classToken == "HUNTER" or classToken == "SHAMAN") and (tonumber(level) or 0) < 40 then
+		return false
+	end
+	if family == "PLATE" and classToken ~= "DEATHKNIGHT" and (tonumber(level) or 0) < 40 then
+		return false
+	end
+	return wantedRank <= maxRank
+end
+
+local function get_item_slot_info(item)
+	if not item or not item.type or item.type == "" then
+		return nil, nil, false, false, "not equipment"
+	end
+	if not EQUIPPABLE_INV_TYPES[item.type] then
+		return nil, nil, false, false, "unsupported slot"
+	end
+	local slot_1, slot_2, twohander = ItemScore:GetValidSlots(item)
+	if not slot_1 then
+		return nil, nil, false, false, "unsupported slot"
+	end
+	return slot_1, slot_2, twohander or false, true, "ok"
+end
+
+local function clamp_display_percent(percent)
+	if not percent then return nil end
+	if percent >= 100 then return 99.99 end
+	if percent <= -100 then return -99.99 end
+	return percent
 end
 
 local function get_class_tag(classRef)
@@ -92,6 +320,9 @@ function ItemScore:Initialise()
 		:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
 		:RegisterEvent("BAG_UPDATE_DELAYED")
 		:RegisterEvent("GET_ITEM_INFO_RECEIVED")
+		:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED")
+		:RegisterEvent("START_LOOT_ROLL")
+		:RegisterEvent("CANCEL_LOOT_ROLL")
 
 		:RegisterEvent("PLAYER_REGEN_DISABLED")
 		:RegisterEvent("PLAYER_REGEN_ENABLED")
@@ -159,9 +390,15 @@ function ItemScore:DetectActiveBuild(classToken, level)
 	if not classToken or (level and level < 10) then
 		return fallbackBuild, true
 	end
+	local activeTalentGroup = GetActiveTalentGroup and GetActiveTalentGroup(false, false) or nil
 	local bestTree, bestPoints, totalPoints = fallbackBuild, 0, 0
 	for i = 1, GetNumTalentTabs() do
-		local _, _, pointsSpent = GetTalentTabInfo(i)
+		local _, _, pointsSpent
+		if activeTalentGroup then
+			_, _, pointsSpent = GetTalentTabInfo(i, false, false, activeTalentGroup)
+		else
+			_, _, pointsSpent = GetTalentTabInfo(i)
+		end
 		pointsSpent = pointsSpent or 0
 		totalPoints = totalPoints + pointsSpent
 		if pointsSpent > bestPoints then
@@ -212,6 +449,254 @@ function ItemScore:GetRuleSourceLabel(classRef, buildNum)
 	return meta.label or "Curated baseline"
 end
 
+local function copy_simple_table(source)
+	local out = {}
+	if not source then return out end
+	for k, v in pairs(source) do out[k] = v end
+	return out
+end
+
+function ItemScore:BuildRuleContext(classToken, buildNum, level)
+	local resolvedBuild, usesFallback = self:GetResolvedBuild(classToken, level, buildNum)
+	local rules = self.rules and self.rules[classToken] and self.rules[classToken][resolvedBuild]
+	if not rules then return nil end
+
+	local context = {
+		classToken = classToken,
+		buildNum = resolvedBuild,
+		usesFallback = usesFallback,
+		playerlevel = level,
+		playerclassName = self.playerclassName,
+		playerclass = self.playerclass,
+		playerspecName = self:GetBuildName(classToken, resolvedBuild, level, usesFallback),
+		ActiveRuleSet = {
+			itemtypes = copy_simple_table(rules.itemtypes),
+			stats = copy_simple_table(rules.stats),
+			caps = copy_simple_table(rules.caps),
+		},
+	}
+
+	local saved_vars_prefix = "gear_"..classToken.."_"..tostring(resolvedBuild).."_"
+	for _, stat in pairs(self.Keywords or {}) do
+		if ZGV.db.profile[saved_vars_prefix..(stat.blizz)] then
+			context.ActiveRuleSet.stats[stat.blizz] = tonumber(ZGV.db.profile[saved_vars_prefix..(stat.blizz)] or 0)
+		end
+	end
+
+	local lowestPositive
+	for _, weight in pairs(context.ActiveRuleSet.stats) do
+		if weight and weight > 0 then
+			if not lowestPositive or weight < lowestPositive then
+				lowestPositive = weight
+			end
+		end
+	end
+	context.whiteScoreWeight = (lowestPositive or 1) * 0.1
+	return context
+end
+
+function ItemScore:GetItemScoreForContext(itemlink, context)
+	local item = ItemScore:GetItemDetails(itemlink)
+	if not item then return -1, false, "no info yet" end
+	if not context or not context.ActiveRuleSet then return -1, false, "no context" end
+
+	local stats = item.stats
+	local score = 0
+	local statweights = context.ActiveRuleSet.stats
+	local caps = context.ActiveRuleSet.caps
+
+	for statname, statvalue in pairs(stats) do
+		statname = ItemScore:NormaliseStatName(statname)
+		local statweight = statweights[statname] or 0
+		if caps and caps[statname] then
+			local current_rating = ItemScore:GetEquippedStatValue(statname)
+			if (current_rating > caps[statname]) or context.playerlevel < GetMaxPlayerLevel() then
+				statweight = statweight / 2
+			end
+		end
+		score = score + statvalue * statweight
+	end
+
+	if not statweights.ARMOR then
+		score = score + (item.stats.ARMOR or 0) * context.whiteScoreWeight
+	end
+	if not statweights.DAMAGE_PER_SECOND then
+		score = score + (item.stats.DAMAGE_PER_SECOND or 0) * context.whiteScoreWeight
+	end
+
+	if item.class == LE_ITEM_CLASS_ARMOR and item.type ~= "INVTYPE_CLOAK" then
+		local types = context.ActiveRuleSet.itemtypes
+		local subclass = get_item_family(item)
+		local limit = types[subclass] or 0
+		if limit < 0 then
+			if context.playerlevel >= (-limit + 10) then
+				score = score * 0.5
+			elseif context.playerlevel >= -limit then
+				score = score * 0.9
+			end
+		end
+	end
+
+	return score, true, "scored ok"
+end
+
+function ItemScore:GetItemValidityForContext(itemlink, future, context)
+	if not context then return {valid = false, final = false, reason = "No context", code = "missing_context"} end
+	local item = ItemScore:GetItemDetails(itemlink)
+	if not item then return {valid = false, final = false, reason = "No info", code = "missing_info"} end
+
+	local slot_1, slot_2, twohander, equippable, slotReason = get_item_slot_info(item)
+	if not equippable then
+		return {valid = false, final = true, reason = slotReason or "not equipment", code = "slot", item = item}
+	end
+
+	if item.playerclass then
+		local validclass = false
+		for _, v in pairs(ZGV.ExplodeString(", ", item.playerclass)) do
+			if v == context.playerclassName then
+				validclass = true
+				break
+			end
+		end
+		if not validclass then
+			return {valid = false, final = true, reason = "wrong class", code = "class", item = item, slot = slot_1, slot_2 = slot_2, twohander = twohander}
+		end
+	end
+
+	if item.playerspec and item.playerspec ~= context.playerspecName then
+		return {valid = false, final = true, reason = "wrong spec", code = "spec", item = item, slot = slot_1, slot_2 = slot_2, twohander = twohander}
+	end
+
+	if not future and item.minlevel and item.minlevel > context.playerlevel then
+		return {valid = false, final = true, reason = ("required level %d to equip"):format(item.minlevel), code = "level", item = item, slot = slot_1, slot_2 = slot_2, twohander = twohander}
+	end
+
+	if item.equiploc == "INVTYPE_SHIELD" and context.ActiveRuleSet and context.ActiveRuleSet.itemtypes and context.ActiveRuleSet.itemtypes.SHIELD == nil then
+		return {
+			valid = false,
+			final = true,
+			reason = "unsupported item type",
+			code = "shield",
+			item = item,
+			slot = slot_1,
+			slot_2 = slot_2,
+			twohander = twohander,
+		}
+	end
+
+	local fallbackFamily = get_item_family(item)
+	local standardFamilyAllowed = class_can_use_standard_family(context.classToken or context.playerclass, fallbackFamily, context.playerlevel)
+	if standardFamilyAllowed == false then
+		return {
+			valid = false,
+			final = true,
+			reason = "unsupported item type",
+			code = "class_family",
+			item = item,
+			slot = slot_1,
+			slot_2 = slot_2,
+			twohander = twohander,
+		}
+	end
+
+	if fallbackFamily and context.ActiveRuleSet and context.ActiveRuleSet.itemtypes then
+		local useable_since_level = context.ActiveRuleSet.itemtypes[fallbackFamily] or (item.type == "INVTYPE_CLOAK" and 1)
+		if useable_since_level == nil and fallbackFamily ~= "JEWELERY" and fallbackFamily ~= "COSMETIC" then
+			return {
+				valid = false,
+				final = true,
+				reason = "unsupported item type",
+				code = "family",
+				item = item,
+				slot = slot_1,
+				slot_2 = slot_2,
+				twohander = twohander,
+			}
+		end
+		if useable_since_level and not future and useable_since_level > 0 and context.playerlevel < useable_since_level then
+			return {valid = false, final = true, reason = ("required level %d to use"):format(useable_since_level), code = "fallback_level", item = item, slot = slot_1, slot_2 = slot_2, twohander = twohander}
+		end
+	end
+
+	return {valid = true, final = true, reason = "ok", code = "ok", item = item, slot = slot_1, slot_2 = slot_2, twohander = twohander, family = fallbackFamily}
+end
+
+local function context_has_non_armor_stats(item)
+	if not item or not item.stats then return false end
+	for statname, value in pairs(item.stats) do
+		if value and value ~= 0 then
+			local normalized = ItemScore:NormaliseStatName(statname)
+			if normalized ~= "ARMOR" then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+local function context_get_normalized_stat_value(item, statname)
+	if not item or not item.stats then return 0 end
+	local total = 0
+	for key, value in pairs(item.stats) do
+		if ItemScore:NormaliseStatName(key) == statname then
+			total = total + (tonumber(value) or 0)
+		end
+	end
+	return total
+end
+
+function ItemScore:GetUpgradeComparisonForContext(slot, newitem, context, secondnewitem)
+	local candidateScore = newitem and (select(1, self:GetItemScoreForContext(newitem.itemlink, context)) or 0) or 0
+	local baselineScore = 0
+	local currentLink = GetInventoryItemLink("player", slot)
+	local current = currentLink and ItemScore:GetItemDetails(currentLink)
+	local hasBaselineItem = currentLink and true or false
+	if currentLink then
+		baselineScore = select(1, self:GetItemScoreForContext(currentLink, context)) or 0
+	end
+
+	if secondnewitem and (slot == INVSLOT_MAINHAND or slot == INVSLOT_OFFHAND) then
+		candidateScore = candidateScore + (select(1, self:GetItemScoreForContext(secondnewitem.itemlink, context)) or 0)
+		local mh = GetInventoryItemLink("player", INVSLOT_MAINHAND)
+		local oh = GetInventoryItemLink("player", INVSLOT_OFFHAND)
+		hasBaselineItem = (mh and true) or (oh and true) or false
+		baselineScore = (mh and (select(1, self:GetItemScoreForContext(mh, context)) or 0) or 0) + (oh and (select(1, self:GetItemScoreForContext(oh, context)) or 0) or 0)
+	end
+
+	local armorFallback = false
+	if newitem and newitem.class == LE_ITEM_CLASS_ARMOR and newitem.type ~= "INVTYPE_CLOAK" then
+		local candidateHasStats = context_has_non_armor_stats(newitem)
+		local currentIsArmor = current and current.class == LE_ITEM_CLASS_ARMOR
+		local currentHasStats = current and context_has_non_armor_stats(current)
+		if not candidateHasStats and (not current or (currentIsArmor and not currentHasStats)) then
+			candidateScore = context_get_normalized_stat_value(newitem, "ARMOR")
+			baselineScore = current and context_get_normalized_stat_value(current, "ARMOR") or 0
+			armorFallback = true
+		end
+	end
+
+	local deltaScore = candidateScore - baselineScore
+	local isNewItem = not hasBaselineItem
+	local percent = (not isNewItem and baselineScore and baselineScore > 0) and ((candidateScore * 100 / baselineScore) - 100) or nil
+	local state = "sidegrade"
+	if isNewItem then
+		state = "new"
+	elseif deltaScore > 0 then
+		state = armorFallback and "armor_upgrade" or "upgrade"
+	elseif deltaScore < 0 then
+		state = "downgrade"
+	end
+	return {
+		candidateScore = candidateScore,
+		baselineScore = baselineScore,
+		deltaScore = deltaScore,
+		percent = percent,
+		isNewItem = isNewItem,
+		state = state,
+		armorFallback = armorFallback,
+	}
+end
+
 function ItemScore:EnsureSelectedWeightTarget(forceReset)
 	local classToken = self.playerclass or (select(2, UnitClass("player")))
 	local classNum = self.playerclassNum or (classToken and ZGV.ClassToNumber and ZGV.ClassToNumber[classToken]) or 1
@@ -240,7 +725,7 @@ function ItemScore:EnsureSelectedWeightTarget(forceReset)
 end
 
 function ItemScore:OnEvent(event,arg1,arg2,...)
-	if event == "PLAYER_LEVEL_UP" or event == "CHARACTER_POINTS_CHANGED" then
+	if event == "PLAYER_LEVEL_UP" or event == "CHARACTER_POINTS_CHANGED" or event == "ACTIVE_TALENT_GROUP_CHANGED" then
 		-- using timer as delay, since in the same frame PLAYER_LEVEL_UP player is still on previous level
 		-- and to run it only once, as both PLU and PSC can fire more than once
 		ItemScore:DelayedRefreshUserData()
@@ -250,21 +735,199 @@ function ItemScore:OnEvent(event,arg1,arg2,...)
 		ItemScore.EquipTimer = ItemScore.EquipTimer or ZGV:ScheduleTimer(function() 
 			ItemScore.Upgrades:ScoreEquippedItems()
 		end,0.5)
-	elseif event == "PLAYER_EQUIPMENT_CHANGED" or event == "BAG_UPDATE_DELAYED" -- bags or equipment changed, see what upgrades we have
+	elseif event == "BAG_UPDATE_DELAYED" then -- optimize bag-only changes by checking newly acquired items first
+		ItemScore.EquipTimer = ItemScore.EquipTimer or ZGV:ScheduleTimer(function()
+			ItemScore.EquipTimer = nil
+			ItemScore.Upgrades:ScanRecentBagAcquisitions()
+		end,0.25)
+	elseif event == "PLAYER_EQUIPMENT_CHANGED"
 		or event=="ZGV_STEP_FINALISED"  or event=="LIBROVER_TRAVEL_REPORTED" or event=="GET_ITEM_INFO_RECEIVED" -- step finished loading, or travel route updated, see if we have useless quest equip or portkey
 		then 
 		-- on timer to run it only once, since equip/unequip fires both events, and we would get spammed
 		ItemScore.EquipTimer = ItemScore.EquipTimer or ZGV:ScheduleTimer(function() 
+			ItemScore.EquipTimer = nil
 			ItemScore.Upgrades:ScoreEquippedItems()
 		end,0.5)
 	elseif event == "PLAYER_REGEN_DISABLED" then -- combat started, kill all upgrade popups
 		if ItemScore.Upgrades.EquipPopup then ItemScore.Upgrades.EquipPopup:Hide() end
 	elseif event == "PLAYER_REGEN_ENABLED" then -- combat ended, check if anything is waiting for equip
 		ItemScore.Upgrades:ProcessPossibleUpgrades()
+	elseif event == "START_LOOT_ROLL" then
+		ItemScore:QueueLootRollMarker(arg1)
+	elseif event == "CANCEL_LOOT_ROLL" then
+		ItemScore:HideLootRollMarker(arg1)
 	end
 
 	if event == "PLAYER_EQUIPMENT_CHANGED" then
 		ItemScore.GearFinder:ClearResults()
+	end
+	if event == "GET_ITEM_INFO_RECEIVED" then
+		for rollID in pairs(ItemScore.PendingLootRolls) do
+			ItemScore:RefreshLootRollMarker(rollID)
+		end
+	end
+end
+
+function ItemScore:GetLootRollFrame(rollID)
+	for i = 1, (NUM_GROUP_LOOT_FRAMES or 4) do
+		local frame = _G["GroupLootFrame"..i]
+		if frame and frame.rollID == rollID then
+			return frame
+		end
+	end
+end
+
+function ItemScore:GetLootRollAnchor(frame)
+	if not frame then return end
+	local name = frame.GetName and frame:GetName()
+	return frame.IconFrame
+		or frame.Icon
+		or (name and _G[name.."IconFrame"])
+		or (name and _G[name.."Icon"])
+		or frame
+end
+
+function ItemScore:GetOrCreateLootRollMarker(frame)
+	if not frame then return end
+	if frame.ZGVRollMarker then return frame.ZGVRollMarker end
+
+	local anchor = self:GetLootRollAnchor(frame) or frame
+	local marker = CreateFrame("Frame", nil, frame)
+	marker:SetFrameStrata("TOOLTIP")
+	marker:SetFrameLevel((frame:GetFrameLevel() or 1) + 20)
+	marker:SetSize(16, 16)
+	marker:Hide()
+
+	marker.glow = marker:CreateTexture(nil, "ARTWORK")
+	marker.glow:SetTexture("Interface\\Buttons\\UI-ActionButton-Border")
+	marker.glow:SetBlendMode("ADD")
+	marker.glow:SetVertexColor(1, 1, 1, 0.35)
+	marker.glow:SetPoint("CENTER", marker, "CENTER", 0, 0)
+	marker.glow:SetSize(24, 24)
+
+	marker.symbol = marker:CreateFontString(nil, "OVERLAY")
+	marker.symbol:SetFont(FONTBOLD, 14, "OUTLINE")
+	marker.symbol:SetAllPoints(marker)
+	marker.symbol:SetJustifyH("CENTER")
+	marker.symbol:SetJustifyV("MIDDLE")
+
+	marker:SetPoint("TOPRIGHT", anchor, "TOPRIGHT", -2, -2)
+	frame.ZGVRollMarker = marker
+	return marker
+end
+
+function ItemScore:HideLootRollMarker(rollID)
+	self.PendingLootRolls[rollID] = nil
+	local frame = self:GetLootRollFrame(rollID)
+	if frame and frame.ZGVRollMarker then
+		frame.ZGVRollMarker:Hide()
+	end
+end
+
+function ItemScore:GetLootRollComparison(itemlink, item, validity)
+	if not (self.Upgrades and item and validity and validity.valid) then return nil end
+	local stripped = strip_link(itemlink) or itemlink
+
+	if item.class == LE_ITEM_CLASS_WEAPON then
+		self.Upgrades:ResetWeaponQueue("onlytemp")
+		if self.Upgrades:QueueWeapon(stripped) then
+			local mh, oh, th = self.Upgrades:ProcessWeaponQueue()
+			if th and th.itemlink == stripped then
+				return self.Upgrades:GetUpgradeComparison(INVSLOT_MAINHAND, th)
+			elseif mh and mh.itemlink == stripped then
+				return self.Upgrades:GetUpgradeComparison(INVSLOT_MAINHAND, mh, oh)
+			elseif oh and oh.itemlink == stripped then
+				return self.Upgrades:GetUpgradeComparison(INVSLOT_OFFHAND, oh, mh)
+			end
+		end
+	end
+
+	local bestComparison
+	local slot_1, slot_2 = validity.slot or item.slot, validity.slot_2 or item.slot_2
+	if slot_1 then
+		bestComparison = self.Upgrades:GetUpgradeComparison(slot_1, item)
+	end
+	if slot_2 then
+		local secondComparison = self.Upgrades:GetUpgradeComparison(slot_2, item)
+		if secondComparison and (not bestComparison or (secondComparison.deltaScore or 0) > (bestComparison.deltaScore or 0)) then
+			bestComparison = secondComparison
+		end
+	end
+	return bestComparison
+end
+
+function ItemScore:RefreshLootRollMarker(rollID, attempt)
+	attempt = attempt or 0
+	if not (ZGV.db and ZGV.db.profile and ZGV.db.profile.autogear) then
+		return self:HideLootRollMarker(rollID)
+	end
+
+	local frame = self:GetLootRollFrame(rollID)
+	if not frame then return false end
+
+	local itemlink = GetLootRollItemLink and GetLootRollItemLink(rollID)
+	if not itemlink then return false end
+
+	local item = self:GetItemDetails(itemlink)
+	if not item then item = self:GetItemDetailsQueued(itemlink, true) end
+	if not item then
+		if attempt < 10 and ZGV.ScheduleTimer then
+			self.PendingLootRolls[rollID] = true
+			ZGV:ScheduleTimer(function() ItemScore:RefreshLootRollMarker(rollID, attempt + 1) end, 0.2)
+		end
+		return false
+	end
+
+	local marker = self:GetOrCreateLootRollMarker(frame)
+	if not marker then return false end
+
+	local validity = self:GetItemValidity(itemlink)
+	if not validity.final then
+		marker:Hide()
+		if attempt < 10 and ZGV.ScheduleTimer then
+			self.PendingLootRolls[rollID] = true
+			ZGV:ScheduleTimer(function() ItemScore:RefreshLootRollMarker(rollID, attempt + 1) end, 0.2)
+		end
+		return false
+	end
+
+	if not validity.valid then
+		marker.symbol:SetText("x")
+		marker.symbol:SetTextColor(1.0, 0.10, 0.10)
+		marker:Show()
+		self.PendingLootRolls[rollID] = nil
+		return true
+	end
+
+	local comparison = self:GetLootRollComparison(itemlink, item, validity)
+	if not comparison then
+		marker:Hide()
+		self.PendingLootRolls[rollID] = nil
+		return true
+	end
+
+	if comparison.isNewItem or (comparison.deltaScore or 0) > 0 or (comparison.armorFallback and (comparison.deltaScore or 0) > 0) then
+		marker.symbol:SetText("+")
+		marker.symbol:SetTextColor(0.20, 1.00, 0.20)
+		marker:Show()
+	elseif (comparison.deltaScore or 0) < 0 then
+		marker.symbol:SetText("-")
+		marker.symbol:SetTextColor(1.00, 0.25, 0.25)
+		marker:Show()
+	else
+		marker:Hide()
+	end
+
+	self.PendingLootRolls[rollID] = nil
+	return true
+end
+
+function ItemScore:QueueLootRollMarker(rollID)
+	if not rollID then return end
+	self.PendingLootRolls[rollID] = true
+	self:RefreshLootRollMarker(rollID, 0)
+	if ZGV.ScheduleTimer then
+		ZGV:ScheduleTimer(function() ItemScore:RefreshLootRollMarker(rollID, 1) end, 0.05)
 	end
 end
 
@@ -294,9 +957,7 @@ function ItemScore:SetStatWeights(playerclass,playerspec,playerlevel)
 	self.playeristank = self.playerclass=="DRUID" or self.playerclass=="PALADIN" or self.playerclass=="WARRIOR" or self.playerclass=="DEATHKNIGHT"
 	self.playerishealer = self.playerclass=="DRUID" or self.playerclass=="SHAMAN" or self.playerclass=="PRIEST" or self.playerclass=="PALADIN"
 	local detectedBuild, usingFallbackBuild = self:DetectActiveBuild(self.playerclass, self.playerlevel)
-	if usingFallbackBuild or not ZGV.db.char.gear_active_build then
-		ZGV.db.char.gear_active_build = detectedBuild
-	end
+	ZGV.db.char.gear_active_build = detectedBuild
 	ZGV.db.char.gear_active_build = self:GetResolvedBuild(self.playerclass, self.playerlevel, ZGV.db.char.gear_active_build)
 	if usingFallbackBuild or not ZGV.db.char.gear_selected_build then
 		ZGV.db.char.gear_selected_build = ZGV.db.char.gear_active_build
@@ -418,52 +1079,13 @@ function ItemScore:GetItemDetailsQueued(itemlink,force)
 		-- that is a new one
 		local itemName, itemLink2, itemRarity, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount, itemEquipLoc, texture = ZGV:GetItemInfo(itemlink)
 		local itemlvl = itemLevel
-		-- 3.3.5a: GetItemInfo doesn't return classID/subclassID numerically
-		-- Map the string type/subtype to numeric IDs used by LE_ITEM_CLASS constants
-		local itemClassID, itemSubClassID
-		if itemType then
-			-- Map item type strings to class IDs
-			local typeMap = {
-				[ARMOR or "Armor"] = LE_ITEM_CLASS_ARMOR,  -- 4
-				[WEAPON or "Weapon"] = LE_ITEM_CLASS_WEAPON, -- 2
-			}
-			-- Try localized name first, then English fallback
-			itemClassID = typeMap[itemType]
-			if not itemClassID then
-				-- Check common English names as fallback
-				local typeUpper = itemType:upper()
-				if typeUpper == "ARMOR" then itemClassID = LE_ITEM_CLASS_ARMOR
-				elseif typeUpper == "WEAPON" then itemClassID = LE_ITEM_CLASS_WEAPON
-				end
-			end
-
-			-- Map armor subtypes to numeric IDs matching Item_Armor_Types table
-			if itemClassID == LE_ITEM_CLASS_ARMOR then
-				local armorMap = {}
-				for id, name in pairs(ItemScore.Item_Armor_Types) do
-					local skillName = ItemScore.SkillNames[name]
-					if skillName then armorMap[skillName] = id end
-				end
-				-- Also add English fallbacks
-				armorMap["Cloth"] = 1  armorMap["Leather"] = 2  armorMap["Mail"] = 3  armorMap["Plate"] = 4
-				armorMap["Shields"] = 6  armorMap["Shield"] = 6
-				-- Misc armor (rings, trinkets, necklaces) has subtype "Miscellaneous" or similar
-				itemSubClassID = armorMap[itemSubType] or 0
-			elseif itemClassID == LE_ITEM_CLASS_WEAPON then
-				local weaponMap = {}
-				for id, name in pairs(ItemScore.Item_Weapon_Types) do
-					local skillName = ItemScore.SkillNames[name]
-					if skillName then weaponMap[skillName] = id end
-				end
-				-- English fallbacks for common weapon types
-				weaponMap["Swords"] = 7  weaponMap["Axes"] = 0  weaponMap["Maces"] = 4
-				weaponMap["Staves"] = 10  weaponMap["Daggers"] = 15  weaponMap["Fist Weapons"] = 13
-				weaponMap["Polearms"] = 6  weaponMap["Bows"] = 2  weaponMap["Guns"] = 3
-				weaponMap["Crossbows"] = 18  weaponMap["Wands"] = 19  weaponMap["Thrown"] = 16
-				weaponMap["Two-Handed Swords"] = 8  weaponMap["Two-Handed Axes"] = 1
-				weaponMap["Two-Handed Maces"] = 5  weaponMap["Fishing Poles"] = 20
-				weaponMap["Fishing Pole"] = 20  weaponMap["Miscellaneous"] = 14
-				itemSubClassID = weaponMap[itemSubType] or 0
+		local itemClassID = resolve_item_class_id(itemType)
+		local itemFamily, itemSubClassID = resolve_item_family(itemClassID, itemSubType)
+		if not itemFamily then
+			local equipFamily, equipSubClassID = resolve_family_from_equip_loc(itemEquipLoc)
+			if equipFamily then
+				itemFamily = equipFamily
+				itemSubClassID = itemSubClassID or equipSubClassID
 			end
 		end
 		if not itemName then return false end
@@ -476,6 +1098,9 @@ function ItemScore:GetItemDetailsQueued(itemlink,force)
 				itemlinkfull = itemlinkfull,
 				class = itemClassID,
 				subclass = itemSubClassID,
+				family = itemFamily,
+				subtype = itemSubType,
+				equiploc = itemEquipLoc,
 				quality = itemRarity,
 				validated = false,
 				texture = texture,
@@ -581,8 +1206,11 @@ function ItemScore:GetItemDetailsQueued(itemlink,force)
 			itemlinkfull = itemlinkfull,
 			minlevel = itemMinLevel,
 			type = itemEquipLoc,
+			equiploc = itemEquipLoc,
 			class = itemClassID,
 			subclass = itemSubClassID,
+			family = itemFamily,
+			subtype = itemSubType,
 			quality = itemRarity,
 			validated = false,
 			texture = texture,
@@ -594,7 +1222,7 @@ function ItemScore:GetItemDetailsQueued(itemlink,force)
 		if ItemScore.SaveTooltip then ItemCache[itemlink].tooltip = tooltip end
 
 
-		local slot_1, slot_2, twohander = ItemScore:GetValidSlots(ItemCache[itemlink])
+		local slot_1, slot_2, twohander = get_item_slot_info(ItemCache[itemlink])
 		ItemCache[itemlink].slot = slot_1
 		ItemCache[itemlink].slot_2 = slot_2
 		ItemCache[itemlink].twohander = twohander
@@ -663,7 +1291,7 @@ function ItemScore:GetItemScore(itemlink,verbose)
 	if item.class == LE_ITEM_CLASS_ARMOR and item.type~="INVTYPE_CLOAK" then
 		if verbose then table.insert(verbose,("  ? |cff00ff00Is armor|r"))  end 
 		local types = self.ActiveRuleSet.itemtypes
-		local subclass = item_armor_types[item.subclass]
+		local subclass = get_item_family(item)
 		local limit = types[subclass] or 0
 		if verbose then table.insert(verbose,("  ? |cff00ff00limit "..limit.." level "..self.playerlevel.."|r"))  end 
 		-- if limit is below 0, item is good only till given level, with 10 level grace
@@ -723,6 +1351,144 @@ function ItemScore:GetHeirloomInfo(itemlink)
 	return self.playerlevel < max_level, max_level
 end
 
+function ItemScore:GetItemValidity(itemlink, future)
+	if not itemlink then
+		return {valid = false, final = false, reason = "No itemlink", code = "missing_link"}
+	end
+
+	local item = ItemScore:GetItemDetails(itemlink)
+	if not item then
+		return {valid = false, final = false, reason = "No info", code = "missing_info"}
+	end
+
+	local slot_1, slot_2, twohander, equippable, slotReason = get_item_slot_info(item)
+	if not equippable then
+		return {
+			valid = false,
+			final = true,
+			reason = slotReason or "not equipment",
+			code = "slot",
+			item = item,
+		}
+	end
+
+	if item.playerclass then
+		local validclass = false
+		for _, v in pairs(ZGV.ExplodeString(", ", item.playerclass)) do
+			if v == self.playerclassName then
+				validclass = true
+				break
+			end
+		end
+		if not validclass then
+			return {
+				valid = false,
+				final = true,
+				reason = "wrong class",
+				code = "class",
+				item = item,
+				slot = slot_1,
+				slot_2 = slot_2,
+				twohander = twohander,
+			}
+		end
+	end
+
+	if item.playerspec and item.playerspec ~= self.playerspecName then
+		return {
+			valid = false,
+			final = true,
+			reason = "wrong spec",
+			code = "spec",
+			item = item,
+			slot = slot_1,
+			slot_2 = slot_2,
+			twohander = twohander,
+		}
+	end
+
+	if not future and item.minlevel and item.minlevel > self.playerlevel then
+		return {
+			valid = false,
+			final = true,
+			reason = ("required level %d to equip"):format(item.minlevel),
+			code = "level",
+			item = item,
+			slot = slot_1,
+			slot_2 = slot_2,
+			twohander = twohander,
+		}
+	end
+
+	if item.equiploc == "INVTYPE_SHIELD" and self.ActiveRuleSet and self.ActiveRuleSet.itemtypes and self.ActiveRuleSet.itemtypes.SHIELD == nil then
+		return {
+			valid = false,
+			final = true,
+			reason = "unsupported item type",
+			code = "shield",
+			item = item,
+			slot = slot_1,
+			slot_2 = slot_2,
+			twohander = twohander,
+		}
+	end
+
+	local fallbackFamily = get_item_family(item)
+	local standardFamilyAllowed = class_can_use_standard_family(self.playerclass, fallbackFamily, self.playerlevel)
+	if standardFamilyAllowed == false then
+		return {
+			valid = false,
+			final = true,
+			reason = "unsupported item type",
+			code = "class_family",
+			item = item,
+			slot = slot_1,
+			slot_2 = slot_2,
+			twohander = twohander,
+		}
+	end
+
+	if fallbackFamily and self.ActiveRuleSet and self.ActiveRuleSet.itemtypes then
+		local useable_since_level = self.ActiveRuleSet.itemtypes[fallbackFamily] or (item.type=="INVTYPE_CLOAK" and 1)
+		if useable_since_level == nil and fallbackFamily ~= "JEWELERY" and fallbackFamily ~= "COSMETIC" then
+			return {
+				valid = false,
+				final = true,
+				reason = "unsupported item type",
+				code = "family",
+				item = item,
+				slot = slot_1,
+				slot_2 = slot_2,
+				twohander = twohander,
+			}
+		end
+		if useable_since_level and not future and useable_since_level > 0 and self.playerlevel < useable_since_level then
+			return {
+				valid = false,
+				final = true,
+				reason = ("required level %d to use"):format(useable_since_level),
+				code = "fallback_level",
+				item = item,
+				slot = slot_1,
+				slot_2 = slot_2,
+				twohander = twohander,
+			}
+		end
+	end
+
+	return {
+		valid = true,
+		final = true,
+		reason = "ok",
+		code = "ok",
+		item = item,
+		slot = slot_1,
+		slot_2 = slot_2,
+		twohander = twohander,
+		family = fallbackFamily,
+	}
+end
+
 
 -- checks if item can be equipped by player at the moment. result is cached
 -- params:
@@ -738,95 +1504,14 @@ function ItemScore:IsValidItem(itemlink, future)
 	local item = ItemScore:GetItemDetails(itemlink)
 	if not item then return false, false, "No info" end
 
-	if item.validated then return item.valid, true, item.validstatus end
-
-	if not item.slot then 
-		item.validated = true
-		item.valid = false
-		item.validstatus = "not equipment "..tostring(item.class).." "..tostring(item.subclass)
-		return false, true, item.validstatus
-	end
-
-	local types = self.ActiveRuleSet.itemtypes
-	if not types then return false, false, "No info" end
-
-	-- is something that can be equipped
-	local subclass
-	if item.class == LE_ITEM_CLASS_ARMOR then
-		subclass = item_armor_types[item.subclass]
-	elseif item.class == LE_ITEM_CLASS_WEAPON then
-		subclass = item_weapon_types[item.subclass]
-	else
-		item.validated = true
-		item.valid = false
-		item.validstatus = "not equipment"
-		return false, true, "not equipment"
-	end
-
-	-- can equip at current level, cloaks are cloth, but valid for all classes
-	local useble_since_level = types[subclass] or (item.type=="INVTYPE_CLOAK" and 1)
-
-	if not useble_since_level then
-		item.validated = true
-		item.valid = false
-		item.validstatus = ("%s is not valid for %s %s"):format(subclass,self.playerclassName,self.playerspecName or "")
-		return false, true, item.validstatus
-	elseif not future and self.playerlevel < useble_since_level then
-		item.validated = true
-		item.valid = false
-		item.validstatus = ("required level %d to use"):format(useble_since_level)
-		return false, true, item.validstatus
-	end
-
-	-- 3.3.5a: armor proficiency is already modeled by class/level itemtype rules above.
-	-- Skill-line caches are unreliable for early armor classes on this client, so only
-	-- enforce explicit skill proficiency for weapons and non-armor equip classes here.
-	if item.class ~= LE_ITEM_CLASS_ARMOR and (subclass~="JEWELERY") and (ItemScore.Skills[subclass] or 0) == 0 then
-		item.validated = true
-		item.valid = false
-		item.validstatus = "no skill "..subclass
-		return false, true, item.validstatus
-	end
-	
-	-- player class
-	if item.playerclass then
-		local validclass=false
-	        for i,v in pairs(ZGV.ExplodeString(", ",item.playerclass)) do
-			if v==self.playerclassName then
-				validclass=true
-				break
-			end
-		end
-
-		if not validclass then
-			item.validated = true
-			item.valid = false
-			item.validstatus = "wrong class"
-			return false, true, item.validstatus
-		end
-	end
-
-	-- player spec
-	if item.playerspec and item.playerspec ~= self.playerspecName then
-		item.validated = true
-		item.valid = false
-		item.validstatus = "wrong spec"
-		return false, true, item.validstatus
-	end
-
-	-- player level
-	if not future and item.minlevel and item.minlevel > self.playerlevel then 
-		item.validated = true
-		item.valid = false
-		item.validstatus = ("required level %d to equip"):format(item.minlevel)
-		return false, true, item.validstatus
-	end
-
-	-- if we are here, it means that none of conditions forced early exit. wheeee have an upgrade
-	item.validated = true
-	item.valid = true
-	item.validstatus = "ok"
-	return true, true, "ok"
+	local verdict = self:GetItemValidity(itemlink, future)
+	item.slot = verdict.slot or item.slot
+	item.slot_2 = verdict.slot_2 or item.slot_2
+	if verdict.twohander ~= nil then item.twohander = verdict.twohander end
+	item.validated = verdict.final and true or false
+	item.valid = verdict.valid and true or false
+	item.validstatus = verdict.reason or "No info"
+	return item.valid, verdict.final, item.validstatus
 end
 
 -- 3.3.5a: gem scoring functions removed (retail-only feature)
@@ -896,61 +1581,68 @@ local function ItemScore_SetTooltipData(tooltip, tooltipobj)
 
 		local valid, final, validcomment = ItemScore:IsValidItem(itemlink)
 		if not final then ItemScore.TooltipPatched  = true return end
+		local debugVerdict = nil
+		if ZGV.db and ZGV.db.profile and ZGV.db.profile.debug_display then
+			debugVerdict = ItemScore:GetItemValidity(itemlink)
+		end
 
 		local heirloom_protected,heirloom_max = ItemScore:GetHeirloomInfo(itemlink)
-		
-		if ZGV.db.profile.debug_display then
-			tooltip:AddLine(" ")
-			tooltip:AddLine("|cfffe6100Zygor debug:|r ")
-			tooltip:AddLine("link "..fulllink)
-			tooltip:AddLine("stripped "..itemlink)
-			tooltip:AddLine("score "..score)
-			tooltip:AddLine("valid "..(valid and "yes " or "no ")..validcomment)
-			tooltip:AddLine("protected heirloom "..(heirloom_protected and "yes " or "no ")..heirloom_max)
-			tooltip:AddLine("stats:")
-			for i,v in pairs(item.stats) do
-				tooltip:AddLine(i.." "..v)
-			end
-		end
 		
 		local slot_1,slot_2 = item.slot, item.slot_2
 		local equipped_item_1, equipped_item_2
 		if slot_1 then 
-			equipped_item_1 = ItemScore.Upgrades.EquippedItems[slot_1]
+			equipped_item_1 = ItemScore.Upgrades:GetEquippedItemData(slot_1)
 		end
 		if slot_2 then 
-			equipped_item_2 = ItemScore.Upgrades.EquippedItems[slot_2] 
+			equipped_item_2 = ItemScore.Upgrades:GetEquippedItemData(slot_2) 
 		end
 
 		local function add_upgrade_line(slotinfo, equipped_item, slotid)
-			if equipped_item and equipped_item.score and itemlink == equipped_item.itemlink then
-				tooltip:AddLine("|r "..slotinfo.."Equipped")
-				return
-			end
-
 			local comparison = ItemScore.Upgrades:GetUpgradeComparison(slotid, item)
 			local scoreDelta, percent, isNewItem = comparison.deltaScore, comparison.percent, comparison.isNewItem
 			local line
-			if isNewItem or not (equipped_item and equipped_item.score) then
-				line = "|r "..slotinfo..(L["gearfinder_label_new_item"] or "New item")
-				if scoreDelta and scoreDelta ~= 0 then
-					line = line .. " |cff00ff00" .. string.format((L["gearfinder_label_delta_score"] or "%+.1f score"), scoreDelta) .. "|r"
+			if isNewItem or not (equipped_item and equipped_item.itemlink) or scoreDelta ~= nil then
+				local roundedDelta = round_score(scoreDelta or 0)
+				local color = roundedDelta < 0 and "|cffff0000" or (roundedDelta > 0 and "|cff00ff00" or "|cffcccccc")
+				local deltaText = roundedDelta == 0 and "0.0" or string.format("%+.1f", roundedDelta)
+				line = "|r "..slotinfo..color..deltaText.."|r"
+				local displayPercent = clamp_display_percent(percent)
+				if displayPercent and roundedDelta ~= 0 and not comparison.armorFallback and math.abs(displayPercent) >= 0.05 then
+					line = line .. " "..color.."("..string.format((L["gearfinder_upgrade_percent_short"] or "%+.1f%%"), displayPercent)..")|r"
 				end
-			elseif scoreDelta then
-				local state = comparison.state == "downgrade" and "Downgrade" or (comparison.state == "sidegrade" and "Sidegrade" or "Upgrade")
-				local color = comparison.state == "downgrade" and "|cffff0000" or "|cff00ff00"
-				line = "|r "..slotinfo..state.." "..color..string.format((L["gearfinder_label_delta_score"] or "%+.1f score"), scoreDelta).."|r"
-				if percent and math.abs(percent) >= 0.05 then
-					line = line .. " "..color.."("..string.format((L["gearfinder_upgrade_percent_short"] or "%+.1f%%"), percent)..")|r"
+				if comparison.armorFallback and roundedDelta > 0 then
+					line = line .. " |cff88ccff(Armor)|r"
 				end
 			else
-				line = "|r "..slotinfo.."Equipped"
+				line = "|r "..slotinfo.."|cffcccccc0.0|r"
+			end
+			tooltip:AddLine(line)
+		end
+
+		local function add_context_upgrade_line(prefix, comparison)
+			if not comparison then return end
+			local scoreDelta, percent, isNewItem = comparison.deltaScore, comparison.percent, comparison.isNewItem
+			local line
+			if isNewItem or scoreDelta ~= nil then
+				local roundedDelta = round_score(scoreDelta or 0)
+				local color = roundedDelta < 0 and "|cffff0000" or (roundedDelta > 0 and "|cff00ff00" or "|cffcccccc")
+				local deltaText = roundedDelta == 0 and "0.0" or string.format("%+.1f", roundedDelta)
+				line = "|r "..prefix..color..deltaText.."|r"
+				local displayPercent = clamp_display_percent(percent)
+				if displayPercent and roundedDelta ~= 0 and not comparison.armorFallback and math.abs(displayPercent) >= 0.05 then
+					line = line .. " "..color.."("..string.format((L["gearfinder_upgrade_percent_short"] or "%+.1f%%"), displayPercent)..")|r"
+				end
+				if comparison.armorFallback and roundedDelta > 0 then
+					line = line .. " |cff88ccff(Armor)|r"
+				end
+			else
+				line = "|r "..prefix.."|cffcccccc0.0|r"
 			end
 			tooltip:AddLine(line)
 		end
 
 		if valid then
-			if (equipped_item_1 and equipped_item_1.score) or (equipped_item_2 and equipped_item_2.score) and score then -- item can replace something
+			if slot_1 or slot_2 then -- valid equippable item, show comparison info even if weighted score is zero
 				local mh, oh, th
 				if item.class == LE_ITEM_CLASS_WEAPON then
 					ItemScore.Upgrades:ResetWeaponQueue("onlytemp")
@@ -959,29 +1651,78 @@ local function ItemScore_SetTooltipData(tooltip, tooltipobj)
 				end
 
 				tooltip:AddLine(" ")
-				tooltip:AddLine("|cfffe6100Zygor ItemScore:|r")
+				tooltip:AddLine(branded_tooltip_header("ItemScore"))
+				tooltip:AddLine(("|cffccccccDetected build:|r %s"):format(ItemScore:GetBuildName(ItemScore.playerclass, ZGV.db.char.gear_active_build, ItemScore.playerlevel, ItemScore.activeBuildUsesFallback)))
+				if debugVerdict then
+					tooltip:AddLine(("|cff8888ffdebug:|r eq=%s subtype=%s family=%s valid=%s code=%s"):format(
+						tostring(item.equiploc or item.type or "nil"),
+						tostring(item.subtype or "nil"),
+						tostring(get_item_family(item) or "nil"),
+						tostring(debugVerdict.valid),
+						tostring(debugVerdict.code or "nil")
+					))
+				end
 				local slotinfo1 = slot_2 and "Slot 1: " or ""
 				local slotinfo2 = slot_2 and "Slot 2: " or ""
 
-				-- item in slot 1
-				add_upgrade_line(slotinfo1, equipped_item_1, slot_1)
+				if ZGV.db.profile.itemscore_tooltips_allbuilds then
+					local classToken = ItemScore.playerclass
+					local classNum = ItemScore.playerclassNum
+					local level = ItemScore.playerlevel
+					local builds = (ItemScore.Builds and classNum and ItemScore.Builds[classNum]) or {}
+					for buildNum, _ in ipairs(builds) do
+						local context = ItemScore:BuildRuleContext(classToken, buildNum, level)
+						if context then
+							local verdict = ItemScore:GetItemValidityForContext(itemlink, nil, context)
+							local prefix = ("|cffcccccc%s:|r "):format(ItemScore:GetBuildName(classToken, buildNum, level, context.usesFallback))
+							if not verdict.valid then
+								tooltip:AddLine(prefix .. "|cffff3333x|r Unusable")
+							else
+								local comparison = nil
+								if verdict.slot then
+									comparison = ItemScore:GetUpgradeComparisonForContext(verdict.slot, item, context)
+								end
+								if verdict.slot_2 then
+									local secondComparison = ItemScore:GetUpgradeComparisonForContext(verdict.slot_2, item, context)
+									if secondComparison and (not comparison or (secondComparison.deltaScore or 0) > (comparison.deltaScore or 0)) then
+										comparison = secondComparison
+									end
+								end
+								if comparison then
+									add_context_upgrade_line(prefix, comparison)
+								else
+									tooltip:AddLine(prefix .. "|cffcccccc0.0|r")
+								end
+							end
+						end
+					end
+				else
+					-- item in slot 1
+					add_upgrade_line(slotinfo1, equipped_item_1, slot_1)
 
-				if slot_2 and equipped_item_2.score then
-					add_upgrade_line(slotinfo2, equipped_item_2, slot_2)
-				elseif slot_2 then
-					add_upgrade_line(slotinfo2, equipped_item_2, slot_2)
+					if slot_2 and equipped_item_2.score then
+						add_upgrade_line(slotinfo2, equipped_item_2, slot_2)
+					elseif slot_2 then
+						add_upgrade_line(slotinfo2, equipped_item_2, slot_2)
+					end
 				end
-			elseif (score or 0)>0 then
-				tooltip:AddLine(" ")
-				tooltip:AddLine("|cfffe6100Zygor ItemScore:|r")
-				add_upgrade_line("", nil, slot_1)
 			end
 			-- 3.3.5a: gem socket suggestions removed
 		else
 			if item.type~="" then
 				tooltip:AddLine(" ")
-				tooltip:AddLine("|cfffe6100Zygor ItemScore:|r")
-				tooltip:AddLine("|r  Not a valid item")
+				tooltip:AddLine(branded_tooltip_header("ItemScore"))
+				tooltip:AddLine(("|cffccccccDetected build:|r %s"):format(ItemScore:GetBuildName(ItemScore.playerclass, ZGV.db.char.gear_active_build, ItemScore.playerlevel, ItemScore.activeBuildUsesFallback)))
+				if debugVerdict then
+					tooltip:AddLine(("|cff8888ffdebug:|r eq=%s subtype=%s family=%s valid=%s code=%s"):format(
+						tostring(item.equiploc or item.type or "nil"),
+						tostring(item.subtype or "nil"),
+						tostring(get_item_family(item) or "nil"),
+						tostring(debugVerdict.valid),
+						tostring(debugVerdict.code or "nil")
+					))
+				end
+				tooltip:AddLine("|cffff3333Unusable|r")
 			end
 		end
 

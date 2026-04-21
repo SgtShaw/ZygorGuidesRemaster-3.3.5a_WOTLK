@@ -164,13 +164,63 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
+### Revision 125 - 3.0.125
+
+- Simplified ItemScore tooltip comparison text so valid items show signed numeric deltas like `+17.3`, `-4.2`, or `0.0` instead of word labels such as upgrade/downgrade/sidegrade.
+- Changed invalid ItemScore tooltip output to a short red `Unusable` label.
+- Fixed shields being treated as valid upgrades for classes that cannot use them, including quest reward and tooltip recommendation paths.
+- Tightened standard armor-family validation so cloth/leather/mail/plate restrictions resolve more reliably before numeric comparison.
+- Fixed quest reward selection so unusable rewards can no longer win as upgrades and only remain eligible as vendor-value fallbacks.
+- Improved live family resolution for armor/weapon subtype handling, including shield versus generic offhand distinction and cached-item re-evaluation.
+- Removed stale cached validity short-circuiting so tooltips and reward logic re-check current validity instead of trusting old cached results.
+- Fixed exact equipped tooltip matches to resolve as `0.0`.
+- Added targeted tooltip debug output for failing item-family/validity cases when `debug_display` is enabled.
+- Fixed a bag-scan crash in `Item-Upgrades.lua` where a missing `UpgradeQueue[slot]` entry could throw `attempt to index local 'upgrade_slot' (a nil value)`.
+- Updated addon version metadata to `3.0.125`.
+
+### Revision 124 - 3.0.124
+
+- Fixed the embedded Guide Manager options layout recursion that could overflow the stack with AceGUI-based addons such as xCT+ when opening the Guides/Options tab.
+- Fixed Stat Weights rendering and initialization regressions introduced during the itemscore cleanup:
+  - normalized pre-10 fake-level handling
+  - fixed the parser syntax error in ItemScore
+  - fixed stale class/build initialization so low-level characters resolve to their actual class instead of defaulting to Warrior
+  - fixed Pawn import/export references still pointing at the old selected spec field
+- Added pre-10 class fallback builds using curated leveling baselines, with Stat Weights showing the fallback profile instead of pretending no-talent characters have a real spec.
+- Updated the pre-10 fallback mapping to use Wowhead-backed WotLK Classic leveling recommendations as the baseline source.
+- Fixed skin and variant switching so the viewer performs a full relayout instead of needing `/reload` to recover text and frame placement.
+- Fixed remaster viewer step clipping for longer localized strings by stabilizing width/height measurement and adding a small wrapped-text safety buffer.
+- Restored embedded Stat Weights behavior in Guide Manager after the standalone-options detour proved too disruptive.
+- Improved ItemScore consistency across tooltip, equip prompt, Gear Finder, and bag scanning:
+  - unified more comparisons around weighted deltas
+  - fixed stale timer cancellation in GearFinder
+  - improved low-level class/build selection and active build sync
+- Added the initial armor-only fallback logic so very early statless armor pieces can still register as upgrades based on armor rather than falling through as neutral.
+- Improved equip handling for suggested upgrades:
+  - hardened bag/slot verification
+  - added safer one-shot equip fallback behavior
+  - added BOE-aware popup wording and removed the bad retry loop behavior
+- Added optimized acquisition scanning so newly acquired items are checked against current gear first instead of always doing the heavier full bag pass.
+- Fixed several server-friendliness issues in item validity and slot handling:
+  - slot routing now keys primarily off `INVTYPE_*`
+  - custom/server-usable items are less likely to false-fail as invalid
+  - shield and armor-family handling was tightened for normal class restrictions
+- Added group loot gear-advisor overlays:
+  - green `+` for upgrades
+  - red `-` for downgrades
+  - red `x` for unusable items
+  - soft white glow for visibility on the item icon
+- Fixed the gear advisor to use the active talent group instead of always using the primary talent page.
+- Added detected-build display to the tooltip ItemScore block.
+- Added a tooltip-only option to show upgrade/downgrade lines for all specs of the current class while keeping active-build logic for prompts and actual recommendations.
+- Updated tooltip branding so the multicolor `Zygor` label matches the addon title styling.
+
 ### Revision 123 - 3.0.123
 
 - Fixed a Guide Manager embedded-options recursion issue that could cause `C stack overflow` and AceGUI layout failures for some users running other addons with their own AceGUI copies, including reported xCT+ setups.
 - Removed the self-triggering embedded options resize/layout loop from the Guide Manager options pane and replaced it with a single deferred post-open sizing pass.
 - Preserved the existing embedded options behavior without adding any external dependency or requiring `!!!ClassicAPI`.
 - Updated addon version metadata to `3.0.123`.
-
 ### Revision 122 - 3.0.122
 
 - Added broader Wrath 3.3.5a UI compatibility shims for `SetShown`, covering reward recommendation text/texture objects that do not expose newer retail methods on the 12340 client.
@@ -333,6 +383,8 @@ This remaster focuses on UI/UX modernization, packaging quality, compatibility m
 
 <img width="433" height="247" alt="image" src="https://github.com/user-attachments/assets/579b6acb-df5e-4f40-8ef3-7d6b33e1015d" />
 <img width="436" height="248" alt="image" src="https://github.com/user-attachments/assets/a845b881-2831-43e3-bd26-5287f9783d68" />
+
+
 
 
 

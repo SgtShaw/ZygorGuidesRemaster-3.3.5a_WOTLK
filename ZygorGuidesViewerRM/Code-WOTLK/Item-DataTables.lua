@@ -183,6 +183,7 @@ ItemScore.TypeToSlot = {
 	INVTYPE_HEAD = INVSLOT_HEAD,
 	INVTYPE_NECK = INVSLOT_NECK,
 	INVTYPE_SHOULDER = INVSLOT_SHOULDER,
+	INVTYPE_BODY = INVSLOT_BODY,
 	INVTYPE_CLOAK = INVSLOT_BACK,
 	INVTYPE_CHEST = INVSLOT_CHEST,
 	INVTYPE_ROBE = INVSLOT_CHEST,
@@ -193,6 +194,7 @@ ItemScore.TypeToSlot = {
 	INVTYPE_FEET = INVSLOT_FEET,
 	INVTYPE_FINGER = INVSLOT_FINGER1, -- second slot handled in GetValidSlots
 	INVTYPE_TRINKET = INVSLOT_TRINKET1, -- second slot handled in GetValidSlots
+	INVTYPE_TABARD = INVSLOT_TABARD,
 }
 
 ItemScore.SkillNames = { -- gets trimmed in a moment										-- needs checking

@@ -8,6 +8,7 @@ local G = _G
 local FONT=ZGV.Font
 local FONTBOLD=ZGV.FontBold
 local CHAIN = ZGV.ChainCall
+local Gratuity = LibStub("LibGratuity-3.0")
 
 local tinsert,tremove,print,ipairs,pairs,wipe,debugprofilestop=tinsert,tremove,print,ipairs,pairs,wipe,debugprofilestop
 
@@ -43,6 +44,9 @@ if ZGV.IsClassic or ZGV.IsClassicTBC or ZGV.IsClassicWOTLK then
 	Upgrades.EquippedItems[INVSLOT_RANGED] = {}
 end
 
+Upgrades.BagSnapshot = nil
+Upgrades.EquipFailureCooldown = {}
+
 
 local GREEN = "|cff00ff00"
 local RED = "|cffff0000"
@@ -52,6 +56,33 @@ Upgrades.UniqueEquipped = {}
 local function round_score(value)
 	if not value then return 0 end
 	return math.floor((value * 10) + 0.5) / 10
+end
+
+local function get_item_bind_state(itemlink)
+	if not itemlink then return "unknown" end
+	Gratuity:SetHyperlink(itemlink)
+	if Gratuity:NumLines() == 0 then return "unknown" end
+	local boe, bound = false, false
+	for i = 1, Gratuity:NumLines() do
+		local line = Gratuity:GetLine(i)
+		if line then
+			if line == ITEM_SOULBOUND or line == ITEM_BIND_ON_PICKUP or line == ITEM_BIND_QUEST or line == ITEM_BNETACCOUNTBOUND or line == ITEM_BIND_TO_BNETACCOUNT then
+				bound = true
+			elseif line == ITEM_BIND_ON_EQUIP then
+				boe = true
+			end
+		end
+	end
+	if bound then return "bound" end
+	if boe then return "boe" end
+	return "other"
+end
+
+local function clamp_display_percent(percent)
+	if not percent then return nil end
+	if percent >= 100 then return 99.99 end
+	if percent <= -100 then return -99.99 end
+	return percent
 end
 
 local function copy_stats(stats)
@@ -133,6 +164,17 @@ local RAW_POTENTIAL_STATS = {
 	MANA_REGENERATION = true,
 }
 
+local function get_normalized_stat_value(item, wantedStat)
+	if not item or not item.stats then return 0 end
+	local total = 0
+	for stat, value in pairs(item.stats) do
+		if value and ItemScore:NormaliseStatName(stat) == wantedStat then
+			total = total + value
+		end
+	end
+	return total
+end
+
 local function get_primary_comparison_delta(slot, newitem, secondnewitem)
 	if not newitem or not newitem.itemlink then return nil end
 	local current = Upgrades.EquippedItems[slot]
@@ -190,34 +232,67 @@ function Upgrades:GetActiveBuildName()
 	return "Spec "..tostring(activeBuild or 1)
 end
 
+function Upgrades:GetEquippedItemData(slot)
+	if not slot then return nil end
+	local cached = Upgrades.EquippedItems[slot]
+	if cached and cached.itemlink and cached.score ~= nil then
+		return cached
+	end
+
+	local liveLink = GetInventoryItemLink("player", slot)
+	if not liveLink then
+		return cached
+	end
+
+	local stripped = strip_link(liveLink)
+	local details = ItemScore:GetItemDetails(stripped or liveLink)
+	if not details then
+		return cached
+	end
+
+	local score = ItemScore:GetItemScore(stripped or liveLink) or 0
+	local slotdata = cached or {}
+	slotdata.itemlink = stripped or liveLink
+	slotdata.itemid = details.itemid
+	slotdata.score = score
+	slotdata.artifactscore = details.artifactscore
+	slotdata.quality = details.quality
+	slotdata.type = details.type
+	Upgrades.EquippedItems[slot] = slotdata
+	return slotdata
+end
+
 function Upgrades:GetUpgradeComparison(slot, newitem, secondnewitem)
 	local candidateScore = newitem and (newitem.artifactscore or newitem.score or 0) or 0
 	local baselineScore = 0
-	local current = Upgrades.EquippedItems[slot]
+	local current = self:GetEquippedItemData(slot)
 	local currentDetails = current and current.itemlink and ItemScore:GetItemDetails(current.itemlink)
+	local hasBaselineItem = current and current.itemlink and true or false
 	baselineScore = current and (current.artifactscore or current.score or 0) or 0
 
 	if secondnewitem and (slot == INVSLOT_MAINHAND or slot == INVSLOT_OFFHAND) then
 		candidateScore = candidateScore + (secondnewitem.artifactscore or secondnewitem.score or 0)
-		local mh = Upgrades.EquippedItems[INVSLOT_MAINHAND]
-		local oh = Upgrades.EquippedItems[INVSLOT_OFFHAND]
+		local mh = self:GetEquippedItemData(INVSLOT_MAINHAND)
+		local oh = self:GetEquippedItemData(INVSLOT_OFFHAND)
+		hasBaselineItem = (mh and mh.itemlink) or (oh and oh.itemlink) or false
 		baselineScore = (mh and (mh.artifactscore or mh.score or 0) or 0) + (oh and (oh.artifactscore or oh.score or 0) or 0)
 	end
 
 	local armorFallback = false
-	if newitem and currentDetails and newitem.class == LE_ITEM_CLASS_ARMOR and currentDetails.class == LE_ITEM_CLASS_ARMOR and newitem.type ~= "INVTYPE_CLOAK" then
+	if newitem and newitem.class == LE_ITEM_CLASS_ARMOR and newitem.type ~= "INVTYPE_CLOAK" then
 		local candidateHasStats = has_non_armor_stats(newitem)
-		local currentHasStats = has_non_armor_stats(currentDetails)
-		if not candidateHasStats and not currentHasStats then
-			candidateScore = newitem.stats and (newitem.stats.ARMOR or 0) or 0
-			baselineScore = currentDetails.stats and (currentDetails.stats.ARMOR or 0) or 0
+		local currentIsArmor = currentDetails and currentDetails.class == LE_ITEM_CLASS_ARMOR
+		local currentHasStats = currentDetails and has_non_armor_stats(currentDetails)
+		if not candidateHasStats and (not currentDetails or (currentIsArmor and not currentHasStats)) then
+			candidateScore = get_normalized_stat_value(newitem, "ARMOR")
+			baselineScore = currentDetails and get_normalized_stat_value(currentDetails, "ARMOR") or 0
 			armorFallback = true
 		end
 	end
 
 	local deltaScore = candidateScore - baselineScore
-	local isNewItem = baselineScore <= 0
-	local percent = not isNewItem and ((candidateScore * 100 / baselineScore) - 100) or nil
+	local isNewItem = not hasBaselineItem
+	local percent = (not isNewItem and baselineScore and baselineScore > 0) and ((candidateScore * 100 / baselineScore) - 100) or nil
 	local state = "sidegrade"
 	if isNewItem then
 		state = "new"
@@ -294,8 +369,9 @@ function Upgrades:FormatUpgradeSummary(slot, newitem, change, secondnewitem, del
 	else
 		local color = comparison.state == "downgrade" and "|cffff4444" or "|cff44ff44"
 		parts[#parts + 1] = (color..(L["gearfinder_label_delta_score"] or "%+.1f score").."|r"):format(round_score(scoreDelta))
-		if percent and math.abs(percent) >= 0.05 then
-			parts[#parts + 1] = (color..(L["gearfinder_upgrade_percent_short"] or "%+.1f%%").."|r"):format(percent)
+		local displayPercent = clamp_display_percent(percent)
+		if displayPercent and not comparison.armorFallback and math.abs(displayPercent) >= 0.05 then
+			parts[#parts + 1] = (color..(L["gearfinder_upgrade_percent_short"] or "%+.1f%%").."|r"):format(displayPercent)
 		end
 	end
 	local rationale = self:GetUpgradeRationale(delta)
@@ -495,8 +571,8 @@ local function get_upgrade(newitem,olditem,secondnewitem)
 		local candidateHasStats = has_non_armor_stats(newitem)
 		local currentHasStats = has_non_armor_stats(olditem_details)
 		if not candidateHasStats and not currentHasStats then
-			local newArmor = newitem.stats and (newitem.stats.ARMOR or 0) or 0
-			local oldArmor = olditem_details.stats and (olditem_details.stats.ARMOR or 0) or 0
+			local newArmor = get_normalized_stat_value(newitem, "ARMOR")
+			local oldArmor = get_normalized_stat_value(olditem_details, "ARMOR")
 			if newArmor > oldArmor then
 				return get_change(oldArmor, newArmor)
 			end
@@ -560,8 +636,8 @@ function Upgrades:IsUpgrade(itemlink,future)
 
 	local slot_1, slot_2, is2hnd = item.slot, item.slot_2 ,item.twohander
 	local equipped_item_1, equipped_item_2
-	if slot_1 then equipped_item_1 = Upgrades.EquippedItems[slot_1] end
-	if slot_2 then equipped_item_2 = Upgrades.EquippedItems[slot_2] end
+	if slot_1 then equipped_item_1 = Upgrades:GetEquippedItemData(slot_1) end
+	if slot_2 then equipped_item_2 = Upgrades:GetEquippedItemData(slot_2) end
 
 	-- protect fishing gear if fishing pole is equipped
 	if equipped_item_1 and fishing_gear[equipped_item_1.itemid] then
@@ -903,16 +979,89 @@ function Upgrades:ScanBagsForUpgrades(onlyscan)
 	Upgrades:ResetWeaponQueue()
 
 	table.wipe(Upgrades.BagsItems)
+	local currentBagCounts = {}
+
+	local filterSet
+	if type(onlyscan) == "table" then
+		filterSet = {}
+		for _, itemlink in ipairs(onlyscan) do
+			if itemlink then
+				filterSet[strip_link(itemlink) or itemlink] = true
+			end
+		end
+		onlyscan = nil
+	end
 
 	for bagnum=0, NUM_BAG_SLOTS do
 		for bagslot=1, GetContainerNumSlots(bagnum) do
 			local itemlink = GetContainerItemLink(bagnum,bagslot)
 			if itemlink then
-				Upgrades.BagsItems[itemlink]= {bagnum=bagnum, bagslot=bagslot}
+				local stripped = strip_link(itemlink) or itemlink
+				currentBagCounts[stripped] = (currentBagCounts[stripped] or 0) + 1
+				if not filterSet or filterSet[stripped] then
+					Upgrades.BagsItems[stripped]= {bagnum=bagnum, bagslot=bagslot}
+				end
 			end
 		end
 	end
+	Upgrades.BagSnapshot = currentBagCounts
 	Upgrades:ScoreBagsItems()
+end
+
+function Upgrades:GetBagUpdateDelta()
+	local currentBagCounts = {}
+	local added = {}
+	local removed = false
+
+	for bagnum=0, NUM_BAG_SLOTS do
+		for bagslot=1, GetContainerNumSlots(bagnum) do
+			local itemlink = GetContainerItemLink(bagnum,bagslot)
+			if itemlink then
+				local stripped = strip_link(itemlink) or itemlink
+				currentBagCounts[stripped] = (currentBagCounts[stripped] or 0) + 1
+			end
+		end
+	end
+
+	local previous = Upgrades.BagSnapshot
+	Upgrades.BagSnapshot = currentBagCounts
+
+	if not previous then
+		return nil, true
+	end
+
+	for itemlink, count in pairs(currentBagCounts) do
+		if count > (previous[itemlink] or 0) then
+			added[#added + 1] = itemlink
+		end
+	end
+
+	for itemlink, count in pairs(previous) do
+		if (currentBagCounts[itemlink] or 0) < count then
+			removed = true
+			break
+		end
+	end
+
+	return added, removed
+end
+
+function Upgrades:ScanRecentBagAcquisitions()
+	if not ZGV.db.profile.autogear then return end
+	if not ItemScore.ActiveRuleSet then return end
+	if not Upgrades.ScoredEquippedItems then
+		return Upgrades:ScanBagsForUpgrades()
+	end
+
+	local added, removed = Upgrades:GetBagUpdateDelta()
+	if removed or not added then
+		return Upgrades:ScanBagsForUpgrades()
+	end
+	if #added == 0 then
+		return
+	end
+
+	return Upgrades:ScanBagsForUpgrades(added)
 end
 
 
@@ -953,52 +1102,60 @@ function Upgrades:ScoreBagsItems()
 				local is_upgrade, slot, change, score, validfuture, comment, slot_2, change_2 = Upgrades:IsUpgrade(item.itemlink)
 				if is_upgrade then
 					local upgrade_slot = Upgrades.UpgradeQueue[slot]
-					local deltaScore = select(1, Upgrades:GetUpgradeMetrics(slot, item, change))
-					local queuedDelta = upgrade_slot.deltascore
-					if queuedDelta == nil and upgrade_slot.itemlink then
-						local queuedItem = ItemScore:GetItemDetails(upgrade_slot.itemlink)
-						if queuedItem then
-							queuedDelta = select(1, Upgrades:GetUpgradeMetrics(slot, queuedItem, upgrade_slot.change, upgrade_slot.pair))
+					if upgrade_slot then
+						local deltaScore = select(1, Upgrades:GetUpgradeMetrics(slot, item, change))
+						local queuedDelta = upgrade_slot.deltascore
+						if queuedDelta == nil and upgrade_slot.itemlink then
+							local queuedItem = ItemScore:GetItemDetails(upgrade_slot.itemlink)
+							if queuedItem then
+								queuedDelta = select(1, Upgrades:GetUpgradeMetrics(slot, queuedItem, upgrade_slot.change, upgrade_slot.pair))
+							end
 						end
-					end
-					deltaScore = deltaScore or 0
-					queuedDelta = queuedDelta or -math.huge
-					if Upgrades:CanUseUniqueItem(itemlink,slot) and (deltaScore > queuedDelta or (deltaScore == queuedDelta and (((score or 0) > (upgrade_slot.score or 0)) or ((score or 0)==0 and (upgrade_slot.score or 0)==0)))) then
-						ZGV:Debug("&itemscore SBFU armor upgrade slot=%d item=%s delta=%.2f score=%.2f replacing=%s olddelta=%.2f oldscore=%.2f",slot,itemlink,deltaScore,score or 0,upgrade_slot.itemlink or "",queuedDelta,upgrade_slot.score or 0)
-						upgrade_slot.itemlink = itemlink
-						upgrade_slot.score = score or 0 
-						upgrade_slot.change = change or 0
-						upgrade_slot.deltascore = deltaScore
-						upgrade_slot.bagnum = item.bagnum
-						upgrade_slot.bagslot = item.bagslot
-						upgrade_slot.slot = slot
-						if comment=="quest item" then upgrade_slot.quest=true end
+						deltaScore = deltaScore or 0
+						queuedDelta = queuedDelta or -math.huge
+						if Upgrades:CanUseUniqueItem(itemlink,slot) and (deltaScore > queuedDelta or (deltaScore == queuedDelta and (((score or 0) > (upgrade_slot.score or 0)) or ((score or 0)==0 and (upgrade_slot.score or 0)==0)))) then
+							ZGV:Debug("&itemscore SBFU armor upgrade slot=%d item=%s delta=%.2f score=%.2f replacing=%s olddelta=%.2f oldscore=%.2f",slot,itemlink,deltaScore,score or 0,upgrade_slot.itemlink or "",queuedDelta,upgrade_slot.score or 0)
+							upgrade_slot.itemlink = itemlink
+							upgrade_slot.score = score or 0 
+							upgrade_slot.change = change or 0
+							upgrade_slot.deltascore = deltaScore
+							upgrade_slot.bagnum = item.bagnum
+							upgrade_slot.bagslot = item.bagslot
+							upgrade_slot.slot = slot
+							if comment=="quest item" then upgrade_slot.quest=true end
+						else
+							ZGV:Debug("&itemscore SBFU armor reject slot=%d item=%s delta=%.2f score=%.2f current=%s currentdelta=%.2f currentscore=%.2f",slot,itemlink,deltaScore,score or 0,upgrade_slot.itemlink or "",queuedDelta,upgrade_slot.score or 0)
+						end
 					else
-						ZGV:Debug("&itemscore SBFU armor reject slot=%d item=%s delta=%.2f score=%.2f current=%s currentdelta=%.2f currentscore=%.2f",slot,itemlink,deltaScore,score or 0,upgrade_slot.itemlink or "",queuedDelta,upgrade_slot.score or 0)
+						ZGV:Debug("&itemscore SBFU missing queue slot item=%s slot=%s comment=%s",itemlink or "",tostring(slot),tostring(comment))
 					end
 					if slot_2 then -- upgrade for both slots (rings, trinkets, weapons)
 						local upgrade_slot = Upgrades.UpgradeQueue[slot_2]
-						local deltaScore2 = select(1, Upgrades:GetUpgradeMetrics(slot_2, item, change_2))
-						local queuedDelta2 = upgrade_slot.deltascore
-						if queuedDelta2 == nil and upgrade_slot.itemlink then
-							local queuedItem2 = ItemScore:GetItemDetails(upgrade_slot.itemlink)
-							if queuedItem2 then
-								queuedDelta2 = select(1, Upgrades:GetUpgradeMetrics(slot_2, queuedItem2, upgrade_slot.change, upgrade_slot.pair))
+						if upgrade_slot then
+							local deltaScore2 = select(1, Upgrades:GetUpgradeMetrics(slot_2, item, change_2))
+							local queuedDelta2 = upgrade_slot.deltascore
+							if queuedDelta2 == nil and upgrade_slot.itemlink then
+								local queuedItem2 = ItemScore:GetItemDetails(upgrade_slot.itemlink)
+								if queuedItem2 then
+									queuedDelta2 = select(1, Upgrades:GetUpgradeMetrics(slot_2, queuedItem2, upgrade_slot.change, upgrade_slot.pair))
+								end
 							end
-						end
-						deltaScore2 = deltaScore2 or 0
-						queuedDelta2 = queuedDelta2 or -math.huge
-						if Upgrades:CanUseUniqueItem(itemlink,slot_2) and (deltaScore2 > queuedDelta2 or (deltaScore2 == queuedDelta2 and (((score or 0) > (upgrade_slot.score or 0)) or ((score or 0)==0 and (upgrade_slot.score or 0)==0)))) then
-							ZGV:Debug("&itemscore SBFU second slot=%d item=%s delta=%.2f score=%.2f replacing=%s olddelta=%.2f oldscore=%.2f",slot_2,itemlink,deltaScore2,score or 0,upgrade_slot.itemlink or "",queuedDelta2,upgrade_slot.score or 0)
-							upgrade_slot.itemlink = itemlink
-							upgrade_slot.score = score or 0
-							upgrade_slot.change = change_2 or 0
-							upgrade_slot.deltascore = deltaScore2
-							upgrade_slot.bagnum = item.bagnum
-							upgrade_slot.bagslot = item.bagslot
-							upgrade_slot.slot = slot_2
+							deltaScore2 = deltaScore2 or 0
+							queuedDelta2 = queuedDelta2 or -math.huge
+							if Upgrades:CanUseUniqueItem(itemlink,slot_2) and (deltaScore2 > queuedDelta2 or (deltaScore2 == queuedDelta2 and (((score or 0) > (upgrade_slot.score or 0)) or ((score or 0)==0 and (upgrade_slot.score or 0)==0)))) then
+								ZGV:Debug("&itemscore SBFU second slot=%d item=%s delta=%.2f score=%.2f replacing=%s olddelta=%.2f oldscore=%.2f",slot_2,itemlink,deltaScore2,score or 0,upgrade_slot.itemlink or "",queuedDelta2,upgrade_slot.score or 0)
+								upgrade_slot.itemlink = itemlink
+								upgrade_slot.score = score or 0
+								upgrade_slot.change = change_2 or 0
+								upgrade_slot.deltascore = deltaScore2
+								upgrade_slot.bagnum = item.bagnum
+								upgrade_slot.bagslot = item.bagslot
+								upgrade_slot.slot = slot_2
+							else
+								ZGV:Debug("&itemscore SBFU second reject slot=%d item=%s delta=%.2f score=%.2f current=%s currentdelta=%.2f currentscore=%.2f",slot_2,itemlink,deltaScore2,score or 0,upgrade_slot.itemlink or "",queuedDelta2,upgrade_slot.score or 0)
+							end
 						else
-							ZGV:Debug("&itemscore SBFU second reject slot=%d item=%s delta=%.2f score=%.2f current=%s currentdelta=%.2f currentscore=%.2f",slot_2,itemlink,deltaScore2,score or 0,upgrade_slot.itemlink or "",queuedDelta2,upgrade_slot.score or 0)
+							ZGV:Debug("&itemscore SBFU missing second queue slot item=%s slot=%s comment=%s",itemlink or "",tostring(slot_2),tostring(comment))
 						end
 					end
 				end
@@ -1082,23 +1239,31 @@ function Upgrades:ProcessPossibleUpgrades()
 		if slot==17 and process_slot then ZGV:Debug("&itemscore PPU slot %d: processed, breaking",slot) break end -- don't look at offhands if we have mainhand queued
 
 		if newitem.itemlink then
-			if not Upgrades.EquippedItems[slot] then -- nothing, so equipping something in empty slot
-				process_slot = slot
-				break
+			local cooldownUntil = Upgrades.EquipFailureCooldown[newitem.itemlink]
+			if cooldownUntil and cooldownUntil > GetTime() then
+				ZGV:Debug("&itemscore PPU slot %d: equip cooldown active for %s",slot,newitem.itemlink)
 			else
-				local deltaScore = newitem.deltascore
-				if deltaScore == nil then
-					local queueItem = ItemScore:GetItemDetails(newitem.itemlink)
-					if queueItem then
-						deltaScore = select(1, Upgrades:GetUpgradeMetrics(slot, queueItem, newitem.change, newitem.pair))
-						newitem.deltascore = deltaScore
-					end
-				end
-				deltaScore = deltaScore or 0
-				if deltaScore > max_delta then
-					ZGV:Debug("&itemscore PPU slot %d: considering delta %.2f",slot,deltaScore)
-					max_delta = deltaScore
+				local equipped = Upgrades:GetEquippedItemData(slot)
+				local hasEquippedItem = equipped and equipped.itemlink and true or false
+				if not hasEquippedItem then -- empty slot, any valid queued item should be considered
+					ZGV:Debug("&itemscore PPU slot %d: empty slot with queued item %s",slot,newitem.itemlink)
 					process_slot = slot
+					break
+				else
+					local deltaScore = newitem.deltascore
+					if deltaScore == nil then
+						local queueItem = ItemScore:GetItemDetails(newitem.itemlink)
+						if queueItem then
+							deltaScore = select(1, Upgrades:GetUpgradeMetrics(slot, queueItem, newitem.change, newitem.pair))
+							newitem.deltascore = deltaScore
+						end
+					end
+					deltaScore = deltaScore or 0
+					if deltaScore > max_delta then
+						ZGV:Debug("&itemscore PPU slot %d: considering delta %.2f",slot,deltaScore)
+						max_delta = deltaScore
+						process_slot = slot
+					end
 				end
 			end
 		end
@@ -1137,6 +1302,10 @@ function Upgrades:ShowEquipmentChangeNotification(slot)
 	if not n_item or not n_item.itemlink then return end
 	local new_item = ItemScore:GetItemDetails(n_item.itemlink)
 	if not new_item then return end
+	local bindState = get_item_bind_state(new_item.itemlinkfull or new_item.itemlink)
+	if bindState == "boe" then
+		return Upgrades:ShowEquipmentChangePopup(slot)
+	end
 
 	local c_item = Upgrades.EquippedItems[slot]
 	local current_item = c_item and c_item.itemlink and ItemScore:GetItemDetails(c_item.itemlink)
@@ -1257,6 +1426,25 @@ function Upgrades:CreatePopup()
 	F.footerLine:SetPoint("TOPRIGHT",F.footer,"TOPRIGHT",-8,0)
 	F.footerLine:SetHeight(1)
 
+	F.secureacceptbutton = CreateFrame("Button", nil, F, "SecureActionButtonTemplate,UIPanelButtonTemplate")
+	F.secureacceptbutton:SetSize(100, 22)
+	F.secureacceptbutton:SetText((L and L["popup_accept"]) or "Accept")
+	F.secureacceptbutton:SetPoint("BOTTOMLEFT", F, "BOTTOMLEFT", 10, 10)
+	F.secureacceptbutton:Hide()
+	F.secureacceptbutton:SetScript("PostClick", function(self)
+		F.selfHidden = true
+		ZGV.NotificationCenter:RemoveEntry("ZygorItemPopup")
+		F:Hide()
+		if F.n_item and F.n_item.itemlink then
+			Upgrades.EquipFailureCooldown[F.n_item.itemlink] = nil
+		end
+		if ZGV.ScheduleTimer then
+			ZGV:ScheduleTimer(function()
+				Upgrades:ScoreEquippedItems()
+			end, 0.2)
+		end
+	end)
+
 	-- set up item display objects. item1 and item2 are for 1:1 replacements
 	for i=1,2 do
 		F["item"..i]=make_button(i)
@@ -1376,7 +1564,7 @@ function Upgrades:CreatePopup()
 
 	F.OnAccept = function(self)
 		self.selfHidden = true
-		Upgrades:Equip(self.n_item) --equip it!
+		Upgrades:Equip(self.n_item) -- fallback path for non-secure callers
 		ZGV.NotificationCenter:RemoveEntry("ZygorItemPopup")
 	end
 
@@ -1694,9 +1882,33 @@ function Upgrades:ShowEquipmentChangePopup(slot)
 	local F = Upgrades.EquipPopup
 	local AnchorTo = F.AnchorTo
 
+	local function item_name_for_macro(itemdata)
+		if not itemdata then return nil end
+		local link = itemdata.itemlinkfull or itemdata.itemlink
+		local name = link and GetItemInfo(link)
+		return name
+	end
+
+	local function build_equip_macro()
+		local lines = {}
+		local primaryName = item_name_for_macro(new_item)
+		if primaryName and n_item.slot then
+			lines[#lines + 1] = ("/equipslot %d %s"):format(n_item.slot, primaryName)
+		end
+	if pair_item and n_item.pair then
+			local pairName = item_name_for_macro(pair_item)
+			local pairSlot = n_item.pair.slot or n_item.pair.slot_2
+			if pairName and pairSlot then
+				lines[#lines + 1] = ("/equipslot %d %s"):format(pairSlot, pairName)
+			end
+		end
+		return table.concat(lines, "\n")
+	end
+
 	-- keep references for debugging
 	F.n_item = n_item
 	F.c_item = c_item
+	local bindState = get_item_bind_state(new_item.itemlinkfull or new_item.itemlink)
 
 	-- clean up
 	F.item_double:Hide()
@@ -1717,10 +1929,15 @@ function Upgrades:ShowEquipmentChangePopup(slot)
 	F.item_double.itemicon2:SetTexture(nil)
 	F.item_double.itemlink1:SetText("")
 	F.item_double.itemlink2:SetText("")
+	F.acceptbutton:Hide()
+	F.secureacceptbutton:Show()
+	F.secureacceptbutton:SetText(bindState == "boe" and "Equip (binds item)" or ((L and L["popup_accept"]) or "Accept"))
+	F.secureacceptbutton:SetAttribute("type", "macro")
+	F.secureacceptbutton:SetAttribute("macrotext", build_equip_macro())
 
 	local changes, delta, summary
 	if current_item then
-		F:SetText(L['itemscore_ae_equip1'])
+		F:SetText(bindState == "boe" and ((L['itemscore_ae_equip1'] or "Equip this item?") .. " This will bind the item.") or L['itemscore_ae_equip1'])
 
 		F.string_with:Show()	
 		F.stattext:Show()
@@ -1763,7 +1980,7 @@ function Upgrades:ShowEquipmentChangePopup(slot)
 		end
 	else
 		F.layoutMode = "new_only"
-		F:SetText(L['itemscore_ae_equip2'])
+		F:SetText(bindState == "boe" and ((L['itemscore_ae_equip2'] or "Equip this item?") .. " This will bind the item.") or L['itemscore_ae_equip2'])
 
 		F.item1:SetItem(new_item)
 		F.stattext:Show()		
@@ -1824,12 +2041,122 @@ function Upgrades:Equip(item,retry)
 		Upgrades:ScoreEquippedItems()
 		return false
 	end
-	
-	PickupContainerItem(item.bagnum,item.bagslot)
-	EquipCursorItem(item.slot)
-	if item.pair and not item.twohand then
-		PickupContainerItem(item.pair.bagnum,item.pair.bagslot)
-		EquipCursorItem(item.pair.slot_2)
+
+	local function debug_equip(message, force)
+		if force or (ZGV.db and ZGV.db.profile and ZGV.db.profile.debug_display) then
+			ZGV:Print("|cffffaa00[itemscore equip]|r "..message)
+		end
 	end
+
+	local function safe_tostring(value)
+		if value == nil then return "nil" end
+		return tostring(value)
+	end
+
+	local function links_match(a, b)
+		if not a or not b then return false end
+		return strip_link(a) == strip_link(b)
+	end
+
+	local function equip_bag_item(bagnum, bagslot, slot, expectedLink)
+		if not (bagnum and bagslot) then return false end
+		local bagLink = GetContainerItemLink(bagnum, bagslot)
+		local link = bagLink or expectedLink
+		if not link then return false end
+		local itemName = GetItemInfo(link)
+		local beforeEquipped = slot and GetInventoryItemLink("player", slot)
+		local targetLink = strip_link(link)
+
+		local function equipped_now()
+			local equippedLink = slot and GetInventoryItemLink("player", slot)
+			return equippedLink and targetLink and strip_link(equippedLink) == targetLink and equippedLink or nil
+		end
+
+		if EquipItemByName then
+			EquipItemByName(link, slot)
+			if not equipped_now() and itemName then
+				EquipItemByName(itemName, slot)
+			end
+			if not equipped_now() then
+				EquipItemByName(link)
+			end
+			if not equipped_now() and itemName then
+				EquipItemByName(itemName)
+			end
+		end
+		local afterEquipped = equipped_now()
+		if afterEquipped then
+			debug_equip(("equipped via EquipItemByName slot=%s item=%s"):format(tostring(slot), tostring(link)))
+			return true
+		end
+
+		if UseContainerItem then
+			UseContainerItem(bagnum, bagslot)
+			afterEquipped = equipped_now()
+			if afterEquipped then
+				debug_equip(("equipped via UseContainerItem slot=%s item=%s"):format(tostring(slot), tostring(link)))
+				return true
+			end
+		end
+
+		ClearCursor()
+		PickupContainerItem(bagnum, bagslot)
+		if not CursorHasItem() then
+			return false
+		end
+		if slot then
+			if PickupInventoryItem then
+				PickupInventoryItem(slot)
+			else
+				EquipCursorItem(slot)
+			end
+		elseif AutoEquipCursorItem then
+			AutoEquipCursorItem()
+		end
+		if CursorHasItem() then
+			if AutoEquipCursorItem then
+				AutoEquipCursorItem()
+			end
+		end
+		afterEquipped = equipped_now()
+		local equipped = afterEquipped and true or false
+		if not equipped and CursorHasItem() and AutoEquipCursorItem then
+			AutoEquipCursorItem()
+			afterEquipped = equipped_now()
+			equipped = afterEquipped and true or false
+		end
+		if equipped then
+			debug_equip(("equipped via cursor slot=%s item=%s"):format(tostring(slot), tostring(link)))
+		end
+		if CursorHasItem() then ClearCursor() end
+		return equipped
+	end
+
+	local equippedMain = equip_bag_item(item.bagnum, item.bagslot, item.slot, item.itemlink)
+	local equippedPair = true
+	if item.pair and not item.twohand then
+		equippedPair = equip_bag_item(item.pair.bagnum, item.pair.bagslot, item.pair.slot or item.pair.slot_2, item.pair.itemlink)
+	end
+
+	if not equippedMain or not equippedPair then
+		Upgrades.EquipFailureCooldown[item.itemlink] = GetTime() + 5
+		debug_equip(("equip failed: item=%s slot=%s bag=%s/%s equipped=%s baglink=%s"):format(
+			safe_tostring(item.itemlink),
+			safe_tostring(item.slot),
+			safe_tostring(item.bagnum),
+			safe_tostring(item.bagslot),
+			safe_tostring((GetInventoryItemLink("player", item.slot))),
+			safe_tostring((GetContainerItemLink(item.bagnum, item.bagslot)))
+		), true)
+		Upgrades:ScoreEquippedItems()
+		return false
+	end
+
+	debug_equip(("equip success: item=%s slot=%s equipped=%s"):format(
+		safe_tostring(item.itemlink),
+		safe_tostring(item.slot),
+		safe_tostring((GetInventoryItemLink("player", item.slot)))
+	))
+	return true
 
 end

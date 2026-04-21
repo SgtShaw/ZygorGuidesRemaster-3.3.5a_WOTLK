@@ -192,20 +192,22 @@ function QuestItem:GetQuestRewardIndex()
 		if classID==5 and subclassID==2 then return nil,"Context token" end
 
 		local item = itemlink and ItemScore:GetItemDetails(itemlink)
+		local validity = itemlink and ItemScore:GetItemValidity(itemlink)
+		local validForUse = validity and validity.valid
 		local is_upgrade, slot, change, score, validfuture, comment, slot_2 = ItemScore.Upgrades:IsUpgrade(itemlink)
 		local bestComparison
-		if item and slot and slot ~= "" then
+		if validForUse and item and slot and slot ~= "" then
 			bestComparison = ItemScore.Upgrades:GetUpgradeComparison(slot, item)
 		end
-		if item and slot_2 and slot_2 ~= "" then
+		if validForUse and item and slot_2 and slot_2 ~= "" then
 			local secondComparison = ItemScore.Upgrades:GetUpgradeComparison(slot_2, item)
 			if secondComparison and (not bestComparison or secondComparison.deltaScore > bestComparison.deltaScore) then
 				bestComparison = secondComparison
 			end
 		end
 
-		if not bestComparison and item and item.class == LE_ITEM_CLASS_ARMOR then
-			local fallbackSlot = item.slot or slot
+		if validForUse and not bestComparison and item and item.class == LE_ITEM_CLASS_ARMOR then
+			local fallbackSlot = (validity and validity.slot) or item.slot or slot
 			if fallbackSlot and fallbackSlot ~= "" then
 				bestComparison = ItemScore.Upgrades:GetUpgradeComparison(fallbackSlot, item)
 			end
@@ -214,7 +216,7 @@ function QuestItem:GetQuestRewardIndex()
 		-- Some low-level/classic reward items can still validate as upgrades through the
 		-- legacy path even when the cached comparison payload is incomplete on first pass.
 		-- Preserve that positive signal instead of falling all the way through to vendor value.
-		if not bestComparison and is_upgrade and change and change > 0 then
+		if validForUse and not bestComparison and is_upgrade and change and change > 0 then
 			bestComparison = {
 				deltaScore = (score and score > 0) and score or change,
 				rawState = "none",
@@ -236,7 +238,7 @@ function QuestItem:GetQuestRewardIndex()
 			best_sell_index = index
 		end
 
-		if ItemScore.Upgrades:QueueWeapon(itemlink) then weapons_found = true end
+		if validForUse and ItemScore.Upgrades:QueueWeapon(itemlink) then weapons_found = true end
 		
 	end
 

@@ -6,6 +6,10 @@ local ZGVG=ZGV.Gold
 local L = ZGV.L
 local CHAIN = ZGV.ChainCall
 
+local function branded_tooltip_header(label)
+	return ("|cffffff88Z|cffffee66y|cffffdd44g|cffffcc22o|cffffbb00r|r %s:"):format(label)
+end
+
 if not ZGV.Gold.Appraiser then ZGV.Gold.Appraiser = {} end
 local Appraiser = ZGV.Gold.Appraiser
 LibStub("AceHook-3.0"):Embed(Appraiser)
@@ -570,7 +574,7 @@ local function Appraiser_SetTooltipData(tooltip, itemLink)
 
 		
 		tooltip:AddLine("|cffffffff |r")
-		tooltip:AddLine("|cfffe6100Zygor Gold Data:|r")
+		tooltip:AddLine(branded_tooltip_header("Gold Data"))
 		if isboundable then
 			tooltip:AddLine("  |cffeeeeeeItem is soulbound|r ")
 		end

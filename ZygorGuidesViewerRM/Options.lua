@@ -215,6 +215,7 @@ function me:Options_RegisterDefaults()
 			autogearauto = false,
 			autogear_keepheirlooms = true,
 			itemscore_tooltips = true,
+			itemscore_tooltips_allbuilds = false,
 			questitemcache = {},
 
 			-- Gold Guide tooltips
@@ -2377,6 +2378,14 @@ function me:Options_DefineOptions()
 				type = "toggle",
 				width = "full",
 				disabled = function() return not self.db.profile.autogear end,
+			},
+			itemscore_tooltips_allbuilds = {
+				order = 3.1,
+				name = "Show All Builds on Tooltips",
+				desc = "Show upgrade or downgrade lines for all specs of your class on item tooltips. Active-build suggestions and equip prompts still use only your detected active build.",
+				type = "toggle",
+				width = "full",
+				disabled = function() return not self.db.profile.autogear or not self.db.profile.itemscore_tooltips end,
 			},
 			prompting_header = {
 				order = 3.5,
