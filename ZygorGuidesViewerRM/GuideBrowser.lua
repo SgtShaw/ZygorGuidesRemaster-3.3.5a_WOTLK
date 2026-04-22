@@ -3463,6 +3463,8 @@ local function EnsureGuideManagerStandaloneFrame(self)
 	optionsFallback:SetPoint("TOPRIGHT", optionsContent, "TOPRIGHT", -8, -8)
 	optionsFallback:SetJustifyH("LEFT")
 	optionsFallback:SetJustifyV("TOP")
+	optionsFallback:SetWordWrap(true)
+	if optionsFallback.SetNonSpaceWrap then optionsFallback:SetNonSpaceWrap(true) end
 	optionsFallback:SetText("")
 	optionsFallback:Hide()
 	frame.optionsFallback = optionsFallback
@@ -5218,6 +5220,10 @@ local function EnsureGuideManagerStandaloneFrame(self)
 		frame.optionsAceWidgetRoot = host
 		frame.optionsAceWidget = root
 
+		if self.db and self.db.profile and self.db.profile.debug_display and targetApp == "ZygorGuidesViewer-ItemScore" then
+			self:Print(("[statweights] opening embedded options app=%s"):format(tostring(targetApp)))
+		end
+
 		local ok, err = pcall(function()
 			ACD:Open(targetApp, root)
 		end)
@@ -5227,10 +5233,37 @@ local function EnsureGuideManagerStandaloneFrame(self)
 				frame.optionsAceWidgetRoot = nil
 				frame.optionsAceWidget = nil
 			end
-			frame.optionsFallback:SetText(LT("gb_options_fallback_render_error", tostring(err)))
+			local detail = ""
+			if targetApp == "ZygorGuidesViewer-ItemScore" and self._itemScoreOptionsDebug then
+				local stage = self._itemScoreOptionsDebug.stage
+				local key = self._itemScoreOptionsDebug.key
+				if stage or key then
+					detail = ("\n\nStat Weights stage: %s\nOption key: %s"):format(tostring(stage or "unknown"), tostring(key or "unknown"))
+				end
+			end
+			local message = ("%s\n\nApp: %s%s\n\n%s"):format(
+				LT("gb_options_fallback_render_error", tostring(err)),
+				tostring(targetApp),
+				detail,
+				("Hint: %s"):format(LT("gb_action_open_full_options"))
+			)
+			frame.optionsFallback:SetText(message)
 			frame.optionsFallback:Show()
+			if self.db and self.db.profile and self.db.profile.debug_display and targetApp == "ZygorGuidesViewer-ItemScore" then
+				self:Print(("[statweights] embedded open failed stage=%s key=%s err=%s"):format(
+					tostring(self._itemScoreOptionsDebug and self._itemScoreOptionsDebug.stage or "unknown"),
+					tostring(self._itemScoreOptionsDebug and self._itemScoreOptionsDebug.key or "unknown"),
+					tostring(err)
+				))
+			end
 		else
 			frame.lastRenderedOptionsApp = targetApp
+			if self.db and self.db.profile and self.db.profile.debug_display and targetApp == "ZygorGuidesViewer-ItemScore" then
+				self:Print(("[statweights] embedded options opened successfully stage=%s key=%s"):format(
+					tostring(self._itemScoreOptionsDebug and self._itemScoreOptionsDebug.stage or "open"),
+					tostring(self._itemScoreOptionsDebug and self._itemScoreOptionsDebug.key or "none")
+				))
+			end
 		end
 	end
 

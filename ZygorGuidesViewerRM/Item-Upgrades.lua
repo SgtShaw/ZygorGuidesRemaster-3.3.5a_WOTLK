@@ -2139,7 +2139,12 @@ function Upgrades:Equip(item,retry)
 	end
 
 	if not equippedMain or not equippedPair then
-		Upgrades.EquipFailureCooldown[item.itemlink] = GetTime() + 5
+		local bindState = get_item_bind_state(item.itemlinkfull or item.itemlink)
+		if bindState ~= "boe" then
+			Upgrades.EquipFailureCooldown[item.itemlink] = GetTime() + 5
+		else
+			Upgrades.EquipFailureCooldown[item.itemlink] = nil
+		end
 		debug_equip(("equip failed: item=%s slot=%s bag=%s/%s equipped=%s baglink=%s"):format(
 			safe_tostring(item.itemlink),
 			safe_tostring(item.slot),

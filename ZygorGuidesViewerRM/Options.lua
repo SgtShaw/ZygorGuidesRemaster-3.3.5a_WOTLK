@@ -2490,16 +2490,73 @@ function me:Options_DefineOptions()
 
 	-- ===================== STAT WEIGHTS (ITEMSCORE) =====================
 	do
+		local function DebugStatWeights(fmt, ...)
+			if not (ZGV and ZGV.db and ZGV.db.profile and ZGV.db.profile.debug_display) then return end
+			ZGV:Print(("[statweights] " .. fmt):format(...))
+		end
+
+		local function MarkStatWeightsStage(stage, key)
+			ZGV._itemScoreOptionsDebug = ZGV._itemScoreOptionsDebug or {}
+			ZGV._itemScoreOptionsDebug.stage = stage
+			ZGV._itemScoreOptionsDebug.key = key
+		end
+
+		local function SafeString(value, fallback)
+			if value == nil then return fallback or "" end
+			return tostring(value)
+		end
+
+		local function SafeTable(value)
+			return type(value) == "table" and value or {}
+		end
+
+		local function SafeBool(value, fallback)
+			if value == nil then return not not fallback end
+			return not not value
+		end
+
+		local function SafeNumber(value, fallback)
+			local n = tonumber(value)
+			if n == nil then return fallback end
+			return n
+		end
+
+		local function WrapStatWeightsCallback(kind, key, fallback, fn, coerce)
+			return function(...)
+				MarkStatWeightsStage(kind, key)
+				local ok, result = pcall(fn, ...)
+				if not ok then
+					DebugStatWeights("callback failed kind=%s key=%s err=%s", tostring(kind), tostring(key), tostring(result))
+					return coerce and coerce(fallback) or fallback
+				end
+				if result == nil then
+					return coerce and coerce(fallback) or fallback
+				end
+				return coerce and coerce(result) or result
+			end
+		end
+
+		local function WrapStatWeightsSet(key, fn)
+			return function(...)
+				MarkStatWeightsStage("set", key)
+				local ok, err = pcall(fn, ...)
+				if not ok then
+					DebugStatWeights("setter failed key=%s err=%s", tostring(key), tostring(err))
+				end
+			end
+		end
+
 		local function GetSelectedBuildInfo()
+			MarkStatWeightsStage("shared", "GetSelectedBuildInfo")
 			if not ZGV.ItemScore then return "Unknown class", "Unknown spec", nil, nil end
 			if ZGV.ItemScore.EnsureSelectedWeightTarget then
 				ZGV.ItemScore:EnsureSelectedWeightTarget()
 			end
-			local classNum = tonumber(ZGV.db.char.gear_selected_class) or ZGV.ItemScore.playerclassNum or 1
-			local buildNum = tonumber(ZGV.db.char.gear_selected_build) or tonumber(ZGV.db.char.gear_active_build) or 1
+			local classNum = SafeNumber(ZGV.db.char.gear_selected_class, ZGV.ItemScore.playerclassNum or 1) or 1
+			local buildNum = SafeNumber(ZGV.db.char.gear_selected_build, SafeNumber(ZGV.db.char.gear_active_build, 1)) or 1
 			local classToken = GetClassTagFromID(classNum)
 			local className = (LOCALIZED_CLASS_NAMES_MALE and classToken and LOCALIZED_CLASS_NAMES_MALE[classToken]) or (LOCALIZED_CLASS_NAMES_FEMALE and classToken and LOCALIZED_CLASS_NAMES_FEMALE[classToken]) or classToken or "Unknown class"
-			local fakeLevel = tonumber(ZGV.db and ZGV.db.char and ZGV.db.char.fakelevel) or 0
+			local fakeLevel = SafeNumber(ZGV.db and ZGV.db.char and ZGV.db.char.fakelevel, 0) or 0
 			local level = (fakeLevel > 0 and fakeLevel) or UnitLevel("player")
 			local resolvedBuild, usesFallback = ZGV.ItemScore:GetResolvedBuild(classToken, level, buildNum)
 			local buildName = ZGV.ItemScore:GetBuildName(classNum, resolvedBuild, level, usesFallback)
@@ -2525,7 +2582,7 @@ function me:Options_DefineOptions()
 			selectedsummary = {
 				order = 2.2,
 				type = "description",
-				name = function()
+				name = WrapStatWeightsCallback("name", "selectedsummary", "", function()
 					local className, buildName, classToken, buildNum = GetSelectedBuildInfo()
 					local status = "Curated defaults"
 					local source = ZGV.ItemScore and ZGV.ItemScore.GetRuleSourceLabel and ZGV.ItemScore:GetRuleSourceLabel(classToken, buildNum) or "Unverified local baseline"
@@ -2533,7 +2590,7 @@ function me:Options_DefineOptions()
 						status = "Customized weights"
 					end
 					return ("|cffccccccSelected profile:|r %s - %s\n|cffccccccStatus:|r %s\n|cffccccccDefault source:|r %s\n"):format(className, buildName, status, source)
-				end,
+				end, SafeString),
 			},
 			classdesc = {
 				order = 3,
@@ -2548,7 +2605,7 @@ function me:Options_DefineOptions()
 			type = "select",
 			name = "Class",
 			sorting = {1,2,3,4,5,6,7,8,9,11},
-			values = function()
+			values = WrapStatWeightsCallback("values", "gear_selected_class", {}, function()
 				local male = LOCALIZED_CLASS_NAMES_MALE or {}
 				local female = LOCALIZED_CLASS_NAMES_FEMALE or {}
 				return {
@@ -2563,28 +2620,28 @@ function me:Options_DefineOptions()
 					[9] = male.WARLOCK or female.WARLOCK or "Warlock",
 					[11] = male.DRUID or female.DRUID or "Druid",
 				}
-			end,
-			set = function(i,v)
+			end, SafeTable),
+			set = WrapStatWeightsSet("gear_selected_class", function(i,v)
 				ZGV.db.char.gear_selected_class = v
 				ZGV.db.char.gear_weights_initialized = true
 				ZGV.db.char.gear_weights_manual_class = true
 				Setter_Simple(i,v)
-				local fakeLevel = tonumber(ZGV.db and ZGV.db.char and ZGV.db.char.fakelevel) or 0
+				local fakeLevel = SafeNumber(ZGV.db and ZGV.db.char and ZGV.db.char.fakelevel, 0) or 0
 				local level = (fakeLevel > 0 and fakeLevel) or UnitLevel("player")
 				if ZGV.ItemScore and v == ZGV.ItemScore.playerclassNum then
 					ZGV.db.char.gear_selected_build = ZGV.ItemScore:GetResolvedBuild(GetClassTagFromID(v), level, ZGV.db.char.gear_active_build or 1)
 				else
 					ZGV.db.char.gear_selected_build = ZGV.ItemScore and ZGV.ItemScore:GetResolvedBuild(GetClassTagFromID(v), level, nil) or 1
 				end
-			end,
-			get = function()
+			end),
+			get = WrapStatWeightsCallback("get", "gear_selected_class", 1, function()
 				if ZGV.ItemScore and ZGV.ItemScore.EnsureSelectedWeightTarget then
 					ZGV.ItemScore:EnsureSelectedWeightTarget()
 				elseif not ZGV.db.char.gear_selected_class then
 					ZGV.db.char.gear_selected_class = ZGV.ItemScore and ZGV.ItemScore.playerclassNum or 1
 				end
 				return ZGV.db.char.gear_selected_class
-			end,
+			end, function(value) return SafeNumber(value, 1) or 1 end),
 			width = "normal",
 		}
 
@@ -2593,23 +2650,23 @@ function me:Options_DefineOptions()
 			order = 5,
 			type = "select",
 			name = "Spec",
-			values = function()
+			values = WrapStatWeightsCallback("values", "gear_selected_build", {}, function()
 				if not ZGV.ItemScore or not ZGV.ItemScore.Builds then return {} end
 				return ZGV.ItemScore.Builds[ZGV.db.char.gear_selected_class or 1] or {}
-			end,
-			get = function()
-				local fakeLevel = tonumber(ZGV.db and ZGV.db.char and ZGV.db.char.fakelevel) or 0
+			end, SafeTable),
+			get = WrapStatWeightsCallback("get", "gear_selected_build", 1, function()
+				local fakeLevel = SafeNumber(ZGV.db and ZGV.db.char and ZGV.db.char.fakelevel, 0) or 0
 				local level = (fakeLevel > 0 and fakeLevel) or UnitLevel("player")
 				return ZGV.ItemScore and ZGV.ItemScore:GetResolvedBuild(GetClassTagFromID(ZGV.db.char.gear_selected_class or 1), level, ZGV.db.char.gear_selected_build or 1) or (ZGV.db.char.gear_selected_build or 1)
-			end,
-			set = function(i,v)
+			end, function(value) return SafeNumber(value, 1) or 1 end),
+			set = WrapStatWeightsSet("gear_selected_build", function(i,v)
 				Setter_Simple(i,v)
 				ZGV.db.char.gear_weights_initialized = true
 				ZGV.db.char.gear_weights_manual_class = true
-				local fakeLevel = tonumber(ZGV.db and ZGV.db.char and ZGV.db.char.fakelevel) or 0
+				local fakeLevel = SafeNumber(ZGV.db and ZGV.db.char and ZGV.db.char.fakelevel, 0) or 0
 				local level = (fakeLevel > 0 and fakeLevel) or UnitLevel("player")
 				ZGV.db.char.gear_selected_build = ZGV.ItemScore and ZGV.ItemScore:GetResolvedBuild(GetClassTagFromID(ZGV.db.char.gear_selected_class or 1), level, v) or v
-			end,
+			end),
 			width = "normal",
 		}
 
@@ -2619,17 +2676,17 @@ function me:Options_DefineOptions()
 			type = "execute",
 			name = "Set as Active Spec Weight",
 			desc = "Use these stat weights for gear scoring",
-			func = function()
+			func = WrapStatWeightsSet("activatebuild", function()
 				ZGV.db.char.gear_active_build = ZGV.db.char.gear_selected_build
 				if ZGV.ItemScore then ZGV.ItemScore:DelayedRefreshUserData() end
 				ZGV:Print("Active stat weight set changed.")
-			end,
-			hidden = function()
+			end),
+			hidden = WrapStatWeightsCallback("hidden", "activatebuild", true, function()
 				if not ZGV.ItemScore then return true end
 				local isOwnClass = (tonumber(ZGV.db.char.gear_selected_class) == ZGV.ItemScore.playerclassNum)
 				local isActiveBuild = (tonumber(ZGV.db.char.gear_active_build) == tonumber(ZGV.db.char.gear_selected_build))
 				return not isOwnClass or isActiveBuild
-			end,
+			end, function(value) return SafeBool(value, true) end),
 			width = "double",
 		}
 
@@ -2637,12 +2694,12 @@ function me:Options_DefineOptions()
 			order = 6.1,
 			type = "description",
 			name = "|cff00ff00This is your active stat weight set.|r",
-			hidden = function()
+			hidden = WrapStatWeightsCallback("hidden", "activelabel", true, function()
 				if not ZGV.ItemScore then return true end
 				local isOwnClass = (tonumber(ZGV.db.char.gear_selected_class) == ZGV.ItemScore.playerclassNum)
 				local isActiveBuild = (tonumber(ZGV.db.char.gear_active_build) == tonumber(ZGV.db.char.gear_selected_build))
 				return not (isOwnClass and isActiveBuild)
-			end,
+			end, function(value) return SafeBool(value, true) end),
 			width = "full",
 		}
 
@@ -2658,14 +2715,14 @@ function me:Options_DefineOptions()
 			desc = "Show all stat weight fields, even those not used by this spec",
 			type = "toggle",
 			width = "full",
-			get = function() return ZGV.db.profile.gearshowallstats end,
-			set = function(i,v)
+			get = WrapStatWeightsCallback("get", "showallstats", false, function() return ZGV.db.profile.gearshowallstats end, function(value) return SafeBool(value, false) end),
+			set = WrapStatWeightsSet("showallstats", function(i,v)
 				ZGV.db.profile.gearshowallstats = v
 				local ACR = LibStub and LibStub("AceConfigRegistry-3.0", true)
 				if ACR and ACR.NotifyChange then
 					ACR:NotifyChange("ZygorGuidesViewer-ItemScore")
 				end
-			end,
+			end),
 		}
 
 		IS_args.weightsheader = {
@@ -2677,44 +2734,48 @@ function me:Options_DefineOptions()
 		IS_args.recommendedsummary = {
 			order = 9.2,
 			type = "description",
-			name = function()
+			name = WrapStatWeightsCallback("name", "recommendedsummary", "", function()
 				local className, buildName, classToken, buildNum = GetSelectedBuildInfo()
 				local source = ZGV.ItemScore and ZGV.ItemScore.GetRuleSourceLabel and ZGV.ItemScore:GetRuleSourceLabel(classToken, buildNum) or "Unverified local baseline"
 				return ("|cff88ccffRecommended Weights|r\nThese values are the curated WotLK baseline for %s - %s.\n|cffccccccSource basis:|r %s\nUse the reset button to return to this baseline after experimenting.\n"):format(className, buildName, source)
-			end,
+			end, SafeString),
 			width = "full",
 		}
 
 		-- Build stat weight entries for every class/spec combo
 		local order = 100
 		if ZGV.ItemScore and ZGV.ItemScore.Defaults then
+			MarkStatWeightsStage("schema", "dynamic-stats-start")
+			DebugStatWeights("building dynamic schema selectedClass=%s selectedBuild=%s showall=%s", tostring(ZGV.db and ZGV.db.char and ZGV.db.char.gear_selected_class), tostring(ZGV.db and ZGV.db.char and ZGV.db.char.gear_selected_build), tostring(ZGV.db and ZGV.db.profile and ZGV.db.profile.gearshowallstats))
 			for class, classdata in pairs(ZGV.ItemScore.Defaults) do
 				for specnum, specdata in pairs(classdata) do
 					local classNum = ZGV.ClassToNumber[class]
+					local headerKey = "hdr_"..class.."_"..specnum
+					local customKey = "custom_"..class.."_"..specnum
 
 					-- Header for this spec
-					IS_args["hdr_"..class.."_"..specnum] = {
+					IS_args[headerKey] = {
 						order = order,
 						type = "header",
-						name = function()
+						name = WrapStatWeightsCallback("name", headerKey, "Stat Weights", function()
 							local buildName = ZGV.ItemScore.Builds[classNum] and ZGV.ItemScore.Builds[classNum][specnum] or ("Spec "..specnum)
 							return buildName .. " Stat Weights"
-						end,
-						hidden = function()
+						end, SafeString),
+						hidden = WrapStatWeightsCallback("hidden", headerKey, true, function()
 							return not ((tonumber(ZGV.db.char.gear_selected_class) == classNum) and (tonumber(ZGV.db.char.gear_selected_build) == specnum))
-						end,
+						end, function(value) return SafeBool(value, true) end),
 					}
 					order = order + 1
 
 					-- Custom weights indicator
-					IS_args["custom_"..class.."_"..specnum] = {
+					IS_args[customKey] = {
 						order = order,
 						type = "description",
 						name = "|cffff8800You are using customised stat weights.|r",
-						hidden = function()
+						hidden = WrapStatWeightsCallback("hidden", customKey, true, function()
 							if not ((tonumber(ZGV.db.char.gear_selected_class) == classNum) and (tonumber(ZGV.db.char.gear_selected_build) == specnum)) then return true end
 							return not (ZGV.ItemScore and ZGV.ItemScore.UsesCustomWeights and ZGV.ItemScore:UsesCustomWeights(class, specnum))
-						end,
+						end, function(value) return SafeBool(value, true) end),
 						width = "full",
 					}
 					order = order + 1
@@ -2726,13 +2787,14 @@ function me:Options_DefineOptions()
 							local groupname = "gear_"..class.."_"..specnum
 							local statblizz = stat.blizz
 							local statdisplay = stat.zgvdisplay
+							local optionKey = groupname.."_"..statblizz
 
-							IS_args[groupname.."_"..statblizz] = {
+							IS_args[optionKey] = {
 								order = order,
 								type = "input",
 								name = statdisplay,
 								width = "half",
-								get = function()
+								get = WrapStatWeightsCallback("get", optionKey, "", function()
 									local prefix = "gear_"..class.."_"..specnum.."_"
 									local statset = ZGV.ItemScore.rules[class][specnum].stats
 									local profile = ZGV.db.profile
@@ -2740,12 +2802,12 @@ function me:Options_DefineOptions()
 										return tostring(profile[prefix..statblizz])
 									end
 									if statset[statblizz] then return tostring(statset[statblizz]) end
-									return nil
-								end,
-								set = function(i,v)
+									return ""
+								end, function(value) return SafeString(value, "") end),
+								set = WrapStatWeightsSet(optionKey, function(i,v)
 									local prefix = "gear_"..class.."_"..specnum.."_"
 									if v == "" or v == nil then v = 0 end
-									ZGV.db.profile[prefix..statblizz] = tostring(tonumber(v or 0))
+									ZGV.db.profile[prefix..statblizz] = tostring(SafeNumber(v, 0) or 0)
 
 									-- Check if weights match defaults; if so, clean up saved overrides
 									if ZGV.ItemScore and not ZGV.ItemScore:UsesCustomWeights(class, specnum) then
@@ -2758,8 +2820,8 @@ function me:Options_DefineOptions()
 										end
 									end
 									if ZGV.ItemScore then ZGV.ItemScore:DelayedRefreshUserData() end
-								end,
-								hidden = function()
+								end),
+								hidden = WrapStatWeightsCallback("hidden", optionKey, true, function()
 									if not ((tonumber(ZGV.db.char.gear_selected_class) == classNum) and (tonumber(ZGV.db.char.gear_selected_build) == specnum)) then return true end
 									if ZGV.db.profile.gearshowallstats then return false end
 									local prefix = "gear_"..class.."_"..specnum.."_"
@@ -2768,32 +2830,34 @@ function me:Options_DefineOptions()
 									if pv and pv ~= "" and pv ~= "0" then return false end
 									if statset[statblizz] then return false end
 									return true
-								end,
+								end, function(value) return SafeBool(value, true) end),
 							}
 							order = order + 1
 						end
 					end
 
 					-- Reset button
-					IS_args["reset_"..class.."_"..specnum] = {
+					local resetKey = "reset_"..class.."_"..specnum
+					IS_args[resetKey] = {
 						order = order,
 						type = "execute",
 						name = "Reset to Defaults",
-						func = function()
+						func = WrapStatWeightsSet(resetKey, function()
 							local prefix = "gear_"..class.."_"..specnum.."_"
 							for idx, kw in pairs(ZGV.ItemScore.Keywords) do
 								ZGV.db.profile[prefix..kw.blizz] = nil
 							end
 							if ZGV.ItemScore then ZGV.ItemScore:DelayedRefreshUserData() end
-						end,
-						hidden = function()
+						end),
+						hidden = WrapStatWeightsCallback("hidden", resetKey, true, function()
 							return not ((tonumber(ZGV.db.char.gear_selected_class) == classNum) and (tonumber(ZGV.db.char.gear_selected_build) == specnum))
-						end,
+						end, function(value) return SafeBool(value, true) end),
 						width = "normal",
 					}
 					order = order + 1
 				end
 			end
+			MarkStatWeightsStage("schema", "dynamic-stats-finished")
 		end
 
 		self.optionsitemscore = {

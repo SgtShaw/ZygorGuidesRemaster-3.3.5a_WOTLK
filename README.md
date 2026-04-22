@@ -164,8 +164,23 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
-### Revision 125 - 3.0.125
+### Revision 127 - 3.0.127
 
+- Added a safe isolation pass for the embedded Stat Weights page render failure reported by Russian-locale users.
+- Improved the Guide Manager embedded-options fallback panel so it shows a wrapped full error message instead of a truncated line.
+- Added targeted debug-only Stat Weights diagnostics that record the last render stage and option key touched before AceConfigDialog fails.
+- Hardened the embedded Stat Weights AceConfig callbacks so they always return safe types for name, get, values, and hidden handlers.
+- Made dynamic stat-weight input callbacks return empty strings instead of nil where AceConfig expects string values.
+- Updated addon version metadata to 3.0.127.
+
+### Revision 126 - 3.0.126
+
+- Fixed group-loot overlay handling so non-gear loot items no longer receive upgrade, downgrade, or unusable markers.
+- Improved BOE upgrade prompting so failed bind/equip confirmation attempts no longer suppress later prompts for the same item.
+- Adjusted the group-loot marker presentation to behave more like an icon glow and less like a button overlay.
+- Updated addon version metadata to 3.0.126.
+
+### Revision 125 - 3.0.125
 - Simplified ItemScore tooltip comparison text so valid items show signed numeric deltas like `+17.3`, `-4.2`, or `0.0` instead of word labels such as upgrade/downgrade/sidegrade.
 - Changed invalid ItemScore tooltip output to a short red `Unusable` label.
 - Fixed shields being treated as valid upgrades for classes that cannot use them, including quest reward and tooltip recommendation paths.
@@ -383,6 +398,7 @@ This remaster focuses on UI/UX modernization, packaging quality, compatibility m
 
 <img width="433" height="247" alt="image" src="https://github.com/user-attachments/assets/579b6acb-df5e-4f40-8ef3-7d6b33e1015d" />
 <img width="436" height="248" alt="image" src="https://github.com/user-attachments/assets/a845b881-2831-43e3-bd26-5287f9783d68" />
+
 
 
 

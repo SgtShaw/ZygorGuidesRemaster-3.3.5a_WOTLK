@@ -795,23 +795,23 @@ function ItemScore:GetOrCreateLootRollMarker(frame)
 	local marker = CreateFrame("Frame", nil, frame)
 	marker:SetFrameStrata("TOOLTIP")
 	marker:SetFrameLevel((frame:GetFrameLevel() or 1) + 20)
-	marker:SetSize(16, 16)
+	marker:SetSize(14, 14)
 	marker:Hide()
 
-	marker.glow = marker:CreateTexture(nil, "ARTWORK")
-	marker.glow:SetTexture("Interface\\Buttons\\UI-ActionButton-Border")
-	marker.glow:SetBlendMode("ADD")
-	marker.glow:SetVertexColor(1, 1, 1, 0.35)
-	marker.glow:SetPoint("CENTER", marker, "CENTER", 0, 0)
-	marker.glow:SetSize(24, 24)
+	marker.glow = marker:CreateFontString(nil, "ARTWORK")
+	marker.glow:SetFont(FONTBOLD, 16, "THICKOUTLINE")
+	marker.glow:SetAllPoints(marker)
+	marker.glow:SetJustifyH("CENTER")
+	marker.glow:SetJustifyV("MIDDLE")
+	marker.glow:SetTextColor(1, 1, 1, 0.22)
 
 	marker.symbol = marker:CreateFontString(nil, "OVERLAY")
-	marker.symbol:SetFont(FONTBOLD, 14, "OUTLINE")
+	marker.symbol:SetFont(FONTBOLD, 12, "OUTLINE")
 	marker.symbol:SetAllPoints(marker)
 	marker.symbol:SetJustifyH("CENTER")
 	marker.symbol:SetJustifyV("MIDDLE")
 
-	marker:SetPoint("TOPRIGHT", anchor, "TOPRIGHT", -2, -2)
+	marker:SetPoint("TOPRIGHT", anchor, "TOPRIGHT", -1, -1)
 	frame.ZGVRollMarker = marker
 	return marker
 end
@@ -891,7 +891,14 @@ function ItemScore:RefreshLootRollMarker(rollID, attempt)
 		return false
 	end
 
+	if validity.code == "slot" then
+		marker:Hide()
+		self.PendingLootRolls[rollID] = nil
+		return true
+	end
+
 	if not validity.valid then
+		marker.glow:SetText("x")
 		marker.symbol:SetText("x")
 		marker.symbol:SetTextColor(1.0, 0.10, 0.10)
 		marker:Show()
@@ -907,14 +914,17 @@ function ItemScore:RefreshLootRollMarker(rollID, attempt)
 	end
 
 	if comparison.isNewItem or (comparison.deltaScore or 0) > 0 or (comparison.armorFallback and (comparison.deltaScore or 0) > 0) then
+		marker.glow:SetText("+")
 		marker.symbol:SetText("+")
 		marker.symbol:SetTextColor(0.20, 1.00, 0.20)
 		marker:Show()
 	elseif (comparison.deltaScore or 0) < 0 then
+		marker.glow:SetText("-")
 		marker.symbol:SetText("-")
 		marker.symbol:SetTextColor(1.00, 0.25, 0.25)
 		marker:Show()
 	else
+		marker.glow:SetText("")
 		marker:Hide()
 	end
 
