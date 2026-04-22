@@ -21,6 +21,14 @@ local TA_LibTaxi = LibStub and ({pcall(LibStub,"LibTaxi-1.0")})[2]
 local zoneContinentCache = {}
 local zoneNumberCache = {}
 
+local function FormatWaypointLocation(goal, fallbackMap)
+	if not goal then return nil end
+	local map = goal.map or fallbackMap
+	local x, y = goal.x, goal.y
+	if not map or not x or not y then return nil end
+	return ("%s (%d,%d)"):format(map, x, y)
+end
+
 local function GetZoneContinent(zoneName)
 	if zoneContinentCache[zoneName] then return zoneContinentCache[zoneName] end
 	local c, z = ZGV:GetMapZoneNumbers(zoneName)
@@ -560,13 +568,20 @@ me.WaypointFunctions['internal'] = {
 					if crossZoneDest and gmap ~= currentZone then
 						travelTitle = GetTravelArrowTitle(crossZoneDest)
 					end
-					local arrowTitle =
-						travelTitle
+					local waypointTitle =
+						goal.title
+						or travelTitle
 						or GetRemasterArrowTitle(self,goal,title)
 						or self.CurrentStep:GetTitle()
 						or (gmap and goal.x and ("%s %d,%d"):format(gmap,goal.x,goal.y))
 						or L['waypoint_step']:format(self.CurrentStepNum)
-					local way = self.Pointer:SetWaypoint (nil,gmap,goal.x,goal.y,{title=arrowTitle,goal=goal,onminimap="always",overworld=true})
+					local way = self.Pointer:SetWaypoint (nil,gmap,goal.x,goal.y,{
+						title=waypointTitle,
+						titleloc=FormatWaypointLocation(goal, gmap),
+						goal=goal,
+						onminimap="always",
+						overworld=true
+					})
 					if way then
 						-- Shrink route endpoint markers
 						if goal.routegroup then
@@ -610,10 +625,12 @@ me.WaypointFunctions['internal'] = {
 				if preferredDisplayGoal and selected.goal and IsNavOnly(selected.goal) then
 					selected.goal = preferredDisplayGoal
 					selected.t =
-						GetRemasterArrowTitle(self,preferredDisplayGoal,title)
+						preferredDisplayGoal.title
+						or GetRemasterArrowTitle(self,preferredDisplayGoal,title)
 						or self.CurrentStep:GetTitle()
 						or (preferredDisplayGoal.map and preferredDisplayGoal.x and ("%s %d,%d"):format(preferredDisplayGoal.map,preferredDisplayGoal.x,preferredDisplayGoal.y))
 						or L['waypoint_step']:format(self.CurrentStepNum)
+					selected.titleloc = FormatWaypointLocation(preferredDisplayGoal, preferredDisplayGoal.map or (self.CurrentStep and self.CurrentStep.map) or GetRealZoneText())
 				end
 				-- Travel Advisor: when cross-zone, override arrow to point at transit location
 				if crossZoneDest then
@@ -640,10 +657,12 @@ me.WaypointFunctions['internal'] = {
 				if lastDisplayGoal then
 					lastpoint.goal = lastDisplayGoal
 					lastpoint.t =
-						GetRemasterArrowTitle(self,lastDisplayGoal,title)
+						lastDisplayGoal.title
+						or GetRemasterArrowTitle(self,lastDisplayGoal,title)
 						or self.CurrentStep:GetTitle()
 						or (lastDisplayGoal.map and lastDisplayGoal.x and ("%s %d,%d"):format(lastDisplayGoal.map,lastDisplayGoal.x,lastDisplayGoal.y))
 						or L['waypoint_step']:format(self.CurrentStepNum)
+					lastpoint.titleloc = FormatWaypointLocation(lastDisplayGoal, lastDisplayGoal.map or (self.CurrentStep and self.CurrentStep.map) or GetRealZoneText())
 				end
 				self.Pointer:ShowArrow (lastpoint)
 			elseif firstpoint then

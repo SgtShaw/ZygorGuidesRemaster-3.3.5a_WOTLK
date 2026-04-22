@@ -611,8 +611,18 @@ function me:ParseEntry(text)
 		indent,line = line:match("^(%.*)(.*)")
 
 		line = line:gsub("^%* *","")
-		-- Strip retail italic markers: _text_ -> text
-		line = line:gsub("_([^_]+)_","%1")
+		-- Strip retail italic markers: _text_ -> text, but do not mangle icon paths like INV_Misc_Food_02.
+		do
+			local source = line
+			line = source:gsub("()_([^_]+)_()", function(openPos, inner, closePos)
+				local prev = openPos > 1 and source:sub(openPos - 1, openPos - 1) or ""
+				local nextc = closePos <= #source and source:sub(closePos, closePos) or ""
+				if prev:match("[%w]") or nextc:match("[%w]") then
+					return "_" .. inner .. "_"
+				end
+				return inner
+			end)
+		end
 
 		line = line .. "|"
 		local goal={}
@@ -1237,6 +1247,9 @@ function me:ParseEntry(text)
 				goal.important=true
 			elseif cmd=="icon" or cmd=="buttonicon" or cmd=="mapicon" then
 				local p = params and params:gsub("\\\\","\\") or params
+				if p and type(p)=="string" then
+					p = p:gsub("^Interface\\icons\\","Interface\\Icons\\")
+				end
 				if cmd=="icon" then
 					goal.icon=p
 				elseif cmd=="buttonicon" then
@@ -1244,6 +1257,8 @@ function me:ParseEntry(text)
 				elseif cmd=="mapicon" then
 					goal.mapicon=p
 				end
+			elseif cmd=="title" then
+				goal.title = params and params:gsub('^"(.-)"$',"%1") or params
 			elseif cmd=="execute" or cmd=="macro" or cmd=="updatescript" then
 				goal.autoscript=params
 			elseif cmd=="condition_visible" then

@@ -600,7 +600,8 @@ local function ICON_TAG(path)
 	if not path or path=="" then return nil end
 	path = path:gsub("\\\\","\\")
 	if path:find("ObjectIcons") then
-		return "|T"..path..":14:14:0:0:256:256:0:32:0:32|t"
+		-- The top-left tile on ObjectIcons is blank on 3.3.5a clients; use the first visible sprite instead.
+		return "|T"..path..":14:14:0:0:256:256:32:64:0:32|t"
 	end
 	return "|T"..path..":14:14:0:0|t"
 end
@@ -608,7 +609,7 @@ end
 local ICON_IMPORTANT = "Interface\\GossipFrame\\AvailableQuestIcon"
 local ICON_OPTIONAL = "Interface\\GossipFrame\\DailyQuestIcon"
 
-function Goal:GetText(showcompleteness)
+function Goal:GetText(showcompleteness,hidecustomicons)
 	--if type(goal)=="number" then goal=self.CurrentStep.goals[goal] end
 	
 	local text="?"
@@ -714,15 +715,16 @@ function Goal:GetText(showcompleteness)
 		local tag = ICON_TAG(ICON_OPTIONAL)
 		if tag then prefixes[#prefixes+1] = tag end
 	end
-	if self.icon then
+	if self.icon and not hidecustomicons then
 		local tag = ICON_TAG(self.icon)
 		if tag then prefixes[#prefixes+1] = tag end
 	end
-	if self.buttonicon then
+	-- For actionable rows, |buttonicon is meant to skin the inline action button, not duplicate inline text.
+	if self.buttonicon and not hidecustomicons and not self.action then
 		local tag = ICON_TAG(self.buttonicon)
 		if tag then prefixes[#prefixes+1] = tag end
 	end
-	if self.mapicon then
+	if self.mapicon and not hidecustomicons then
 		local tag = ICON_TAG(self.mapicon)
 		if tag then prefixes[#prefixes+1] = tag end
 	end

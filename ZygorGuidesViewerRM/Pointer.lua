@@ -1409,6 +1409,9 @@ local function ShowTooltip(button,tooltip)
 	tooltip:SetOwner(button,"ANCHOR_BOTTOM")
 	tooltip:ClearLines()
 	tooltip:SetText(button.waypoint.t)
+	if button.waypoint.titleloc and button.waypoint.titleloc ~= button.waypoint.t then
+		tooltip:AddLine(button.waypoint.titleloc, 0.85, 0.85, 0.85)
+	end
 	if button.waypoint.OnEnter then
 		local r = button.waypoint:OnEnter(tooltip)
 		if r==false then return end

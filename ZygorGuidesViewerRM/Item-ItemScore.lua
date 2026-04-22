@@ -803,7 +803,13 @@ function ItemScore:OnEvent(event,arg1,arg2,...)
 	elseif event == "SKILL_LINES_CHANGED" then -- on classic, skills changed, so user may have learned new weapon skill
 		ItemScore:GetEquipmentSkills()
 	elseif event == "LOADING_SCREEN_DISABLED" then -- user logged in, see what upgrades we have
+		ItemScore:DelayedRefreshUserData()
+		ItemScore.LoginRefreshTimer = ItemScore.LoginRefreshTimer or ZGV:ScheduleTimer(function()
+			ItemScore.LoginRefreshTimer = nil
+			ItemScore:DelayedRefreshUserData()
+		end,1.5)
 		ItemScore.EquipTimer = ItemScore.EquipTimer or ZGV:ScheduleTimer(function() 
+			ItemScore.EquipTimer = nil
 			ItemScore.Upgrades:ScoreEquippedItems()
 		end,0.5)
 	elseif event == "BAG_UPDATE_DELAYED" then -- optimize bag-only changes by checking newly acquired items first
@@ -1231,6 +1237,14 @@ function ItemScore:RefreshUserData()
 	end
 end
 
+function ItemScore:QueueActiveBuildRetry()
+	if self.ActiveBuildRetryTimer or not ZGV.ScheduleTimer then return end
+	self.ActiveBuildRetryTimer = ZGV:ScheduleTimer(function()
+		self.ActiveBuildRetryTimer = nil
+		self:DelayedRefreshUserData()
+	end,1.0)
+end
+
 function ItemScore:SetStatWeights(playerclass,playerspec,playerlevel)
 	self.playerclass = playerclass or (select(2,UnitClass("player")))
 	self.playerclassName = (select(1,UnitClass("player")))
@@ -1242,11 +1256,24 @@ function ItemScore:SetStatWeights(playerclass,playerspec,playerlevel)
 	-- 3.3.5a: detect spec from talent tree point distribution
 	self.playeristank = self.playerclass=="DRUID" or self.playerclass=="PALADIN" or self.playerclass=="WARRIOR" or self.playerclass=="DEATHKNIGHT"
 	self.playerishealer = self.playerclass=="DRUID" or self.playerclass=="SHAMAN" or self.playerclass=="PRIEST" or self.playerclass=="PALADIN"
+	local previousActiveBuild = tonumber(ZGV.db.char.gear_active_build)
+	local previousSelectedBuild = tonumber(ZGV.db.char.gear_selected_build)
 	local detectedBuild, usingFallbackBuild = self:DetectActiveBuild(self.playerclass, self.playerlevel)
-	ZGV.db.char.gear_active_build = detectedBuild
-	ZGV.db.char.gear_active_build = self:GetResolvedBuild(self.playerclass, self.playerlevel, ZGV.db.char.gear_active_build)
-	if usingFallbackBuild or not ZGV.db.char.gear_selected_build then
+	local fallbackUntrusted = usingFallbackBuild and (tonumber(self.playerlevel) or 0) >= 10
+	if fallbackUntrusted and previousActiveBuild and self.rules[self.playerclass] and self.rules[self.playerclass][previousActiveBuild] then
+		ZGV.db.char.gear_active_build = previousActiveBuild
+		usingFallbackBuild = false
+	else
+		ZGV.db.char.gear_active_build = detectedBuild
+		ZGV.db.char.gear_active_build = self:GetResolvedBuild(self.playerclass, self.playerlevel, ZGV.db.char.gear_active_build)
+	end
+	if fallbackUntrusted then
+		self:QueueActiveBuildRetry()
+	end
+	if (usingFallbackBuild and not fallbackUntrusted) or not ZGV.db.char.gear_selected_build then
 		ZGV.db.char.gear_selected_build = ZGV.db.char.gear_active_build
+	elseif fallbackUntrusted and previousSelectedBuild and self.rules[self.playerclass] and self.rules[self.playerclass][previousSelectedBuild] then
+		ZGV.db.char.gear_selected_build = previousSelectedBuild
 	end
 	ZGV.db.char.gear_selected_build = self:GetResolvedBuild(self.playerclass, self.playerlevel, ZGV.db.char.gear_selected_build)
 	self:EnsureSelectedWeightTarget()

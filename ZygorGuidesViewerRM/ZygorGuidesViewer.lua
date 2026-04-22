@@ -6018,6 +6018,9 @@ function me:UpdateFrameCurrent(nonsecure_only)
 					local spec
 					if self.GetGoalActionSpec then
 						spec = self:GetGoalActionSpec(goal)
+						if spec and goal.buttonicon then
+							spec.icon = goal.buttonicon
+						end
 						if spec and (spec.kind == "talk" or spec.kind == "kill") then
 							if inlineSeenActionSignatures[spec.signature] then
 								spec = nil
@@ -6160,6 +6163,7 @@ function me:UpdateFrameCurrent(nonsecure_only)
 						icon:SetIcon(defaultIndex)
 					end
 					icon:SetDesaturated(not not desaturate)
+					icon:SetVertexColor(1,1,1,1)
 				end
 
 				if status=="passive" then

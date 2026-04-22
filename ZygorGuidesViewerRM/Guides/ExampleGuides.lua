@@ -225,6 +225,43 @@ ZygorGuidesViewer:RegisterGuide("Ares' Guide Authoring\\Examples\\Edge Cases and
 		.'2) Are IDs/coords real and testable?
 		.'3) Do jump labels and destinations exist?
 		.'4) Do loops have clear |until exit conditions?
+	step //17 comment icon header behavior test
+		.'Dev test block using comment/header icon rows.
+		.'East of the main path, loot Ambercorns around the trees.|route Mulgore,50.36,66.49;47.74,68.21;55.72,66.67
+		.'And loot Well Stones (around the well at waypoint). |goto Mulgore,53.68,66.29
+		.collect 2 Ambercorn##4809|q 771/1|icon Interface\\icons\\inv_misc_food_02
+		.collect 2 Well Stone##4808|q 771/2|icon Interface\\icons\\INV_Stone_12
+		.'
+		.'Grind any mobs you see along the way.
+		.'
+		.'Kill/loot Wolves and Plainstriders.|icon Interface\\icons\\ability_meleedamage
+		.collect 6 Prairie Wolf Paw##4758|q 748/1|icon Interface\\icons\\inv_misc_monsterclaw_04
+		.collect 4 Plainstrider Talon##4759|q 748/2|n|icon Interface\\icons\\spell_nature_natureswrath
+		.'
+		.'Kill/loot Swoops, Wolves, Plainstriders and Cougars.|icon Interface\\icons\\ability_meleedamage
+		.collect 1 Prairie Wolf Heart##4804|q 766/1|n|icon Interface\\icons\\inv_misc_organ_01
+		.collect 1 Flatland Cougar Femur##4805|q 766/2|n|icon Interface\\icons\\inv_misc_bone_01
+		.collect 1 Plainstrider Scale##4806|q 766/3|n|icon Interface\\icons\\inv_misc_monsterscales_03
+		.collect 1 Swoop Gizzard##4807|q 766/4|n|icon Interface\\icons\\inv_misc_organ_04
+		.'
+		.'Kill/loot Swoops.|icon Interface\\icons\\ability_meleedamage
+		.collect 8 Trophy Swoop Quill##4769|q 761/1|n|icon Interface\\icons\\spell_magic_featherfall
+		only Tauren
+	step //18 objective header control
+		.'Control step using real objective header rows below.
+		.kill Prairie Wolf##2966, Plainstrider##2955 |n|icon Interface\\icons\\ability_meleedamage
+		.collect 6 Prairie Wolf Paw##4758|q 748/1|icon Interface\\icons\\inv_misc_monsterclaw_04
+		.collect 4 Plainstrider Talon##4759|q 748/2|n|icon Interface\\icons\\spell_nature_natureswrath
+		.'
+		.kill Swoop##2971, Prairie Wolf##2966, Plainstrider##2955, Flatland Cougar##3035 |n|icon Interface\\icons\\ability_meleedamage
+		.collect 1 Prairie Wolf Heart##4804|q 766/1|n|icon Interface\\icons\\inv_misc_organ_01
+		.collect 1 Flatland Cougar Femur##4805|q 766/2|n|icon Interface\\icons\\inv_misc_bone_01
+		.collect 1 Plainstrider Scale##4806|q 766/3|n|icon Interface\\icons\\inv_misc_monsterscales_03
+		.collect 1 Swoop Gizzard##4807|q 766/4|n|icon Interface\\icons\\inv_misc_organ_04
+		.'
+		.kill Swoop##2971 |n|icon Interface\\icons\\ability_meleedamage
+		.collect 8 Trophy Swoop Quill##4769|q 761/1|n|icon Interface\\icons\\spell_magic_featherfall
+		only Tauren
 ]])
 
 ZygorGuidesViewer:RegisterGuide("Ares' Guide Authoring\\Examples\\Copy-Paste Skeleton (Live)",[[

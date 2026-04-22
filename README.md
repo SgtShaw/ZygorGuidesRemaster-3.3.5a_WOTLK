@@ -163,6 +163,17 @@ This addon is fully open source and can be inspected before use.
 - A VirusTotal scan of the download link is provided for transparency.
 
 ## Changelog
+### Revision 130 - 3.0.130
+
+- Fixed a first-login Stat Weights / Gear Advisor timing issue where the active build could initially fall back to the class baseline (such as Discipline) until `/reload` was used.
+- Added an extra delayed ItemScore refresh after `LOADING_SCREEN_DISABLED` so active talent data has a second chance to settle before the selected build is finalized on login.
+- Fixed an issue with `|icon` not being applied since .114 update.
+- Fixed an issue with the new `|buttonicon` for replacing the action button icon for kill/talk.
+- Verified the "Ant Trail" for multi-`|goto`, `|route`, and `|loop` work as intended. (not active on multi-goto)
+- Fixed an issue with `|title` syntax not replacing the Title for the Waypoint.
+- Fixed an issue where using `info` as a blank space line causes `|icon` and/or `|buttonicon` to be multiplied incorrectly, stacked, and otherwise misplaced.
+- Updated addon version metadata to 3.0.130.
+
 ### Revision 129 - 3.0.129
 
 - Improved active-build detection so Stat Weights and Gear Advisor now prefer the talent tree with the highest number of spent points before falling back to older client APIs.
