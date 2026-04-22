@@ -171,7 +171,7 @@ This addon is fully open source and can be inspected before use.
 - Added targeted debug-only Stat Weights diagnostics that record the last render stage and option key touched before AceConfigDialog fails.
 - Hardened the embedded Stat Weights AceConfig callbacks so they always return safe types for name, get, values, and hidden handlers.
 - Made dynamic stat-weight input callbacks return empty strings instead of nil where AceConfig expects string values.
-- Updated addon version metadata to 3.0.127.
+- Updated addon version metadata to 3.0.127. 
 
 ### Revision 126 - 3.0.126
 
