@@ -216,6 +216,8 @@ function me:Options_RegisterDefaults()
 			autogear_keepheirlooms = true,
 			itemscore_tooltips = true,
 			itemscore_tooltips_allbuilds = false,
+			masterloot_notices = true,
+			masterloot_compare = true,
 			questitemcache = {},
 
 			-- Gold Guide tooltips
@@ -2400,6 +2402,22 @@ function me:Options_DefineOptions()
 				width = "full",
 				disabled = function() return not self.db.profile.autogear end,
 			},
+			masterloot_notices = {
+				order = 4.1,
+				name = "Show Master Loot Upgrade Notices",
+				desc = "Print a local Gear Advisor message when a visible master-loot item is a true upgrade for your active build.",
+				type = "toggle",
+				width = "full",
+				disabled = function() return not self.db.profile.autogear end,
+			},
+			masterloot_compare = {
+				order = 4.2,
+				name = "Include Compared Equipped Item in Master Loot Notices",
+				desc = "Include the equipped baseline item link in the local master-loot upgrade message when available.",
+				type = "toggle",
+				width = "full",
+				disabled = function() return not self.db.profile.autogear or not self.db.profile.masterloot_notices end,
+			},
 			vendorheader = {
 				order = 6,
 				type = "header",
@@ -2604,7 +2622,6 @@ function me:Options_DefineOptions()
 			order = 4,
 			type = "select",
 			name = "Class",
-			sorting = {1,2,3,4,5,6,7,8,9,11},
 			values = WrapStatWeightsCallback("values", "gear_selected_class", {}, function()
 				local male = LOCALIZED_CLASS_NAMES_MALE or {}
 				local female = LOCALIZED_CLASS_NAMES_FEMALE or {}

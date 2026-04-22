@@ -164,6 +164,16 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
+### Revision 128 - 3.0.128
+
+- Added local Gear Advisor master-loot notices that announce true upgrades in chat when a visible master-loot item is a real upgrade for your active build.
+- Added a dedupe cooldown for repeated master-loot item checks so reopening the same corpse or loot window does not spam the same message repeatedly.
+- Added Gear Advisor options to enable or disable master-loot notices and to include or hide the compared equipped item link in those notices.
+- Continued the embedded Stat Weights render investigation for affected Russian-locale users by surfacing the full embedded AceConfig error and narrowing the fault to the options table schema.
+- Fixed the embedded Stat Weights page failure on older AceConfig builds by removing the unsupported gear_selected_class sorting field that was being rejected as an unknown parameter.
+- Fixed Stat Weights selected-build syncing for your own class so the page now follows the detected active spec automatically again, including live swaps such as Holy to Shadow.
+- Updated addon version metadata to 3.0.128.
+
 ### Revision 127 - 3.0.127
 
 - Added a safe isolation pass for the embedded Stat Weights page render failure reported by Russian-locale users.
@@ -171,7 +181,7 @@ This addon is fully open source and can be inspected before use.
 - Added targeted debug-only Stat Weights diagnostics that record the last render stage and option key touched before AceConfigDialog fails.
 - Hardened the embedded Stat Weights AceConfig callbacks so they always return safe types for name, get, values, and hidden handlers.
 - Made dynamic stat-weight input callbacks return empty strings instead of nil where AceConfig expects string values.
-- Updated addon version metadata to 3.0.127. 
+- Updated addon version metadata to 3.0.127.
 
 ### Revision 126 - 3.0.126
 

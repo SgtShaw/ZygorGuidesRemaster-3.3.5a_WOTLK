@@ -15,6 +15,10 @@ local function branded_tooltip_header(label)
 	return ("|cffffff88Z|cffffee66y|cffffdd44g|cffffcc22o|cffffbb00r|r %s:"):format(label)
 end
 
+local function branded_chat_prefix(label)
+	return ("|cffffff88Z|cffffee66y|cffffdd44g|cffffcc22o|cffffbb00r|r |cffffaa00%s:|r"):format(label)
+end
+
 local function round_score(value)
 	if not value then return 0 end
 	if value >= 0 then
@@ -22,6 +26,13 @@ local function round_score(value)
 	else
 		return math.ceil(value * 10 - 0.5) / 10
 	end
+end
+
+local function clamp_display_percent(percent)
+	if not percent then return nil end
+	if percent >= 100 then return 99.99 end
+	if percent <= -100 then return -99.99 end
+	return percent
 end
 
 if not ItemScore then return end
@@ -39,6 +50,10 @@ ItemScore.Gear_ZygorToPawn = ItemScore.Gear_ZygorToPawn or {}
 local ItemCache = {}
 ItemScore.ItemCache = ItemCache
 ItemScore.PendingLootRolls = ItemScore.PendingLootRolls or {}
+ItemScore.MasterLootNoticeCooldown = 10
+ItemScore.MasterLootRecent = ItemScore.MasterLootRecent or {}
+ItemScore.MasterLootSession = ItemScore.MasterLootSession or {}
+ItemScore.PendingMasterLootNotice = ItemScore.PendingMasterLootNotice or false
 
 local locale=GetLocale()
 if locale=="enGB" then locale="enUS" end  -- just in case.
@@ -323,6 +338,8 @@ function ItemScore:Initialise()
 		:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED")
 		:RegisterEvent("START_LOOT_ROLL")
 		:RegisterEvent("CANCEL_LOOT_ROLL")
+		:RegisterEvent("LOOT_OPENED")
+		:RegisterEvent("LOOT_CLOSED")
 
 		:RegisterEvent("PLAYER_REGEN_DISABLED")
 		:RegisterEvent("PLAYER_REGEN_ENABLED")
@@ -390,11 +407,17 @@ function ItemScore:DetectActiveBuild(classToken, level)
 	if not classToken or (level and level < 10) then
 		return fallbackBuild, true
 	end
-	local activeTalentGroup = GetActiveTalentGroup and GetActiveTalentGroup(false, false) or nil
+	local activeTalentGroup = nil
+	if GetActiveTalentGroup then
+		local ok, group = pcall(GetActiveTalentGroup)
+		if ok and tonumber(group) then
+			activeTalentGroup = tonumber(group)
+		end
+	end
 	local bestTree, bestPoints, totalPoints = fallbackBuild, 0, 0
 	for i = 1, GetNumTalentTabs() do
 		local _, _, pointsSpent
-		if activeTalentGroup then
+		if activeTalentGroup and activeTalentGroup > 0 then
 			_, _, pointsSpent = GetTalentTabInfo(i, false, false, activeTalentGroup)
 		else
 			_, _, pointsSpent = GetTalentTabInfo(i)
@@ -701,6 +724,7 @@ function ItemScore:EnsureSelectedWeightTarget(forceReset)
 	local classToken = self.playerclass or (select(2, UnitClass("player")))
 	local classNum = self.playerclassNum or (classToken and ZGV.ClassToNumber and ZGV.ClassToNumber[classToken]) or 1
 	local level = tonumber(self.playerlevel) or UnitLevel("player")
+	local activeBuild = tonumber(ZGV.db.char.gear_active_build) or self:GetResolvedBuild(classToken, level, nil)
 	local selectedClass = tonumber(ZGV.db.char.gear_selected_class)
 	local selectedBuild = tonumber(ZGV.db.char.gear_selected_build)
 	local selectedClassToken = get_class_tag(selectedClass)
@@ -708,17 +732,17 @@ function ItemScore:EnsureSelectedWeightTarget(forceReset)
 
 	if not needsInit and selectedClass == classNum then
 		local resolvedBuild = self:GetResolvedBuild(classToken, level, selectedBuild)
-		if selectedBuild ~= resolvedBuild then
+		if selectedBuild ~= resolvedBuild or resolvedBuild ~= activeBuild then
 			needsInit = true
 		end
 	end
 
 	if needsInit then
 		ZGV.db.char.gear_selected_class = classNum
-		ZGV.db.char.gear_selected_build = tonumber(ZGV.db.char.gear_active_build) or self:GetResolvedBuild(classToken, level, nil)
+		ZGV.db.char.gear_selected_build = activeBuild
 		ZGV.db.char.gear_weights_initialized = true
 	elseif selectedClass == classNum then
-		ZGV.db.char.gear_selected_build = self:GetResolvedBuild(classToken, level, selectedBuild)
+		ZGV.db.char.gear_selected_build = activeBuild
 	end
 
 	return ZGV.db.char.gear_selected_class, ZGV.db.char.gear_selected_build
@@ -756,6 +780,10 @@ function ItemScore:OnEvent(event,arg1,arg2,...)
 		ItemScore:QueueLootRollMarker(arg1)
 	elseif event == "CANCEL_LOOT_ROLL" then
 		ItemScore:HideLootRollMarker(arg1)
+	elseif event == "LOOT_OPENED" then
+		ItemScore:HandleMasterLootOpened()
+	elseif event == "LOOT_CLOSED" then
+		ItemScore:ResetMasterLootSession()
 	end
 
 	if event == "PLAYER_EQUIPMENT_CHANGED" then
@@ -764,6 +792,181 @@ function ItemScore:OnEvent(event,arg1,arg2,...)
 	if event == "GET_ITEM_INFO_RECEIVED" then
 		for rollID in pairs(ItemScore.PendingLootRolls) do
 			ItemScore:RefreshLootRollMarker(rollID)
+		end
+		if ItemScore.PendingMasterLootNotice and GetLootMethod and GetLootMethod() == "master" then
+			ItemScore.PendingMasterLootNotice = false
+			ItemScore:HandleMasterLootOpened()
+		end
+	end
+end
+
+function ItemScore:ResetMasterLootSession()
+	wipe(self.MasterLootSession)
+end
+
+function ItemScore:BuildMasterLootSourceKey(slot)
+	local source = nil
+	if GetLootSourceInfo then
+		local ok, s1, s2 = pcall(GetLootSourceInfo, slot)
+		if ok then
+			if s1 and s1 ~= "" then
+				source = tostring(s1)
+				if s2 and s2 ~= "" then
+					source = source .. ":" .. tostring(s2)
+				end
+			end
+		end
+	end
+	return source or ("slot:%s"):format(tostring(slot))
+end
+
+function ItemScore:BuildMasterLootNoticeKey(slot, itemlink)
+	local stripped = strip_link(itemlink) or itemlink or "nil"
+	return ("%s|%s"):format(self:BuildMasterLootSourceKey(slot), stripped)
+end
+
+function ItemScore:HasMasterLootAnnouncement(slot, itemlink)
+	local now = GetTime and GetTime() or 0
+	local cooldown = self.MasterLootNoticeCooldown or 10
+	local key = self:BuildMasterLootNoticeKey(slot, itemlink)
+
+	for existingKey, stamp in pairs(self.MasterLootRecent) do
+		if not stamp or (now - stamp) > cooldown then
+			self.MasterLootRecent[existingKey] = nil
+		end
+	end
+
+	if self.MasterLootSession[key] then return false end
+	local lastSeen = self.MasterLootRecent[key]
+	if lastSeen and (now - lastSeen) < cooldown then return false end
+	return key
+end
+
+function ItemScore:MarkMasterLootAnnouncement(key)
+	if not key then return end
+	self.MasterLootSession[key] = true
+	self.MasterLootRecent[key] = GetTime and GetTime() or 0
+end
+
+function ItemScore:GetMasterLootBaselineLink(validity, comparison)
+	local upgrades = self.Upgrades
+	if not upgrades or not validity then return nil end
+
+	local slot = validity.slot
+	local slot_2 = validity.slot_2
+
+	if comparison and comparison.weaponSlot then
+		slot = comparison.weaponSlot
+	end
+
+	if slot then
+		local current = upgrades:GetEquippedItemData(slot)
+		if current and current.itemlink then return current.itemlink end
+	end
+	if slot_2 then
+		local current = upgrades:GetEquippedItemData(slot_2)
+		if current and current.itemlink then return current.itemlink end
+	end
+	return nil
+end
+
+function ItemScore:FormatMasterLootNotice(itemlink, validity, comparison)
+	if not (itemlink and validity and comparison) then return nil end
+
+	local roundedDelta = round_score(comparison.deltaScore or 0)
+	if roundedDelta <= 0 then return nil end
+
+	local parts = {
+		branded_chat_prefix("Gear Advisor"),
+		itemlink,
+		("|cff44ff44%s|r"):format(roundedDelta == 0 and "0.0" or string.format("%+.1f", roundedDelta)),
+	}
+
+	local displayPercent = clamp_display_percent(comparison.percent)
+	if displayPercent and roundedDelta ~= 0 and not comparison.armorFallback and math.abs(displayPercent) >= 0.05 then
+		parts[#parts + 1] = ("|cff44ff44(" .. (L["gearfinder_upgrade_percent_short"] or "%+.1f%%") .. ")|r"):format(displayPercent)
+	end
+	if comparison.armorFallback and roundedDelta > 0 then
+		parts[#parts + 1] = "|cff88ccff(Armor)|r"
+	end
+
+	if ZGV.db and ZGV.db.profile and ZGV.db.profile.masterloot_compare then
+		local baselineLink = self:GetMasterLootBaselineLink(validity, comparison)
+		if baselineLink then
+			parts[#parts + 1] = "|cffffaa00vs|r"
+			parts[#parts + 1] = baselineLink
+		end
+	end
+
+	return table.concat(parts, " ")
+end
+
+function ItemScore:GetMasterLootComparison(itemlink, item, validity)
+	if not (itemlink and item and validity and validity.valid and self.Upgrades) then return nil end
+	local stripped = strip_link(itemlink) or itemlink
+
+	if item.class == LE_ITEM_CLASS_WEAPON then
+		self.Upgrades:ResetWeaponQueue("onlytemp")
+		if self.Upgrades:QueueWeapon(stripped) then
+			local mh, oh, th = self.Upgrades:ProcessWeaponQueue()
+			if th and th.itemlink == stripped then
+				local comparison = self.Upgrades:GetUpgradeComparison(INVSLOT_MAINHAND, th)
+				if comparison then comparison.weaponSlot = INVSLOT_MAINHAND end
+				return comparison
+			elseif mh and mh.itemlink == stripped then
+				local comparison = self.Upgrades:GetUpgradeComparison(INVSLOT_MAINHAND, mh, oh)
+				if comparison then comparison.weaponSlot = INVSLOT_MAINHAND end
+				return comparison
+			elseif oh and oh.itemlink == stripped then
+				local comparison = self.Upgrades:GetUpgradeComparison(INVSLOT_OFFHAND, oh, mh)
+				if comparison then comparison.weaponSlot = INVSLOT_OFFHAND end
+				return comparison
+			end
+		end
+	end
+
+	return self:GetLootRollComparison(itemlink, item, validity)
+end
+
+function ItemScore:HandleMasterLootOpened()
+	if not (ZGV and ZGV.db and ZGV.db.profile and ZGV.db.profile.autogear and ZGV.db.profile.masterloot_notices) then return end
+	if not GetLootMethod or not GetNumLootItems or not GetLootSlotLink then return end
+
+	local method = GetLootMethod()
+	if method ~= "master" then return end
+
+	for slot = 1, (GetNumLootItems() or 0) do
+		local itemlink = GetLootSlotLink(slot)
+		local noticeKey = itemlink and self:HasMasterLootAnnouncement(slot, itemlink)
+		if itemlink and noticeKey then
+			local item = self:GetItemDetails(itemlink) or self:GetItemDetailsQueued(itemlink, true)
+			if item then
+				local validity = self:GetItemValidity(itemlink)
+				if validity and not validity.final then
+					self.PendingMasterLootNotice = true
+				elseif validity and validity.valid and validity.code ~= "slot" then
+					local comparison = self:GetMasterLootComparison(itemlink, item, validity)
+					if comparison and (comparison.deltaScore or 0) > 0 then
+						local message = self:FormatMasterLootNotice(itemlink, validity, comparison)
+						if message and DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.AddMessage then
+							self:MarkMasterLootAnnouncement(noticeKey)
+							DEFAULT_CHAT_FRAME:AddMessage(message)
+						elseif message then
+							self:MarkMasterLootAnnouncement(noticeKey)
+							print(message)
+						end
+					end
+				end
+			else
+				self.PendingMasterLootNotice = true
+				if ZGV.ScheduleTimer then
+					ZGV:ScheduleTimer(function()
+						if GetLootMethod and GetLootMethod() == "master" then
+							ItemScore:HandleMasterLootOpened()
+						end
+					end, 0.2)
+				end
+			end
 		end
 	end
 end
