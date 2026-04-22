@@ -1428,7 +1428,7 @@ function Upgrades:CreatePopup()
 
 	F.secureacceptbutton = CreateFrame("Button", nil, F, "SecureActionButtonTemplate,UIPanelButtonTemplate")
 	F.secureacceptbutton:SetSize(100, 22)
-	F.secureacceptbutton:SetText((L and L["popup_accept"]) or "Accept")
+	F.secureacceptbutton:SetText("Equip")
 	F.secureacceptbutton:SetPoint("BOTTOMLEFT", F, "BOTTOMLEFT", 10, 10)
 	F.secureacceptbutton:Hide()
 	F.secureacceptbutton:SetScript("PostClick", function(self)
@@ -1730,7 +1730,7 @@ function Upgrades:CreatePopup()
 		self.manualvisible = true
 	end)
 
-	F.acceptbutton:SetText(L['itemscore_ae_accept'])
+	F.acceptbutton:SetText("Equip")
 	F.declinebutton:SetText(L['itemscore_ae_decline'])
 
 	CHAIN(F.acceptbutton)
@@ -1931,7 +1931,7 @@ function Upgrades:ShowEquipmentChangePopup(slot)
 	F.item_double.itemlink2:SetText("")
 	F.acceptbutton:Hide()
 	F.secureacceptbutton:Show()
-	F.secureacceptbutton:SetText(bindState == "boe" and "Equip (binds item)" or ((L and L["popup_accept"]) or "Accept"))
+	F.secureacceptbutton:SetText("Equip")
 	F.secureacceptbutton:SetAttribute("type", "macro")
 	F.secureacceptbutton:SetAttribute("macrotext", build_equip_macro())
 

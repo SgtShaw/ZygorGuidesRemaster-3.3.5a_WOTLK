@@ -41,7 +41,18 @@ local ui = ZGV.UI
 local SkinData = ui and ui.SkinData
 
 local tinsert,tremove,print,ipairs,pairs,wipe,debugprofilestop=tinsert,tremove,print,ipairs,pairs,wipe,debugprofilestop
-local IsQuestFlaggedCompleted = C_QuestLog.IsQuestFlaggedCompleted
+local completedQuestsCache = {}
+local function IsQuestFlaggedCompleted(questID)
+	if _G.IsQuestFlaggedCompleted then
+		return _G.IsQuestFlaggedCompleted(questID)
+	end
+	if GetQuestsCompleted then
+		wipe(completedQuestsCache)
+		GetQuestsCompleted(completedQuestsCache)
+		return completedQuestsCache[questID] and true or false
+	end
+	return false
+end
 
 local ItemScore = ZGV.ItemScore
 

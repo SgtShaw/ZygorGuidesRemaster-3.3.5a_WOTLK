@@ -163,6 +163,16 @@ This addon is fully open source and can be inspected before use.
 - A VirusTotal scan of the download link is provided for transparency.
 
 ## Changelog
+### Revision 129 - 3.0.129
+
+- Improved active-build detection so Stat Weights and Gear Advisor now prefer the talent tree with the highest number of spent points before falling back to older client APIs.
+- Added an extra safety fallback for private-server talent/spec oddities so unmapped or invalid detected builds fall back cleanly to the curated leveling baseline instead of sticking to a bad build.
+- Fixed build-name resolution so unknown or unmapped build values now collapse to the leveling baseline label instead of exposing broken spec state.
+- Simplified gear popup button labels so both accept paths now consistently say `Equip`, including BOE items, while preserving the BOE warning text itself.
+- Added precautionary refresh reentrancy protection around ItemScore user-data refreshes so overlapping refresh requests queue one follow-up pass instead of piling on top of each other.
+- Cleaned up GearFinder quest-completion checks to use 3.3.5a-native APIs directly, including a `GetQuestsCompleted()` fallback, instead of relying on retail-style `C_QuestLog` wrappers in the WotLK path.
+- Updated addon version metadata to 3.0.129.
+
 
 ### Revision 128 - 3.0.128
 

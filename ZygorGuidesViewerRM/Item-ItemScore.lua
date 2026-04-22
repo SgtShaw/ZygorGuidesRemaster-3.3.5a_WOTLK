@@ -404,35 +404,74 @@ end
 
 function ItemScore:DetectActiveBuild(classToken, level)
 	local fallbackBuild = self:GetFallbackBuildForClass(classToken)
+	local classRules = classToken and self.rules and self.rules[classToken]
 	if not classToken or (level and level < 10) then
 		return fallbackBuild, true
 	end
-	local activeTalentGroup = nil
-	if GetActiveTalentGroup then
-		local ok, group = pcall(GetActiveTalentGroup)
-		if ok and tonumber(group) then
-			activeTalentGroup = tonumber(group)
+
+	local function get_active_talent_group()
+		if not GetActiveTalentGroup then return nil end
+		local candidates = {
+			function() return GetActiveTalentGroup() end,
+			function() return GetActiveTalentGroup(false, false) end,
+		}
+		for _, getter in ipairs(candidates) do
+			local ok, group = pcall(getter)
+			if ok and tonumber(group) and tonumber(group) > 0 then
+				return tonumber(group)
+			end
+		end
+		return nil
+	end
+
+	local activeTalentGroup = get_active_talent_group()
+
+	local function get_best_tree_by_points()
+		local bestTree, bestPoints, totalPoints = fallbackBuild, 0, 0
+		for i = 1, GetNumTalentTabs() do
+			local _, _, pointsSpent
+			if activeTalentGroup and activeTalentGroup > 0 then
+				_, _, pointsSpent = GetTalentTabInfo(i, false, false, activeTalentGroup)
+			else
+				_, _, pointsSpent = GetTalentTabInfo(i)
+			end
+			pointsSpent = pointsSpent or 0
+			totalPoints = totalPoints + pointsSpent
+			if pointsSpent > bestPoints then
+				bestPoints = pointsSpent
+				bestTree = i
+			end
+		end
+		if totalPoints > 0 then
+			return bestTree, false
+		end
+		return nil, nil
+	end
+
+	local pointsTree, pointsFallback = get_best_tree_by_points()
+	if pointsTree and classRules and classRules[pointsTree] then
+		return pointsTree, pointsFallback
+	end
+
+	if GetPrimaryTalentTree then
+		local tree
+		if activeTalentGroup then
+			local ok, result = pcall(GetPrimaryTalentTree, false, false, activeTalentGroup)
+			if ok and tonumber(result) and tonumber(result) > 0 then
+				tree = tonumber(result)
+			end
+		end
+		if not tree then
+			local ok, result = pcall(GetPrimaryTalentTree, false, false)
+			if ok and tonumber(result) and tonumber(result) > 0 then
+				tree = tonumber(result)
+			end
+		end
+		if tree and classRules and classRules[tree] then
+			return tree, false
 		end
 	end
-	local bestTree, bestPoints, totalPoints = fallbackBuild, 0, 0
-	for i = 1, GetNumTalentTabs() do
-		local _, _, pointsSpent
-		if activeTalentGroup and activeTalentGroup > 0 then
-			_, _, pointsSpent = GetTalentTabInfo(i, false, false, activeTalentGroup)
-		else
-			_, _, pointsSpent = GetTalentTabInfo(i)
-		end
-		pointsSpent = pointsSpent or 0
-		totalPoints = totalPoints + pointsSpent
-		if pointsSpent > bestPoints then
-			bestPoints = pointsSpent
-			bestTree = i
-		end
-	end
-	if totalPoints <= 0 then
-		return fallbackBuild, true
-	end
-	return bestTree, false
+	return fallbackBuild, true
 end
 
 function ItemScore:GetBuildName(classRef, buildNum, level, usesFallback)
@@ -449,7 +488,15 @@ function ItemScore:GetBuildName(classRef, buildNum, level, usesFallback)
 	end
 	local buildLabel = (classNum and self.Builds and self.Builds[classNum] and self.Builds[classNum][resolvedBuild])
 		or (classToken and ZGV.SpecByNumber and ZGV.SpecByNumber[classToken] and ZGV.SpecByNumber[classToken][resolvedBuild])
-		or ("Spec "..tostring(resolvedBuild or 1))
+	local fallbackBuild = classToken and self:GetFallbackBuildForClass(classToken) or 1
+	if not buildLabel and classToken then
+		resolvedBuild = self:GetResolvedBuild(classToken, level, fallbackBuild)
+		buildLabel = (classNum and self.Builds and self.Builds[classNum] and self.Builds[classNum][resolvedBuild])
+			or (classToken and ZGV.SpecByNumber and ZGV.SpecByNumber[classToken] and ZGV.SpecByNumber[classToken][resolvedBuild])
+			or ("Spec "..tostring(resolvedBuild or 1))
+		usesFallback = true
+	end
+	buildLabel = buildLabel or ("Spec "..tostring(resolvedBuild or 1))
 	if usesFallback then
 		return buildLabel .. " (Leveling baseline)"
 	end
@@ -1145,6 +1192,10 @@ function ItemScore:QueueLootRollMarker(rollID)
 end
 
 function ItemScore:DelayedRefreshUserData()
+	if ItemScore.RefreshInProgress then
+		ItemScore.RefreshPending = true
+		return
+	end
 	ItemScore.RefreshTimer = ItemScore.RefreshTimer or ZGV:ScheduleTimer(function() 
 		ItemScore:RefreshUserData()
 		-- TODO: outleveled heirloom popup
@@ -1152,10 +1203,32 @@ function ItemScore:DelayedRefreshUserData()
 end
 
 function ItemScore:RefreshUserData()
+	if ItemScore.RefreshInProgress then
+		ItemScore.RefreshPending = true
+		ItemScore.RefreshTimer = nil
+		return
+	end
+
 	ItemScore.RefreshTimer = nil
-	ItemScore:GetEquipmentSkills()
-	ItemScore:SetStatWeights()
-	ItemScore.Upgrades:ScoreEquippedItems()
+	ItemScore.RefreshInProgress = true
+	ItemScore.RefreshPending = false
+
+	local ok, err = pcall(function()
+		ItemScore:GetEquipmentSkills()
+		ItemScore:SetStatWeights()
+		ItemScore.Upgrades:ScoreEquippedItems()
+	end)
+
+	ItemScore.RefreshInProgress = false
+
+	if ItemScore.RefreshPending then
+		ItemScore.RefreshPending = false
+		ItemScore:DelayedRefreshUserData()
+	end
+
+	if not ok then
+		error(err)
+	end
 end
 
 function ItemScore:SetStatWeights(playerclass,playerspec,playerlevel)
