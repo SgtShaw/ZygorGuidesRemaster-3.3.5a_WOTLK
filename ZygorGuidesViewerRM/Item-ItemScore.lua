@@ -363,6 +363,8 @@ function ItemScore:Initialise()
 
 	-- set up initial data
 	ItemScore:RefreshUserData()
+
+	self.Initialised = true
 end
 
 -- Fallback build used before talent-based spec detection is meaningful.
@@ -819,6 +821,7 @@ function ItemScore:UpdateConfig()
 end
 
 function ItemScore:OnEvent(event,arg1,arg2,...)
+	if not self.Initialised then return end
 	if event == "PLAYER_LEVEL_UP" or event == "CHARACTER_POINTS_CHANGED" or event == "ACTIVE_TALENT_GROUP_CHANGED" then
 		-- using timer as delay, since in the same frame PLAYER_LEVEL_UP player is still on previous level
 		-- and to run it only once, as both PLU and PSC can fire more than once
@@ -2121,26 +2124,30 @@ function ItemScore:UsesCustomWeights(class,spec)
 end
 
 function ItemScore:GetEquipmentSkills()
-    table.wipe(ItemScore.Skills)
-    
-    -- Ensure ItemCache exists to prevent nil-pointer errors during early initialization
-    if ItemCache then 
-        -- Instead of wiping the entire cache and re-parsing everything, just invalidate calculated scores only
-        -- This prevents massive memory churn and GC spikes on skill changes
-        for link, item in pairs(ItemCache) do
-            item.scored = nil
-            item.score = nil
-            item.comparison = nil
-        end
-    end
+	if not ItemScore.Skills then ItemScore.Skills = {} end
+	table.wipe(ItemScore.Skills)
 
-    for i=1, GetNumSkillLines() do
-        local skillName, _, _, skillRank, numTempPoints, skillModifier, skillMaxRank, isAbandonable, stepCost, rankCost, minLevel, skillCostType = GetSkillLineInfo(i);
-        local skillTag = ItemScore.SkillNamesRev[skillName]
-        if skillTag then
-            ItemScore.Skills[skillTag] = skillRank
-        end
-    end
+	if not ItemScore.SkillNamesRev then ItemScore.SkillNamesRev = {} end
+	if not ItemScore.SkillNames then ItemScore.SkillNames = {} end
+
+	-- Ensure ItemCache exists to prevent nil-pointer errors during early initialization
+	if ItemCache then
+		-- Instead of wiping the entire cache and re-parsing everything, just invalidate calculated scores only
+		-- This prevents massive memory churn and GC spikes on skill changes
+		for link, item in pairs(ItemCache) do
+			item.scored = nil
+			item.score = nil
+			item.comparison = nil
+		end
+	end
+
+	for i=1, GetNumSkillLines() do
+		local skillName, _, _, skillRank, numTempPoints, skillModifier, skillMaxRank, isAbandonable, stepCost, rankCost, minLevel, skillCostType = GetSkillLineInfo(i);
+		local skillTag = ItemScore.SkillNamesRev[skillName]
+		if skillTag then
+			ItemScore.Skills[skillTag] = skillRank
+		end
+	end
 end
 
 function ItemScore:GetEquippedStatValue(statname)
