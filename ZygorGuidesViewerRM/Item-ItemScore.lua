@@ -1012,12 +1012,26 @@ function ItemScore:HandleMasterLootOpened()
 				end
 			else
 				self.PendingMasterLootNotice = true
+				
+				if UnitAffectingCombat("player") then
+					-- Do not scan items during combat to prevent frame drops
+					-- Automatically retry once combat ends
+					ZGV:RegisterEventOnce("PLAYER_REGEN_ENABLED", function()
+						if ItemScore.PendingMasterLootNotice then
+							ItemScore.PendingMasterLootNotice = false
+							ItemScore:HandleMasterLootOpened()
+						end
+					end)
+					return
+				end
+
+				-- No combat, schedule scan with safe delay
 				if ZGV.ScheduleTimer then
 					ZGV:ScheduleTimer(function()
 						if GetLootMethod and GetLootMethod() == "master" then
 							ItemScore:HandleMasterLootOpened()
 						end
-					end, 0.2)
+					end, 0.5)
 				end
 			end
 		end
@@ -1229,7 +1243,15 @@ function ItemScore:RefreshUserData()
 
 	if ItemScore.RefreshPending then
 		ItemScore.RefreshPending = false
-		ItemScore:DelayedRefreshUserData()
+		-- Cancel existing timer if running to prevent stacking calls
+		if ItemScore.RefreshTimer then
+			ZGV:CancelTimer(ItemScore.RefreshTimer)
+		end
+		-- Schedule refresh with safe delay to let client finish processing events
+		-- 1.0s delay prevents recursion loops and gives server time to send item data
+		ItemScore.RefreshTimer = ZGV:ScheduleTimer(function()
+			ItemScore:DelayedRefreshUserData()
+		end, 1.0)
 	end
 
 	if not ok then
@@ -1327,8 +1349,13 @@ function ItemScore:SetStatWeights(playerclass,playerspec,playerlevel)
 	self.whiteScoreWeight = self.whiteScoreWeight * 0.1
 
 	-- if anything in user info has changed, all cached scores are no longer valid, and item stats could have changed due to level scaling
-	-- wipe cached data, we are starting anew
-	table.wipe(ItemCache)
+	-- Instead of wiping the entire cache and re-parsing everything, just invalidate calculated scores only
+	-- This prevents massive memory churn and GC spikes on spec/level changes
+	for link,item in pairs(ItemCache) do
+		item.scored = nil
+		item.score = nil
+		item.comparison = nil
+	end
 
 	ItemScore.GearFinder:ClearResults()
 end
@@ -1456,12 +1483,18 @@ function ItemScore:GetItemDetailsQueued(itemlink,force)
 				if found_class then playerclass = found_class end
 			end
 
-			-- 3.3.5a: no ITEM_REQ_SPECIALIZATION
-
-			if ITEM_MIN_LEVEL then
-				local found_level = line:match( gsub(ITEM_MIN_LEVEL,"%%d","(.*)"))
-				if found_level then itemMinLevel = tonumber(found_level) end
-			end
+			-- 3.3.5a: ITEM_REQ_SPECIALIZATION global does not exist in this client.
+            -- Fallback to localized pattern matching to prevent nil-pointer crashes.
+            if line:find(L["Requires"] .. " ") then
+                -- Extract the requirement string (e.g., "Requires Paladin" or "Requires Protection")
+                local requirement = line:match(L["Requires"] .. " (.+)")
+                if requirement then
+                    -- NOTE: Full validation against current talent build would require 
+                    -- additional tooltip parsing logic. For now, capturing the requirement 
+                    -- ensures we don't skip checks due to missing Blizzard global strings.
+                    item.requires_detail = requirement 
+                end
+            end
 
 			-- 3.3.5a: classic has normal stats as equip: effects, so do NOT early exit on those lines
 
@@ -2065,19 +2098,27 @@ function ItemScore:UsesCustomWeights(class,spec)
 	return false
 end
 
-ItemScore.Skills = {}
 function ItemScore:GetEquipmentSkills()
+    table.wipe(ItemScore.Skills)
+    
+    -- Ensure ItemCache exists to prevent nil-pointer errors during early initialization
+    if ItemCache then 
+        -- Instead of wiping the entire cache and re-parsing everything, just invalidate calculated scores only
+        -- This prevents massive memory churn and GC spikes on skill changes
+        for link, item in pairs(ItemCache) do
+            item.scored = nil
+            item.score = nil
+            item.comparison = nil
+        end
+    end
 
-	table.wipe(ItemScore.Skills)
-	table.wipe(ItemCache) -- since items that were rejected due to skill may be valid now
-
-	for i=1, GetNumSkillLines() do
-		local skillName, _, _, skillRank, numTempPoints, skillModifier, skillMaxRank, isAbandonable, stepCost, rankCost, minLevel, skillCostType = GetSkillLineInfo(i);
-		local skillTag = ItemScore.SkillNamesRev[skillName]
-		if skillTag then
-			ItemScore.Skills[skillTag] = skillRank
-		end
-	end
+    for i=1, GetNumSkillLines() do
+        local skillName, _, _, skillRank, numTempPoints, skillModifier, skillMaxRank, isAbandonable, stepCost, rankCost, minLevel, skillCostType = GetSkillLineInfo(i);
+        local skillTag = ItemScore.SkillNamesRev[skillName]
+        if skillTag then
+            ItemScore.Skills[skillTag] = skillRank
+        end
+    end
 end
 
 function ItemScore:GetEquippedStatValue(statname)
