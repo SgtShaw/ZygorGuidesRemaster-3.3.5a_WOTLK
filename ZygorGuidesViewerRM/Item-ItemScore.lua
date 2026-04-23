@@ -1410,25 +1410,27 @@ end
 
 ItemScore.GetItemDetailsQueue = {}
 function ItemScore:GetItemDetails(itemlink,callback,force)
-	if not itemlink then return false end
+	if not itemlink then return end
 	itemlink = strip_link(itemlink)
+	if not itemlink then return end
 
-	if not ItemCache[itemlink] then
+	local item = ItemCache[itemlink]
+	if not item then
 		table.insert(ItemScore.GetItemDetailsQueue,{itemlink,callback,force})
-	else
-		return ItemCache[itemlink]
+		return
 	end
+	return item
 end
 
 function ItemScore:ItemDetailsHandler()
 	if ItemScore.GetItemDetailsQueue[1] then
 		local itemlink,callback,force = unpack(table.remove(ItemScore.GetItemDetailsQueue,1))
-		local result = ItemScore:GetItemDetailsQueued(itemlink,force)
-		if result then
-			if callback and type(callback)=="function" then callback(result) end
-		else
+		local item = ItemScore:GetItemDetailsQueued(itemlink,force)
+		if not item then
 			table.insert(ItemScore.GetItemDetailsQueue,{itemlink,callback,force})
+			return
 		end
+		if callback and type(callback)=="function" then callback(item) end
 	end
 end
 
@@ -1441,8 +1443,17 @@ function ItemScore:GetItemDetailsQueued(itemlink,force)
 
 	-- if item is not yet cached, grab its data
 	if not ItemCache[itemlink] or SKIP_CACHE or force then
+		local requires_detail
 		-- that is a new one
 		local itemName, itemLink2, itemRarity, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount, itemEquipLoc, texture = ZGV:GetItemInfo(itemlink)
+		
+		-- Pre-flight cache check: for suffix/random-enchant items GetItemInfo may return nil
+		-- until the server pushes data. Trigger a tooltip scan to populate cache and exit safely.
+		if not itemName then
+			Gratuity:SetHyperlink(itemlink)
+			return false
+		end
+		
 		local itemlvl = itemLevel
 		local itemClassID = resolve_item_class_id(itemType)
 		local itemFamily, itemSubClassID = resolve_item_family(itemClassID, itemSubType)
@@ -1453,7 +1464,6 @@ function ItemScore:GetItemDetailsQueued(itemlink,force)
 				itemSubClassID = itemSubClassID or equipSubClassID
 			end
 		end
-		if not itemName then return false end
 
 		if itemEquipLoc=="" then -- not equipment, don't bother parsing tooltip
 			ItemCache[itemlink] = { 
@@ -1470,8 +1480,10 @@ function ItemScore:GetItemDetailsQueued(itemlink,force)
 				validated = false,
 				texture = texture,
 			}
-			return
+			return ItemCache[itemlink]
 		end
+
+		local item = {}
 
 		-- class, spec check, and level check. we need to scan tooltip for those. meh.
 		local playerclass, playerspec
@@ -1517,7 +1529,7 @@ function ItemScore:GetItemDetailsQueued(itemlink,force)
                     -- NOTE: Full validation against current talent build would require 
                     -- additional tooltip parsing logic. For now, capturing the requirement 
                     -- ensures we don't skip checks due to missing Blizzard global strings.
-                    item.requires_detail = requirement 
+                    requires_detail = requirement 
                 end
             end
 
@@ -1588,6 +1600,7 @@ function ItemScore:GetItemDetailsQueued(itemlink,force)
 			itemlvl = itemlvl,
 			playerclass = playerclass,
 			playerspec = playerspec,
+			requires_detail = requires_detail,
 		}
 
 		if ItemScore.SaveTooltip then ItemCache[itemlink].tooltip = tooltip end
@@ -1931,20 +1944,50 @@ local function ItemScore_SetTooltipData(tooltip, tooltipobj)
 	tooltipobj=tooltipobj or GameTooltip -- we patch either gametooltip or itemreftooltip
 
 	if not ItemScore.TooltipPatched then
-		local itemName,itemlink = tooltipobj:GetItem()
-		if not itemlink then ItemScore.TooltipPatched  = true return end
+		local itemName,originalLink = tooltipobj:GetItem()
+		if not originalLink then ItemScore.TooltipPatched = true return end
 
-		local item = ItemScore:GetItemDetails(itemlink,"temporary")
-		if not item then
-			-- Item not cached yet - force immediate parse instead of queuing
-			item = ItemScore:GetItemDetailsQueued(itemlink, true)
-			if not item then
-				ItemScore.TooltipPatched = true
-				return
+		local function refresh_tooltip()
+			if not tooltipobj or not tooltipobj:IsVisible() then return end
+			local _, currentLink = tooltipobj:GetItem()
+			if not currentLink or ItemScore.strip_link(currentLink) ~= ItemScore.strip_link(originalLink) then return end
+
+			ItemScore.TooltipPatched = false
+
+			if tooltipobj == GameTooltip then
+				local owner = GameTooltip:GetOwner()
+				if owner then
+					local onEnter = owner:GetScript("OnEnter")
+					if onEnter then
+						local ok = pcall(onEnter, owner)
+						if ok then return end
+					end
+				end
+				local _, link = GameTooltip:GetItem()
+				if link and GameTooltip.SetHyperlink then
+					pcall(GameTooltip.SetHyperlink, GameTooltip, link)
+				end
+			elseif tooltipobj == ItemRefTooltip then
+				local _, link = ItemRefTooltip:GetItem()
+				if link and ItemRefTooltip.SetHyperlink then
+					pcall(ItemRefTooltip.SetHyperlink, ItemRefTooltip, link)
+				end
+			else
+				local _, link = tooltipobj:GetItem()
+				if link and tooltipobj.SetHyperlink then
+					pcall(tooltipobj.SetHyperlink, tooltipobj, link)
+				end
 			end
 		end
 
-		local fulllink = itemlink
+		local item = ItemScore:GetItemDetails(originalLink, refresh_tooltip, true)
+		if not item then
+			-- Item not cached yet - queued for async parse. Tooltip will refresh via callback once data arrives.
+			ItemScore.TooltipPatched = true
+			return
+		end
+
+		local fulllink = originalLink
 		local itemlink = item.itemlink
 
 		local score, success, scorecomment = ItemScore:GetItemScore(itemlink)
