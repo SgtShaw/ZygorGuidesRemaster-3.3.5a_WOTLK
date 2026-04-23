@@ -163,6 +163,25 @@ This addon is fully open source and can be inspected before use.
 - A VirusTotal scan of the download link is provided for transparency.
 
 ## Changelog
+
+### Revision 136 - 3.0.136
+
+- Added a clearer Stat Weights summary with a green `Active Profile` line so the live build is easier to distinguish from the selected edit target.
+- Added a note clarifying that selecting another class/spec changes which weights you edit, not your live active build, unless an override is enabled for your own class.
+- Added an `Override Active Build` toggle for your own class so the selected spec can explicitly override the detected active build for tooltips and gear recommendations.
+- Made active-build overrides persist per active talent group/spec slot instead of as one global override.
+- Updated ItemScore tooltips and summary labels so overridden builds are shown as overridden instead of incorrectly labeled as detected.
+- Improved pre-talent Stat Weights behavior so explicit pre-10 / no-points-spent active choices can be saved and kept until talent-based detection becomes meaningful.
+- Made applying a live stat-weight set trigger the existing deferred gear rescoring and bag upgrade scan path without adding a second heavy scan loop.
+- Restored the embedded Stat Weights scrollbar path and improved the Guide Manager options host layout so long pages such as `Show All Stats` can scroll again.
+- Added in-place Stat Weights tab refresh handling so active talent-group swaps rebuild the open ItemScore pane and resync the player-class selected build to the new active profile.
+- Updated addon version metadata to `3.0.136`.
+
+### Revision 131 - 135 - 3.0.131 to 3.0.135
+
+- Added the repository changes merged from PR 24 by [`hypopheria2k`](https://github.com/hypopheria2k).
+- Consolidated the intermediate `3.0.131` through `3.0.135` repo-side update range into this changelog entry for historical tracking.
+
 ### Revision 130 - 3.0.130
 
 - Fixed a first-login Stat Weights / Gear Advisor timing issue where the active build could initially fall back to the class baseline (such as Discipline) until `/reload` was used.

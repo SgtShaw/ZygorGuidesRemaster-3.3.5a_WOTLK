@@ -5202,14 +5202,19 @@ local function EnsureGuideManagerStandaloneFrame(self)
 		-- Give embedded Ace options a small inner gutter so checkbox/text widgets
 		-- don't bleed over the middle-column frame border.
 		host.frame:SetPoint("TOPLEFT", frame.optionsContent, "TOPLEFT", 8, -6)
-		host.frame:SetPoint("BOTTOMRIGHT", frame.optionsContent, "BOTTOMRIGHT", -8, 6)
+		-- Leave dedicated room for AceGUI's external scrollbar, which is anchored
+		-- just outside the scroll frame and would otherwise be clipped here.
+		host.frame:SetPoint("BOTTOMRIGHT", frame.optionsContent, "BOTTOMRIGHT", -28, 6)
 		host.frame:SetFrameStrata(frame.optionsContent:GetFrameStrata() or "MEDIUM")
 		host.frame:SetFrameLevel((frame.optionsContent:GetFrameLevel() or 1) + 2)
 		host.frame:Show()
 
-		scroll:SetLayout("Fill")
+		if scroll.SetFullWidth then scroll:SetFullWidth(true) end
+		if scroll.SetFullHeight then scroll:SetFullHeight(true) end
+		scroll:SetLayout("List")
 		host:AddChild(scroll)
 
+		if root.SetFullWidth then root:SetFullWidth(true) end
 		root:SetLayout("Flow")
 		scroll:AddChild(root)
 		if scroll and scroll.content and scroll.content.SetHeight then
@@ -5217,8 +5222,15 @@ local function EnsureGuideManagerStandaloneFrame(self)
 			scroll.content:SetHeight(1)
 		end
 
+		local function RefreshEmbeddedScroll()
+			if root and root.DoLayout then root:DoLayout() end
+			if scroll and scroll.DoLayout then scroll:DoLayout() end
+			if scroll and scroll.FixScroll then scroll:FixScroll() end
+		end
+
 		frame.optionsAceWidgetRoot = host
 		frame.optionsAceWidget = root
+		frame.optionsAceScrollWidget = scroll
 
 		if self.db and self.db.profile and self.db.profile.debug_display and targetApp == "ZygorGuidesViewer-ItemScore" then
 			self:Print(("[statweights] opening embedded options app=%s"):format(tostring(targetApp)))
@@ -5258,6 +5270,17 @@ local function EnsureGuideManagerStandaloneFrame(self)
 			end
 		else
 			frame.lastRenderedOptionsApp = targetApp
+			host.frame:SetScript("OnSizeChanged", function()
+				RefreshEmbeddedScroll()
+			end)
+			RefreshEmbeddedScroll()
+			if ZGV and ZGV.ScheduleTimer then
+				ZGV:ScheduleTimer(function()
+					if frame and frame:IsShown() and frame.currentSection == "options" and frame.lastRenderedOptionsApp == targetApp then
+						RefreshEmbeddedScroll()
+					end
+				end, 0.05)
+			end
 			if self.db and self.db.profile and self.db.profile.debug_display and targetApp == "ZygorGuidesViewer-ItemScore" then
 				self:Print(("[statweights] embedded options opened successfully stage=%s key=%s"):format(
 					tostring(self._itemScoreOptionsDebug and self._itemScoreOptionsDebug.stage or "open"),

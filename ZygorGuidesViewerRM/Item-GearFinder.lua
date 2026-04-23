@@ -1001,12 +1001,20 @@ function GearFinder:ClearResults()
 	local MF = GearFinder.MainFrame
 	GearFinder.ResultsReady = false
 	GearFinder.DungeonItemsScored = false
+	
+	-- Signal running coroutine to exit gracefully
+	GearFinder.IsScanning = false
+	
+	-- Cancel timers first
 	if GearFinder.ScoreTimer then
 		cancel_gearfinder_timer("ScoreTimer")
 	end
 	if GearFinder.AntsTimer then
 		cancel_gearfinder_timer("AntsTimer")
 	end
+	
+	-- Release coroutine reference for GC (Lua 5.1 has no coroutine.close())
+	GearFinder.ScoreThread = nil
 
 	for i,v in pairs(ItemScore.GearFinder.UpgradeQueue) do 
 		table.wipe(v) 
