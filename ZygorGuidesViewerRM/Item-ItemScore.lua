@@ -449,6 +449,20 @@ function ItemScore:DetectActiveBuild(classToken, level)
 	end
 
 	local pointsTree, pointsFallback = get_best_tree_by_points()
+
+	-- Druid Feral specialization detection
+	if classToken == "DRUID" and pointsTree == 2 then
+		-- Check points in Thick Hide talent (position 11 in Feral tree)
+		local _, _, pointsThickHide = GetTalentInfo(2, 11, false, false, activeTalentGroup)
+		
+		-- 2+ points in this talent = Tank build
+		if pointsThickHide and pointsThickHide >= 2 then
+			return 3, false
+		else
+			return 2, false
+		end
+	end
+
 	if pointsTree and classRules and classRules[pointsTree] then
 		return pointsTree, pointsFallback
 	end
@@ -777,22 +791,31 @@ function ItemScore:EnsureSelectedWeightTarget(forceReset)
 	local selectedClassToken = get_class_tag(selectedClass)
 	local needsInit = forceReset or not ZGV.db.char.gear_weights_initialized or not selectedClass or not selectedClassToken or not ZGV.db.char.gear_weights_manual_class
 
-	if not needsInit and selectedClass == classNum then
-		local resolvedBuild = self:GetResolvedBuild(classToken, level, selectedBuild)
-		if selectedBuild ~= resolvedBuild or resolvedBuild ~= activeBuild then
-			needsInit = true
-		end
-	end
-
 	if needsInit then
 		ZGV.db.char.gear_selected_class = classNum
 		ZGV.db.char.gear_selected_build = activeBuild
 		ZGV.db.char.gear_weights_initialized = true
-	elseif selectedClass == classNum then
-		ZGV.db.char.gear_selected_build = activeBuild
+	elseif selectedClassToken then
+		-- Only validate that the build index actually exists in the rules table.
+		-- CRITICAL: Do NOT use GetResolvedBuild here. It forces fallback builds
+		-- based on player level (<10 always falls back), which overrides the
+		-- user's manual selection in the Options UI. We want the UI to show
+		-- exactly what the user picked, regardless of character level.
+		local classRules = self.rules and self.rules[selectedClassToken]
+		if classRules then
+			if not selectedBuild or not classRules[selectedBuild] then
+				local fallbackBuild = self:GetFallbackBuildForClass(selectedClassToken)
+				ZGV.db.char.gear_selected_build = classRules[fallbackBuild] and fallbackBuild or 1
+			end
+		end
 	end
 
 	return ZGV.db.char.gear_selected_class, ZGV.db.char.gear_selected_build
+end
+
+function ItemScore:UpdateConfig()
+	self:EnsureSelectedWeightTarget()
+	self:DelayedRefreshUserData()
 end
 
 function ItemScore:OnEvent(event,arg1,arg2,...)
@@ -1279,7 +1302,6 @@ function ItemScore:SetStatWeights(playerclass,playerspec,playerlevel)
 	self.playeristank = self.playerclass=="DRUID" or self.playerclass=="PALADIN" or self.playerclass=="WARRIOR" or self.playerclass=="DEATHKNIGHT"
 	self.playerishealer = self.playerclass=="DRUID" or self.playerclass=="SHAMAN" or self.playerclass=="PRIEST" or self.playerclass=="PALADIN"
 	local previousActiveBuild = tonumber(ZGV.db.char.gear_active_build)
-	local previousSelectedBuild = tonumber(ZGV.db.char.gear_selected_build)
 	local detectedBuild, usingFallbackBuild = self:DetectActiveBuild(self.playerclass, self.playerlevel)
 	local fallbackUntrusted = usingFallbackBuild and (tonumber(self.playerlevel) or 0) >= 10
 	if fallbackUntrusted and previousActiveBuild and self.rules[self.playerclass] and self.rules[self.playerclass][previousActiveBuild] then
@@ -1292,12 +1314,12 @@ function ItemScore:SetStatWeights(playerclass,playerspec,playerlevel)
 	if fallbackUntrusted then
 		self:QueueActiveBuildRetry()
 	end
-	if (usingFallbackBuild and not fallbackUntrusted) or not ZGV.db.char.gear_selected_build then
+	-- CRITICAL: Do not override the user's manual UI selection during background refreshes.
+	-- Only sync selected_build to active_build on initial setup before the user has interacted
+	-- with the dropdowns. Once gear_weights_initialized is set, preserve the manual choice.
+	if not ZGV.db.char.gear_weights_initialized then
 		ZGV.db.char.gear_selected_build = ZGV.db.char.gear_active_build
-	elseif fallbackUntrusted and previousSelectedBuild and self.rules[self.playerclass] and self.rules[self.playerclass][previousSelectedBuild] then
-		ZGV.db.char.gear_selected_build = previousSelectedBuild
 	end
-	ZGV.db.char.gear_selected_build = self:GetResolvedBuild(self.playerclass, self.playerlevel, ZGV.db.char.gear_selected_build)
 	self:EnsureSelectedWeightTarget()
 	self.activeBuildUsesFallback = usingFallbackBuild
 	self.playerspecName = self:GetBuildName(self.playerclass, ZGV.db.char.gear_active_build, self.playerlevel, usingFallbackBuild)

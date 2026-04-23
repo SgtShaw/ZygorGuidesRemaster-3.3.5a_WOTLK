@@ -2635,22 +2635,35 @@ function me:Options_DefineOptions()
 					[7] = male.SHAMAN or female.SHAMAN or "Shaman",
 					[8] = male.MAGE or female.MAGE or "Mage",
 					[9] = male.WARLOCK or female.WARLOCK or "Warlock",
-					[11] = male.DRUID or female.DRUID or "Druid",
+					[10] = male.DRUID or female.DRUID or "Druid",
 				}
 			end, SafeTable),
-			set = WrapStatWeightsSet("gear_selected_class", function(i,v)
-				ZGV.db.char.gear_selected_class = v
-				ZGV.db.char.gear_weights_initialized = true
-				ZGV.db.char.gear_weights_manual_class = true
-				Setter_Simple(i,v)
-				local fakeLevel = SafeNumber(ZGV.db and ZGV.db.char and ZGV.db.char.fakelevel, 0) or 0
-				local level = (fakeLevel > 0 and fakeLevel) or UnitLevel("player")
-				if ZGV.ItemScore and v == ZGV.ItemScore.playerclassNum then
+		set = WrapStatWeightsSet("gear_selected_class", function(i,v)
+			ZGV.db.char.gear_selected_class = v
+			ZGV.db.char.gear_weights_initialized = true
+			ZGV.db.char.gear_weights_manual_class = true
+			Setter_Simple(i,v)
+			local fakeLevel = SafeNumber(ZGV.db and ZGV.db.char and ZGV.db.char.fakelevel, 0) or 0
+			local level = (fakeLevel > 0 and fakeLevel) or UnitLevel("player")
+			
+			-- Reset build index on class switch to prevent stale values
+			ZGV.db.char.gear_selected_build = 1
+			
+			if ZGV.ItemScore then
+				if v == ZGV.ItemScore.playerclassNum then
 					ZGV.db.char.gear_selected_build = ZGV.ItemScore:GetResolvedBuild(GetClassTagFromID(v), level, ZGV.db.char.gear_active_build or 1)
 				else
-					ZGV.db.char.gear_selected_build = ZGV.ItemScore and ZGV.ItemScore:GetResolvedBuild(GetClassTagFromID(v), level, nil) or 1
+					ZGV.db.char.gear_selected_build = ZGV.ItemScore:GetResolvedBuild(GetClassTagFromID(v), level, nil) or 1
 				end
-			end),
+				ZGV.ItemScore:UpdateConfig()
+			end
+
+			-- Force AceConfig UI refresh
+			local ACR = LibStub and LibStub("AceConfigRegistry-3.0", true)
+			if ACR and ACR.NotifyChange then
+				ACR:NotifyChange("ZygorGuidesViewer-ItemScore")
+			end
+		end),
 			get = WrapStatWeightsCallback("get", "gear_selected_class", 1, function()
 				if ZGV.ItemScore and ZGV.ItemScore.EnsureSelectedWeightTarget then
 					ZGV.ItemScore:EnsureSelectedWeightTarget()
@@ -2669,21 +2682,39 @@ function me:Options_DefineOptions()
 			name = "Spec",
 			values = WrapStatWeightsCallback("values", "gear_selected_build", {}, function()
 				if not ZGV.ItemScore or not ZGV.ItemScore.Builds then return {} end
-				return ZGV.ItemScore.Builds[ZGV.db.char.gear_selected_class or 1] or {}
+				local classId = ZGV.db.char.gear_selected_class or 1
+				local buildTable = ZGV.ItemScore.Builds[classId] or {}
+				
+				-- Generate proper array with correct max index to avoid ipairs gaps
+				local maxSpecs = 0
+				for k in pairs(buildTable) do
+					if tonumber(k) and k > maxSpecs then maxSpecs = k end
+				end
+				
+				local result = {}
+				for specnum = 1, maxSpecs do
+					result[specnum] = buildTable[specnum] or ("Spec "..specnum)
+				end
+				
+				return result
 			end, SafeTable),
 			get = WrapStatWeightsCallback("get", "gear_selected_build", 1, function()
-				local fakeLevel = SafeNumber(ZGV.db and ZGV.db.char and ZGV.db.char.fakelevel, 0) or 0
-				local level = (fakeLevel > 0 and fakeLevel) or UnitLevel("player")
-				return ZGV.ItemScore and ZGV.ItemScore:GetResolvedBuild(GetClassTagFromID(ZGV.db.char.gear_selected_class or 1), level, ZGV.db.char.gear_selected_build or 1) or (ZGV.db.char.gear_selected_build or 1)
+				-- Return the raw stored build without level-based override.
+				-- GetResolvedBuild is NOT used here because it forces fallback builds
+				-- for low-level characters, causing the UI to "revert" the user's choice.
+				-- Build validation is handled by EnsureSelectedWeightTarget.
+				return ZGV.db.char.gear_selected_build or 1
 			end, function(value) return SafeNumber(value, 1) or 1 end),
-			set = WrapStatWeightsSet("gear_selected_build", function(i,v)
-				Setter_Simple(i,v)
-				ZGV.db.char.gear_weights_initialized = true
-				ZGV.db.char.gear_weights_manual_class = true
-				local fakeLevel = SafeNumber(ZGV.db and ZGV.db.char and ZGV.db.char.fakelevel, 0) or 0
-				local level = (fakeLevel > 0 and fakeLevel) or UnitLevel("player")
-				ZGV.db.char.gear_selected_build = ZGV.ItemScore and ZGV.ItemScore:GetResolvedBuild(GetClassTagFromID(ZGV.db.char.gear_selected_class or 1), level, v) or v
-			end),
+		set = WrapStatWeightsSet("gear_selected_build", function(i,v)
+			Setter_Simple(i,v)
+			ZGV.db.char.gear_weights_initialized = true
+			ZGV.db.char.gear_weights_manual_class = true
+			-- Store the user's raw choice. Do NOT call GetResolvedBuild here;
+			-- it would override manual selection based on player level.
+			-- Validation and fallback handling is done in EnsureSelectedWeightTarget.
+			ZGV.db.char.gear_selected_build = v
+			if ZGV.ItemScore then ZGV.ItemScore:UpdateConfig() end
+		end),
 			width = "normal",
 		}
 
