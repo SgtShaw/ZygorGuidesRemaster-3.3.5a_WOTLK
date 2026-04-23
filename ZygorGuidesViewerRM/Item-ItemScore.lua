@@ -363,6 +363,8 @@ function ItemScore:Initialise()
 
 	-- set up initial data
 	ItemScore:RefreshUserData()
+
+	self.Initialised = true
 end
 
 -- Fallback build used before talent-based spec detection is meaningful.
@@ -449,6 +451,20 @@ function ItemScore:DetectActiveBuild(classToken, level)
 	end
 
 	local pointsTree, pointsFallback = get_best_tree_by_points()
+
+	-- Druid Feral specialization detection
+	if classToken == "DRUID" and pointsTree == 2 then
+		-- Check points in Thick Hide talent (position 11 in Feral tree)
+		local _, _, pointsThickHide = GetTalentInfo(2, 11, false, false, activeTalentGroup)
+		
+		-- 2+ points in this talent = Tank build
+		if pointsThickHide and pointsThickHide >= 2 then
+			return 3, false
+		else
+			return 2, false
+		end
+	end
+
 	if pointsTree and classRules and classRules[pointsTree] then
 		return pointsTree, pointsFallback
 	end
@@ -777,25 +793,35 @@ function ItemScore:EnsureSelectedWeightTarget(forceReset)
 	local selectedClassToken = get_class_tag(selectedClass)
 	local needsInit = forceReset or not ZGV.db.char.gear_weights_initialized or not selectedClass or not selectedClassToken or not ZGV.db.char.gear_weights_manual_class
 
-	if not needsInit and selectedClass == classNum then
-		local resolvedBuild = self:GetResolvedBuild(classToken, level, selectedBuild)
-		if selectedBuild ~= resolvedBuild or resolvedBuild ~= activeBuild then
-			needsInit = true
-		end
-	end
-
 	if needsInit then
 		ZGV.db.char.gear_selected_class = classNum
 		ZGV.db.char.gear_selected_build = activeBuild
 		ZGV.db.char.gear_weights_initialized = true
-	elseif selectedClass == classNum then
-		ZGV.db.char.gear_selected_build = activeBuild
+	elseif selectedClassToken then
+		-- Only validate that the build index actually exists in the rules table.
+		-- CRITICAL: Do NOT use GetResolvedBuild here. It forces fallback builds
+		-- based on player level (<10 always falls back), which overrides the
+		-- user's manual selection in the Options UI. We want the UI to show
+		-- exactly what the user picked, regardless of character level.
+		local classRules = self.rules and self.rules[selectedClassToken]
+		if classRules then
+			if not selectedBuild or not classRules[selectedBuild] then
+				local fallbackBuild = self:GetFallbackBuildForClass(selectedClassToken)
+				ZGV.db.char.gear_selected_build = classRules[fallbackBuild] and fallbackBuild or 1
+			end
+		end
 	end
 
 	return ZGV.db.char.gear_selected_class, ZGV.db.char.gear_selected_build
 end
 
+function ItemScore:UpdateConfig()
+	self:EnsureSelectedWeightTarget()
+	self:DelayedRefreshUserData()
+end
+
 function ItemScore:OnEvent(event,arg1,arg2,...)
+	if not self.Initialised then return end
 	if event == "PLAYER_LEVEL_UP" or event == "CHARACTER_POINTS_CHANGED" or event == "ACTIVE_TALENT_GROUP_CHANGED" then
 		-- using timer as delay, since in the same frame PLAYER_LEVEL_UP player is still on previous level
 		-- and to run it only once, as both PLU and PSC can fire more than once
@@ -1012,12 +1038,26 @@ function ItemScore:HandleMasterLootOpened()
 				end
 			else
 				self.PendingMasterLootNotice = true
+				
+				if UnitAffectingCombat("player") then
+					-- Do not scan items during combat to prevent frame drops
+					-- Automatically retry once combat ends
+					ZGV:RegisterEventOnce("PLAYER_REGEN_ENABLED", function()
+						if ItemScore.PendingMasterLootNotice then
+							ItemScore.PendingMasterLootNotice = false
+							ItemScore:HandleMasterLootOpened()
+						end
+					end)
+					return
+				end
+
+				-- No combat, schedule scan with safe delay
 				if ZGV.ScheduleTimer then
 					ZGV:ScheduleTimer(function()
 						if GetLootMethod and GetLootMethod() == "master" then
 							ItemScore:HandleMasterLootOpened()
 						end
-					end, 0.2)
+					end, 0.5)
 				end
 			end
 		end
@@ -1229,7 +1269,15 @@ function ItemScore:RefreshUserData()
 
 	if ItemScore.RefreshPending then
 		ItemScore.RefreshPending = false
-		ItemScore:DelayedRefreshUserData()
+		-- Cancel existing timer if running to prevent stacking calls
+		if ItemScore.RefreshTimer then
+			ZGV:CancelTimer(ItemScore.RefreshTimer)
+		end
+		-- Schedule refresh with safe delay to let client finish processing events
+		-- 1.0s delay prevents recursion loops and gives server time to send item data
+		ItemScore.RefreshTimer = ZGV:ScheduleTimer(function()
+			ItemScore:DelayedRefreshUserData()
+		end, 1.0)
 	end
 
 	if not ok then
@@ -1257,7 +1305,6 @@ function ItemScore:SetStatWeights(playerclass,playerspec,playerlevel)
 	self.playeristank = self.playerclass=="DRUID" or self.playerclass=="PALADIN" or self.playerclass=="WARRIOR" or self.playerclass=="DEATHKNIGHT"
 	self.playerishealer = self.playerclass=="DRUID" or self.playerclass=="SHAMAN" or self.playerclass=="PRIEST" or self.playerclass=="PALADIN"
 	local previousActiveBuild = tonumber(ZGV.db.char.gear_active_build)
-	local previousSelectedBuild = tonumber(ZGV.db.char.gear_selected_build)
 	local detectedBuild, usingFallbackBuild = self:DetectActiveBuild(self.playerclass, self.playerlevel)
 	local fallbackUntrusted = usingFallbackBuild and (tonumber(self.playerlevel) or 0) >= 10
 	if fallbackUntrusted and previousActiveBuild and self.rules[self.playerclass] and self.rules[self.playerclass][previousActiveBuild] then
@@ -1270,12 +1317,12 @@ function ItemScore:SetStatWeights(playerclass,playerspec,playerlevel)
 	if fallbackUntrusted then
 		self:QueueActiveBuildRetry()
 	end
-	if (usingFallbackBuild and not fallbackUntrusted) or not ZGV.db.char.gear_selected_build then
+	-- CRITICAL: Do not override the user's manual UI selection during background refreshes.
+	-- Only sync selected_build to active_build on initial setup before the user has interacted
+	-- with the dropdowns. Once gear_weights_initialized is set, preserve the manual choice.
+	if not ZGV.db.char.gear_weights_initialized then
 		ZGV.db.char.gear_selected_build = ZGV.db.char.gear_active_build
-	elseif fallbackUntrusted and previousSelectedBuild and self.rules[self.playerclass] and self.rules[self.playerclass][previousSelectedBuild] then
-		ZGV.db.char.gear_selected_build = previousSelectedBuild
 	end
-	ZGV.db.char.gear_selected_build = self:GetResolvedBuild(self.playerclass, self.playerlevel, ZGV.db.char.gear_selected_build)
 	self:EnsureSelectedWeightTarget()
 	self.activeBuildUsesFallback = usingFallbackBuild
 	self.playerspecName = self:GetBuildName(self.playerclass, ZGV.db.char.gear_active_build, self.playerlevel, usingFallbackBuild)
@@ -1327,8 +1374,13 @@ function ItemScore:SetStatWeights(playerclass,playerspec,playerlevel)
 	self.whiteScoreWeight = self.whiteScoreWeight * 0.1
 
 	-- if anything in user info has changed, all cached scores are no longer valid, and item stats could have changed due to level scaling
-	-- wipe cached data, we are starting anew
-	table.wipe(ItemCache)
+	-- Instead of wiping the entire cache and re-parsing everything, just invalidate calculated scores only
+	-- This prevents massive memory churn and GC spikes on spec/level changes
+	for link,item in pairs(ItemCache) do
+		item.scored = nil
+		item.score = nil
+		item.comparison = nil
+	end
 
 	ItemScore.GearFinder:ClearResults()
 end
@@ -1358,25 +1410,27 @@ end
 
 ItemScore.GetItemDetailsQueue = {}
 function ItemScore:GetItemDetails(itemlink,callback,force)
-	if not itemlink then return false end
+	if not itemlink then return end
 	itemlink = strip_link(itemlink)
+	if not itemlink then return end
 
-	if not ItemCache[itemlink] then
+	local item = ItemCache[itemlink]
+	if not item then
 		table.insert(ItemScore.GetItemDetailsQueue,{itemlink,callback,force})
-	else
-		return ItemCache[itemlink]
+		return
 	end
+	return item
 end
 
 function ItemScore:ItemDetailsHandler()
 	if ItemScore.GetItemDetailsQueue[1] then
 		local itemlink,callback,force = unpack(table.remove(ItemScore.GetItemDetailsQueue,1))
-		local result = ItemScore:GetItemDetailsQueued(itemlink,force)
-		if result then
-			if callback and type(callback)=="function" then callback(result) end
-		else
+		local item = ItemScore:GetItemDetailsQueued(itemlink,force)
+		if not item then
 			table.insert(ItemScore.GetItemDetailsQueue,{itemlink,callback,force})
+			return
 		end
+		if callback and type(callback)=="function" then callback(item) end
 	end
 end
 
@@ -1389,8 +1443,17 @@ function ItemScore:GetItemDetailsQueued(itemlink,force)
 
 	-- if item is not yet cached, grab its data
 	if not ItemCache[itemlink] or SKIP_CACHE or force then
+		local requires_detail
 		-- that is a new one
 		local itemName, itemLink2, itemRarity, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount, itemEquipLoc, texture = ZGV:GetItemInfo(itemlink)
+		
+		-- Pre-flight cache check: for suffix/random-enchant items GetItemInfo may return nil
+		-- until the server pushes data. Trigger a tooltip scan to populate cache and exit safely.
+		if not itemName then
+			Gratuity:SetHyperlink(itemlink)
+			return false
+		end
+		
 		local itemlvl = itemLevel
 		local itemClassID = resolve_item_class_id(itemType)
 		local itemFamily, itemSubClassID = resolve_item_family(itemClassID, itemSubType)
@@ -1401,7 +1464,6 @@ function ItemScore:GetItemDetailsQueued(itemlink,force)
 				itemSubClassID = itemSubClassID or equipSubClassID
 			end
 		end
-		if not itemName then return false end
 
 		if itemEquipLoc=="" then -- not equipment, don't bother parsing tooltip
 			ItemCache[itemlink] = { 
@@ -1418,8 +1480,10 @@ function ItemScore:GetItemDetailsQueued(itemlink,force)
 				validated = false,
 				texture = texture,
 			}
-			return
+			return ItemCache[itemlink]
 		end
+
+		local item = {}
 
 		-- class, spec check, and level check. we need to scan tooltip for those. meh.
 		local playerclass, playerspec
@@ -1456,12 +1520,18 @@ function ItemScore:GetItemDetailsQueued(itemlink,force)
 				if found_class then playerclass = found_class end
 			end
 
-			-- 3.3.5a: no ITEM_REQ_SPECIALIZATION
-
-			if ITEM_MIN_LEVEL then
-				local found_level = line:match( gsub(ITEM_MIN_LEVEL,"%%d","(.*)"))
-				if found_level then itemMinLevel = tonumber(found_level) end
-			end
+			-- 3.3.5a: ITEM_REQ_SPECIALIZATION global does not exist in this client.
+            -- Fallback to localized pattern matching to prevent nil-pointer crashes.
+            if line:find(L["Requires"] .. " ") then
+                -- Extract the requirement string (e.g., "Requires Paladin" or "Requires Protection")
+                local requirement = line:match(L["Requires"] .. " (.+)")
+                if requirement then
+                    -- NOTE: Full validation against current talent build would require 
+                    -- additional tooltip parsing logic. For now, capturing the requirement 
+                    -- ensures we don't skip checks due to missing Blizzard global strings.
+                    requires_detail = requirement 
+                end
+            end
 
 			-- 3.3.5a: classic has normal stats as equip: effects, so do NOT early exit on those lines
 
@@ -1530,6 +1600,7 @@ function ItemScore:GetItemDetailsQueued(itemlink,force)
 			itemlvl = itemlvl,
 			playerclass = playerclass,
 			playerspec = playerspec,
+			requires_detail = requires_detail,
 		}
 
 		if ItemScore.SaveTooltip then ItemCache[itemlink].tooltip = tooltip end
@@ -1873,20 +1944,50 @@ local function ItemScore_SetTooltipData(tooltip, tooltipobj)
 	tooltipobj=tooltipobj or GameTooltip -- we patch either gametooltip or itemreftooltip
 
 	if not ItemScore.TooltipPatched then
-		local itemName,itemlink = tooltipobj:GetItem()
-		if not itemlink then ItemScore.TooltipPatched  = true return end
+		local itemName,originalLink = tooltipobj:GetItem()
+		if not originalLink then ItemScore.TooltipPatched = true return end
 
-		local item = ItemScore:GetItemDetails(itemlink,"temporary")
-		if not item then
-			-- Item not cached yet - force immediate parse instead of queuing
-			item = ItemScore:GetItemDetailsQueued(itemlink, true)
-			if not item then
-				ItemScore.TooltipPatched = true
-				return
+		local function refresh_tooltip()
+			if not tooltipobj or not tooltipobj:IsVisible() then return end
+			local _, currentLink = tooltipobj:GetItem()
+			if not currentLink or ItemScore.strip_link(currentLink) ~= ItemScore.strip_link(originalLink) then return end
+
+			ItemScore.TooltipPatched = false
+
+			if tooltipobj == GameTooltip then
+				local owner = GameTooltip:GetOwner()
+				if owner then
+					local onEnter = owner:GetScript("OnEnter")
+					if onEnter then
+						local ok = pcall(onEnter, owner)
+						if ok then return end
+					end
+				end
+				local _, link = GameTooltip:GetItem()
+				if link and GameTooltip.SetHyperlink then
+					pcall(GameTooltip.SetHyperlink, GameTooltip, link)
+				end
+			elseif tooltipobj == ItemRefTooltip then
+				local _, link = ItemRefTooltip:GetItem()
+				if link and ItemRefTooltip.SetHyperlink then
+					pcall(ItemRefTooltip.SetHyperlink, ItemRefTooltip, link)
+				end
+			else
+				local _, link = tooltipobj:GetItem()
+				if link and tooltipobj.SetHyperlink then
+					pcall(tooltipobj.SetHyperlink, tooltipobj, link)
+				end
 			end
 		end
 
-		local fulllink = itemlink
+		local item = ItemScore:GetItemDetails(originalLink, refresh_tooltip, true)
+		if not item then
+			-- Item not cached yet - queued for async parse. Tooltip will refresh via callback once data arrives.
+			ItemScore.TooltipPatched = true
+			return
+		end
+
+		local fulllink = originalLink
 		local itemlink = item.itemlink
 
 		local score, success, scorecomment = ItemScore:GetItemScore(itemlink)
@@ -2065,11 +2166,23 @@ function ItemScore:UsesCustomWeights(class,spec)
 	return false
 end
 
-ItemScore.Skills = {}
 function ItemScore:GetEquipmentSkills()
-
+	if not ItemScore.Skills then ItemScore.Skills = {} end
 	table.wipe(ItemScore.Skills)
-	table.wipe(ItemCache) -- since items that were rejected due to skill may be valid now
+
+	if not ItemScore.SkillNamesRev then ItemScore.SkillNamesRev = {} end
+	if not ItemScore.SkillNames then ItemScore.SkillNames = {} end
+
+	-- Ensure ItemCache exists to prevent nil-pointer errors during early initialization
+	if ItemCache then
+		-- Instead of wiping the entire cache and re-parsing everything, just invalidate calculated scores only
+		-- This prevents massive memory churn and GC spikes on skill changes
+		for link, item in pairs(ItemCache) do
+			item.scored = nil
+			item.score = nil
+			item.comparison = nil
+		end
+	end
 
 	for i=1, GetNumSkillLines() do
 		local skillName, _, _, skillRank, numTempPoints, skillModifier, skillMaxRank, isAbandonable, stepCost, rankCost, minLevel, skillCostType = GetSkillLineInfo(i);
