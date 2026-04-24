@@ -333,7 +333,9 @@ function ItemScore:Initialise()
 
 		:RegisterEvent("PLAYER_LEVEL_UP")
 		:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
-		:RegisterEvent("BAG_UPDATE_DELAYED")
+		:RegisterEvent("BAG_UPDATE")
+		:RegisterEvent("MAIL_INBOX_UPDATE")
+		:RegisterEvent("MAIL_CLOSED")
 		:RegisterEvent("GET_ITEM_INFO_RECEIVED")
 		:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED")
 		:RegisterEvent("START_LOOT_ROLL")
@@ -1007,7 +1009,7 @@ function ItemScore:OnEvent(event,arg1,arg2,...)
 			ItemScore.EquipTimer = nil
 			ItemScore.Upgrades:ScoreEquippedItems()
 		end,0.5)
-	elseif event == "BAG_UPDATE_DELAYED" then -- optimize bag-only changes by checking newly acquired items first
+	elseif event == "BAG_UPDATE" or event == "MAIL_INBOX_UPDATE" or event == "MAIL_CLOSED" then -- 3.3.5a-safe bag/mail hooks; debounce to one scan
 		ItemScore.EquipTimer = ItemScore.EquipTimer or ZGV:ScheduleTimer(function()
 			ItemScore.EquipTimer = nil
 			ItemScore.Upgrades:ScanRecentBagAcquisitions()
@@ -1462,6 +1464,14 @@ function ItemScore:QueueActiveBuildRetry()
 	end,1.0)
 end
 
+function ItemScore:EnsureActiveRuleSet()
+	if self.ActiveRuleSet and self.ActiveRuleSet.stats and self.ActiveRuleSet.itemtypes and self.playerclass then
+		return true
+	end
+	self:SetStatWeights(self.playerclass, nil, self.playerlevel)
+	return self.ActiveRuleSet and self.ActiveRuleSet.stats and self.ActiveRuleSet.itemtypes and true or false
+end
+
 function ItemScore:SetStatWeights(playerclass,playerspec,playerlevel)
 	self.playerclass = playerclass or (select(2,UnitClass("player")))
 	self.playerclassName = (select(1,UnitClass("player")))
@@ -1819,6 +1829,7 @@ end
 function ItemScore:GetItemScore(itemlink,verbose)
 	local item = ItemScore:GetItemDetails(itemlink)
 	if not item then return -1, -1, false, "no info yet" end
+	if not self:EnsureActiveRuleSet() then return -1, false, "no active rules" end
 
 	local stats = item.stats
 	local score = 0
@@ -1922,6 +1933,9 @@ end
 function ItemScore:GetItemValidity(itemlink, future)
 	if not itemlink then
 		return {valid = false, final = false, reason = "No itemlink", code = "missing_link"}
+	end
+	if not self:EnsureActiveRuleSet() then
+		return {valid = false, final = false, reason = "No active rules", code = "missing_rules"}
 	end
 
 	local item = ItemScore:GetItemDetails(itemlink)

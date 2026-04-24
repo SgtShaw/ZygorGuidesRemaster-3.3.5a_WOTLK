@@ -51,16 +51,48 @@ Upgrades.EquipFailureCooldown = {}
 local GREEN = "|cff00ff00"
 local RED = "|cffff0000"
 
+local function cooldown_key(itemlink)
+	return itemlink and (strip_link(itemlink) or itemlink) or nil
+end
+
 Upgrades.UniqueEquipped = {}
+
+local function apply_font(fontstring, fontpath, size, flags)
+	if not fontstring then return end
+	if fontpath and fontstring:SetFont(fontpath, size, flags) then return end
+	if fontstring:SetFont(STANDARD_TEXT_FONT, size, flags) then return end
+	fontstring:SetFont(FONT, size, flags)
+end
+
+local function apply_flat_backdrop(frame, bg, border)
+	if not frame or not frame.SetBackdrop then return end
+	frame:SetBackdrop({
+		bgFile = "Interface\\Buttons\\WHITE8x8",
+		edgeFile = "Interface\\Buttons\\WHITE8x8",
+		tile = true,
+		tileSize = 16,
+		edgeSize = 1,
+		insets = { left = 1, right = 1, top = 1, bottom = 1 },
+	})
+	if bg then frame:SetBackdropColor(bg[1], bg[2], bg[3], bg[4] or 1) end
+	if border then frame:SetBackdropBorderColor(border[1], border[2], border[3], border[4] or 1) end
+end
 
 local function round_score(value)
 	if not value then return 0 end
 	return math.floor((value * 10) + 0.5) / 10
 end
 
-local function get_item_bind_state(itemlink)
-	if not itemlink then return "unknown" end
-	Gratuity:SetHyperlink(itemlink)
+local function get_item_bind_state(itemlink, bagnum, bagslot)
+	if not itemlink and not (bagnum and bagslot) then return "unknown" end
+	if bagnum and bagslot and Gratuity.SetBagItem then
+		Gratuity:SetBagItem(bagnum, bagslot)
+		if Gratuity:NumLines() == 0 and itemlink then
+			Gratuity:SetHyperlink(itemlink)
+		end
+	elseif itemlink then
+		Gratuity:SetHyperlink(itemlink)
+	end
 	if Gratuity:NumLines() == 0 then return "unknown" end
 	local boe, bound = false, false
 	for i = 1, Gratuity:NumLines() do
@@ -703,6 +735,7 @@ function Upgrades:GetStatChange(item1,item2,item3,mode_new,mode_old)
 	-- 3.3.5a: no primary stat filtering needed
 
 	for stat,value in pairs(delta) do
+		stat = ItemScore:NormaliseStatName(stat)
 		if ItemScore.KnownKeyWords[stat] then -- hide stats that do not have blizzard names (shadow sockets for example)
 			local mode = "%d"
 			if stat == "DAMAGE_PER_SECOND" then -- show dps as float
@@ -728,6 +761,7 @@ function Upgrades:GetStatChange(item1,item2,item3,mode_new,mode_old)
 		end
 	end
 
+	changes = changes:gsub("\n+$","")
 	return changes.."|r"
 end
 
@@ -1239,7 +1273,7 @@ function Upgrades:ProcessPossibleUpgrades()
 		if slot==17 and process_slot then ZGV:Debug("&itemscore PPU slot %d: processed, breaking",slot) break end -- don't look at offhands if we have mainhand queued
 
 		if newitem.itemlink then
-			local cooldownUntil = Upgrades.EquipFailureCooldown[newitem.itemlink]
+			local cooldownUntil = Upgrades.EquipFailureCooldown[cooldown_key(newitem.itemlink)]
 			if cooldownUntil and cooldownUntil > GetTime() then
 				ZGV:Debug("&itemscore PPU slot %d: equip cooldown active for %s",slot,newitem.itemlink)
 			else
@@ -1302,7 +1336,7 @@ function Upgrades:ShowEquipmentChangeNotification(slot)
 	if not n_item or not n_item.itemlink then return end
 	local new_item = ItemScore:GetItemDetails(n_item.itemlink)
 	if not new_item then return end
-	local bindState = get_item_bind_state(new_item.itemlinkfull or new_item.itemlink)
+	local bindState = get_item_bind_state(new_item.itemlinkfull or new_item.itemlink, n_item.bagnum, n_item.bagslot)
 	if bindState == "boe" then
 		return Upgrades:ShowEquipmentChangePopup(slot)
 	end
@@ -1374,8 +1408,9 @@ function Upgrades:CreatePopup()
 			:SetPoint("LEFT")
 			:SetPoint("RIGHT")
 			:SetJustifyH("CENTER")
-			:SetWordWrap(false)
+			:SetWordWrap(true)
 		.__END
+		if button.itemlink.SetNonSpaceWrap then button.itemlink:SetNonSpaceWrap(true) end
 
 		button:SetScript("OnEnter",function() 
 			if button.link then
@@ -1407,8 +1442,41 @@ function Upgrades:CreatePopup()
 	Upgrades.EquipPopup = ZGV.PopupHandler:NewPopup("ZygorItemPopup","gear")
 	local F = Upgrades.EquipPopup
 
-	local ui = ZGV.UI or {}
-	local SkinData = (ui and ui.SkinData) or function() return nil end
+	apply_flat_backdrop(F, { 0.07, 0.07, 0.08, 0.95 }, { 0.12, 0.12, 0.14, 0.90 })
+	F:SetBackdropColor(0.07, 0.07, 0.08, 0.95)
+	F:SetBackdropBorderColor(0.12, 0.12, 0.14, 0.90)
+
+	F.header = F.header or CreateFrame("Frame", nil, F)
+	F.header:SetPoint("TOPLEFT", F, "TOPLEFT", 6, -6)
+	F.header:SetPoint("TOPRIGHT", F, "TOPRIGHT", -6, -6)
+	F.header:SetHeight(24)
+	F.header:SetFrameLevel(F:GetFrameLevel()+2)
+
+	F.headerBg = F.headerBg or F.header:CreateTexture(nil, "BORDER")
+	F.headerBg:SetAllPoints(F.header)
+	F.headerBg:SetTexture("Interface\\Buttons\\WHITE8x8")
+	F.headerBg:SetVertexColor(1, 1, 1, 0.05)
+
+	F.headerLine = F.headerLine or F.header:CreateTexture(nil, "BORDER")
+	F.headerLine:SetTexture("Interface\\Buttons\\WHITE8x8")
+	F.headerLine:SetVertexColor(1, 1, 1, 0.10)
+	F.headerLine:SetPoint("TOPLEFT", F.header, "BOTTOMLEFT", 0, -2)
+	F.headerLine:SetPoint("TOPRIGHT", F.header, "BOTTOMRIGHT", 0, -2)
+	F.headerLine:SetHeight(1)
+
+	F.headerTitle = F.headerTitle or F.header:CreateFontString(nil, "ARTWORK")
+	F.headerTitle:SetPoint("LEFT", F.header, "LEFT", 8, 0)
+	F.headerTitle:SetJustifyH("LEFT")
+	apply_font(F.headerTitle, ZGV.DIR.."\\Skins\\segoeuib.ttf", 13)
+	F.headerTitle:SetTextColor(0.92, 0.94, 0.98, 1)
+	F.headerTitle:SetText(L['notifcenter_gear_title'] or "Gear Advisor")
+
+	F.headerMeta = F.headerMeta or F.header:CreateFontString(nil, "ARTWORK")
+	F.headerMeta:SetPoint("RIGHT", F.header, "RIGHT", -8, 0)
+	F.headerMeta:SetJustifyH("RIGHT")
+	apply_font(F.headerMeta, ZGV.DIR.."\\Skins\\segoeui.ttf", 11)
+	F.headerMeta:SetTextColor(0.72, 0.72, 0.75, 0.90)
+	F.headerMeta:SetText("")
 
 	F:SetWidth(300) -- Make it bigger!
 	F.footer = F.footer or ZGV.CreateFrameWithBG("Frame", nil, F, nil)
@@ -1416,8 +1484,8 @@ function Upgrades:CreatePopup()
 	F.footer:SetPoint("BOTTOMRIGHT", F, "BOTTOMRIGHT", 0, 0)
 	F.footer:SetHeight(42)
 	F.footer:SetFrameLevel(F:GetFrameLevel()+1)
-	if F.footer.SetBackdropColor then F.footer:SetBackdropColor(0.04,0.04,0.04,0.95) end
-	if F.footer.SetBackdropBorderColor then F.footer:SetBackdropBorderColor(0.18,0.18,0.18,0.9) end
+	if F.footer.SetBackdropColor then F.footer:SetBackdropColor(0.13,0.13,0.14,0.95) end
+	if F.footer.SetBackdropBorderColor then F.footer:SetBackdropBorderColor(0.27,0.27,0.30,0.95) end
 
 	F.footerLine = F.footerLine or F.footer:CreateTexture(nil,"BORDER")
 	F.footerLine:SetTexture("Interface\\Buttons\\WHITE8x8")
@@ -1435,10 +1503,14 @@ function Upgrades:CreatePopup()
 		F.selfHidden = true
 		ZGV.NotificationCenter:RemoveEntry("ZygorItemPopup")
 		F:Hide()
+		local bindState = F.n_item and get_item_bind_state(F.n_item.itemlinkfull or F.n_item.itemlink, F.n_item.bagnum, F.n_item.bagslot)
 		if F.n_item and F.n_item.itemlink then
-			Upgrades.EquipFailureCooldown[F.n_item.itemlink] = nil
+			Upgrades.EquipFailureCooldown[cooldown_key(F.n_item.itemlink)] = GetTime() + 8
 		end
-		if ZGV.ScheduleTimer then
+		if F.n_item and F.n_item.pair and F.n_item.pair.itemlink then
+			Upgrades.EquipFailureCooldown[cooldown_key(F.n_item.pair.itemlink)] = GetTime() + 8
+		end
+		if bindState ~= "boe" and ZGV.ScheduleTimer then
 			ZGV:ScheduleTimer(function()
 				Upgrades:ScoreEquippedItems()
 			end, 0.2)
@@ -1516,8 +1588,9 @@ function Upgrades:CreatePopup()
 				:SetText("...link1")
 				:SetWidth(240)
 				:SetJustifyH("CENTER")
-				:SetWordWrap(false)
+				:SetWordWrap(true)
 			.__END
+			if button.itemlink1.SetNonSpaceWrap then button.itemlink1:SetNonSpaceWrap(true) end
 		button.linkcontainer_link2 = CHAIN(CreateFrame("Frame",nil,button))
 			:SetFrameLevel(button:GetFrameLevel()+1)
 			:SetSize(200,15)
@@ -1531,8 +1604,9 @@ function Upgrades:CreatePopup()
 				:SetText("...link2")
 				:SetWidth(240)
 				:SetJustifyH("CENTER")
-				:SetWordWrap(false)
+				:SetWordWrap(true)
 			.__END
+			if button.itemlink2.SetNonSpaceWrap then button.itemlink2:SetNonSpaceWrap(true) end
 	button:SetScript("OnLeave",function()
 	end)
 
@@ -1545,6 +1619,21 @@ function Upgrades:CreatePopup()
 	end
 
 	F.item1:SetPoint("TOPLEFT",F.text,"BOTTOMLEFT",0,-10)
+	F.text:SetTextColor(0.86, 0.86, 0.88, 1.0)
+	F.text:ClearAllPoints()
+	F.text:SetPoint("TOP", F, "TOP", 0, -36)
+	F.text:SetWidth(F:GetWidth() - 20)
+	F.text:SetJustifyH("CENTER")
+
+	F.bindwarning = CHAIN(F:CreateFontString(nil,"ARTWORK"))
+		:SetWidth(F:GetWidth() - 20)
+		:SetJustifyH("CENTER")
+		:SetFont(FONT, ZGV.db.profile.fontsecsize)
+		:SetTextColor(1.0, 0.80, 0.40, 1.0)
+		:SetWordWrap(true)
+		:Hide()
+	.__END
+	if F.bindwarning.SetNonSpaceWrap then F.bindwarning:SetNonSpaceWrap(true) end
 
 	-- simple line: "with", to be positioned later
 	F.string_with=CHAIN(F:CreateFontString(nil,"ARTWORK"))
@@ -1556,11 +1645,12 @@ function Upgrades:CreatePopup()
 
 	-- FontString to display all of the stat differences
 	F.stattext=CHAIN(F:CreateFontString(nil,"ARTWORK"))
-		:SetWidth(F:GetWidth()-15)
+		:SetWidth(F:GetWidth()-28)
 		:SetJustifyH("CENTER")
 		:SetFont(FONT,ZGV.db.profile.fontsecsize)
 		:SetWordWrap(true)
 	.__END
+	if F.stattext.SetNonSpaceWrap then F.stattext:SetNonSpaceWrap(true) end
 
 	F.OnAccept = function(self)
 		self.selfHidden = true
@@ -1597,7 +1687,8 @@ function Upgrades:CreatePopup()
 		local offsets = (self.logo:IsVisible() and (self.logo:GetHeight()+15) or 5) + 10 + 5 + 12 + footerHeight
 		local statHeight = math.max(self.stattext:GetStringHeight() or 0, self.stattext:GetHeight() or 0)
 		local titleHeight = math.max(self.text:GetStringHeight() or 0, self.text:GetHeight() or 0)
-		local ItemsAlwaysThere = titleHeight + statHeight + 12
+		local warningHeight = (self.bindwarning and self.bindwarning:IsVisible()) and math.max(self.bindwarning:GetStringHeight() or 0, self.bindwarning:GetHeight() or 0) or 0
+		local ItemsAlwaysThere = titleHeight + warningHeight + statHeight + 12
 		local ItemsSometimes = ( 
 			(self.item1:IsVisible() and self.item1:GetHeight() or 0) + 
 			(self.item2:IsVisible() and self.item2:GetHeight() or 0) + 
@@ -1630,6 +1721,7 @@ function Upgrades:CreatePopup()
 		consider(self.item_double and self.item_double.itemlink1)
 		consider(self.item_double and self.item_double.itemlink2)
 		consider(self.string_with)
+		consider(self.bindwarning)
 		consider(self.stattext)
 
 		if not lowestBottom then return end
@@ -1645,7 +1737,6 @@ function Upgrades:CreatePopup()
 
 		if self.item1 and self.item1.RefreshSize then self.item1:RefreshSize() end
 		if self.item2 and self.item2.RefreshSize then self.item2:RefreshSize() end
-
 		local function rowBottomAnchor(frame)
 			if frame == self.item_double then
 				return (frame.itemlink2 and frame.itemlink2:IsVisible() and frame.itemlink2) or (frame.itemlink1 and frame.itemlink1:IsVisible() and frame.itemlink1) or frame
@@ -1665,6 +1756,14 @@ function Upgrades:CreatePopup()
 			self.stattext:SetPoint("LEFT", self, "LEFT", leftPad, 0)
 			self.stattext:SetPoint("RIGHT", self, "RIGHT", rightPad, 0)
 			self.stattext:SetPoint("TOP", anchor, "BOTTOM", 0, -(offset or 5))
+			if self.bindwarning then
+				self.bindwarning:ClearAllPoints()
+				if self.bindwarning:IsVisible() then
+					self.bindwarning:SetPoint("LEFT", self, "LEFT", leftPad, 0)
+					self.bindwarning:SetPoint("RIGHT", self, "RIGHT", rightPad, 0)
+					self.bindwarning:SetPoint("TOP", self.stattext, "BOTTOM", 0, -6)
+				end
+			end
 		end
 
 		if mode == "pair_old_to_new" then
@@ -1733,10 +1832,58 @@ function Upgrades:CreatePopup()
 	F.acceptbutton:SetText("Equip")
 	F.declinebutton:SetText(L['itemscore_ae_decline'])
 
+	local function style_popup_button(button)
+		if not button then return end
+		button:SetWidth(116)
+		button:SetHeight(26)
+		local normal = button.GetNormalTexture and button:GetNormalTexture()
+		local pushed = button.GetPushedTexture and button:GetPushedTexture()
+		local highlight = button.GetHighlightTexture and button:GetHighlightTexture()
+		local disabled = button.GetDisabledTexture and button:GetDisabledTexture()
+		if normal then normal:SetTexture(nil) end
+		if pushed then pushed:SetTexture(nil) end
+		if highlight then highlight:SetTexture(nil) end
+		if disabled then disabled:SetTexture(nil) end
+		button:SetNormalFontObject("GameFontNormal")
+		button:SetHighlightFontObject("GameFontNormal")
+		button:SetDisabledFontObject("GameFontDisable")
+		apply_flat_backdrop(button, { 0.11, 0.11, 0.13, 0.98 }, { 0.28, 0.28, 0.32, 0.98 })
+		local fs = button.GetFontString and button:GetFontString()
+		if fs then
+			apply_font(fs, ZGV.DIR.."\\Skins\\segoeui.ttf", 11)
+			fs:SetTextColor(0.92, 0.94, 0.98, 1)
+			fs:SetShadowOffset(0, 0)
+		end
+		button:HookScript("OnEnter", function(self)
+			if self.SetBackdropColor then self:SetBackdropColor(0.16, 0.16, 0.19, 0.98) end
+			if self.SetBackdropBorderColor then self:SetBackdropBorderColor(0.40, 0.40, 0.46, 0.98) end
+		end)
+		button:HookScript("OnLeave", function(self)
+			if self.SetBackdropColor then self:SetBackdropColor(0.11, 0.11, 0.13, 0.98) end
+			if self.SetBackdropBorderColor then self:SetBackdropBorderColor(0.28, 0.28, 0.32, 0.98) end
+		end)
+		button:HookScript("OnMouseDown", function(self)
+			if self.SetBackdropColor then self:SetBackdropColor(0.08, 0.08, 0.10, 0.98) end
+		end)
+		button:HookScript("OnMouseUp", function(self)
+			local r, g, b = 0.11, 0.11, 0.13
+			if self:IsMouseOver() then r, g, b = 0.16, 0.16, 0.19 end
+			if self.SetBackdropColor then self:SetBackdropColor(r, g, b, 0.98) end
+		end)
+	end
+	style_popup_button(F.acceptbutton)
+	style_popup_button(F.declinebutton)
+	style_popup_button(F.secureacceptbutton)
+
 	CHAIN(F.acceptbutton)
 		:SetParent(F.footer)
 		:ClearAllPoints()
-		:SetPoint("CENTER",F.footer,"CENTER",-58,-1)
+		:SetPoint("CENTER",F.footer,"CENTER",-66,-1)
+
+	CHAIN(F.secureacceptbutton)
+		:SetParent(F.footer)
+		:ClearAllPoints()
+		:SetPoint("CENTER",F.footer,"CENTER",-66,-1)
 
 	CHAIN(F.declinebutton)
 		--Popup.olditem is not always there. EG no item in that slot.
@@ -1744,7 +1891,7 @@ function Upgrades:CreatePopup()
 		:HookScript("OnLeave",function(self) GameTooltip:Hide() end)
 		:SetParent(F.footer)
 		:ClearAllPoints()
-		:SetPoint("CENTER",F.footer,"CENTER",58,-1)
+		:SetPoint("CENTER",F.footer,"CENTER",66,-1)
 
 	-- dump info about items in popup
 	function F.debug()
@@ -1791,8 +1938,12 @@ function Upgrades:ShowGearReport()
 	end
 
 	out = out .. "\n\n*** Player statweights: " 
-	for i,v in pairs(ItemScore.ActiveRuleSet.stats) do 
-		out = out .. "\n " .. i .. " = " .. v
+	if ItemScore.ActiveRuleSet and ItemScore.ActiveRuleSet.stats then
+		for i,v in pairs(ItemScore.ActiveRuleSet.stats) do 
+			out = out .. "\n " .. i .. " = " .. v
+		end
+	else
+		out = out .. "\n unavailable"
 	end
 	out = out .. "\n Fallback weight = " .. ItemScore.whiteScoreWeight
 
@@ -1905,12 +2056,17 @@ function Upgrades:ShowEquipmentChangePopup(slot)
 		return table.concat(lines, "\n")
 	end
 
+	local bindState = get_item_bind_state(new_item.itemlinkfull or new_item.itemlink, n_item.bagnum, n_item.bagslot)
+	local function get_popup_prompt(baseText)
+		return baseText
+	end
+
 	-- keep references for debugging
 	F.n_item = n_item
 	F.c_item = c_item
-	local bindState = get_item_bind_state(new_item.itemlinkfull or new_item.itemlink)
 
 	-- clean up
+	if F.logo then F.logo:Hide() end
 	F.item_double:Hide()
 	F.item1:Hide()
 	F.item2:Hide()
@@ -1929,15 +2085,17 @@ function Upgrades:ShowEquipmentChangePopup(slot)
 	F.item_double.itemicon2:SetTexture(nil)
 	F.item_double.itemlink1:SetText("")
 	F.item_double.itemlink2:SetText("")
+	F.bindwarning:SetText("")
+	F.bindwarning:Hide()
 	F.acceptbutton:Hide()
 	F.secureacceptbutton:Show()
 	F.secureacceptbutton:SetText("Equip")
 	F.secureacceptbutton:SetAttribute("type", "macro")
 	F.secureacceptbutton:SetAttribute("macrotext", build_equip_macro())
-
 	local changes, delta, summary
 	if current_item then
-		F:SetText(bindState == "boe" and ((L['itemscore_ae_equip1'] or "Equip this item?") .. " This will bind the item.") or L['itemscore_ae_equip1'])
+		if F.headerMeta then F.headerMeta:SetText(pair_item and "Compare Items" or "Compare Item") end
+		F:SetText(get_popup_prompt(L['itemscore_ae_equip1'] or "Equip this item?"))
 
 		F.string_with:Show()	
 		F.stattext:Show()
@@ -1980,7 +2138,8 @@ function Upgrades:ShowEquipmentChangePopup(slot)
 		end
 	else
 		F.layoutMode = "new_only"
-		F:SetText(bindState == "boe" and ((L['itemscore_ae_equip2'] or "Equip this item?") .. " This will bind the item.") or L['itemscore_ae_equip2'])
+		if F.headerMeta then F.headerMeta:SetText("New Item") end
+		F:SetText(get_popup_prompt(L['itemscore_ae_equip2'] or "Equip this item?"))
 
 		F.item1:SetItem(new_item)
 		F.stattext:Show()		
@@ -1999,32 +2158,26 @@ function Upgrades:ShowEquipmentChangePopup(slot)
 		summary = "|cff88ccffQuest item|r"
 	end
 
+	if bindState == "boe" then
+		F.bindwarning:SetText("This item will bind to you if equipped.")
+		F.bindwarning:Show()
+	else
+		F.bindwarning:SetText("")
+		F.bindwarning:Hide()
+	end
+
 	local stattext = changes
 	if summary and summary ~= "" then
 		stattext = ("|cffcccccc%s: %s|r\n%s\n\n%s"):format(L["itemscore_ae_build"] or "Build", Upgrades:GetActiveBuildName(), summary, changes)
 	else
 		stattext = ("|cffcccccc%s: %s|r\n\n%s"):format(L["itemscore_ae_build"] or "Build", Upgrades:GetActiveBuildName(), changes)
 	end
-
-	F.stattext:SetText(stattext)
 	F.stattext:SetWidth((F:GetWidth() or 300) - 24)
+	F.stattext:SetText(stattext)
 	F.stattext:SetHeight(F.stattext:GetStringHeight() + 4)
 
 	F:Show()
-	F.stattext:SetHeight(F.stattext:GetStringHeight() + 4)
 	F:RefreshLayout()
-	if F.layoutTimer and ZGV.CancelTimer then
-		ZGV:CancelTimer(F.layoutTimer, true)
-		F.layoutTimer = nil
-	end
-	if ZGV.ScheduleTimer then
-		F.layoutTimer = ZGV:ScheduleTimer(function()
-			if not F:IsVisible() then return end
-			F.stattext:SetHeight(F.stattext:GetStringHeight() + 4)
-			F:RefreshLayout()
-			F.layoutTimer = nil
-		end, 0.05)
-	end
 
 	return true
 end
@@ -2139,11 +2292,12 @@ function Upgrades:Equip(item,retry)
 	end
 
 	if not equippedMain or not equippedPair then
-		local bindState = get_item_bind_state(item.itemlinkfull or item.itemlink)
+		local bindState = get_item_bind_state(item.itemlinkfull or item.itemlink, item.bagnum, item.bagslot)
+		local cooldownKey = cooldown_key(item.itemlink)
 		if bindState ~= "boe" then
-			Upgrades.EquipFailureCooldown[item.itemlink] = GetTime() + 5
+			Upgrades.EquipFailureCooldown[cooldownKey] = GetTime() + 5
 		else
-			Upgrades.EquipFailureCooldown[item.itemlink] = nil
+			Upgrades.EquipFailureCooldown[cooldownKey] = GetTime() + 8
 		end
 		debug_equip(("equip failed: item=%s slot=%s bag=%s/%s equipped=%s baglink=%s"):format(
 			safe_tostring(item.itemlink),
