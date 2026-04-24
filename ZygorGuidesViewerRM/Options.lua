@@ -1572,8 +1572,8 @@ function me:Options_DefineOptions()
 	end
 
 	self.optionsskin = {
-		name = "Skin",
-		desc = "Choose the visual theme for the guide viewer.",
+		name = L["opt_skinpanel_title"],
+		desc = L["opt_skinpanel_desc"],
 		type = "group",
 		order = 1.5,
 		handler = self,
@@ -1582,13 +1582,13 @@ function me:Options_DefineOptions()
 		args = {
 			intro = {
 				type = "description",
-				name = "Choose the overall viewer look first, then fine-tune size, opacity, and text. Remaster remains the recommended default skin, while Retail offers a more Blizzard-like treatment.",
+				name = L["opt_skinpanel_intro"],
 				order = 1,
 				fontSize = "medium",
 			},
 			skin = {
-				name = "Skin",
-				desc = "Choose a skin and color variant.",
+				name = L["opt_skinpanel_skin"],
+				desc = L["opt_skinpanel_skin_desc"],
 				type = "select",
 				values = function()
 					return self:BuildSkinDropdownValues()
@@ -1619,13 +1619,13 @@ function me:Options_DefineOptions()
 			},
 			appearance_header = {
 				type = "header",
-				name = "Appearance",
+				name = L["opt_skinpanel_appearance_header"],
 				order = 3,
 				width = "full",
 			},
 			appearance_desc = {
 				type = "description",
-				name = "Adjust viewer scale, text sizing, and frame opacity.",
+				name = L["opt_skinpanel_appearance_desc"],
 				order = 3.1,
 				width = "full",
 			},
@@ -1690,13 +1690,13 @@ function me:Options_DefineOptions()
 			},
 			colors_header = {
 				type = "header",
-				name = "Colors",
+				name = L["opt_skinpanel_colors_header"],
 				order = 4,
 				width = "full",
 			},
 			colors_desc = {
 				type = "description",
-				name = "Tune the frame background strength for the selected skin variant.",
+				name = L["opt_skinpanel_colors_desc"],
 				order = 4.1,
 				width = "full",
 			},
@@ -1718,13 +1718,13 @@ function me:Options_DefineOptions()
 			},
 			advanced_header = {
 				type = "header",
-				name = "Advanced",
+				name = L["opt_skinpanel_advanced_header"],
 				order = 5,
 				width = "full",
 			},
 			advanced_desc = {
 				type = "description",
-				name = "Lower-frequency display controls that affect frame layout and step presentation.",
+				name = L["opt_skinpanel_advanced_desc"],
 				order = 5.1,
 				width = "full",
 			},
