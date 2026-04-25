@@ -125,6 +125,16 @@ local EQUIPPABLE_INV_TYPES = {
 	TYPE = true,
 }
 
+local NON_GEAR_INV_TYPES = {
+	INVTYPE_AMMO = true,
+	INVTYPE_BODY = true,
+	INVTYPE_TABARD = true,
+}
+
+local NON_GEAR_WEAPON_SUBTYPES = {
+	["miscellaneous"] = true,
+}
+
 local FAMILY_ALIASES = {
 	SWORD = {"sword","swords"},
 	TH_SWORD = {"two-handed sword","two-handed swords"},
@@ -285,6 +295,20 @@ local function get_item_slot_info(item)
 		return nil, nil, false, false, "unsupported slot"
 	end
 	return slot_1, slot_2, twohander or false, true, "ok"
+end
+
+local function item_is_gear(item)
+	if not item or not item.type or NON_GEAR_INV_TYPES[item.type] then
+		return false
+	end
+	if item.class == LE_ITEM_CLASS_WEAPON and item.subtype then
+		local normalizedSubtype = normalize_label(item.subtype)
+		if normalizedSubtype and NON_GEAR_WEAPON_SUBTYPES[normalizedSubtype] then
+			return false
+		end
+	end
+	local _, _, _, equippable = get_item_slot_info(item)
+	return equippable and true or false
 end
 
 local function clamp_display_percent(percent)
@@ -988,6 +1012,38 @@ function ItemScore:NotifyStatWeightsOptionsChanged()
 	end
 end
 
+function ItemScore:CancelPendingBagScan()
+	if self.BagScanTimer and ZGV.CancelTimer then
+		ZGV:CancelTimer(self.BagScanTimer)
+		self.BagScanTimer = nil
+	end
+end
+
+function ItemScore:CancelPendingEquipRescore()
+	if self.EquipTimer and ZGV.CancelTimer then
+		ZGV:CancelTimer(self.EquipTimer)
+		self.EquipTimer = nil
+	end
+end
+
+function ItemScore:ScheduleBagAcquisitionScan(delay)
+	if self.EquipTimer then return end
+	if self.BagScanTimer then return end
+	self.BagScanTimer = ZGV:ScheduleTimer(function()
+		self.BagScanTimer = nil
+		self.Upgrades:ScanRecentBagAcquisitions()
+	end, delay or 0.25)
+end
+
+function ItemScore:ScheduleEquipRescore(delay)
+	self:CancelPendingBagScan()
+	if self.EquipTimer then return end
+	self.EquipTimer = ZGV:ScheduleTimer(function()
+		self.EquipTimer = nil
+		self.Upgrades:ScoreEquippedItems()
+	end, delay or 0.5)
+end
+
 function ItemScore:OnEvent(event,arg1,arg2,...)
 	if not self.Initialised then return end
 	if event == "PLAYER_LEVEL_UP" or event == "CHARACTER_POINTS_CHANGED" or event == "ACTIVE_TALENT_GROUP_CHANGED" then
@@ -1005,23 +1061,14 @@ function ItemScore:OnEvent(event,arg1,arg2,...)
 			ItemScore.LoginRefreshTimer = nil
 			ItemScore:DelayedRefreshUserData()
 		end,1.5)
-		ItemScore.EquipTimer = ItemScore.EquipTimer or ZGV:ScheduleTimer(function() 
-			ItemScore.EquipTimer = nil
-			ItemScore.Upgrades:ScoreEquippedItems()
-		end,0.5)
+		ItemScore:ScheduleEquipRescore(0.5)
 	elseif event == "BAG_UPDATE" or event == "MAIL_INBOX_UPDATE" or event == "MAIL_CLOSED" then -- 3.3.5a-safe bag/mail hooks; debounce to one scan
-		ItemScore.EquipTimer = ItemScore.EquipTimer or ZGV:ScheduleTimer(function()
-			ItemScore.EquipTimer = nil
-			ItemScore.Upgrades:ScanRecentBagAcquisitions()
-		end,0.25)
+		ItemScore:ScheduleBagAcquisitionScan(0.25)
 	elseif event == "PLAYER_EQUIPMENT_CHANGED"
 		or event=="ZGV_STEP_FINALISED"  or event=="LIBROVER_TRAVEL_REPORTED" or event=="GET_ITEM_INFO_RECEIVED" -- step finished loading, or travel route updated, see if we have useless quest equip or portkey
 		then 
 		-- on timer to run it only once, since equip/unequip fires both events, and we would get spammed
-		ItemScore.EquipTimer = ItemScore.EquipTimer or ZGV:ScheduleTimer(function() 
-			ItemScore.EquipTimer = nil
-			ItemScore.Upgrades:ScoreEquippedItems()
-		end,0.5)
+		ItemScore:ScheduleEquipRescore(0.5)
 	elseif event == "PLAYER_REGEN_DISABLED" then -- combat started, kill all upgrade popups
 		if ItemScore.Upgrades.EquipPopup then ItemScore.Upgrades.EquipPopup:Hide() end
 	elseif event == "PLAYER_REGEN_ENABLED" then -- combat ended, check if anything is waiting for equip
@@ -2187,6 +2234,10 @@ local function ItemScore_SetTooltipData(tooltip, tooltipobj)
 
 		local fulllink = originalLink
 		local itemlink = item.itemlink
+		if not item_is_gear(item) then
+			ItemScore.TooltipPatched = true
+			return
+		end
 
 		local score, success, scorecomment = ItemScore:GetItemScore(itemlink)
 		if not success then ItemScore.TooltipPatched  = true return end

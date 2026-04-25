@@ -267,24 +267,32 @@ end
 function Upgrades:GetEquippedItemData(slot)
 	if not slot then return nil end
 	local cached = Upgrades.EquippedItems[slot]
-	if cached and cached.itemlink and cached.score ~= nil then
-		return cached
-	end
 
 	local liveLink = GetInventoryItemLink("player", slot)
 	if not liveLink then
+		if cached then
+			table.wipe(cached)
+		end
 		return cached
 	end
 
-	local stripped = strip_link(liveLink)
-	local details = ItemScore:GetItemDetails(stripped or liveLink)
+	local stripped = strip_link(liveLink) or liveLink
+	if cached and cached.itemlink == stripped and cached.score ~= nil then
+		return cached
+	end
+
+	local details = ItemScore:GetItemDetails(stripped)
 	if not details then
+		if cached then
+			table.wipe(cached)
+			cached.itemlink = stripped
+		end
 		return cached
 	end
 
-	local score = ItemScore:GetItemScore(stripped or liveLink) or 0
+	local score = ItemScore:GetItemScore(stripped) or 0
 	local slotdata = cached or {}
-	slotdata.itemlink = stripped or liveLink
+	slotdata.itemlink = stripped
 	slotdata.itemid = details.itemid
 	slotdata.score = score
 	slotdata.artifactscore = details.artifactscore
@@ -899,9 +907,9 @@ function Upgrades:ProcessWeaponQueue()
 	end
 
 	-- sort all weapons by score
-	table.sort(main_hand,function(a,b) return a.score>b.score end)
-	table.sort(off_hand,function(a,b) return a.score>b.score end)
-	table.sort(two_hand,function(a,b) return (a.artifactscore or a.score)>(b.artifactscore or b.score) end)
+	table.sort(main_hand,function(a,b) return (a.score or -math.huge)>(b.score or -math.huge) end)
+	table.sort(off_hand,function(a,b) return (a.score or -math.huge)>(b.score or -math.huge) end)
+	table.sort(two_hand,function(a,b) return ((a.artifactscore or a.score) or -math.huge)>((b.artifactscore or b.score) or -math.huge) end)
 
 	--Spoo({main_hand=main_hand,off_hand=off_hand,two_hand=two_hand,equipped_weapon_1=equipped_weapon_1,equipped_weapon_2=equipped_weapon_2})
 	--do return end
@@ -1643,14 +1651,41 @@ function Upgrades:CreatePopup()
 		:SetText(L['itemscore_ae_with'])
 	.__END
 
+	F.statscroll = F.statscroll or CreateFrame("ScrollFrame", "ZygorItemPopupStatScroll", F, "UIPanelScrollFrameTemplate")
+	F.statscroll:SetFrameLevel(F:GetFrameLevel()+1)
+	F.statscroll:EnableMouseWheel(true)
+	F.statscroll:SetScript("OnMouseWheel", function(self, delta)
+		local current = self:GetVerticalScroll() or 0
+		local minScroll = 0
+		local maxScroll = math.max((self.maxScroll or 0), 0)
+		local nextScroll = current - delta * 20
+		if nextScroll < minScroll then nextScroll = minScroll end
+		if nextScroll > maxScroll then nextScroll = maxScroll end
+		self:SetVerticalScroll(nextScroll)
+	end)
+
+	F.statcontent = F.statcontent or CreateFrame("Frame", nil, F.statscroll)
+	F.statcontent:SetWidth(F:GetWidth() - 28)
+	F.statcontent:SetHeight(1)
+	F.statscroll:SetScrollChild(F.statcontent)
+	F.statscroll.ScrollBar = F.statscroll.ScrollBar or _G["ZygorItemPopupStatScrollScrollBar"]
+	if F.statscroll.ScrollBar then
+		F.statscroll.ScrollBar:ClearAllPoints()
+		F.statscroll.ScrollBar:SetPoint("TOPRIGHT", F, "TOPRIGHT", -10, -120)
+		F.statscroll.ScrollBar:SetPoint("BOTTOMRIGHT", F.footer, "TOPRIGHT", -10, 8)
+		F.statscroll.ScrollBar:Hide()
+	end
+
 	-- FontString to display all of the stat differences
-	F.stattext=CHAIN(F:CreateFontString(nil,"ARTWORK"))
+	F.stattext=CHAIN((F.stattext and F.stattext:SetParent(F.statcontent) and F.stattext) or F.statcontent:CreateFontString(nil,"ARTWORK"))
 		:SetWidth(F:GetWidth()-28)
 		:SetJustifyH("CENTER")
 		:SetFont(FONT,ZGV.db.profile.fontsecsize)
 		:SetWordWrap(true)
 	.__END
-	if F.stattext.SetNonSpaceWrap then F.stattext:SetNonSpaceWrap(true) end
+	F.stattext:SetPoint("TOPLEFT", F.statcontent, "TOPLEFT", 0, 0)
+	F.stattext:SetPoint("TOPRIGHT", F.statcontent, "TOPRIGHT", 0, 0)
+	if F.stattext.SetNonSpaceWrap then F.stattext:SetNonSpaceWrap(false) end
 
 	F.OnAccept = function(self)
 		self.selfHidden = true
@@ -1684,50 +1719,74 @@ function Upgrades:CreatePopup()
 
 	F.AdjustSize = function(self) -- Need to change this because it is different for this kind of Popup
 		local footerHeight = (self.footer and self.footer:GetHeight() or 0)
-		local offsets = (self.logo:IsVisible() and (self.logo:GetHeight()+15) or 5) + 10 + 5 + 12 + footerHeight
-		local statHeight = math.max(self.stattext:GetStringHeight() or 0, self.stattext:GetHeight() or 0)
-		local titleHeight = math.max(self.text:GetStringHeight() or 0, self.text:GetHeight() or 0)
-		local warningHeight = (self.bindwarning and self.bindwarning:IsVisible()) and math.max(self.bindwarning:GetStringHeight() or 0, self.bindwarning:GetHeight() or 0) or 0
-		local ItemsAlwaysThere = titleHeight + warningHeight + statHeight + 12
-		local ItemsSometimes = ( 
-			(self.item1:IsVisible() and self.item1:GetHeight() or 0) + 
-			(self.item2:IsVisible() and self.item2:GetHeight() or 0) + 
-			(self.item_double:IsVisible() and self.item_double:GetHeight() or 0) + 
-			(self.string_with:IsVisible() and self.string_with:GetHeight() or 0)
-			)
+		local popupWidth = self:GetWidth() or 300
+		local titleHeight = math.max(self.text:GetStringHeight() or 0, self.text:GetHeight() or 0, 18)
+		local warningHeight = (self.bindwarning and self.bindwarning:IsVisible()) and math.max(self.bindwarning:GetStringHeight() or 0, self.bindwarning:GetHeight() or 0, 12) or 0
+		local statFullHeight = math.max(self.stattext and self.stattext:GetStringHeight() or 0, 14) + 4
+		local topChrome = 36
+		local topGap = 10
+		local rowGap = 5
+		local withGap = 7
+		local statGap = 5
+		local warningGap = warningHeight > 0 and 6 or 0
+		local contentBottomGap = 4
+		local maxPopupHeight = math.max(math.floor((UIParent and UIParent:GetHeight() or 768) * 0.72), 240)
+		local fixedHeight = topChrome + titleHeight + topGap + footerHeight + contentBottomGap
+		local rowsHeight = 0
 
-		self:SetHeight(math.max(offsets + ItemsAlwaysThere + ItemsSometimes, 210))
-	end
+		if self.layoutMode == "pair_old_to_new" then
+			rowsHeight = (self.item_double:IsVisible() and self.item_double:GetHeight() or 0)
+				+ (self.string_with:IsVisible() and (rowGap + self.string_with:GetHeight()) or 0)
+				+ (self.item2:IsVisible() and (withGap + self.item2:GetHeight()) or 0)
+				+ statGap
+		elseif self.layoutMode == "old_to_pair_new" then
+			rowsHeight = (self.item1:IsVisible() and self.item1:GetHeight() or 0)
+				+ (self.string_with:IsVisible() and (rowGap + self.string_with:GetHeight()) or 0)
+				+ (self.item_double:IsVisible() and (3 + self.item_double:GetHeight()) or 0)
+				+ statGap
+		elseif self.layoutMode == "old_to_new" then
+			rowsHeight = (self.item1:IsVisible() and self.item1:GetHeight() or 0)
+				+ (self.string_with:IsVisible() and (rowGap + self.string_with:GetHeight()) or 0)
+				+ (self.item2:IsVisible() and (withGap + self.item2:GetHeight()) or 0)
+				+ statGap
+		elseif self.layoutMode == "new_only" then
+			rowsHeight = (self.item1:IsVisible() and self.item1:GetHeight() or 0) + statGap
+		end
 
-	F.FitContent = function(self)
-		if not (self.footer and self.footer.GetTop) then return end
-		local footerTop = self.footer:GetTop()
-		if not footerTop then return end
+		local maxStatHeight = maxPopupHeight - fixedHeight - rowsHeight - warningHeight - warningGap
+		maxStatHeight = math.max(maxStatHeight, 40)
+		local visibleStatHeight = math.min(statFullHeight, maxStatHeight)
 
-		local lowestBottom
-		local function consider(frame)
-			if not (frame and frame.IsVisible and frame:IsVisible() and frame.GetBottom) then return end
-			local bottom = frame:GetBottom()
-			if bottom and (not lowestBottom or bottom < lowestBottom) then
-				lowestBottom = bottom
+		if self.statscroll and self.statscroll:IsVisible() then
+			self.statscroll:SetHeight(visibleStatHeight)
+			self.statscroll.maxScroll = math.max(statFullHeight - visibleStatHeight, 0)
+			if self.statscroll.SetVerticalScroll then
+				self.statscroll:SetVerticalScroll(0)
 			end
 		end
 
-		consider(self.item1)
-		consider(self.item1 and self.item1.itemlink)
-		consider(self.item2)
-		consider(self.item2 and self.item2.itemlink)
-		consider(self.item_double)
-		consider(self.item_double and self.item_double.itemlink1)
-		consider(self.item_double and self.item_double.itemlink2)
-		consider(self.string_with)
-		consider(self.bindwarning)
-		consider(self.stattext)
+		local finalHeight = fixedHeight + rowsHeight + visibleStatHeight + warningGap + warningHeight
+		self:SetHeight(math.max(math.min(finalHeight, maxPopupHeight), 180))
+	end
 
-		if not lowestBottom then return end
-		local overlap = (footerTop + 10) - lowestBottom
-		if overlap > 0 then
-			self:SetHeight(self:GetHeight() + overlap)
+	F.FitContent = function(self)
+		if ZGV and ZGV.db and ZGV.db.profile and ZGV.db.profile.debug_display then
+			local footerTop = self.footer and self.footer.GetTop and self.footer:GetTop() or nil
+			local popupHeight = self.GetHeight and self:GetHeight() or nil
+			local statTop = self.statscroll and self.statscroll.GetTop and self.statscroll:GetTop() or nil
+			local statBottom = self.statscroll and self.statscroll.GetBottom and self.statscroll:GetBottom() or nil
+			local statHeight = self.statscroll and self.statscroll.GetHeight and self.statscroll:GetHeight() or nil
+			local warningTop = self.bindwarning and self.bindwarning:IsVisible() and self.bindwarning.GetTop and self.bindwarning:GetTop() or nil
+			local warningBottom = self.bindwarning and self.bindwarning:IsVisible() and self.bindwarning.GetBottom and self.bindwarning:GetBottom() or nil
+			ZGV:Debug("&itemscore popup layout height=%s footerTop=%s statTop=%s statBottom=%s statHeight=%s warningTop=%s warningBottom=%s",
+				tostring(popupHeight),
+				tostring(footerTop),
+				tostring(statTop),
+				tostring(statBottom),
+				tostring(statHeight),
+				tostring(warningTop),
+				tostring(warningBottom)
+			)
 		end
 	end
 
@@ -1752,16 +1811,16 @@ function Upgrades:CreatePopup()
 		end
 
 		local function placeStats(anchor, offset)
-			self.stattext:ClearAllPoints()
-			self.stattext:SetPoint("LEFT", self, "LEFT", leftPad, 0)
-			self.stattext:SetPoint("RIGHT", self, "RIGHT", rightPad, 0)
-			self.stattext:SetPoint("TOP", anchor, "BOTTOM", 0, -(offset or 5))
+			self.statscroll:ClearAllPoints()
+			self.statscroll:SetPoint("LEFT", self, "LEFT", leftPad, 0)
+			self.statscroll:SetPoint("RIGHT", self, "RIGHT", rightPad, 0)
+			self.statscroll:SetPoint("TOP", anchor, "BOTTOM", 0, -(offset or 5))
 			if self.bindwarning then
 				self.bindwarning:ClearAllPoints()
 				if self.bindwarning:IsVisible() then
 					self.bindwarning:SetPoint("LEFT", self, "LEFT", leftPad, 0)
 					self.bindwarning:SetPoint("RIGHT", self, "RIGHT", rightPad, 0)
-					self.bindwarning:SetPoint("TOP", self.stattext, "BOTTOM", 0, -6)
+					self.bindwarning:SetPoint("TOP", self.statscroll, "BOTTOM", 0, -6)
 				end
 			end
 		end
@@ -1791,6 +1850,25 @@ function Upgrades:CreatePopup()
 	end
 
 	F.RefreshLayout = function(self)
+		if self.statscroll and self.stattext then
+			local contentWidth = math.max((self:GetWidth() or 300) - 28, 140)
+			self.statcontent:SetWidth(contentWidth)
+			self.stattext:SetWidth(contentWidth)
+			if self.stattext.SetNonSpaceWrap then
+				self.stattext:SetNonSpaceWrap(false)
+			end
+			local fullTextHeight = math.max(self.stattext:GetStringHeight() or 0, 14)
+			self.stattext:SetHeight(fullTextHeight + 4)
+			self.statcontent:SetHeight(fullTextHeight + 4)
+			self.statscroll:SetHeight(fullTextHeight + 4)
+			self.statscroll.maxScroll = 0
+			if self.statscroll.ScrollBar then
+				self.statscroll.ScrollBar:Hide()
+			end
+			if self.statscroll.SetVerticalScroll then
+				self.statscroll:SetVerticalScroll(0)
+			end
+		end
 		if self.LayoutContent then
 			self:LayoutContent()
 		end
@@ -2072,6 +2150,7 @@ function Upgrades:ShowEquipmentChangePopup(slot)
 	F.item2:Hide()
 	F.string_with:Hide()
 	F.stattext:Hide()
+	F.statscroll:Hide()
 	F.layoutMode = nil
 	F.item1.link = nil
 	F.item2.link = nil
@@ -2098,7 +2177,8 @@ function Upgrades:ShowEquipmentChangePopup(slot)
 		F:SetText(get_popup_prompt(L['itemscore_ae_equip1'] or "Equip this item?"))
 
 		F.string_with:Show()	
-		F.stattext:Show()
+	F.stattext:Show()
+	F.statscroll:Show()
 		local mode_old = current_item.artifactscore and "artifact"
 		local mode_new = new_item.artifactscore and "artifact"
 
@@ -2143,7 +2223,7 @@ function Upgrades:ShowEquipmentChangePopup(slot)
 
 		F.item1:SetItem(new_item)
 		F.stattext:Show()		
-		F.AnchorTo(F.stattext,F.item1)
+		F.statscroll:Show()
 
 		delta = build_stat_delta(new_item and new_item.itemlink)
 		summary = Upgrades:FormatUpgradeSummary(slot, new_item, n_item.change, nil, delta)
@@ -2172,9 +2252,12 @@ function Upgrades:ShowEquipmentChangePopup(slot)
 	else
 		stattext = ("|cffcccccc%s: %s|r\n\n%s"):format(L["itemscore_ae_build"] or "Build", Upgrades:GetActiveBuildName(), changes)
 	end
-	F.stattext:SetWidth((F:GetWidth() or 300) - 24)
+	F.stattext:SetWidth((F:GetWidth() or 300) - 42)
 	F.stattext:SetText(stattext)
 	F.stattext:SetHeight(F.stattext:GetStringHeight() + 4)
+	if F.statcontent then
+		F.statcontent:SetHeight(F.stattext:GetHeight() or (F.stattext:GetStringHeight() + 4))
+	end
 
 	F:Show()
 	F:RefreshLayout()
