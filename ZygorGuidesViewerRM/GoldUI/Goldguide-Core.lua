@@ -31,7 +31,423 @@ Goldguide.ITEM_AUCTION_STATUS = {
 
 local CRAFTING_SKILLS={"All","Mining","Jewelcrafting","Enchanting","Inscription","Blacksmithing","Engineering","Alchemy","Tailoring","Leatherworking","Cooking"}
 
+local function is_gold_route_guide(guide)
+	if not guide then return false end
+	local gtype = guide.type
+	if gtype=="GOLD" or gtype=="PROFESSIONS" or gtype=="profession" then
+		return true
+	end
+	return false
+end
+
+local function collect_item_ids(itemrows)
+	local ids = {}
+	for _,item in pairs(itemrows or {}) do
+		local itemid = item and item[1]
+		if itemid then ids[itemid] = true end
+	end
+	return ids
+end
+
+local function count_keys(tbl)
+	local n = 0
+	for _ in pairs(tbl or {}) do n = n + 1 end
+	return n
+end
+
+local function count_matches(text, pattern)
+	local n = 0
+	if not text or text == "" then return 0 end
+	for _ in text:gmatch(pattern) do n = n + 1 end
+	return n
+end
+
+local function collect_goldcollect_ids(rawdata)
+	local ids = {}
+	if not rawdata or rawdata == "" then return ids end
+	for itemid in rawdata:gmatch("|goldcollect [^#\n]-##(%d+)") do
+		ids[tonumber(itemid)] = true
+	end
+	for itemid in rawdata:gmatch("\ngoldcollect [^#\n]-##(%d+)") do
+		ids[tonumber(itemid)] = true
+	end
+	return ids
+end
+
+local function get_primary_skill(skillreq)
+	if not skillreq then return nil end
+	for skillname in pairs(skillreq) do
+		return tostring(skillname):lower()
+	end
+end
+
+local function has_route_actions(rawdata, primarySkill)
+	if not rawdata or rawdata == "" then return false, "no raw guide steps" end
+	local hasObjectClick = rawdata:find("\nclick ", 1, true) ~= nil
+	local hasGenericClick = rawdata:find("\nClick ", 1, true) ~= nil
+	local hasKill = rawdata:find("\nKill ", 1, true) ~= nil or rawdata:find("\nkill ", 1, true) ~= nil
+	local hasCastFishing = rawdata:find("cast Fishing##", 1, true) ~= nil
+	local hasFishText = rawdata:find("Fish in", 1, true) ~= nil or rawdata:find("Fish from", 1, true) ~= nil
+	local hasGoto = rawdata:find("|goto ", 1, true) ~= nil
+	local hasPath = rawdata:find("\npath", 1, true) ~= nil
+	local hasHerbTip = rawdata:find('Find Herbs', 1, true) ~= nil
+	local hasMineralTip = rawdata:find('Find Minerals', 1, true) ~= nil
+	local hasInstanceEntry = rawdata:find("Enter the ", 1, true) ~= nil or rawdata:find("Inside the ", 1, true) ~= nil
+	local hasFishingStyle = hasCastFishing or hasFishText
+	local hasSkinningStyle = rawdata:find("Skin ", 1, true) ~= nil or rawdata:find("Skin their corpses", 1, true) ~= nil or rawdata:find("Skin its corpse", 1, true) ~= nil
+
+	if primarySkill == "fishing" then
+		if (hasCastFishing or hasFishText) and (hasGoto or hasPath) then return true end
+		return false, "fishing route missing fishing/path anchors"
+	elseif primarySkill == "skinning" then
+		if hasKill and hasInstanceEntry then return true end
+		if hasKill and (hasGoto or hasPath) then return true end
+		return false, "skinning route missing kill/path anchors"
+	elseif primarySkill == "herbalism" or primarySkill == "mining" then
+		if (hasObjectClick or hasGenericClick or hasHerbTip or hasMineralTip) and (hasGoto or hasPath) then return true end
+		return false, "node route missing gather/path anchors"
+	elseif primarySkill == "enchanting" then
+		if hasKill or hasObjectClick or hasGenericClick or hasGoto or hasPath then return true end
+		return false, "enchanting route missing actionable steps"
+	else
+		if hasKill and (hasGoto or hasPath) and not hasFishingStyle and not hasSkinningStyle then return true end
+		if hasKill or hasObjectClick or hasGenericClick or hasCastFishing then return true end
+		return false, "route missing actionable steps"
+	end
+end
+
+local function score_route_guide_candidate(guide)
+	if not guide then return -1 end
+	local score = 0
+	if guide.rawdata and guide.rawdata ~= "" then score = score + 10 end
+	if guide.headerdata and type(guide.headerdata) == "table" then score = score + 20 end
+	local header = guide.headerdata
+	local meta = header and header.meta
+	if meta and meta.goldtype == "route" then score = score + 30 end
+	if header and header.items and next(header.items) then score = score + 10 end
+	if header and header.maps and next(header.maps) then score = score + 5 end
+	if guide.is_retail_import then score = score - 15 end
+	return score
+end
+
+function Goldguide:GetGoldRouteGuides()
+	local routeByTitle = {}
+	for _,guide in ipairs(ZGV.registeredguides or {}) do
+		if is_gold_route_guide(guide) then
+			local header = guide.headerdata
+			local meta = header and header.meta
+			if meta and meta.goldtype == "route" then
+				local title = guide.title or guide.title_short
+				if title then
+					local existing = routeByTitle[title]
+					if not existing or score_route_guide_candidate(guide) > score_route_guide_candidate(existing) then
+						routeByTitle[title] = guide
+					end
+				end
+			end
+		end
+	end
+	local routes = {}
+	for _,guide in pairs(routeByTitle) do
+		table.insert(routes, guide)
+	end
+	table.sort(routes, function(a,b) return (a.title or "") < (b.title or "") end)
+	return routes
+end
+
+function Goldguide:FindBestRouteGuideByTitle(title)
+	if not title or title == "" then return nil end
+	local bestGuide
+	for _,guide in ipairs(ZGV.registeredguides or {}) do
+		if guide and guide.title == title then
+			if is_gold_route_guide(guide) then
+				local header = guide.headerdata
+				local meta = header and header.meta
+				if meta and meta.goldtype == "route" then
+					if not bestGuide or score_route_guide_candidate(guide) > score_route_guide_candidate(bestGuide) then
+						bestGuide = guide
+					end
+				end
+			end
+		end
+	end
+	return bestGuide
+end
+
+function Goldguide:GetRouteGuideLoadTitle(title)
+	if not title or title == "" then return title end
+	self.DynamicRouteGuideTitles = self.DynamicRouteGuideTitles or {}
+	if self.DynamicRouteGuideTitles[title] then
+		return self.DynamicRouteGuideTitles[title]
+	end
+
+	local guide = self:FindBestRouteGuideByTitle(title)
+	if not guide or not guide.rawdata or guide.rawdata == "" then return title end
+
+	local header = guide.headerdata
+	local meta = header and header.meta
+	if not meta or meta.goldtype ~= "route" then return title end
+
+	local bodyLines = {}
+	local capturing = false
+	for line in (guide.rawdata .. "\n"):gmatch("([^\r\n]*)\r?\n") do
+		if not capturing then
+			if line:match('^label%s+"Begin_') or line:match('^label%s+"Start_') then
+				capturing = true
+			end
+		else
+			if line:match('^Click Here to Sell ') or line:match('^label%s+"Sell_') then
+				break
+			end
+			if not line:match('^label%s+"') and line ~= "|goldtracker" and not line:match("^'%|goto ") then
+				table.insert(bodyLines, line)
+			end
+		end
+	end
+
+	if #bodyLines == 0 then return title end
+
+	local wrapperTitle = ("GOLD\\Gold Guide Routes\\%s"):format(guide.title_short or title:gsub("^GOLD\\", ""))
+	local wrapperHeader = {
+		author = header and header.author or guide.author,
+		meta = meta,
+		items = header and header.items,
+		maps = header and header.maps,
+		type = "gold",
+	}
+
+	local wrapperBody = {
+		"step",
+		"This is a farming loop route.",
+		"|tip The waypoint arrow only gets you onto the route. After that, follow the ant trail and loop path shown on the map.",
+	}
+
+	local mapName
+	local preRouteLines = {}
+	local routeActionLines = {}
+	local pathPoints = {}
+	local sawPath = false
+
+	for _,line in ipairs(bodyLines) do
+		local mapLine = line:match("^map%s+(.+)$")
+		if mapLine then
+			mapName = mapLine
+		elseif line:match("^path[%s\t]") then
+			sawPath = true
+			for x,y in line:gmatch("(%d+%.?%d*),(%d+%.?%d*)") do
+				table.insert(pathPoints, { x = x, y = y })
+			end
+		elseif not sawPath then
+			table.insert(preRouteLines, line)
+		else
+			if not line:match("^goldcollect ")
+				and not line:match("^|goldcollect ")
+				and line ~= "|goldtracker"
+				and not line:match("^Click Here to Sell ")
+				and not line:match("^Click Here to Farm ")
+				and not line:match('^label%s+"')
+				and not line:match("^_Want to Farm More%?_")
+				and not line:match("^'%|goto ")
+			then
+				table.insert(routeActionLines, line)
+			end
+		end
+	end
+
+	if #pathPoints > 0 then
+		for _,line in ipairs(preRouteLines) do
+			table.insert(wrapperBody, line)
+		end
+		local routeParts = {}
+		for _,point in ipairs(pathPoints) do
+			table.insert(routeParts, ("%s,%s"):format(point.x, point.y))
+		end
+		table.insert(wrapperBody, "step")
+		table.insert(wrapperBody, "'Follow this farming route.")
+		if mapName then
+			table.insert(wrapperBody, ("..route %s,%s"):format(mapName, table.concat(routeParts, ";")))
+		else
+			table.insert(wrapperBody, ("..route %s"):format(table.concat(routeParts, ";")))
+		end
+		table.insert(wrapperBody, "|tip The route points should advance automatically as you move along the route.")
+		for _,line in ipairs(routeActionLines) do
+			if line:match("^[Kk]ill ") then
+				table.insert(wrapperBody, "'" .. line)
+			elseif line:match("^click ") then
+				local target = line:match("^click%s+(.+)$")
+				target = target and target:gsub("##%d+%+?", "") or "nearby nodes"
+				table.insert(wrapperBody, ("'Gather %s along the route."):format(target))
+			elseif line:match("^cast Fishing##") then
+				table.insert(wrapperBody, "'Fish as you follow this loop route.")
+			elseif line:match("^|tip ") then
+				table.insert(wrapperBody, line)
+			elseif line ~= "step" and line ~= "" then
+				table.insert(wrapperBody, "'" .. line)
+			end
+		end
+		table.insert(wrapperBody, "step")
+		table.insert(wrapperBody, "You finished one loop of the farming route.")
+		table.insert(wrapperBody, "|tip Reload the route from Gold Guide if you want to start another guided loop immediately.")
+	else
+		for _,line in ipairs(bodyLines) do
+			table.insert(wrapperBody, line)
+		end
+	end
+
+	ZGV:RegisterGuide(wrapperTitle, wrapperHeader, table.concat(wrapperBody, "\n"))
+	self.DynamicRouteGuideTitles[title] = wrapperTitle
+	return wrapperTitle
+end
+
+function Goldguide:ValidateRouteGuide(guide)
+	local title = guide and (guide.title_short or guide.title) or "<unknown>"
+	local issues = {}
+	local warnings = {}
+	local info = { title = title, guide = guide }
+
+	if not guide then
+		table.insert(issues, "guide missing")
+		info.ok = false
+		info.issues = issues
+		info.warnings = warnings
+		return info
+	end
+
+	local header = guide.headerdata
+	local meta = header and header.meta
+	local rawdata = guide.rawdata or ""
+	local maps = header and header.maps or {}
+	local items = header and header.items or {}
+	local skillreq = meta and meta.skillreq
+	local primarySkill = get_primary_skill(skillreq)
+	local headerItemIds = collect_item_ids(items)
+	local collectedItemIds = collect_goldcollect_ids(rawdata)
+	local overlapCount = 0
+	for itemid in pairs(headerItemIds) do
+		if collectedItemIds[itemid] then overlapCount = overlapCount + 1 end
+	end
+	local primaryHeaderItem = header.items and header.items[1] and header.items[1][1]
+
+	if not header then table.insert(issues, "missing headerdata") end
+	if not meta then table.insert(issues, "missing meta") end
+	if meta and meta.goldtype ~= "route" then table.insert(issues, "goldtype is not route") end
+	if not guide.type then table.insert(issues, "missing guide.type") end
+	if not guide.rawdata or guide.rawdata == "" then table.insert(issues, "missing rawdata") end
+	if count_keys(headerItemIds) == 0 then table.insert(issues, "header.items missing") end
+	if #(maps or {}) == 0 then
+		if rawdata:find("|goto ", 1, true)
+			or rawdata:find("\nmap ", 1, true)
+			or rawdata:find("Enter the ", 1, true)
+			or rawdata:find("Inside the ", 1, true)
+		then
+			table.insert(warnings, "header.maps missing")
+		else
+			table.insert(issues, "header.maps missing")
+		end
+	end
+
+	local hasActions, actionReason = has_route_actions(rawdata, primarySkill)
+	if not hasActions then table.insert(issues, actionReason) end
+
+	if primaryHeaderItem and not collectedItemIds[primaryHeaderItem] then
+		table.insert(warnings, ("primary header item %d missing from goldcollect lines"):format(primaryHeaderItem))
+	end
+	if count_keys(collectedItemIds) == 0 then
+		table.insert(warnings, "no goldcollect lines found")
+	elseif overlapCount == 0 and count_keys(headerItemIds) > 0 then
+		table.insert(warnings, "header.items and goldcollect lines do not overlap")
+	end
+
+	info.mapCount = #(maps or {})
+	info.headerItemCount = count_keys(headerItemIds)
+	info.goldcollectCount = count_keys(collectedItemIds)
+	info.overlapCount = overlapCount
+	info.gotoCount = count_matches(rawdata, "%%|goto ")
+	info.pathCount = count_matches(rawdata, "\npath[^\n]*")
+	info.clickCount = count_matches(rawdata, "\n[cC]lick ")
+	info.killCount = count_matches(rawdata, "\n[Kk]ill ")
+	info.primarySkill = primarySkill
+	info.ok = (#issues == 0)
+	info.issues = issues
+	info.warnings = warnings
+	return info
+end
+
+function Goldguide:ValidateAllRoutes()
+	local routes = self:GetGoldRouteGuides()
+	local summary = {
+		total = #routes,
+		ok = 0,
+		flagged = 0,
+		failed = 0,
+		results = {},
+	}
+	for _,guide in ipairs(routes) do
+		local result = self:ValidateRouteGuide(guide)
+		table.insert(summary.results, result)
+		if not result.ok then
+			summary.failed = summary.failed + 1
+		elseif #(result.warnings or {}) > 0 then
+			summary.flagged = summary.flagged + 1
+		else
+			summary.ok = summary.ok + 1
+		end
+	end
+	table.sort(summary.results, function(a,b)
+		local ascore = (a.ok and 0 or 100) + #(a.warnings or {})
+		local bscore = (b.ok and 0 or 100) + #(b.warnings or {})
+		if ascore == bscore then return tostring(a.title) < tostring(b.title) end
+		return ascore > bscore
+	end)
+	return summary
+end
+
+function Goldguide:BuildRouteChores()
+	Goldguide.Chores = Goldguide.Chores or {}
+	Goldguide.Chores.Gathering = {}
+	Goldguide.Chores.Farming = {}
+
+	for _,guide in ipairs(ZGV.registeredguides) do
+		if is_gold_route_guide(guide) then
+			local header = guide.headerdata
+			local meta = header and header.meta
+			if meta and meta.goldtype=="route" then
+				local chore = {}
+				chore.name = guide.title_short
+				chore.guide = guide
+				chore.meta = meta
+				chore.maps_array = header.maps or {}
+
+				local items = {}
+				for _,item in pairs(header.items or {}) do
+					if not item[3] then
+						tinsert(items,item)
+					end
+				end
+				chore.items = items
+
+				if chore.meta.skillreq then
+					chore.type = "gathering"
+					Goldguide.Gathering:New(chore)
+				else
+					chore.type = "farming"
+					Goldguide.Farming:New(chore)
+				end
+			end
+		end
+	end
+end
+
 function Goldguide:Initialise()
+	if Goldguide.initialized then
+		if not Goldguide.Chores or ((#Goldguide.Chores.Gathering==0 and #Goldguide.Chores.Farming==0) and ZGV.Gold and ZGV.Gold.guides_loaded) then
+			Goldguide:BuildRouteChores()
+		end
+		Goldguide:CalculateAllChores(true)
+		Goldguide:ShowWindow()
+		return
+	end
+
 	Goldguide.OffsetFarming=0
 	Goldguide.OffsetGathering=0
 	Goldguide.OffsetCrafting=0
@@ -71,6 +487,8 @@ function Goldguide:Initialise()
 
 	Goldguide.CacheCraftingTooltip={}
 
+	Goldguide:BuildRouteChores()
+
 	Goldguide:CalculateAllChores(true)
 
 	if ZGV.db.global.gold_info_pages then Goldguide.ShowInfoPage=true end
@@ -78,6 +496,7 @@ function Goldguide:Initialise()
 	ZGV:AddMessageHandler("ZGV_GOLD_SCANNED",Goldguide.MainFrame_EventHandler)
 	ZGV:AddEventHandler("MODIFIER_STATE_CHANGED",Goldguide.MainFrame_EventHandler)
 
+	Goldguide.initialized = true
 	Goldguide:ShowWindow()
 end
 
@@ -218,7 +637,20 @@ function Goldguide:Update()
 	if tab=="Gathering" then 
 		if results==0 then
 			if #Goldguide.Chores.Gathering==0 then
-				resultstatus = L["gold_gathering_no_results"]..L["gold_general_open_window1"]
+				local profstrings = "" 
+				local gatheringprofs={herbalism="Herbalism",mining="Mining",skinning="Skinning",fishing="Fishing",enchanting="Enchanting"}
+				for k,prof in pairs(gatheringprofs) do
+					local skill=ZGV.Professions:GetSkill(prof)
+					local level=skill.level
+					if level>0 then 
+						profstrings = profstrings .. "\n" .. L["gold_gathering_error_prof"]:format(prof,level)
+					end
+				end
+				if profstrings ~= "" then
+					resultstatus = L["gold_gathering_error_noroutes_prof"]:format(profstrings)
+				else
+					resultstatus = L["gold_gathering_error_all_noprofessions"]
+				end
 			else
 				local type = Goldguide.Gathering_Frame.TypeDropdown:GetCurrentSelectedItem():GetText()
 				local profstrings = "" 
@@ -246,7 +678,7 @@ function Goldguide:Update()
 				if type~="All" then
 					local level = ZGV.Professions:GetSkill(type).level
 					if level==0 then
-						resultstatus = L["gold_gathering_error_one_noskillin"]:format(type) .. L["gold_general_open_window1"]
+						resultstatus = L["gold_gathering_error_one_noskillin"]:format(type)
 						if profstrings~="" then
 							resultstatus = resultstatus..L["gold_gathering_error_one_noskillin_skills"]:format(profstrings)
 						end
@@ -255,9 +687,9 @@ function Goldguide:Update()
 					end
 				else
 					if profstrings~="" then
-						resultstatus = L["gold_gathering_error_one_nothing"]:format(profstrings) .. L["gold_general_open_window2"]
+						resultstatus = L["gold_gathering_error_one_nothing"]:format(profstrings)
 					else
-						resultstatus = L["gold_gathering_error_all_noprofessions"] .. L["gold_general_open_window1"]
+						resultstatus = L["gold_gathering_error_all_noprofessions"]
 					end
 				end
 			end
@@ -312,8 +744,11 @@ function Goldguide:Update()
 					resultstatus = L["gold_crafting_error_noprofessions"]
 				end
 			else
-				local type = Goldguide.Gathering_Frame.TypeDropdown:GetCurrentSelectedItem():GetText()
-				resultstatus = L["gold_crafting_error_noresults"]:format(type)
+				if ZGV.db.profile.gold_crafting_mode < 2 and not Goldguide:HasTrendData() then
+					resultstatus = L["gold_crafting_error_notrendsexpert"]
+				else
+					resultstatus = L["gold_crafting_error_noresults"]
+				end
 			end
 		end
 
@@ -361,7 +796,7 @@ function Goldguide:Update()
 			if #Goldguide.Chores.Auctions==0 then
 				resultstatus = L["gold_auctions_error_noresults"]
 			else
-				local type = Goldguide.Gathering_Frame.TypeDropdown:GetCurrentSelectedItem():GetText()
+				local type = Goldguide.Auctions_Frame.TypeDropdown:GetCurrentSelectedItem():GetText()
 				resultstatus = L["gold_auctions_error_noresults"]:format(type)
 			end
 		end
@@ -421,6 +856,69 @@ function Goldguide:Update()
 
 	Goldguide:UpdateSortingArrows()
 	Goldguide:UpdateTimeStamp()
+	if Goldguide.UpdateTabAvailability then
+		Goldguide:UpdateTabAvailability()
+	end
+end
+
+function Goldguide:HasAuctionScanData()
+	local data
+	if ZGV.IsClassic or ZGV.IsClassicTBC or ZGV.IsClassicWOTLK then
+		data = ZGV.db and ZGV.db.factionrealm and ZGV.db.factionrealm.gold_scan_data
+	else
+		data = ZGV.db and ZGV.db.realm and ZGV.db.realm.gold_scan_data
+	end
+	data = data and data[1]
+	return data and next(data) ~= nil
+end
+
+function Goldguide:HasTrendData()
+	local trends = ZGV.Gold and ZGV.Gold.servertrends
+	return trends and trends.date and trends.items and next(trends.items) ~= nil
+end
+
+function Goldguide:HasCraftingRecipeData()
+	local recipes = ZGV.Professions and ZGV.Professions.AllRecipes
+	return recipes and next(recipes) ~= nil
+end
+
+function Goldguide:GetTabAvailability(tabname)
+	local chores = self.Chores or {}
+
+	if tabname == "Farming" then
+		return (#(chores.Farming or {}) > 0), L["gold_farming_error_noroutes"]
+	elseif tabname == "Gathering" then
+		return (#(chores.Gathering or {}) > 0), L["gold_gathering_error_noroutes"]
+	elseif tabname == "Crafting" then
+		if not self:HasCraftingRecipeData() then
+			return false, L["gold_crafting_error_recipesnotcached"]
+		end
+		if self.knows_crafting or #(chores.Crafting or {}) > 0 then
+			return true
+		end
+		return false, L["gold_crafting_error_noprofessions"]
+	elseif tabname == "Auctions" then
+		if not self:HasAuctionScanData() then
+			return false, L["gold_app_no_scan_data"]
+		end
+		if not self:HasTrendData() then
+			return false, L["gold_app_no_servertrends"]
+		end
+		return true
+	end
+
+	return true
+end
+
+function Goldguide:GetPreferredTab()
+	local order = {"Auctions", "Farming", "Crafting", "Gathering"}
+	for _,tabname in ipairs(order) do
+		local available = self:GetTabAvailability(tabname)
+		if available then
+			return tabname
+		end
+	end
+	return "Farming"
 end
 
 -- called from Auctions,Farming,Crafting,Gathering frames, with sorting param pairs: "fieldname","asc"|"desc", ...
@@ -440,7 +938,7 @@ function Goldguide.dynamic_sort(tab,a,b, ...)
 		a_val = a[field]
 		b_val = b[field]
 		a_val_num = tonumber(a_val)
-		b_val_num = tonumber(a_val)
+		b_val_num = tonumber(b_val)
 
 		if order=="zerolast" then
 			a_val=(a_val_num>0) and 1 or 0
@@ -524,36 +1022,9 @@ tinsert(ZGV.startups,{"Goldguide core",function(self)
 		Auctions={},
 	}
 
-	-- Check all the gold guides
-	for gui,guide in ipairs(ZGV.registeredguides) do
-		if guide.type=="GOLD" or guide.type=="PROFESSIONS" then
-			if guide.headerdata.meta and guide.headerdata.meta.goldtype=="route"  then -- we need header data. if it is not there, ignore
-				local chore = {}
-				chore.name=guide.title_short
-				chore.guide=guide
-				chore.meta=guide.headerdata.meta
-				chore.maps_array=guide.headerdata.maps
+	Goldguide:BuildRouteChores()
 
-				local items={}
-				for sitem,item in pairs(guide.headerdata.items) do
-					if not item[3] then
-						tinsert(items,item)
-					end
-				end
-				chore.items = items
-
-				if chore.meta.skillreq then 
-					chore.type="gathering"
-					Goldguide.Gathering:New(chore)
-				else
-					chore.type="farming"
-					Goldguide.Farming:New(chore)
-				end
-			end
-
-			if debugprofilestop()-t>50 then t=debugprofilestop() coroutine.yield("more gold to do") end
-		end
-	end
+	if debugprofilestop()-t>50 then t=debugprofilestop() coroutine.yield("more gold to do") end
 end } )
 
 function Goldguide.UpdateSorting(widget,col)  -- NOT called with a colon; called from a ScrollTable widget.
@@ -665,6 +1136,16 @@ end
 
 -- Used for Farming and Gathering type chores
 Goldguide.Common = {}
+function Goldguide:ResolveRequirementSkillName(entry)
+	if not entry or type(entry) ~= "string" then return entry end
+	if entry == "mining" or entry:find("_mining", 1, true) then return "Mining" end
+	if entry == "herbalism" or entry:find("_herbalism", 1, true) then return "Herbalism" end
+	if entry == "skinning" or entry:find("_skinning", 1, true) then return "Skinning" end
+	if entry == "fishing" or entry:find("_fishing", 1, true) then return "Fishing" end
+	if entry == "enchanting" or entry:find("_enchanting", 1, true) then return "Enchanting" end
+	return entry
+end
+
 function Goldguide.Common:AreRequirementsMet(ignore_skill,ignore_level)
 	if ZGV.db.profile.gmgoldallvalid then self.valid=true return true,"debug override" end
 
@@ -679,7 +1160,8 @@ function Goldguide.Common:AreRequirementsMet(ignore_skill,ignore_level)
 		end
 		if self.meta.skillreq and not ignore_skill then
 			for entry,value in pairs(self.meta.skillreq) do
-				local tradeskill = ZGV.Professions:GetSkill(entry)
+				local skillname = Goldguide:ResolveRequirementSkillName(entry)
+				local tradeskill = ZGV.Professions:GetSkill(skillname)
 				if (not tradeskill.active) or (tradeskill.level or 0) < (value or 0) then return false,"skill" end
 			end
 		end
@@ -748,6 +1230,8 @@ function Goldguide.Common:CalculateDetails(refresh)
 
 	self.profitperhour = nil
 	self.cached_tooltip = nil
+	self.good_items = {}
+	self.bad_items = {}
 
 	local dyna_title = {}
 	local s = ""

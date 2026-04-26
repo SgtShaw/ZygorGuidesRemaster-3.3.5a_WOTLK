@@ -97,7 +97,9 @@ function Auctions:CalculateDetails(refresh)
 	else
 		local petId = tonumber(string.sub(tostring(id),2,5))
 		quality = tonumber(string.sub(tostring(id),10,11))
-		name, icon = C_PetJournal.GetPetInfoBySpeciesID(petId)
+		if C_PetJournal and C_PetJournal.GetPetInfoBySpeciesID then
+			name, icon = C_PetJournal.GetPetInfoBySpeciesID(petId)
+		end
 	end
 
 	if not name then self.needsRefresh = true end

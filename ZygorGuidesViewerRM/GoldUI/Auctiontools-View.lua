@@ -147,7 +147,14 @@ function Appraiser:CreateMainFrame()
 			:SetSize(17,17)
 			--:SetPoint("TOPRIGHT",MF.HeaderFrame.info,"TOPLEFT",-5,0)
 			:SetPoint("TOPRIGHT",MF.HeaderFrame.close,"TOPLEFT",-5,0)
-			:SetScript("OnClick", function() ZGV.Goldguide:Initialise() ZGV.Goldguide:SetCurrentTab("Auctions") end)
+			:SetScript("OnClick", function()
+				if ZGV.OpenGoldGuide then
+					ZGV:OpenGoldGuide("Auctions")
+				else
+					ZGV.Goldguide:Initialise()
+					ZGV.Goldguide:SetCurrentTab("Auctions")
+				end
+			end)
 			:SetScript("OnEnter",function()
 				GameTooltip:SetOwner(MF.HeaderFrame.goldguide, "ANCHOR_CURSOR")
 				GameTooltip:AddLine("Open Gold Guide")
@@ -374,7 +381,14 @@ function Appraiser:MakeBuyTable()
 		:SetPoint("TOPLEFT",container.ShoppingList)
 		:SetPoint("BOTTOMRIGHT",container.ShoppingList)
 		:SetFont(FONT,12)
-		:SetScript("OnClick", function() ZGV.Goldguide:Initialise() ZGV.Goldguide:SetCurrentTab("Auctions") end)
+		:SetScript("OnClick", function()
+			if ZGV.OpenGoldGuide then
+				ZGV:OpenGoldGuide("Auctions")
+			else
+				ZGV.Goldguide:Initialise()
+				ZGV.Goldguide:SetCurrentTab("Auctions")
+			end
+		end)
 
 		:SetBackdropColor(0,0,0,0)
 		:SetHighlightBackdropColor(0,0,0,0)

@@ -14,6 +14,8 @@ setmetatable(Goldguide.Farming,{__index=Goldguide.Common})
 
 function Farming:New(data)
 	data.time=data.time or 60
+	data.good_items = data.good_items or {}
+	data.bad_items = data.bad_items or {}
 	setmetatable(data,{__index=Farming,__lt=Farming.sorting})
 	table.insert(Goldguide.Chores.Farming,data)
 end
@@ -44,7 +46,7 @@ function Farming:GetDisplayInfo(refresh)
 	end
 
 	local vendoronly
-	if self.good_items and #self.good_items==0 then vendoronly=true end
+	if self.profitperhour_is_smart and self.good_items and #self.good_items==0 then vendoronly=true end
 	
 	local h = floor(self.scale)
 	local m = (self.scale-h)*60
@@ -74,7 +76,12 @@ function Farming:IsValidChore()
 	self.valid=false
 	if not self.profitperhour or self.profitperhour<=0 then return false,"no profit" end
 	if ZGV.db.profile.gold_farming_type~="all" and ZGV.db.profile.gold_farming_type~=self.meta.itemtype then return false,"type filter" end
-	if (not ZGV.db.profile.gold_farming_mode and (#self.good_items<=0 or (self.scale and self.scale<Goldguide.TIER_DEMAND_MEDIUM))) then return false,"mode filter" end
+	if not ZGV.db.profile.gold_farming_mode then
+		local hasMarketData = Goldguide:HasTrendData()
+		if hasMarketData and (#self.good_items<=0 or (self.scale and self.scale<Goldguide.TIER_DEMAND_MEDIUM)) then
+			return false,"mode filter"
+		end
+	end
 	
 	local query = string.lower(Goldguide.MainFrame.MenuFrame.SearchEdit:GetText())
 	if query and query~="" then 
@@ -88,4 +95,3 @@ end
 function Farming.dynamic_sort(a,b)
 	return Goldguide.dynamic_sort("farming",a,b, "time","zerolast", ZGV.db.profile.goldsort['farming'][1],ZGV.db.profile.goldsort['farming'][2], "dispgold","desc", "name","asc")
 end
-

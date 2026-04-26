@@ -154,7 +154,11 @@ if not ZGV.RefreshOptions then function ZGV:RefreshOptions() end end
 if not ZGV.Professions then ZGV.Professions = {} end
 if not ZGV.Professions.GetSkill then
 	ZGV.Professions.GetSkill = function(self, name)
-		return {level = 0, max = 0, skillID = 0, parentskillID = 0, name = name or ""}
+		if ZGV.GetSkill then
+			local skill = ZGV:GetSkill(name)
+			if skill then return skill end
+		end
+		return {level = 0, max = 0, active = false, skillID = 0, parentskillID = 0, name = name or ""}
 	end
 end
 if not ZGV.Professions.AllRecipes then ZGV.Professions.AllRecipes = {} end
@@ -948,6 +952,8 @@ BINDING_NAME_ZYGORGUIDES_NEXT = L["binding_next"]
 -- Gold Guide slash command
 SLASH_ZYGORGOLD1 = "/zgold"
 SLASH_ZGOLDSTATUS1 = "/zgoldstatus"
+SLASH_ZGOLDVALIDATE1 = "/zgoldvalidate"
+SLASH_ZGOLDROUTE1 = "/zgoldroute"
 SLASH_ZGVLINEDEBUG1 = "/zgvlinedebug"
 SlashCmdList["ZGOLDSTATUS"] = function()
 	local scanData = ZGV.db and ZGV.db.factionrealm and ZGV.db.factionrealm.gold_scan_data
@@ -988,6 +994,122 @@ SlashCmdList["ZGOLDSTATUS"] = function()
 		print("  Chores: not initialized")
 	end
 end
+local function zgold_joinpairs(tbl)
+	local parts = {}
+	for k,v in pairs(tbl or {}) do
+		table.insert(parts, tostring(k) .. "=" .. tostring(v))
+	end
+	table.sort(parts)
+	return table.concat(parts, ", ")
+end
+
+local function zgold_joinitems(items)
+	local parts = {}
+	for _,item in pairs(items or {}) do
+		if item and item[1] then
+			table.insert(parts, tostring(item[1]) .. "x" .. tostring(item[2] or 1))
+		end
+	end
+	table.sort(parts)
+	return table.concat(parts, ", ")
+end
+
+SlashCmdList["ZGOLDVALIDATE"] = function()
+	local goldguide = ZGV.Goldguide
+	if not (goldguide and goldguide.ValidateAllRoutes) then
+		print("|cffff8800Zygor Gold Validate|r: Gold route validator is not available.")
+		return
+	end
+	local summary = goldguide:ValidateAllRoutes()
+	print("|cffff8800=== Zygor Gold Route Validation ===|r")
+	print(("  Total routes: %d"):format(summary.total or 0))
+	print(("  Clean: %d"):format(summary.ok or 0))
+	print(("  Flagged: %d"):format(summary.flagged or 0))
+	print(("  Failed: %d"):format(summary.failed or 0))
+	local shown = 0
+	for _,result in ipairs(summary.results or {}) do
+		if not result.ok or #(result.warnings or {}) > 0 then
+			shown = shown + 1
+			local issue = result.issues and result.issues[1]
+			local warning = result.warnings and result.warnings[1]
+			print(("  %d. %s"):format(shown, tostring(result.title)))
+			if issue then print("     issue: " .. issue) end
+			if warning then print("     warn: " .. warning) end
+			print(("     maps=%d items=%d collects=%d path=%d goto=%d click=%d kill=%d skill=%s"):format(
+				result.mapCount or 0,
+				result.headerItemCount or 0,
+				result.goldcollectCount or 0,
+				result.pathCount or 0,
+				result.gotoCount or 0,
+				result.clickCount or 0,
+				result.killCount or 0,
+				tostring(result.primarySkill or "-")
+			))
+			print(("     overlap=%d"):format(result.overlapCount or 0))
+			if shown >= 12 then break end
+		end
+	end
+	if shown == 0 then
+		print("  No structurally suspicious routes found.")
+	end
+end
+
+SlashCmdList["ZGOLDROUTE"] = function(msg)
+	local query = tostring(msg or ""):gsub("^%s+",""):gsub("%s+$","")
+	if query == "" then
+		print("|cffff8800Zygor Gold Route|r: Usage: /zgoldroute <partial title>")
+		return
+	end
+	local goldguide = ZGV.Goldguide
+	if not (goldguide and goldguide.GetGoldRouteGuides and goldguide.ValidateRouteGuide) then
+		print("|cffff8800Zygor Gold Route|r: Route inspection is not available.")
+		return
+	end
+	local routes = goldguide:GetGoldRouteGuides()
+	local lowered = string.lower(query)
+	local matches = {}
+	for _,guide in ipairs(routes or {}) do
+		local title = guide.title_short or guide.title or ""
+		if string.find(string.lower(title), lowered, 1, true) then
+			table.insert(matches, guide)
+		end
+	end
+	if #matches == 0 then
+		print("|cffff8800Zygor Gold Route|r: No route matched '" .. query .. "'.")
+		return
+	end
+	table.sort(matches, function(a,b) return tostring(a.title_short or a.title) < tostring(b.title_short or b.title) end)
+	if #matches > 1 then
+		print(("|cffff8800Zygor Gold Route|r: %d matches, showing first 5."):format(#matches))
+		for i = 1, math.min(5,#matches) do
+			print(("  %d. %s"):format(i, tostring(matches[i].title_short or matches[i].title)))
+		end
+	end
+	local guide = matches[1]
+	local result = goldguide:ValidateRouteGuide(guide)
+	local header = guide.headerdata or {}
+	local meta = header.meta or {}
+	print("|cffff8800=== Zygor Gold Route ===|r")
+	print("  Title: " .. tostring(guide.title_short or guide.title))
+	print("  Maps: " .. table.concat(header.maps or {}, ", "))
+	print("  Skillreq: " .. zgold_joinpairs(meta.skillreq))
+	print("  Items: " .. zgold_joinitems(header.items))
+	print(("  Structure: path=%d goto=%d click=%d kill=%d collects=%d overlap=%d"):format(
+		result.pathCount or 0,
+		result.gotoCount or 0,
+		result.clickCount or 0,
+		result.killCount or 0,
+		result.goldcollectCount or 0,
+		result.overlapCount or 0
+	))
+	print("  Result: " .. ((result.ok and #(result.warnings or {}) == 0) and "clean" or (result.ok and "flagged" or "failed")))
+	for _,issue in ipairs(result.issues or {}) do
+		print("  issue: " .. issue)
+	end
+	for _,warning in ipairs(result.warnings or {}) do
+		print("  warn: " .. warning)
+	end
+end
 SlashCmdList["ZGVLINEDEBUG"] = function()
 	local ZGV = ZygorGuidesViewer
 	if not ZGV or not ZGV.CurrentStep or not ZGV.stepframes then
@@ -1022,13 +1144,39 @@ SlashCmdList["ZGVLINEDEBUG"] = function()
 		end
 	end
 end
-SlashCmdList["ZYGORGOLD"] = function(msg)
-	if ZGV.db and ZGV.db.profile and not ZGV.db.profile.load_gold then
-		ZGV.db.profile.load_gold = true
-		print("|cffff8800Zygor Gold Guide|r: Enabled! Type /reload then /zgold again.")
-		return
+if not ZGV.OpenGoldGuide then
+	function ZGV:OpenGoldGuide(tabname)
+		if self.db and self.db.profile and not self.db.profile.load_gold then
+			self.db.profile.load_gold = true
+			print("|cffff8800Zygor Gold Guide|r: Enabled! Type /reload then open Gold Guide again.")
+			return
+		end
+
+		local goldguide = self.Goldguide or (self.Gold and self.Gold.Goldguide)
+		if not goldguide then
+			print("|cffff8800Zygor Gold Guide|r: Not initialized. Try /reload first.")
+			return
+		end
+
+		if goldguide.Initialise then
+			goldguide:Initialise()
+		elseif goldguide.ShowWindow then
+			goldguide:ShowWindow()
+		else
+			print("|cffff8800Zygor Gold Guide|r: Not initialized. Try /reload first.")
+			return
+		end
+
+		if tabname and goldguide.SetCurrentTab then
+			goldguide:SetCurrentTab(tabname)
+		end
 	end
-	if ZGV.Goldguide and ZGV.Goldguide.ShowWindow then
+end
+
+SlashCmdList["ZYGORGOLD"] = function(msg)
+	if ZGV.OpenGoldGuide then
+		ZGV:OpenGoldGuide()
+	elseif ZGV.Goldguide and ZGV.Goldguide.ShowWindow then
 		ZGV.Goldguide:ShowWindow()
 	else
 		print("|cffff8800Zygor Gold Guide|r: Not initialized. Try /reload first.")
@@ -4535,6 +4683,14 @@ function me:TryToCompleteStep(force)
 		-- current-step color/icon pass. Refresh the viewer without re-pointing the
 		-- arrow when only per-goal progress changed.
 		self:UpdateFrame()
+		if self.CurrentStep and self.CurrentStep.goals then
+			for _,goal in ipairs(self.CurrentStep.goals) do
+				if goal.routegroup and goal:IsVisible() then
+					self:SetWaypoint()
+					break
+				end
+			end
+		end
 	end
 
 	self.lasttriedstep = self.CurrentStep
@@ -8581,6 +8737,35 @@ function me:GuideRealmMatches(realmTag)
 end
 
 function me:RegisterGuide(title,data,extra)
+	local function DeriveGuideType(guideTitle, guideHeader)
+		local headerType = guideHeader and guideHeader.type
+		if headerType and headerType ~= "" then
+			local normalized = tostring(headerType):lower()
+			if normalized == "gold" then return "GOLD" end
+			if normalized == "professions" then return "profession" end
+			return normalized
+		end
+		if guideTitle:match("^GOLD") or guideTitle:match("^Gold") or guideTitle:match("Farming") or guideTitle:match("Gathering") or guideTitle:match("Gold Runs") then
+			return "GOLD"
+		elseif guideTitle:match("^Leveling") then
+			return "leveling"
+		elseif guideTitle:match("^Dungeon") or guideTitle:match("^Gear") then
+			return "dungeon"
+		elseif guideTitle:match("^Dailies") or guideTitle:match("^Daily") then
+			return "daily"
+		elseif guideTitle:match("^Profession") then
+			return "profession"
+		elseif guideTitle:match("^Reputation") then
+			return "reputation"
+		elseif guideTitle:match("^Title") then
+			return "title"
+		elseif guideTitle:match("^Event") then
+			return "event"
+		elseif guideTitle:match("^Pets") or guideTitle:match("^Mount") or guideTitle:match("^Hunter Pet") then
+			return "petsmounts"
+		end
+	end
+
 	local header
 	if type(data)=="string" and self.ParseHeader then
 		local ok,parsedHeader = pcall(self.ParseHeader,self,data)
@@ -8604,6 +8789,16 @@ function me:RegisterGuide(title,data,extra)
 	local isRetailImport = stack:find("Guides\\Retail\\", 1, true) and true or nil
 	local guide = {['title']=title,['title_short']=tit or title,['rawdata']=data,['extra']=extra,realm=guideRealm,parsed=false,parse_failed=nil,is_retail_import=isRetailImport}
 
+	if header then
+		guide.headerdata = header
+		if header.author then guide.author = header.author end
+		if header.image then guide.image = header.image end
+		if header.next then guide.next = header.next end
+		if header.startlevel then guide.startlevel = header.startlevel end
+		if header.endlevel then guide.endlevel = header.endlevel end
+		guide.type = DeriveGuideType(title, header)
+	end
+
 	-- Support retail-style guide registration: RegisterGuide("TITLE", {meta=..., items=..., maps=...}, [[steps]])
 	if type(data) == "table" then
 		guide.headerdata = data
@@ -8615,26 +8810,7 @@ function me:RegisterGuide(title,data,extra)
 		if data.next then guide.next = data.next end
 		if data.startlevel then guide.startlevel = data.startlevel end
 		if data.endlevel then guide.endlevel = data.endlevel end
-		-- Derive guide type from title path
-		if title:match("^GOLD") or title:match("^Gold") or title:match("Farming") or title:match("Gathering") or title:match("Gold Runs") then
-			guide.type = "GOLD"
-		elseif title:match("^Leveling") then
-			guide.type = "leveling"
-		elseif title:match("^Dungeon") or title:match("^Gear") then
-			guide.type = "dungeon"
-		elseif title:match("^Dailies") or title:match("^Daily") then
-			guide.type = "daily"
-		elseif title:match("^Profession") then
-			guide.type = "profession"
-		elseif title:match("^Reputation") then
-			guide.type = "reputation"
-		elseif title:match("^Title") then
-			guide.type = "title"
-		elseif title:match("^Event") then
-			guide.type = "event"
-		elseif title:match("^Pets") or title:match("^Mount") or title:match("^Hunter Pet") then
-			guide.type = "petsmounts"
-		end
+		guide.type = DeriveGuideType(title, data)
 	end
 	if not guide.rawdata or guide.rawdata == "" then
 		guide.parsed = true

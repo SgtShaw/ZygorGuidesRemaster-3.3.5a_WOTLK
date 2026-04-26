@@ -1873,34 +1873,22 @@ ZygorGuidesViewer:RegisterGuide("GOLD\\Gathering\\Borean Leather",{
 author="support@zygorguides.com",
 meta={goldtype="route",skillreq={Skinning=345},levelreq={70}},
 items={{33568,1}},
-maps={"Borean Tundra"},
+maps={"Sholazar Basin"},
 },[[
 step
 label "Begin_Farming_Borean_Leather"
-map Borean Tundra/0
+map Sholazar Basin/0
 path follow smart; loop on; ants curved; dist 30
-path	47.21,48.30	44.24,47.61	41.18,46.20	40.98,44.66	41.46,41.47
-path	42.96,40.00	43.64,40.96	45.77,41.70	46.85,43.10	47.89,46.20
-Kill Wooly Rhino enemies around along the path
+path	66.18,78.24	64.30,75.84	61.24,71.40	58.66,72.01	56.44,75.16
+path	58.41,77.72	61.67,79.77	64.54,80.20
+Kill Hardknuckle Forager and Hardknuckle Charger enemies around this path
 |tip Skin their corpses.
+|tip This route circles Frenzyheart Hill, one of the better WotLK Classic Borean Leather spots.
 |tip You will need 345 Skinning skill minimum to skin all of these mobs.
 goldcollect Borean Leather##33568
 |goldtracker
 Click Here to Sell Borean Leather |confirm |next "Sell_Borean_Leather"
-'|goto 47.89,46.20 < 30 |c |noway |or
-step
-map Borean Tundra/0
-path follow smart; loop on; ants curved; dist 30
-path	50.60,68.96	49.51,72.06	47.53,73.94	44.84,74.30	42.65,74.76
-path	40.52,72.87	41.06,70.43	43.42,70.41	45.00,70.40	47.12,70.14
-path	48.70,69.55	50.08,66.87
-Kill Wooly Rhino enemies around along the path
-|tip Skin their corpses.
-|tip You will need 345 Skinning skill minimum to skin all of these mobs.
-goldcollect Borean Leather##33568
-|goldtracker
-Click Here to Sell Borean Leather |confirm |next "Sell_Borean_Leather"
-'|goto 50.08,66.87 < 30 |c |noway |next "Begin_Farming_Borean_Leather" |or
+'|goto 64.54,80.20 < 30 |c |noway |next "Begin_Farming_Borean_Leather" |or
 step
 label "Sell_Borean_Leather"
 talk Auctioneer Thathung##8673 |goto Orgrimmar/0 55.69,62.85 |only if Horde

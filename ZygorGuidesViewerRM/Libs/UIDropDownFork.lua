@@ -338,7 +338,7 @@ function UIDropDownFork_CreateFrames(level, index)
 
 	while ( level > UIDROPDOWNFORK_MAXLEVELS ) do
 		UIDROPDOWNFORK_MAXLEVELS = UIDROPDOWNFORK_MAXLEVELS + 1;
-		local newList = CreateFrame("Button", "DropDownForkList"..UIDROPDOWNFORK_MAXLEVELS, nil, "UIDropDownForkListTemplate,BackdropTemplate");
+		local newList = CreateFrame("Button", "DropDownForkList"..UIDROPDOWNFORK_MAXLEVELS, nil, "UIDropDownForkListTemplate");
 		newList:SetFrameStrata("FULLSCREEN_DIALOG");
 		newList:SetToplevel(true);
 		newList:Hide();

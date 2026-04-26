@@ -328,7 +328,9 @@ function Goldguide:CreateHelpPopup()
 			end
 		end
 		
-		sum:SetMaxLines(999)  -- Should prevent issues with being chopped off at only two lines . . .
+		if sum.SetMaxLines then
+			sum:SetMaxLines(999)  -- Prevent truncation on clients that support this API.
+		end
 
 		numLines = numLines or ceil(sum:GetStringWidth() / sum:GetWidth()) + numNewLines
 		if position then

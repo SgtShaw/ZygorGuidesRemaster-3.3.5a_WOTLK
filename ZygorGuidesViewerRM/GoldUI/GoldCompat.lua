@@ -215,20 +215,37 @@ if not ZGV.Gold then
 	ZGV.Gold = {}
 end
 
+if not ZGV.OpenGoldGuide then
+	function ZGV:OpenGoldGuide(tabname)
+		if self.db and self.db.profile and not self.db.profile.load_gold then
+			self.db.profile.load_gold = true
+			print("|cffff8800Zygor Gold Guide|r: Enabled! Type /reload then open Gold Guide again.")
+			return
+		end
+
+		local goldguide = self.Goldguide or (self.Gold and self.Gold.Goldguide)
+		if not goldguide then
+			print("|cffff8800Zygor Gold Guide|r: Not initialized. Try /reload first.")
+			return
+		end
+
+		if goldguide.Initialise then
+			goldguide:Initialise()
+		elseif goldguide.ShowWindow then
+			goldguide:ShowWindow()
+		else
+			print("|cffff8800Zygor Gold Guide|r: Not initialized. Try /reload first.")
+			return
+		end
+
+		if tabname and goldguide.SetCurrentTab then
+			goldguide:SetCurrentTab(tabname)
+		end
+	end
+end
+
 -- Slash command: /zgold to open Gold Guide
 SLASH_ZYGORGOLD1 = "/zgold"
 SlashCmdList["ZYGORGOLD"] = function(msg)
-	-- Enable gold guide if not already enabled
-	if ZGV.db and ZGV.db.profile and not ZGV.db.profile.load_gold then
-		ZGV.db.profile.load_gold = true
-		print("|cffff8800Zygor Gold Guide|r: Enabled. Type /reload to initialize, then /zgold again.")
-		return
-	end
-	if ZGV.Goldguide and ZGV.Goldguide.ShowWindow then
-		ZGV.Goldguide:ShowWindow()
-	elseif ZGV.Gold and ZGV.Gold.Goldguide and ZGV.Gold.Goldguide.ShowWindow then
-		ZGV.Gold.Goldguide:ShowWindow()
-	else
-		print("|cffff8800Zygor Gold Guide|r: Not yet initialized. Try /reload first.")
-	end
+	ZGV:OpenGoldGuide()
 end

@@ -25,6 +25,48 @@ local skillSpells = {
 	['Fishing']=7620,
 }
 
+local skillLines = {
+	['Alchemy']=171,
+	['Blacksmithing']=164,
+	['Inscription']=773,
+	['Jewelcrafting']=755,
+	['Leatherworking']=165,
+	['Tailoring']=197,
+	['Enchanting']=333,
+	['Engineering']=202,
+	['Herbalism']=182,
+	['Mining']=186,
+	['Skinning']=393,
+	['Cooking']=185,
+	['First Aid']=129,
+	['Fishing']=356,
+}
+
+local function ParseItemIDFromLink(link)
+	if not link then return nil end
+	return tonumber(link:match("item:(%d+)"))
+end
+
+local function ParseSpellIDFromLink(link)
+	if not link then return nil end
+	return tonumber(link:match("|H%w+:(%d+)")) or tonumber(link:match("enchant:(%d+)")) or tonumber(link:match("spell:(%d+)"))
+end
+
+function me:SyncRecipeCacheToRuntime()
+	self.db.char.RecipesKnownDetails = self.db.char.RecipesKnownDetails or {}
+	ZGV.Professions = ZGV.Professions or {}
+	ZGV.Professions.AllRecipes = {}
+
+	for skillID, recipelist in pairs(self.db.char.RecipesKnownDetails) do
+		local numericSkillID = tonumber(skillID) or skillID
+		ZGV.Professions.AllRecipes[numericSkillID] = {}
+		for spellID, recipe in pairs(recipelist) do
+			local numericSpellID = tonumber(spellID) or spellID
+			ZGV.Professions.AllRecipes[numericSkillID][numericSpellID] = recipe
+		end
+	end
+end
+
 tinsert(me.startups,function(self)
 	self:AddEvent("SKILL_LINES_CHANGED","CacheSkills")
 	self:AddEvent("TRADE_SKILL_UPDATE","CacheSkills")
@@ -45,6 +87,10 @@ tinsert(me.startups,function(self)
 			ZGV.SkillsLocalized[skill]=GetSpellInfo(num)
 		end
 	end
+
+	self.db.char.RecipesKnown = self.db.char.RecipesKnown or {}
+	self.db.char.RecipesKnownDetails = self.db.char.RecipesKnownDetails or {}
+	self:SyncRecipeCacheToRuntime()
 end)
 
 local ERR_LEARN_RECIPE_S_fmt = ERR_LEARN_RECIPE_S:gsub("%.","%%."):gsub("%%s","(.+)")
@@ -61,6 +107,7 @@ function me:CacheSkills()
 	if not TradeSkillFrame then
 --TODO
 	end
+	self.db.char.SkillsKnown = self.db.char.SkillsKnown or {}
 	for i=1,70 do
 		local skillName, header, isExpanded, skillRank, numTempPoints, skillModifier, skillMaxRank, isAbandonable, stepCost, rankCost, minLevel, skillCostType, skillDescription = GetSkillLineInfo(i)
 
@@ -74,6 +121,16 @@ function me:CacheSkills()
 			pro.level=skillRank
 			pro.max=skillMaxRank
 			pro.active=true
+			pro.skillID = skillLines[skillName] or pro.skillID or 0
+			pro.parentskillID = pro.skillID
+			self.db.char.SkillsKnown[skillName] = {
+				level = pro.level,
+				max = pro.max,
+				active = pro.active,
+				skillID = pro.skillID,
+				parentskillID = pro.parentskillID,
+				name = skillName,
+			}
 		end
 	end
 end
@@ -116,6 +173,14 @@ function me:CacheRecipes()
 	if IsTradeSkillLinked() then return end
 	-- scan!
 	local recipes = self.db.char.RecipesKnown
+	local recipeDetails = self.db.char.RecipesKnownDetails
+	local skillID = skillLines[skill] or (self.skills[skill] and self.skills[skill].skillID) or 0
+	if skillID == 0 then return end
+
+	recipeDetails[skillID] = {}
+	ZGV.Professions = ZGV.Professions or {}
+	ZGV.Professions.AllRecipes = ZGV.Professions.AllRecipes or {}
+	ZGV.Professions.AllRecipes[skillID] = {}
 
 	local scanned=0
 	for i = 1,500 do
@@ -123,12 +188,49 @@ function me:CacheRecipes()
 
 		if tradeName and tradeType~="header" then
 			local link = GetTradeSkillRecipeLink(i)
-			local spell = strmatch(link,"|H%w+:(%d+)")
-			recipes[tonumber(spell)]=true
-			scanned=scanned+1
+			local spell = ParseSpellIDFromLink(link)
+			if spell then
+				recipes[spell]=true
+
+				local productLink = GetTradeSkillItemLink and GetTradeSkillItemLink(i)
+				local productID = ParseItemIDFromLink(productLink)
+				local productType = productID and "item" or "enchant"
+				local numMadeMin, numMadeMax = GetTradeSkillNumMade and GetTradeSkillNumMade(i)
+				local numMade = tonumber(numMadeMax) or tonumber(numMadeMin) or 1
+				local reagents = {}
+				local reagentCount = GetTradeSkillNumReagents and GetTradeSkillNumReagents(i) or 0
+				for reagentIndex = 1, reagentCount do
+					local _, _, requiredCount = GetTradeSkillReagentInfo(i, reagentIndex)
+					local reagentLink = GetTradeSkillReagentItemLink and GetTradeSkillReagentItemLink(i, reagentIndex)
+					local reagentID = ParseItemIDFromLink(reagentLink)
+					if reagentID and requiredCount and requiredCount > 0 then
+						reagents[#reagents + 1] = { id = reagentID, num = requiredCount }
+					end
+				end
+
+				local recipe = {
+					spell = spell,
+					skill = skillID,
+					productid = productID,
+					producttype = productType,
+					reagents = reagents,
+					learned = true,
+					learnedat = 1,
+					name = tradeName,
+					nummade = numMade,
+				}
+
+				recipeDetails[skillID][spell] = recipe
+				ZGV.Professions.AllRecipes[skillID][spell] = recipe
+				scanned=scanned+1
+			end
 		end
 	end
 	self:Debug(scanned.." "..skill.." recipes found")
+
+	if ZGV.Goldguide and ZGV.Goldguide.initialized then
+		ZGV.Goldguide:CalculateAllChores(true)
+	end
 
 	--[[
 	--collapse headers

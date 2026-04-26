@@ -2401,11 +2401,13 @@ end
 
 do
 	local ANT_SPACING = 0.012 -- spacing in zone-fraction units (0-1 scale)
-	local ANT_SIZE_MINI = 6
-	local ANT_SIZE_WORLD = 8
-	local ANT_ALPHA = 0.55
+	local ANT_SIZE_MINI = 18
+	local ANT_SIZE_WORLD = 18
+	local ANT_ALPHA = 0.56
 	local ANT_MOVE_SPEED = 0.25 -- phase cycles per second
-	local ANT_COLOR = {254/255, 97/255, 0, 1} -- Zygor orange
+	local ANT_COLOR = {1.00, 0.78, 0.12, 1}
+	local ANT_ACTIVE_COLOR = {1.00, 0.90, 0.30, 1}
+	local ANT_TEXTURE = "Interface\\AddOns\\ZygorGuidesViewerRM\\Skins\\minimaparrow-ant.tga"
 	local ANT_MAX = 300
 
 	-- Travel mode colors for LibRover multi-hop paths
@@ -2433,10 +2435,10 @@ do
 			f:SetFrameLevel(Minimap:GetFrameLevel() + 5)
 			f.icon = f:CreateTexture(nil, "OVERLAY")
 			f.icon:SetAllPoints()
-			f.icon:SetTexture("Interface\\Buttons\\WHITE8x8")
-			f.icon:SetVertexColor(unpack(ANT_COLOR))
+			f.icon:SetTexture(ANT_TEXTURE)
+			f.icon:SetVertexColor(1,1,1,1)
 			f.icon:SetAlpha(ANT_ALPHA)
-			f.icon:SetBlendMode("ADD")
+			f.icon:SetBlendMode("BLEND")
 			f:Hide()
 			f.isZygorAnt = true
 			antFrames[index] = f
@@ -2447,10 +2449,10 @@ do
 			wf:SetFrameLevel(WorldMapFrame:GetFrameLevel() + 5)
 			wf.icon = wf:CreateTexture(nil, "OVERLAY")
 			wf.icon:SetAllPoints()
-			wf.icon:SetTexture("Interface\\Buttons\\WHITE8x8")
-			wf.icon:SetVertexColor(unpack(ANT_COLOR))
+			wf.icon:SetTexture(ANT_TEXTURE)
+			wf.icon:SetVertexColor(1,1,1,1)
 			wf.icon:SetAlpha(ANT_ALPHA)
-			wf.icon:SetBlendMode("ADD")
+			wf.icon:SetBlendMode("BLEND")
 			wf:Hide()
 			antWorldFrames[index] = wf
 		end
@@ -2475,6 +2477,10 @@ do
 	local function InterpolateRouteAnts(waypoints, loop, phase, segmentModes)
 		wipe(antPoints)
 		if not waypoints or #waypoints < 2 then return end
+		local densityPct = (ZGV and ZGV.db and ZGV.db.profile and ZGV.db.profile.routeantdensity) or 100
+		if densityPct < 1 then densityPct = 1 end
+		local spacing = ANT_SPACING * (100 / densityPct)
+		if spacing < 0.001 then spacing = 0.001 end
 
 		local count = 0
 		local nw = #waypoints
@@ -2492,7 +2498,7 @@ do
 			local dist = math.sqrt(dx * dx + dy * dy)
 			if dist < 0.001 then dist = 0.001 end
 
-			local nAnts = math.floor(dist / ANT_SPACING)
+			local nAnts = math.floor(dist / spacing)
 			if nAnts < 1 then nAnts = 1 end
 			if nAnts > 40 then nAnts = 40 end
 
@@ -2511,6 +2517,7 @@ do
 					x = w1.x + t * dx,
 					y = w1.y + t * dy,
 					mode = mode,
+					segment = i,
 				}
 			end
 		end
@@ -2529,8 +2536,11 @@ do
 		-- Collect route-group goto goals
 		local routeWaypoints = {}
 		local isLoop = step._pathopts and step._pathopts.loop
+		local activeRouteIndex
+		local routeGoalCount = 0
 		for _, goal in ipairs(step.goals) do
 			if goal.routegroup and goal.x and goal.y then
+				routeGoalCount = routeGoalCount + 1
 				local gmap = goal.map or step.map
 				local c, z
 				if gmap then
@@ -2538,6 +2548,12 @@ do
 				end
 				if c and z and c > 0 then
 					tinsert(routeWaypoints, {c = c, z = z, x = goal.x / 100, y = goal.y / 100})
+					if not activeRouteIndex then
+						local complete, possible = goal:IsComplete()
+						if not complete and possible then
+							activeRouteIndex = routeGoalCount
+						end
+					end
 				end
 			end
 		end
@@ -2594,6 +2610,36 @@ do
 			InterpolateRouteAnts(routeWaypoints, isLoop, phase)
 		end
 
+		-- On the minimap, keep only the local segment around the active route point:
+		-- previous -> current and current -> next. The world map can still show the full loop.
+		local minimapMode = (ZGV and ZGV.db and ZGV.db.profile and ZGV.db.profile.routeantminimapmode) or "local"
+		local minimapSegments
+		local activeSegmentIndex
+		if not useLibRover and activeRouteIndex and #routeWaypoints >= 2 then
+			minimapSegments = {}
+			if minimapMode == "local" then
+				local nw = #routeWaypoints
+				local prevIndex = activeRouteIndex - 1
+				local nextIndex = activeRouteIndex
+				if isLoop then
+					if prevIndex < 1 then prevIndex = nw end
+				else
+					if prevIndex < 1 then prevIndex = nil end
+					if nextIndex >= nw then nextIndex = nil end
+				end
+				if prevIndex then minimapSegments[prevIndex] = true end
+				if nextIndex then minimapSegments[nextIndex] = true end
+				activeSegmentIndex = nextIndex or prevIndex
+			elseif minimapMode == "all" then
+				minimapSegments = nil
+				activeSegmentIndex = activeRouteIndex
+			elseif minimapMode == "none" then
+				minimapSegments = false
+			end
+		elseif minimapMode == "none" then
+			minimapSegments = false
+		end
+
 		-- Place ant frames
 		local lc, lz = GetCurrentMapContinentAndZone()
 		for i = 1, #antPoints do
@@ -2602,11 +2648,24 @@ do
 
 			-- Apply travel mode color if available, otherwise default orange
 			local color = (pt.mode and ANT_MODE_COLORS[pt.mode]) or ANT_COLOR
-			mf.icon:SetVertexColor(color[1], color[2], color[3], color[4] or 1)
-			wf.icon:SetVertexColor(color[1], color[2], color[3], color[4] or 1)
+			local isActiveSegment = activeSegmentIndex and pt.segment == activeSegmentIndex
+			mf.icon:SetTexture(ANT_TEXTURE)
+			wf.icon:SetTexture(ANT_TEXTURE)
+			if pt.mode then
+				mf.icon:SetVertexColor(color[1], color[2], color[3], color[4] or 1)
+				wf.icon:SetVertexColor(color[1], color[2], color[3], color[4] or 1)
+			elseif isActiveSegment then
+				mf.icon:SetVertexColor(ANT_ACTIVE_COLOR[1], ANT_ACTIVE_COLOR[2], ANT_ACTIVE_COLOR[3], ANT_ACTIVE_COLOR[4])
+				wf.icon:SetVertexColor(ANT_ACTIVE_COLOR[1], ANT_ACTIVE_COLOR[2], ANT_ACTIVE_COLOR[3], ANT_ACTIVE_COLOR[4])
+			else
+				mf.icon:SetVertexColor(ANT_COLOR[1], ANT_COLOR[2], ANT_COLOR[3], ANT_COLOR[4])
+				wf.icon:SetVertexColor(ANT_COLOR[1], ANT_COLOR[2], ANT_COLOR[3], ANT_COLOR[4])
+			end
+			mf.icon:SetAlpha(isActiveSegment and 0.68 or ANT_ALPHA)
+			wf.icon:SetAlpha(isActiveSegment and 0.62 or ANT_ALPHA)
 
 			-- Minimap: place via Astrolabe
-			if pt.c == lc and pt.z == lz then
+			if pt.c == lc and pt.z == lz and minimapSegments ~= false and (not minimapSegments or minimapSegments[pt.segment]) then
 				Astrolabe:PlaceIconOnMinimap(mf, pt.c, pt.z, pt.x, pt.y)
 				mf:Show()
 			else

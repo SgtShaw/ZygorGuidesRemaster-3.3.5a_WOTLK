@@ -550,16 +550,23 @@ me.WaypointFunctions['internal'] = {
 				end
 			end
 			-- For route/path goals, find first and last indices to only show endpoint markers
-			local routeFirst, routeLast
+			local routeFirst, routeLast, activeRouteGoal
 			for k,goal in ipairs(goals) do
 				if goal.routegroup then
 					if not routeFirst then routeFirst = k end
 					routeLast = k
+					if not activeRouteGoal then
+						local complete,possible = goal:IsComplete()
+						if not complete and possible then
+							activeRouteGoal = goal
+						end
+					end
 				end
 			end
 			for k,goal in ipairs(goals) do
-				-- Skip middle route waypoints - ants handle the trail
-				if goal.routegroup and routeFirst and k ~= routeFirst and k ~= routeLast then
+				-- Skip middle route waypoints on the map, but keep the currently active
+				-- route point so the arrow can retarget as the generated goto goals advance.
+				if goal.routegroup and routeFirst and k ~= routeFirst and k ~= routeLast and goal ~= activeRouteGoal then
 					-- skip, ant trail covers these
 				elseif not goal.force_noway then
 					local gmap = goal.map or (self.CurrentStep and self.CurrentStep.map) or GetRealZoneText()

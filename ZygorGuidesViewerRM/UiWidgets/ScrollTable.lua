@@ -114,6 +114,8 @@ function ScrollTable:New(parent,name,COLUMNS,DATA,useparent)
 		offset_from_parent = false
 	end
 
+	frame:EnableMouseWheel(true)
+
 	frame.savedSetSize   = frame.SetSize
 	frame.savedSetWidth  = frame.SetWidth
 	frame.savedSetHeight = frame.SetHeight
@@ -193,6 +195,11 @@ function ScrollTable:New(parent,name,COLUMNS,DATA,useparent)
 			:SetBackdropBorderColor(0,0,0,0)
 			:RegisterForClicks("AnyUp")
 		.__END
+		frame.rows[n]:EnableMouseWheel(true)
+		frame.rows[n]:SetScript("OnMouseWheel", function(_, delta)
+			local handler = frame:GetScript("OnMouseWheel")
+			if handler then handler(frame, delta) end
+		end)
 
 		if n==1 then
 			frame.rows[n]:SetPoint("TOPLEFT",frame,"TOPLEFT",1,-DATA.ROW_HEADER+1)

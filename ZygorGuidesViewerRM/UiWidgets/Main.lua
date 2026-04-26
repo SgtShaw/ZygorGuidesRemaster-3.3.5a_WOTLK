@@ -104,7 +104,7 @@ do
 		ScrollBackColor = {0.08, 0.08, 0.10, 0.80},
 		ScrollBarColor = {0.30, 0.30, 0.32, 0.90},
 		ScrollBarTexture = "Interface\\Buttons\\white8x8",
-		ScrollBarArrowsTexture = "Interface\\Buttons\\white8x8",
+		ScrollBarArrowsTexture = ZGV.DIR.."\\Skins\\scroll-arrows",
 		ScrollBarDecorHeight = 0,
 		-- Buttons
 		ButtonBackdrop1 = SIMPLE_BACKDROP,

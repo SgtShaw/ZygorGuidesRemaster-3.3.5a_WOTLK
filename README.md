@@ -164,6 +164,22 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
+### Revision 143 - 3.0.143
+
+- Integrated the useful 3.3.5a-safe parts of repo PR 27 instead of copying it wholesale.
+- Removed `BackdropTemplate` dependence from the forked dropdown menu code and restored explicit backdrop setup so `UIDropDownFork` menus still render on Wrath.
+- Added narrow compatibility guards in `LibRover` for retail-only `C_Map`, `Enum.UIMapType`, and `C_Garrison` usage in the touched startup and debug-menu paths.
+- Kept the compatibility merge intentionally narrow and did not ship the PR backup file.
+- Fixed Gold Guide tab-switch nil crashes and improved `/zgold` initialization so repeated opens and tab changes are stable.
+- Restored Gold route registration for parsed raw-text guides so included farming and gathering route guides are actually recognized and loaded by Gold Guide.
+- Added Gold route validation and route-inspection tooling, then corrected duplicate/placeholder route selection so the effective Wrath route set validates cleanly.
+- Fixed several Gold route metadata issues and updated the `Borean Leather` route to a stronger Wrath-appropriate `Sholazar Basin` loop.
+- Reworked Gold route loading so farming and gathering guides open cleaned runtime route wrappers instead of exposing raw control lines such as `goldtracker`.
+- Fixed same-step route waypoint progression so generated route/path points now advance the active waypoint target automatically as each point completes.
+- Added internal waypoint ant-trail options for minimap display mode and trail density, localized them across the supported main locale files, and improved the trail visuals and sizing.
+- Improved Gold Guide crafting support on Wrath with detailed recipe caching, safer dynamic guide generation, and a usable low-data `Expert` browse mode.
+- Continued the non-NPC localization pass by adding the new route-trail option translations to all main locale files.
+- Updated addon version metadata to `3.0.143`.
 ### Revision 138 - 3.0.138
 
 - Refreshed the Gear Advisor equip / compare popup to better match the remastered Guide Viewer styling while preserving the original equip recommendation behavior.

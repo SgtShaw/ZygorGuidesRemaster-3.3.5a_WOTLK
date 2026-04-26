@@ -58,7 +58,7 @@ maps={"Western Plaguelands"},
 step
 Kill Blackrock enemies around this area
 |tip You can find more inside the building.
-|goldcollect Runecloth###14047 |n |goto Burning Steppes 42.17,35.64
+|goldcollect Runecloth##14047 |n |goto Burning Steppes 42.17,35.64
 ]])
 ZygorGuidesViewer:RegisterGuide("GOLD\\Farming\\Felcloth",{
 author="support@zygorguides.com",

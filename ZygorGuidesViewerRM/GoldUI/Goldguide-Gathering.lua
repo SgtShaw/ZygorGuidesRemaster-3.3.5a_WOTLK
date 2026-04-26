@@ -78,6 +78,8 @@ setmetatable(Goldguide.Gathering,{__index=Goldguide.Common})
 
 function Gathering:New(data)
 	data.time=data.time or 60
+	data.good_items = data.good_items or {}
+	data.bad_items = data.bad_items or {}
 	setmetatable(data,{__index=Gathering,__lt=Gathering.sorting})
 	table.insert(Goldguide.Chores.Gathering,data)
 end
@@ -108,7 +110,7 @@ function Gathering:GetDisplayInfo(refresh)
 	end
 
 	local vendoronly
-	if self.good_items and #self.good_items==0 then vendoronly=true end
+	if self.profitperhour_is_smart and self.good_items and #self.good_items==0 then vendoronly=true end
 	
 	local h = floor(self.scale)
 	local m = (self.scale-h)*60
@@ -150,7 +152,12 @@ function Gathering:IsValidChore()
 		if not typevalid then return false,"type filter" end
 	end
 		
-	if (not ZGV.db.profile.gold_gathering_mode and (#self.good_items<=0 or (self.scale and self.scale<Goldguide.TIER_DEMAND_MEDIUM))) then return false,"mode filter" end
+	if not ZGV.db.profile.gold_gathering_mode then
+		local hasMarketData = Goldguide:HasTrendData()
+		if hasMarketData and (#self.good_items<=0 or (self.scale and self.scale<Goldguide.TIER_DEMAND_MEDIUM)) then
+			return false,"mode filter"
+		end
+	end
 	local reqs_met,err = self:AreRequirementsMet()
 	if not reqs_met then return false,"requirements not met",err end
 

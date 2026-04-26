@@ -43,6 +43,7 @@ function me:Options_RegisterDefaults()
 			guidebrowser_featured_snooze = {},
 
 			RecipesKnown = {},
+			RecipesKnownDetails = {},
 			gear_pre_talent_override_build = nil,
 			gear_pre_talent_override_explicit = nil,
 			gear_active_build_override_by_group = {},
@@ -86,6 +87,8 @@ function me:Options_RegisterDefaults()
 			fontsize = 11,
 			fontsecsize = 9,
 			disablerouteloopstacking = false,
+			routeantminimapmode = "local",
+			routeantdensity = 100,
 
 			--backcolor = {r=0.18,g=0.05,b=0.23,a=0.56},
 			backopacity = 0.3,
@@ -1506,6 +1509,54 @@ function me:Options_DefineOptions()
 						set = function(i,v) Setter_Simple(i,v)  self.Pointer:MinimapZoomChanged() end,
 						width = "full",
 						order = 10.24,
+					},
+					routeantminimapmode = {
+						name = L["opt_routeantminimapmode"],
+						desc = L["opt_routeantminimapmode_desc"],
+						type = "select",
+						values = {
+							[1] = L["opt_routeantminimapmode_local"],
+							[2] = L["opt_routeantminimapmode_all"],
+							[3] = L["opt_routeantminimapmode_none"],
+						},
+						get = function()
+							local mode = self.db.profile.routeantminimapmode
+							if mode=="all" then return 2 end
+							if mode=="none" then return 3 end
+							return 1
+						end,
+						set = function(_,v)
+							self.db.profile.routeantminimapmode = (v==2 and "all") or (v==3 and "none") or "local"
+							if ZGV.Pointer and ZGV.Pointer.UpdateAnts then
+								ZGV.Pointer:UpdateAnts()
+							end
+						end,
+						width = "double",
+						order = 10.245,
+					},
+					routeantdensity = {
+						name = L["opt_routeantdensity"],
+						desc = L["opt_routeantdensity_desc"],
+						type = "range",
+						min = 1,
+						max = 9,
+						step = 1,
+						bigStep = 1,
+						get = function()
+							local pct = self.db.profile.routeantdensity or 100
+							local level = math.floor(((pct - 20) / 20) + 1 + 0.5)
+							if level < 1 then level = 1 end
+							if level > 9 then level = 9 end
+							return level
+						end,
+						set = function(_,v)
+							self.db.profile.routeantdensity = v * 20
+							if ZGV.Pointer and ZGV.Pointer.UpdateAnts then
+								ZGV.Pointer:UpdateAnts()
+							end
+						end,
+						width = "full",
+						order = 10.246,
 					},
 					audiocues = {
 						name = L["opt_audiocues"],

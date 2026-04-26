@@ -58,7 +58,7 @@ maps={"Western Plaguelands"},
 step
 Kill Blackrock enemies around this area
 |tip You can find more inside the building.
-|goldcollect Runecloth###14047 |n |goto Burning Steppes 42.17,35.64
+|goldcollect Runecloth##14047 |n |goto Burning Steppes 42.17,35.64
 ]])
 ZygorGuidesViewer:RegisterGuide("GOLD\\Farming\\Felcloth",{
 author="support@zygorguides.com",
@@ -228,7 +228,7 @@ Fish in the open water
 ]])
 ZygorGuidesViewer:RegisterGuide("GOLD\\Farming\\Crag Boar Rib",{
 author="support@zygorguides.com",
-meta={goldtype="route",skillreq={fishing=1},levelreq={5,60}},
+meta={goldtype="route",levelreq={5,60}},
 items={{2886,68}},
 maps={"Dun Morogh"},
 },[[

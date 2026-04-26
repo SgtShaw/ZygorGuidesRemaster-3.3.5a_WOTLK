@@ -139,7 +139,7 @@ local CRAFTING_SKILLS={"All","Mining","Jewelcrafting","Enchanting","Inscription"
 local CRAFTING_MODES = {
 	{"Easy",     0, "Show only items that are in demand, material cost is lower than the price of the product, and you know the recipe."},
 	{"Advanced", 1, "Show only items that are in demand, material cost is lower than the price of the product, but you do not know the recipe."},
-	{"Expert",   2, "Show all potentially profitable crafts for your profession, regardless of demand, material cost or recipe."}
+	{"Expert",   2, "Browse all known crafts your professions can currently make, even when demand or profit data is missing."}
 }
 
 local AUCTION_COLUMNS = {
@@ -327,6 +327,20 @@ function Goldguide:CreateMainFrame()
 		.__END
 		MF.HeaderFrame.Tabs[4].tabname = "Auctions"
 
+		for _,tabobj in ipairs(MF.HeaderFrame.Tabs) do
+			tabobj:SetScript("OnEnter", function(btn)
+				local available, reason = Goldguide:GetTabAvailability(btn.tabname)
+				if available then
+					Goldguide:ShowMenuTooltip(btn, btn.tabname)
+				else
+					Goldguide:ShowMenuTooltip(btn, reason or btn.tabname)
+				end
+			end)
+			tabobj:SetScript("OnLeave", function()
+				Goldguide:HideMenuTooltip()
+			end)
+		end
+
 	MF.MenuFrame = {}
 		MF.MenuFrame.decor1 = CHAIN(ui:Create("Frame",MF))
 			:SetPoint("TOPLEFT",MF.HeaderFrame,"BOTTOMLEFT",0,0)
@@ -491,7 +505,10 @@ function Goldguide:MakeTable_Farming()
 
 	for _,row in pairs(container.Entries.rows) do
 		row.loadbutton:SetScript("OnClick",function() 
-			if row.chore then ZGV:SetGuide(row.chore.guide or "GOLD\\"..row.chore.name) end
+			if row.chore then
+				local title = row.chore.guide or "GOLD\\"..row.chore.name
+				ZGV:SetGuide(ZGV.Goldguide:GetRouteGuideLoadTitle(title))
+			end
 		end)
 		row.loadbutton:SetScript("OnEnter",function() if row.chore then Goldguide:ShowLoadbuttonTooltip(row.loadbutton,"Load guide",row.chore.display_name) end end)
 		row.loadbutton:SetScript("OnLeave",function() Goldguide:HideLoadbuttonTooltip(row) end)
@@ -548,7 +565,10 @@ function Goldguide:MakeTable_Gathering()
 
 	for _,row in pairs(container.Entries.rows) do
 		row.loadbutton:SetScript("OnClick",function()
-			if row.chore then ZGV:SetGuide(row.chore.guide or "GOLD\\"..row.chore.name) end
+			if row.chore then
+				local title = row.chore.guide or "GOLD\\"..row.chore.name
+				ZGV:SetGuide(ZGV.Goldguide:GetRouteGuideLoadTitle(title))
+			end
 		end)
 
 		row.loadbutton:SetScript("OnEnter",function() if row.chore then Goldguide:ShowLoadbuttonTooltip(row.loadbutton,"Load guide",row.chore.display_name) end end)
@@ -711,7 +731,41 @@ function Goldguide:MakeTable_Auctions()
 	return container
 end
 
+function Goldguide:UpdateTabAvailability()
+	if not (Goldguide.MainFrame and Goldguide.MainFrame.HeaderFrame and Goldguide.MainFrame.HeaderFrame.Tabs) then return end
+
+	for _,tabobj in ipairs(Goldguide.MainFrame.HeaderFrame.Tabs) do
+		local available, reason = Goldguide:GetTabAvailability(tabobj.tabname)
+		tabobj.available = available
+		tabobj.unavailableReason = reason
+	end
+end
+
 function Goldguide:SetCurrentTab(title)
+	local available, reason = Goldguide:GetTabAvailability(title)
+	if not available and Goldguide.ActiveTab then
+		Goldguide.MainFrame.MessageFrame.ResultsMessage:SetText(reason or (title .. " is not ready yet."))
+		Goldguide.MainFrame.MessageFrame:Show()
+		Goldguide:UpdateTabAvailability()
+		for _,tabobj in ipairs(Goldguide.MainFrame.HeaderFrame.Tabs) do
+			local tabReady = tabobj.available
+			if tabobj.tabname == Goldguide.ActiveTab then
+				tabobj.caption:SetFont(FONTBOLD,HEADER_FONT_SIZE)
+				tabobj.caption:SetTextColor(1,1,1,1)
+				tabobj.texture:SetAlpha(1)
+			elseif tabReady then
+				tabobj.caption:SetFont(FONT,HEADER_FONT_SIZE)
+				tabobj.caption:SetTextColor(0.7,0.7,0.7,1)
+				tabobj.texture:SetAlpha(.4)
+			else
+				tabobj.caption:SetFont(FONT,HEADER_FONT_SIZE)
+				tabobj.caption:SetTextColor(0.45,0.45,0.45,1)
+				tabobj.texture:SetAlpha(.18)
+			end
+		end
+		return
+	end
+
 	local tab=Goldguide.ActiveTab
 	if tab=="Farming" then ZGV.db.profile.gold_farming_search = Goldguide.MainFrame.MenuFrame.SearchEdit:GetText()
 	elseif tab=="Gathering" then ZGV.db.profile.gold_gathering_search = Goldguide.MainFrame.MenuFrame.SearchEdit:GetText()
@@ -725,16 +779,23 @@ function Goldguide:SetCurrentTab(title)
 	elseif title=="Auctions" then Goldguide.MainFrame.MenuFrame.SearchEdit:SetText(ZGV.db.profile.gold_auctions_search or "")
 	end
 
+	Goldguide:UpdateTabAvailability()
 	for i,tabobj in ipairs(Goldguide.MainFrame.HeaderFrame.Tabs) do
+		local tabReady = tabobj.available
 		if tabobj.tabname == title then
 			tabobj.caption:SetFont(FONTBOLD,HEADER_FONT_SIZE)
 			tabobj.caption:SetTextColor(1,1,1,1)
 			tabobj.texture:SetAlpha(1)
 			Goldguide[tabobj.tabname.."_Frame"]:Show()
-		else
+		elseif tabReady then
 			tabobj.caption:SetFont(FONT,HEADER_FONT_SIZE)
 			tabobj.caption:SetTextColor(0.7,0.7,0.7,1)
 			tabobj.texture:SetAlpha(.4)
+			Goldguide[tabobj.tabname.."_Frame"]:Hide()
+		else
+			tabobj.caption:SetFont(FONT,HEADER_FONT_SIZE)
+			tabobj.caption:SetTextColor(0.45,0.45,0.45,1)
+			tabobj.texture:SetAlpha(.18)
 			Goldguide[tabobj.tabname.."_Frame"]:Hide()
 		end
 		Goldguide.MainFrame.Infopages[tabobj.tabname]:Hide()
@@ -743,7 +804,6 @@ function Goldguide:SetCurrentTab(title)
 	if Goldguide.ShowInfoPage then
 		Goldguide.MainFrame.Infopages[title]:Show()
 	end
-
 
 	Goldguide.ActiveTab=title
 	Goldguide:Update()
@@ -787,7 +847,8 @@ function Goldguide:ShowWindow()
 	Goldguide.ShowHelpPage=false
 	if Goldguide.MainFrame.helpPanel then Goldguide.MainFrame.helpPanel:Hide() end
 
-	Goldguide:SetCurrentTab("Farming")
+	Goldguide:UpdateTabAvailability()
+	Goldguide:SetCurrentTab(Goldguide:GetPreferredTab())
 end
 
 function Goldguide:HideWindow()

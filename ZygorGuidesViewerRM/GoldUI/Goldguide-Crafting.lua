@@ -40,12 +40,18 @@ local bop_reagents = {
 function Goldguide:InitialiseCraftingChores()
 	table.wipe(Goldguide.Chores.Crafting)
 	table.wipe(Goldguide.CraftingItemToSpell)
+	table.wipe(Goldguide.SkillLevels)
 
 	-- get current skill levels
 	if ZGV.IsClassic or ZGV.IsClassicTBC or ZGV.IsClassicWOTLK then
 		ZGV.db.char.SkillsKnown = ZGV.db.char.SkillsKnown or {}
 		for i,prof in pairs(ZGV.db.char.SkillsKnown) do
 			Goldguide.SkillLevels[prof.parentskillID or prof.skillID or -1] = prof.level
+		end
+		for skillname,prof in pairs(ZGV.skills or {}) do
+			if prof and prof.level and prof.level > 0 then
+				Goldguide.SkillLevels[prof.parentskillID or prof.skillID or -1] = prof.level
+			end
 		end
 	else
 		local profs={GetProfessions()}
@@ -216,8 +222,6 @@ function Crafting:IsValidChore()
 	if ZGV.db.profile.gmgoldallvalid then self.valid=true return true,"debug override" end
 
 	self.valid=false
-	if self.cost==0 then return false,"no cost calculated" end
-	if self.profit==0 then return false,"no profit" end
 
 	local query = string.lower(Goldguide.MainFrame.MenuFrame.SearchEdit:GetText())
 	if query and query~="" then 
@@ -228,6 +232,16 @@ function Crafting:IsValidChore()
 	if ZGV.db.profile.gold_crafting_type~=0 and ZGV.db.profile.gold_crafting_type~=self.skill then return false,"type filter" end
 
 	local valid_level = Goldguide.SkillLevels[self.skill] and Goldguide.RecipeLevels[self.spell] and Goldguide.SkillLevels[self.skill] > Goldguide.RecipeLevels[self.spell]
+
+	if ZGV.db.profile.gold_crafting_mode>=2 then
+		if not valid_level then return false,"above skill level, not browseable" end
+		if not (self.learned or ZGV.Gold.any_recipe) then return false,"unknown recipe, not browseable" end
+		self.valid=true
+		return true
+	end
+
+	if self.cost==0 then return false,"no cost calculated" end
+	if self.profit==0 then return false,"no profit" end
 
 	-- easy 0 - recipe, profit, demand
 	-- adv 1  -	    profit, demand
@@ -245,7 +259,42 @@ end
 
 function Crafting:add_line(txt) self.guide = self.guide .. txt .. " \n" end
 
+local function EscapeGuideText(text)
+	if not text then return nil end
+	return tostring(text):gsub("|","\\|"):gsub("_","\\_")
+end
+
+local function GetSortedReagentEntries(reagentcount)
+	local entries = {}
+	for itemid,itemcount in pairs(reagentcount or {}) do
+		table.insert(entries, {
+			itemid = itemid,
+			itemcount = itemcount,
+			name = ZGV:GetItemInfo(itemid) or ("item:" .. tostring(itemid)),
+		})
+	end
+	table.sort(entries, function(a,b) return a.name < b.name end)
+	return entries
+end
+
+local function GetMatchingFarmGuides(itemname)
+	if not (itemname and Goldguide.farming_guides) then return nil end
+	local matches = {}
+	for _,guide in pairs(Goldguide.farming_guides) do
+		local guideTitle = guide and (guide.title_short or guide.title)
+		if type(guideTitle)=="string" and string.match(guideTitle, itemname) and Goldguide.Common.AreRequirementsMet(guide) then
+			table.insert(matches, guide)
+		end
+	end
+	if #matches == 0 then return nil end
+	table.sort(matches, function(a,b)
+		return (a.title_short or a.title or "") < (b.title_short or b.title or "")
+	end)
+	return matches
+end
+
 function Crafting:GenerateGuide()
+	self:GetRecipeReagents()
 	local productname = ZGV:GetItemInfo(self.productid)
 	if not productname then
 		ZGV:ScheduleTimer(function() 
@@ -254,107 +303,88 @@ function Crafting:GenerateGuide()
 		return
 	end
 
-	local static_guide = nil
-	for i,v in pairs(ZGV.registeredguides) do
-		if v.craft_item==self.productid then
-			static_guide=v
-			break
+	self.guide = ""
+	local reagentEntries = GetSortedReagentEntries(self.reagentcount)
+	local farmGuideMatches = {}
+	local farms_found = false
+	for _,entry in ipairs(reagentEntries) do
+		local matches = GetMatchingFarmGuides(entry.name)
+		if matches then
+			farmGuideMatches[entry.itemid] = matches
+			farms_found = true
 		end
 	end
 
-	self.guide = ""
 	-- Step 1 - intro
 	self:add_line("step")
 	self:add_line("'_This is a dynamic crafting guide._")
-	self:add_line("'We will make "..productname)
-	self:add_line("' ")
-	self:add_line("'You will need following reagents:")
-	for itemid,itemcount in pairs(self.reagentcount) do
-		--local name = ZGV:GetItemInfo(itemid)
-		self:add_line("itemname "..itemcount.." "..itemid)
+	self:add_line("'We will make "..EscapeGuideText(productname))
+	self:add_line("'")
+	self:add_line("'Required reagents:")
+	for _,entry in ipairs(reagentEntries) do
+		self:add_line("itemname "..entry.itemcount.." "..entry.itemid)
 	end
 	if not (self.learned or ZGV.Gold.any_recipe) then
-		self:add_line("'You will need to get the recipe.")
+		self:add_line("'"..L["gold_crafting_guide_needrecipe"])
 	end
 	self:add_line("confirm")
 
 	-- Step 2 -- optionally teach the recipe if we have the source data for it
 	if not (self.learned or ZGV.Gold.any_recipe) and self.source then
-		self:add_line("step")
-		self:add_line("'You can aquire the recipe from:")
-		self:add_line(self.source:gsub("|","\\|"):gsub("_","\\_"))
+		self:add_line("step recipe_source")
+		self:add_line("'"..L["gold_crafting_guide_recipesource"])
+		self:add_line(EscapeGuideText(self.source))
 		self:add_line("confirm")
 	end
 
-	-- Step 3a -- optional questline
-	if static_guide then
-		for line in string.gmatch(static_guide.rawdata, ".*$") do
-			self:add_line(line)
-		end
-	end
-
-	-- Step 3b -- show reagent sources
+	-- Step 3 -- show reagent sources
 	self:add_line("step reagents_buy")
-	self:add_line("'Obtain the following reagents:")
-	local farms_found = false
-	for itemid,itemcount in pairs(self.reagentcount) do
-		if not (static_guide and static_guide.craft_reagents[itemid]) then
-			local name = ZGV:GetItemInfo(itemid) -- let goal handle itemname display
-			local price = ZGVG:GetSellPrice(itemid)
-			if not bop_reagents[itemid] then
-				self:add_line(("buy %d %d maxprice %d"):format(itemcount,itemid,price))
-				self:add_line(("tip Pay no more than %s each"):format(ZGV.GetMoneyString(price):gsub("|","%%PIPE%%")))
-			else
-				self:add_line(("get %d %d"):format(itemcount,itemid))
-			end
-
-			if name and Goldguide.farming_guides and not self.reagentfarmable[itemid] then
-				for i,guide in pairs(Goldguide.farming_guides) do
-					if string.match(guide.title_short, name) and Goldguide.Common.AreRequirementsMet(guide) then
-						farms_found=true
-						self.reagentfarmable[itemid]=true
-					end
-				end
-			end
+	self:add_line("'"..L["gold_crafting_guide_obtainreagents"])
+	for _,entry in ipairs(reagentEntries) do
+		local price = ZGVG:GetSellPrice(entry.itemid)
+		if not bop_reagents[entry.itemid] and price and price > 0 then
+			self:add_line(("buy %d %d maxprice %d"):format(entry.itemcount,entry.itemid,price))
+			self:add_line(("tip "..L["gold_crafting_guide_maxprice"]):format(ZGV.GetMoneyString(price):gsub("|","%%PIPE%%")))
+		else
+			self:add_line(("get %d %d"):format(entry.itemcount,entry.itemid))
 		end
 	end
 
 	if farms_found then
-		self:add_line("'If you want to farm some of the items on your own, click here to get a list of relevant guides |confirm |next reagents_farm")
+		self:add_line("'"..L["gold_crafting_guide_farmoptional"].." |confirm |next reagents_farm")
 	end
 
-	-- Step 3 -- craft subreagents, if any
+	-- Step 4 -- craft subreagents, if any
 	if next(self.actions) then
 		for _,action in pairs(self.actions) do
-			--local name = ZGV:GetItemInfo(action.productid)
 			self:add_line("step")
-			self:add_line("'Create reagents:")
+			self:add_line("'"..L["gold_crafting_guide_createsubreagents"])
 			self:add_line("create "..action.count.." "..action.productid..'|n')
 		end
 	end				
 
-	-- Step 4 -- craft product
+	-- Step 5 -- craft product
 	self:add_line("step product_create")
-	self:add_line("'Create final product:")
-	self:add_line("create 1 "..productname.."##"..self.productid..'|n')
+	self:add_line("'"..L["gold_crafting_guide_createfinal"])
+	self:add_line("create 1 "..EscapeGuideText(productname).."##"..self.productid..'|n')
 
-	-- Step 5 -- optional farms
+	-- Step 6 -- optional farms
 	if farms_found then
 		self:add_line("step reagents_farm")
-		self:add_line("You can use following guides to farm reagents:")
-		for itemid,itemcount in pairs(self.reagentcount) do
-			local name = ZGV:GetItemInfo(itemid)
-			local price = ZGVG:GetSellPrice(itemid)
-	
-			if name and Goldguide.farming_guides and not self.reagentfarmable[itemid] then
-				for i,guide in pairs(Goldguide.farming_guides) do
-					if string.match(guide.title_short, name) and Goldguide.Common.AreRequirementsMet(guide) then
-						self:add_line(guide.title_short.." |confirm |next "..guide.title)
+		self:add_line("'"..L["gold_crafting_guide_farmguides"])
+		for _,entry in ipairs(reagentEntries) do
+			local matches = farmGuideMatches[entry.itemid]
+			if matches then
+				self:add_line("'"..EscapeGuideText(entry.name)..":")
+				for _,guide in ipairs(matches) do
+					local guideTitle = guide.title_short or guide.title
+					if guideTitle and guide.title then
+						self:add_line(EscapeGuideText(guideTitle).." |confirm |next "..guide.title)
 					end
 				end
 			end
 		end
-		self:add_line("'If you want to buy some of the items on your own, click here to view shopping list |confirm |next reagents_buy")
+		self:add_line("'"..L["gold_crafting_guide_backtoshopping"].." |confirm |next reagents_buy")
 	end
 
 	if ZGV.IsClassic or ZGV.IsClassicTBC or ZGV.IsClassicWOTLK then
@@ -364,12 +394,12 @@ function Crafting:GenerateGuide()
 	end
 
 	local title = "GOLD\\Crafting\\"..productname
-	local guide = ZGV.GuideProto:New(title,{},self.guide)
-	for i,v in pairs(ZGV.registeredguides) do 
+	for i=#ZGV.registeredguides,1,-1 do
+		local v = ZGV.registeredguides[i]
 		-- prevent duplicates
-		if v.title==guide.title then table.remove(ZGV.registeredguides,i) end
+		if v.title==title then table.remove(ZGV.registeredguides,i) end
 	end
-	tinsert(ZGV.registeredguides,guide)
+	ZGV:RegisterGuide(title,self.guide)
 	ZGV:SetGuide(title,1)
 
 	-- Store last five crafting guides for reuse

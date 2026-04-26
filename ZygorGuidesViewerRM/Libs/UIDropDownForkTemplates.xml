@@ -1,5 +1,5 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/..\FrameXML\UI.xsd">
-	<Button name="UIDropDownForkButtonTemplate" virtual="true" inherits="BackdropTemplate">
+	<Button name="UIDropDownForkButtonTemplate" virtual="true">
 		<Size x="100" y="16"/>
 		<Layers>
 			<Layer level="BACKGROUND">
@@ -37,7 +37,7 @@
 			</Layer>
 		</Layers>
 		<Frames>
-			<Button name="$parentColorSwatch" hidden="true" inherits="BackdropTemplate">
+			<Button name="$parentColorSwatch" hidden="true">
 				<Size>
 					<AbsDimension x="16" y="16"/>
 				</Size>
@@ -82,7 +82,7 @@
 				</Scripts>
 				<NormalTexture name="$parentNormalTexture" file="Interface\ChatFrame\ChatFrameColorSwatch"/>
 			</Button>
-			<Button name="$parentExpandArrow" hidden="true" motionScriptsWhileDisabled="true" inherits="BackdropTemplate">
+			<Button name="$parentExpandArrow" hidden="true" motionScriptsWhileDisabled="true">
 				<Size>
 					<AbsDimension x="16" y="16"/>
 				</Size>
@@ -117,7 +117,7 @@
 				</Scripts>
 				<NormalTexture file="Interface\ChatFrame\ChatFrameExpandArrow"/>
 			</Button>
-			<Button name="$parentInvisibleButton" hidden="true" parentKey="invisibleButton" inherits="BackdropTemplate">
+			<Button name="$parentInvisibleButton" hidden="true" parentKey="invisibleButton">
 				<Anchors>
 					<Anchor point="TOPLEFT"/>
 					<Anchor point="BOTTOMLEFT"/>
@@ -162,22 +162,27 @@
 	</Button>
 	<Button name="UIDropDownForkListTemplate" hidden="true" frameStrata="DIALOG" enableMouse="true" virtual="true" clampedtoscreen="true">
 		<Frames>
-			<Frame name="$parentBackdrop" setAllPoints="true" inherits="BackdropTemplate">
-				<KeyValues>
-					<KeyValue key="backdropInfo" value="BACKDROP_GOLD_DIALOG_32_32" type="global"/>
-					<KeyValue key="backdropColor" value="BLACK_FONT_COLOR" type="global"/>
-					<KeyValue key="backdropColorAlpha" value="0.9" type="number"/>
-				</KeyValues>
+			<Frame name="$parentBackdrop" setAllPoints="true">
+				<Scripts>
+					<OnLoad>
+						self:SetBackdrop({
+							bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+							edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+							tile = true, tileSize = 16, edgeSize = 16,
+							insets = { left = 4, right = 4, top = 4, bottom = 4 }
+						});
+					</OnLoad>
+				</Scripts>
 			</Frame>
-			<Frame name="$parentMenuBackdrop" setAllPoints="true" inherits="BackdropTemplate">
-				<KeyValues>
-					<KeyValue key="backdropInfo" value="BACKDROP_TOOLTIP_16_16_5555" type="global"/>
-					<KeyValue key="backdropBorderColor" value="TOOLTIP_DEFAULT_COLOR" type="global"/>
-					<KeyValue key="backdropColor" value="BLACK_FONT_COLOR" type="global"/>
-					<KeyValue key="backdropColorAlpha" value="0.9" type="number"/>
-				</KeyValues>
+			<Frame name="$parentMenuBackdrop" setAllPoints="true">
 				<Scripts>
 					<OnLoad inherit="prepend">
+						self:SetBackdrop({
+							bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+							edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+							tile = true, tileSize = 16, edgeSize = 16,
+							insets = { left = 4, right = 4, top = 4, bottom = 4 }
+						});
 						self:SetBackdropBorderColor(TOOLTIP_DEFAULT_COLOR.r, TOOLTIP_DEFAULT_COLOR.g, TOOLTIP_DEFAULT_COLOR.b);
 						self:SetBackdropColor(TOOLTIP_DEFAULT_BACKGROUND_COLOR.r, TOOLTIP_DEFAULT_BACKGROUND_COLOR.g, TOOLTIP_DEFAULT_BACKGROUND_COLOR.b);
 					</OnLoad>
@@ -224,7 +229,7 @@
 			</OnHide>
 		</Scripts>
 	</Button>
-	<Frame name="UIDropDownForkTemplate" virtual="true" inherits="BackdropTemplate">
+	<Frame name="UIDropDownForkTemplate" virtual="true">
 		<Size>
 			<AbsDimension x="40" y="32"/>
 		</Size>
@@ -288,7 +293,7 @@
 			</Layer>
 		</Layers>
 		<Frames>
-			<Button parentKey="Button" name="$parentButton" motionScriptsWhileDisabled="true"  inherits="BackdropTemplate">
+			<Button parentKey="Button" name="$parentButton" motionScriptsWhileDisabled="true">
 				<Size>
 					<AbsDimension x="24" y="24"/>
 				</Size>

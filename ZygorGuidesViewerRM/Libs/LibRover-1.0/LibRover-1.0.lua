@@ -1229,13 +1229,13 @@ do
 				if Lib.IsClassic then CosmicMap = 947 end
 
 				-- apply global settings
-				table.foreach(
-					C_Map.GetMapChildrenInfo(CosmicMap --[[=cosmic]],Enum.UIMapType.Micro,true),
-					function(i,map)
+				if C_Map and C_Map.GetMapChildrenInfo and Enum and Enum.UIMapType then
+					local children = C_Map.GetMapChildrenInfo(CosmicMap --[[=cosmic]],Enum.UIMapType.Micro,true)
+					for i,map in ipairs(children) do
 						ZoneMeta[map.mapID] = ZoneMeta[map.mapID] or {}
 						for k,v in pairs(ZoneMeta["ALL_MICROS"]) do if ZoneMeta[map.mapID][k]==nil then ZoneMeta[map.mapID][k]=v end end
 					end
-				)
+				end
 				-- make it respond with defaults to all queries
 				local dummy={}
 				setmetatable(ZoneMeta,{__index=function() return dummy end})
@@ -1957,6 +1957,7 @@ do
 			end
 
 			local function FindGarrisonBindLocation(silent)
+				if not (C_Garrison and C_Garrison.GetGarrisonInfo and Enum and Enum.GarrisonType and Enum.GarrisonType.Type_6_0) then return end
 				local garrlevel = C_Garrison.GetGarrisonInfo(Enum.GarrisonType.Type_6_0)
 				if not garrlevel then return end
 				local found
@@ -4618,7 +4619,10 @@ do
 			if not Lib.debug_overlayrect then Lib.debug_overlayrect = ZGV.ChainCall(ZygorGuidesViewerPointerOverlay:CreateTexture()):SetColorTexture(0,1,0,0.5).__END end
 
 			local mapid = WorldMapFrame:GetMapID()
-			local subzones_src = C_Map.GetMapChildrenInfo(mapid,nil)
+			local subzones_src
+			if C_Map and C_Map.GetMapChildrenInfo then
+				subzones_src = C_Map.GetMapChildrenInfo(mapid,nil)
+			end
 			local subzones_menu = {}
 			local current_level = subzones_menu
 			if subzones_src then
@@ -4638,7 +4642,12 @@ do
 						value=map.mapID,
 						notCheckable=true,
 						onEnterFunc = function(self)
-							local x1,x2,y1,y2 = C_Map.GetMapRectOnMap(self.value,mapid)
+							local x1,x2,y1,y2
+							if C_Map and C_Map.GetMapRectOnMap then
+								x1,x2,y1,y2 = C_Map.GetMapRectOnMap(self.value,mapid)
+							else
+								x1,x2,y1,y2 = 0,1,0,1
+							end
 							ZGV.ChainCall(Lib.debug_overlayrect)
 								:ClearAllPoints()
 								:SetPoint("TOPLEFT",x1*Lib.debug_overlayrect:GetParent():GetWidth(),-y1*Lib.debug_overlayrect:GetParent():GetHeight())
