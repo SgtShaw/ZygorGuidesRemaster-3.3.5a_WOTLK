@@ -5132,6 +5132,7 @@ function me:UpdateFrame(full,onupdate,nonsecure_only)
 					end
 
 					local line=1
+					local maxlines = #frame.lines
 
 					if stepdata.requirement or self.db.profile.stepnumbers then
 						local numbertext = self.db.profile.stepnumbers and L['step_num']:format(stepnum)
@@ -5191,6 +5192,7 @@ function me:UpdateFrame(full,onupdate,nonsecure_only)
 									goaltxt = goaltxt .. rtag
 								end
 								if goaltxt~="?" or (goal.action=="info") then
+									if line>maxlines or not frame.lines[line] then break end
 									if goal.action=="info" then
 										frame.lines[line].labelOffsetX = ZGV.ICON_INDENT
 										frame.lines[line].labelOffsetY = 2
@@ -5212,6 +5214,7 @@ function me:UpdateFrame(full,onupdate,nonsecure_only)
 									--frame.lines[line].label:SetMultilineIndent(1)
 
 									if self.db.profile.tooltipsbelow and effective_tip then
+										if line>maxlines or not frame.lines[line] then break end
 										frame.lines[line].labelOffsetX = ZGV.ICON_INDENT
 										frame.lines[line].labelOffsetY = 2
 										self:ApplyGuideLineLabelLayout(frame.lines[line])

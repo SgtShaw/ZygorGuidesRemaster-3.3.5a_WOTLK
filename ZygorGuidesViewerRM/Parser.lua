@@ -513,12 +513,15 @@ local function MergeMultilinePathBlocks(text)
 		local starts_path = trimmed:match("^path%s+")
 			or trimmed:match("^loop%s+")
 			or trimmed:match("^route%s+")
+			or trimmed:match("^multigoto%s+")
 			or trimmed:match("^|%s*path%s+")
 			or trimmed:match("^|%s*loop%s+")
 			or trimmed:match("^|%s*route%s+")
+			or trimmed:match("^|%s*multigoto%s+")
 			or trimmed:match("|%s*path%s+")
 			or trimmed:match("|%s*loop%s+")
 			or trimmed:match("|%s*route%s+")
+			or trimmed:match("|%s*multigoto%s+")
 
 		if starts_path then
 			local merged = line
@@ -529,7 +532,7 @@ local function MergeMultilinePathBlocks(text)
 				if t=="" then break end
 				if t:match("^[%.']") or t:match("^|") or t:match("^step") or t:match("^#") then break end
 				-- Break on lines that are their own path/loop/route commands
-				local is_path_cmd = t:match("^path%s") or t:match("^path$") or t:match("^loop%s") or t:match("^loop$") or t:match("^route%s") or t:match("^route$")
+				local is_path_cmd = t:match("^path%s") or t:match("^path$") or t:match("^loop%s") or t:match("^loop$") or t:match("^route%s") or t:match("^route$") or t:match("^multigoto%s") or t:match("^multigoto$")
 				if is_path_cmd then break end
 				-- Continuation row: coordinate rows like:
 				-- "x,y;" / "map,x,y;" / optional dist / optional per-point "|tip ...",
@@ -645,6 +648,8 @@ function me:ParseEntry(text)
 					step.map = map
 					prevmap = map
 				end
+				local routekind = routectx and routectx.kind
+				local is_multigoto = routekind=="multigoto"
 				tinsert(generated_goals,{
 					action="goto",
 					map=map,
@@ -654,8 +659,8 @@ function me:ParseEntry(text)
 					achieveid=pt.achieveid,
 					achievesub=pt.achievesub,
 					tooltip=pt.tooltip,
-					routegroup=true,
-					routekind=(routectx and routectx.kind) or "route",
+					routegroup=not is_multigoto,
+					routekind=routekind or "route",
 					routeindex=#generated_goals+1,
 					force_complete=true,
 				})
@@ -814,14 +819,14 @@ function me:ParseEntry(text)
 						return nil,"'"..cmd.."' has no map parameter, neither has one been given before.",linecount,chunk
 					end
 				end
-			elseif cmd=="path" or cmd=="loop" or cmd=="route" then
+			elseif cmd=="path" or cmd=="loop" or cmd=="route" or cmd=="multigoto" then
 				if not step then return nil,"Path command before step",linecount,chunk end
 				step._pathopts = step._pathopts or {loop=false}
 				local loopval,foundloop = ParsePathLoopFlag(params,step._pathopts.loop)
 				if foundloop then step._pathopts.loop = loopval end
 
 				local points
-				if cmd=="route" or ((cmd=="loop" or cmd=="path") and params and params:find(";",1,true)) then
+				if cmd=="route" or cmd=="multigoto" or ((cmd=="loop" or cmd=="path") and params and params:find(";",1,true)) then
 					points = ParseRoutePoints(params,step.map or prevmap)
 				else
 					points = ParsePathPoints(params)

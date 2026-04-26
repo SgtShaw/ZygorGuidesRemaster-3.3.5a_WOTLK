@@ -1,4 +1,4 @@
-# Zygor Guides Viewer Remaster
+﻿# Zygor Guides Viewer Remaster
 
 Remastered Zygor Guides Viewer for **World of Warcraft: Wrath of the Lich King (WotLK) 3.3.5a (build 12340)**.
 
@@ -164,6 +164,15 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
+### Revision 144 - 3.0.144
+
+- Fixed a guide-boundary step helper crash where adjacent guide objects could exist without parsed steps, causing skip and auxiliary checks to index guide.steps unsafely.
+- Fixed a Disable Route/Loop Stacking viewer crash by safely truncating oversized non-stacked |route displays instead of running past the fixed step-line frame pool.
+- Added multigoto, a new multi-location waypoint command that accepts route-style coordinate chains but behaves like ordered plain goto points rather than a route/loop ant-trail path.
+- Kept multigoto integrated with the existing auto-advance and waypoint retargeting logic while explicitly excluding it from marching-ant routegroup rendering.
+- Continued Gold Guide route improvements so cleaned runtime route wrappers, same-step route progression, and route waypoint retargeting behave more reliably in practical use.
+- Updated addon version metadata to 3.0.144.
+
 ### Revision 143 - 3.0.143
 
 - Integrated the useful 3.3.5a-safe parts of repo PR 27 instead of copying it wholesale.
@@ -286,6 +295,7 @@ This remaster focuses on UI/UX modernization, packaging quality, compatibility m
 
 <img width="433" height="247" alt="image" src="https://github.com/user-attachments/assets/579b6acb-df5e-4f40-8ef3-7d6b33e1015d" />
 <img width="436" height="248" alt="image" src="https://github.com/user-attachments/assets/a845b881-2831-43e3-bd26-5287f9783d68" />
+
 
 
 

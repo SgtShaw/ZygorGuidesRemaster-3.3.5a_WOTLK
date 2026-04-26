@@ -194,19 +194,23 @@ end
 function Step:IsAuxiliarySkippable()
 	local i=self.num
 	local guide = self.parentGuide
-	while guide do
-		if guide.steps[i]:IsAuxiliary() or not guide.steps[i]:AreRequirementsMet() then
+	while guide and guide.steps do
+		local step = guide.steps[i]
+		if not step then
+			return false
+		end
+		if step:IsAuxiliary() or not step:AreRequirementsMet() then
 			i=i+1  -- jump over fellow auxiliaries
 			if i>#guide.steps then
-				guide = ZGV:GetGuideByTitle(guide.next)
+				guide = guide.next and ZGV:EnsureGuideParsed(guide.next,true) or nil
 				i=1
 			end
 		else
 			if i==self.num then
 				return false
 			else
-				local complete,possible = guide.steps[i]:IsComplete()
-				return (ZGV.db.profile.skipobsolete and guide.steps[i]:IsObsolete())
+				local complete,possible = step:IsComplete()
+				return (ZGV.db.profile.skipobsolete and step:IsObsolete())
 				or complete
 				or (ZGV.db.profile.skipimpossible and not possible)
 			end
@@ -227,11 +231,12 @@ end
 
 function Step:GetNextStep()
 	local guide=self.parentGuide
+	if not guide or not guide.steps then return nil end
 	if self.num<#guide.steps then
 		return guide.steps[self.num+1]
 	else
-		guide=ZGV:GetGuideByTitle(self.parentGuide.next)
-		if guide then
+		guide = self.parentGuide.next and ZGV:EnsureGuideParsed(self.parentGuide.next,true) or nil
+		if guide and guide.steps and guide.steps[1] then
 			return guide.steps[1]
 		else
 			return nil
