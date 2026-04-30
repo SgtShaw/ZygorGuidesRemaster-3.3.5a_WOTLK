@@ -90,7 +90,23 @@ end
 
 -- Gold Guide compatibility shims (inline since external files may not load)
 ZGV.Gold = {}
-function ZGV:GetItemInfo(itemID) return GetItemInfo(itemID) end
+function ZGV:GetItemInfo(itemID)
+	if itemID == nil or itemID == false then return end
+
+	local itemType = type(itemID)
+	if itemType == "string" then
+		if itemID == "" then return end
+		if itemID:match("^%d+$") then
+			itemID = tonumber(itemID)
+		end
+	elseif itemType ~= "number" then
+		return
+	end
+
+	if type(itemID) == "number" and itemID <= 0 then return end
+
+	return GetItemInfo(itemID)
+end
 ZGV.Font = STANDARD_TEXT_FONT
 ZGV.FontBold = STANDARD_TEXT_FONT
 ZGV.IMAGESDIR = DIR .. "\\Skins"
@@ -561,6 +577,7 @@ ZGV.IsRetail = false
 -- API compatibility shims for retail-only functions
 if not GetItemInfoInstant then
 	GetItemInfoInstant = function(itemID)
+		if itemID == nil or itemID == false or itemID == "" then return end
 		local name, link, quality, iLevel, reqLevel, class, subclass, maxStack, equipSlot, icon, vendorPrice = GetItemInfo(itemID)
 		return name, link, quality, iLevel, reqLevel, class, subclass
 	end
@@ -622,6 +639,9 @@ function ZGV:GetCurrentSkin()
 		else
 			return nil
 		end
+	end
+	if not self.SkinRegistry[skinId] then
+		skinId = "remaster"
 	end
 	return self.SkinRegistry[skinId]
 end
@@ -865,79 +885,6 @@ do
 		},
 	})
 
-	ZGV:RegisterSkin("retail", {
-		name = "Retail",
-		useRemasterFrames = true,
-		theme = {
-			frameBorder    = { 0.12, 0.12, 0.14, 0.95 },
-			frameLight     = { 0.16, 0.16, 0.18, 0.25 },
-			insetBg        = { 0.06, 0.06, 0.08, 0.97 },
-			insetBorder    = { 0.14, 0.14, 0.16, 0.90 },
-			buttonBack     = { 0.10, 0.10, 0.12, 0.95 },
-			buttonHover    = { 0.18, 0.22, 0.30, 0.98 },
-			buttonBorder   = { 0.20, 0.24, 0.32, 0.95 },
-			separator      = { 0.24, 0.28, 0.36, 0.70 },
-			textPrimary    = { 0.92, 0.92, 0.94, 1.00 },
-			textMeta       = { 0.60, 0.65, 0.72, 0.90 },
-		},
-		variants = {
-			default = {
-				label = "|cff4499ffRetail|r",
-				text = { 0.92, 0.92, 0.94 },
-				back = { 0.04, 0.04, 0.06 },
-			},
-			blue = {
-				label = "|cff3388ffRetail Blue|r",
-				text = { 0.80, 0.88, 1.00 },
-				back = { 0.03, 0.05, 0.10 },
-				themeOverrides = {
-					frameBorder  = { 0.10, 0.14, 0.22, 0.95 },
-					buttonHover  = { 0.14, 0.20, 0.34, 0.98 },
-					buttonBorder = { 0.18, 0.26, 0.42, 0.95 },
-					separator    = { 0.20, 0.30, 0.50, 0.70 },
-				},
-			},
-			dark = {
-				label = "|cff888888Retail Dark|r",
-				text = { 0.82, 0.82, 0.84 },
-				back = { 0.02, 0.02, 0.03 },
-				themeOverrides = {
-					frameBorder  = { 0.08, 0.08, 0.10, 0.98 },
-					frameLight   = { 0.10, 0.10, 0.12, 0.20 },
-					insetBg      = { 0.03, 0.03, 0.04, 0.98 },
-					insetBorder  = { 0.10, 0.10, 0.12, 0.92 },
-					buttonBack   = { 0.06, 0.06, 0.08, 0.96 },
-				},
-			},
-		},
-		defaultVariant = "default",
-		layout = {
-			headerHeight = 36, toolbarHeight = 30, footerHeight = 16,
-			contentPadding = 10, rootPadding = 6,
-			buttonSize = { 24, 22 }, guideButtonSize = { 74, 22 },
-		},
-		fonts = {
-			title = { file = "\\Skins\\segoeuib.ttf", size = 13, fallback = "\\Skins\\segoeui.ttf" },
-			meta  = { file = "\\Skins\\segoeui.ttf", size = 11 },
-			step  = { file = "\\Skins\\segoeui.ttf", size = 11 },
-		},
-		goalColors = {
-			incomplete  = { r = 0.14, g = 0.16, b = 0.22, a = 0.70 },
-			progressing = { r = 0.12, g = 0.22, b = 0.32, a = 0.80 },
-			complete    = { r = 0.10, g = 0.22, b = 0.16, a = 0.80 },
-			impossible  = { r = 0.14, g = 0.14, b = 0.16, a = 0.65 },
-			aux         = { r = 0.12, g = 0.18, b = 0.28, a = 0.65 },
-			obsolete    = { r = 0.12, g = 0.18, b = 0.28, a = 0.65 },
-			stepAlpha   = 0.15,
-		},
-		progressBar = {
-			bg   = { 1, 1, 1, 0.08 },
-			fill = { 0.20, 0.60, 0.90, 0.98 },
-		},
-		backdrops = {
-			root = BACKDROP_SIMPLE, content = BACKDROP_SIMPLE, button = BACKDROP_SIMPLE,
-		},
-	})
 end
 
 ZYGORGUIDESVIEWER_COMMAND = "zygor"

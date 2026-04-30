@@ -197,7 +197,8 @@ function Gold:GetSellPrice(itemid,itemCount,usingFaked)
 	unit_price = (priceOverride or (undercutprice>0 and undercutprice) or minprice or 0)
 	price = unit_price * itemCount
 
-	if tonumber(itemid)>1000000000 and minprice==0 and not usingFaked then
+	local numericItemId = tonumber(itemid)
+	if numericItemId and numericItemId>1000000000 and minprice==0 and not usingFaked then
 		-- no data for this breed, try fallback
 		return Gold:GetSellPrice(ZGV.PetBattle:GetPetFallbackId(itemid),itemCount,true)
 	end

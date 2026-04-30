@@ -55,8 +55,23 @@ local BACK = "Back"
 
 local defaultPoint = {"TOP",UIParent,"TOP",0,-50}
 local defaultPoint2 = {"TOP",UIParent,"TOP",500,-50}
+
+local function get_tutorial_texture(fileName)
+	if not fileName or fileName == "" then return nil end
+	if not fileName:find("%.[Bb][Ll][Pp]$") and not fileName:find("%.[Tt][Gg][Aa]$") then
+		fileName = fileName .. ".blp"
+	end
+	return ZGV.DIR .. "\\Skins\\" .. fileName
+end
+
+local function try_find_auctioneer()
+	if ZGV.WhoWhere and ZGV.WhoWhere.FindNPC then
+		ZGV.WhoWhere:FindNPC("Auctioneer")
+	end
+end
+
 -- Header,Summary,Parent,PopupPt,LinePt, reasonToAdvance, OnShow
-local gen_help_1 = function() return {L['gold_1_header'],nil,L['gold_1_sum'],UIParent,defaultPoint,nil,"ahshow",function() ZGV.WhoWhere:FindNPC("Auctioneer") end } end
+local gen_help_1 = function() return {L['gold_1_header'],nil,L['gold_1_sum'],UIParent,defaultPoint,nil,"ahshow",try_find_auctioneer } end
 local gen_help_2 = function() return {L['gold_1_header'],nil,L['gold_1_sum'],AuctionFrame,{"TOPRIGHT",Goldguide.HelpPopup.line,"BOTTOMLEFT"}, {"TOPRIGHT",AuctionFrameTab4,"BOTTOMLEFT"} } end
 local gen_help_3 = function() return {L['gold_scanbutton_header'],nil,L['gold_scanbutton_sum'],ZygorAppraiser,{"TOPRIGHT",Goldguide.HelpPopup.line,"BOTTOMLEFT"}, {"TOPRIGHT",ZygorAppraiserFooter,"BOTTOMLEFT"} } end
 local gen_help_4 = function() return {L['gold_scantime_header'],nil,L['gold_scantime_sum'],ZygorAppraiser,{"TOPRIGHT",Goldguide.HelpPopup.line,"BOTTOMLEFT"}, {"TOPRIGHT",ZygorAppraiserFooter,"BOTTOMLEFT"} } end
@@ -151,7 +166,7 @@ local auctions_help = {
 	function() return {L['gold_auc_browse_header'],nil,L['gold_auc_browse_sum'],Goldguide.Auctions_Frame,defaultPoint,nil,nil,function() Goldguide:HighlightGoldguideColumn() end} end,
 	function() return {L['gold_auc_add_header'],nil,L['gold_auc_add_sum'],Goldguide.Auctions_Frame,{"TOPLEFT",Goldguide.HelpPopup.line,"BOTTOMRIGHT"},{"TOPLEFT",Goldguide.Auctions_Frame.Entries.rows[1].loadbutton,"BOTTOMRIGHT"}, "appraiseradd", function() Goldguide:HighlightGoldguideColumn() end} end,
 	--[[
-	function() return {L['gold_auc_final1_header'],nil,L['gold_auc_final1_sum'],UIParent,defaultPoint,nil,"ahshow",function() ZGV.WhoWhere:FindNPC("Auctioneer") end } end,
+	function() return {L['gold_auc_final1_header'],nil,L['gold_auc_final1_sum'],UIParent,defaultPoint,nil,"ahshow",try_find_auctioneer } end,
 	function() return {L['gold_auc_final2_header'],nil,L['gold_auc_final2_sum'],ZygorAppraiser,{"TOPLEFT",Goldguide.HelpPopup.line,"TOPRIGHT"}, {"TOPLEFT",ZygorAppraiser.MenuBuyButton,"BOTTOMRIGHT"} } end,
 	function() return {L['gold_auc_final3_header'],nil,L['gold_auc_final3_sum'],ZygorAppraiser,{"TOPLEFT",Goldguide.HelpPopup.line,"TOPRIGHT"}, {"TOPLEFT",ZygorAppraiser.MenuInventoryButton,"BOTTOMRIGHT"} } end,
 	--]]
@@ -291,7 +306,8 @@ function Goldguide:CreateHelpPopup()
 		end
 
 		if fileName ~= nil then
-			self.image:SetTexture(ZGV.IMAGESDIR..fileName)
+			self.image:SetTexture(get_tutorial_texture(fileName))
+			self.image:SetTexCoord(0,1,0,1)
 			self.image:SetWidth(width)
 			self.image:SetHeight(height)
 			--self:SetPoint("LEFT",self.header,"LEFT",(self:GetWidth()-self.image:GetWidth())/2,0)
@@ -354,7 +370,9 @@ function Goldguide:CreateHelpPopup()
 		self.line:Hide()
 		Goldguide:HighlightGoldguideColumn()	-- Hides highlights
 		ZGV.Pointer:ClearWaypoints("manual")	-- Well if we set a waypoint time to remove it!
-		ZGV:ShowWaypoints()
+		if ZGV.ShowWaypoints then
+			ZGV:ShowWaypoints()
+		end
 		if ZGV.Gold.FUI then
 			ZGV.Gold.FUI:Show()
 		end
@@ -393,12 +411,13 @@ function Goldguide:CreateHelpPopup()
 	popup.header = CHAIN(popup:CreateFontString())
 		:SetPoint("TOPLEFT",popup,"TOPLEFT",5,-5)
 		:SetFont(FONTBOLD,POPUP_HEADER_FONTSIZE)
+		:SetTextColor(1,1,1,1)
 		:SetText("Head")
 	.__END
 
 	popup.image = CHAIN(popup:CreateTexture())
 		:SetPoint("TOP",popup.header,"BOTTOM",0,-5)	-- Just default to somewhere
-		:SetTexture(ZGV.IMAGESDIR.."gbtut1")
+		:SetTexture(get_tutorial_texture("gbtut1"))
 	.__END
 
 	popup.summary = CHAIN(popup:CreateFontString())
@@ -407,6 +426,7 @@ function Goldguide:CreateHelpPopup()
 		:SetPoint("LEFT",popup,"LEFT",5,-5)
 		:SetPoint("RIGHT",popup,"RIGHT",-5,0)
 		:SetFont(FONT,POPUP_SUM_FONTSIZE)
+		:SetTextColor(1,1,1,1)
 		:SetJustifyH("LEFT")
 		:SetJustifyV("TOP")
 		:SetWordWrap(true)

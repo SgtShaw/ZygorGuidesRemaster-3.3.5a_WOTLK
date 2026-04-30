@@ -14,7 +14,9 @@ Scan.queryspin = 0
 
 local MassScanInterval = 15*60
 
-local QUERY_TIMEOUT = 15 -- increased for 3.3.5a page-by-page scanning
+Scan.QUERY_TIMEOUT = 15 -- increased for 3.3.5a page-by-page scanning
+Scan.RECEIVING_TIMEOUT = 15
+Scan.MESSAGE_TIME = 5
 
 local Appraiser
 
@@ -251,6 +253,10 @@ function Scan:CanScanFast()
 	end
 end
 
+function Scan:Abort()
+	self:SetState("SS_IDLE")
+end
+
 function Scan:GetScanFastTimeString(can,when) -- time remaining, in minutes
 	if not when then can,when=self:CanScanFast() end
 	if can then return("You can scan now.")
@@ -483,21 +489,23 @@ function Scan:Work()
 			ZGV:Debug("Scan:Work Waiting for GetItemInfo " .. self.WAITFORII_callbacks.itemid)
 		end
 	elseif self.state=="SS_QUERYING" then
-		if not self.Proxy:IsFullScan() and GetTime()-self.last_scan_start_time > QUERY_TIMEOUT then
+		if not self.Proxy:IsFullScan() and GetTime()-self.last_scan_start_time > self.QUERY_TIMEOUT then
 			-- Instead of giving up, try to recover by re-entering SCANNING to process any results we have
 			local batch, total = GetNumAuctionItems("list")
 			if batch and batch > 0 then
 				ZGV:Debug("&scan Query timeout but have %d results, trying to process...", batch)
 				self:SetState("SS_SCANNING")
 			else
-				ZGV:Print("Auction query timed out. Click Scan to retry.")
-				self:SetState("SS_IDLE")
+				self:SetState("SS_MESSAGE",{kind="error",msg="Auction query timed out. Click Scan to retry."})
 			end
 		end
 	elseif self.state=="SS_RECEIVING" then
 		-- grab the page count, for progress
 		self.scan_pages = math.ceil(select(2,GetNumAuctionItems("list"))/NUM_AUCTION_ITEMS_PER_PAGE)
 		if self.scan_only_one_page then print("drop from",self.scan_pages) self.scan_pages=1 end
+		if self.last_AILU_time>0 and GetTime()-self.last_AILU_time > self.RECEIVING_TIMEOUT then
+			self:SetState("SS_MESSAGE",{kind="error",msg="Auction scan timed out. Click Scan to retry."})
+		end
 
 		--[[
 		if GetTime()-self.last_AILU_time >= self.wait_after_AILU then  -- Scan.wait_after_AILU ms passed since the last AILU event... this maaay not be good, but let's start with this.
@@ -524,6 +532,10 @@ function Scan:Work()
 			if not self.needtoquery_msg then self:Debug("SS_NEEDTOQUERY Can't query, waiting...") end
 			self.needtoquery_msg=true
 			if GetTime()-lasttime>1.000 then self:Debug("SS_NEEDTOQUERY Still can't query, waiting...") lasttime=GetTime() end
+		end
+	elseif self.state=="SS_MESSAGE" then
+		if GetTime()- (self.last_MESSAGE_state or 0) > ((self.message_data and self.message_data.time) or self.MESSAGE_TIME) then
+			self:SetState("SS_IDLE")
 		end
 	end
 end
@@ -1089,7 +1101,7 @@ function Scan:AnalyzeAuctions(cmd)  -- Ugly Self-coroutine.
 	self:SetState("SS_IDLE")
 end
 
-function Scan:SetState(state)
+function Scan:SetState(state,arg)
 	self:Debug("SetState %s",state)
 
 	if state=="SS_QUERYING" then
@@ -1118,8 +1130,12 @@ function Scan:SetState(state)
 		self.queried_by_partial_name = false
 		self.queried_by_link = false
 		self.scanning_fast = false
+		self.message_data = nil
 
 		--ZGV.Gold.Appraiser:Update()
+	elseif state=="SS_MESSAGE" then
+		self.last_MESSAGE_state = GetTime()
+		self.message_data = arg
 	end
 
 	local oldstate = self.state

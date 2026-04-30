@@ -13,6 +13,7 @@ Goldguide.Crafting = {}
 local Crafting=Goldguide.Crafting
 
 Goldguide.CraftingItemToSpell = {}
+Goldguide.EnchantToScroll = Goldguide.EnchantToScroll or {}
 Goldguide.SkillLevels = {}
 setmetatable(Goldguide.SkillLevels,{__index=function() return 0 end}) -- if not defined skill level is at 0
 
@@ -38,6 +39,8 @@ local bop_reagents = {
 	}
 
 function Goldguide:InitialiseCraftingChores()
+	Goldguide.Chores = Goldguide.Chores or {}
+	Goldguide.Chores.Crafting = Goldguide.Chores.Crafting or {}
 	table.wipe(Goldguide.Chores.Crafting)
 	table.wipe(Goldguide.CraftingItemToSpell)
 	table.wipe(Goldguide.SkillLevels)
@@ -62,7 +65,8 @@ function Goldguide:InitialiseCraftingChores()
 	end
 
 	if ZGV.IsClassic or ZGV.IsClassicTBC or ZGV.IsClassicWOTLK then
-		for skillid,recipelist in pairs(ZygorGuidesViewer.Professions.AllRecipes) do
+		local allRecipes = ZygorGuidesViewer and ZygorGuidesViewer.Professions and ZygorGuidesViewer.Professions.AllRecipes or {}
+		for skillid,recipelist in pairs(allRecipes) do
 			if Goldguide.SkillLevels[skillid]>0 then
 				for _,recipe in pairs(recipelist) do
 					recipe.reagentcount=nil
@@ -75,7 +79,7 @@ function Goldguide:InitialiseCraftingChores()
 			end
 		end
 	else
-		for skillid,recipelist in pairs(ZGV.db.char.RecipesKnown) do
+		for skillid,recipelist in pairs((ZGV.db.char and ZGV.db.char.RecipesKnown) or {}) do
 			for _,recipe in pairs(recipelist) do if recipe.productid then
 				recipe.reagentcount=nil
 				Crafting:New(recipe)
@@ -138,11 +142,11 @@ function Crafting:CalculateDetails(refresh)
 			self.materials=self.materials+ZGVG:GetSellPrice(item,count)
 		end
 	end
-	self.sellprice = ZGVG:GetSellPrice(self.productid,1)
+	self.sellprice = self.productid and ZGVG:GetSellPrice(self.productid,1) or 0
 	self.profit = math.max(self.sellprice-self.materials,0)
 
 	self.demand = 0
-	local trend = trends and trends.items and trends.items[self.productid]
+	local trend = self.productid and trends and trends.items and trends.items[self.productid]
 	if trend then
 		self.demand = trend.sold
 	end

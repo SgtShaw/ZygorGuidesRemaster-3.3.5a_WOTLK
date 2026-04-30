@@ -407,32 +407,30 @@ function Goldguide:BuildRouteChores()
 	Goldguide.Chores.Gathering = {}
 	Goldguide.Chores.Farming = {}
 
-	for _,guide in ipairs(ZGV.registeredguides) do
-		if is_gold_route_guide(guide) then
-			local header = guide.headerdata
-			local meta = header and header.meta
-			if meta and meta.goldtype=="route" then
-				local chore = {}
-				chore.name = guide.title_short
-				chore.guide = guide
-				chore.meta = meta
-				chore.maps_array = header.maps or {}
+	for _,guide in ipairs(Goldguide:GetGoldRouteGuides()) do
+		local header = guide.headerdata
+		local meta = header and header.meta
+		if meta and meta.goldtype=="route" then
+			local chore = {}
+			chore.name = guide.title_short or (guide.title and guide.title:match("^GOLD\\[^\\]+\\(.+)$")) or guide.title
+			chore.guide = guide
+			chore.meta = meta
+			chore.maps_array = header.maps or {}
 
-				local items = {}
-				for _,item in pairs(header.items or {}) do
-					if not item[3] then
-						tinsert(items,item)
-					end
+			local items = {}
+			for _,item in pairs(header.items or {}) do
+				if not item[3] then
+					tinsert(items,item)
 				end
-				chore.items = items
+			end
+			chore.items = items
 
-				if chore.meta.skillreq then
-					chore.type = "gathering"
-					Goldguide.Gathering:New(chore)
-				else
-					chore.type = "farming"
-					Goldguide.Farming:New(chore)
-				end
+			if chore.meta.skillreq then
+				chore.type = "gathering"
+				Goldguide.Gathering:New(chore)
+			else
+				chore.type = "farming"
+				Goldguide.Farming:New(chore)
 			end
 		end
 	end
@@ -1048,6 +1046,7 @@ end
 
 function Goldguide:GetItemFlagsAndStatus(chore)
 	local id = chore.id or chore.productid
+	if not id then return {}, nil end
 	local _,class,subclass  = GetItemInfoInstant(id)
 
 	local flags = {}

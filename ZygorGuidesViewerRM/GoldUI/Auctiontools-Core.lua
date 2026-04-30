@@ -880,27 +880,7 @@ local function UpdateHandler(frame, elapsed)
 	
 	self:UpdateTimeStamp()
 	self:UpdateProgressBar()
-
-	local scanButton = Appraiser.MainFrame.ScanButton
-	if ZGVG.Scan:BlockNeutral() then 
-		scanButton.tooltip = "Scanning is disabled on neutral Auction House."
-		scanButton:SetText("Scan disabled")
-		scanButton:SetTextColor(1,1,1,0.5)
-	elseif not ZGVG.Scan:CanScanFast() then
-		if self.ActiveTab == "Inventory" then
-			scanButton.tooltip = "Run refresh scan."
-			scanButton:SetText("Appraise all")
-			scanButton:SetTextColor(1,1,1,1)
-		else
-			scanButton.tooltip = "Scan is not possible at this time."
-			scanButton:SetText("Scan")
-			scanButton:SetTextColor(1,1,1,0.5)
-		end
-	else
-		scanButton.tooltip = "Run a fast auction scan."
-		scanButton:SetText("Scan")
-		scanButton:SetTextColor(1,1,1,1)
-	end
+	self:UpdateButtonStates()
 
 	-- Now do some real work!
 	self:Work()

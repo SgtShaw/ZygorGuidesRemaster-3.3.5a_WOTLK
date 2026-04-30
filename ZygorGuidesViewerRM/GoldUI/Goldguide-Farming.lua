@@ -32,6 +32,9 @@ function Farming:GetDisplayInfo(refresh)
 	elseif #self.bad_items>0 then 
 		iconitem=self.bad_items[1].itemdata[1]
 	end
+	if not iconitem and self.items and self.items[1] then
+		iconitem = self.items[1][1]
+	end
 	local icon = iconitem and select(10,ZGV:GetItemInfo(iconitem))
 	if not icon then self.needsRefresh=true end
 
@@ -60,7 +63,7 @@ function Farming:GetDisplayInfo(refresh)
 
 	self.cached_display={
 		icon,
-		self.display_name,
+		self.display_name or self.name,
 		self.maps,
 		rate,
 		disptime,

@@ -1,4 +1,4 @@
-﻿# Zygor Guides Viewer Remaster
+# Zygor Guides Viewer Remaster
 
 Remastered Zygor Guides Viewer for **World of Warcraft: Wrath of the Lich King (WotLK) 3.3.5a (build 12340)**.
 
@@ -164,6 +164,16 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
+### Revision 145 - 3.0.145
+
+- Removed the broken built-in Retail skin option and deleted the unused Retail experiment files from the active addon copy.
+- Fixed multiple /zgold initialization and nil-data crashes across Auctions, Crafting, item pricing, item classification, tutorial helpers, and auction house appraiser button-state handling.
+- Deduped Gold Guide farming and gathering route rows, improved fallback names and icons for sparse entries such as Core Leather, and corrected missing Gold Guide help/tutorial localization text.
+- Improved Gold Guide help, info, and tutorial presentation, including corrected image resolution, popup text handling, and tooltip positioning for bottom-row entries.
+- Aligned the Auction House appraiser scan flow more closely with the retail behavior on the WotLK API, including cleaner scan-state messaging, timeout recovery, and scan button feedback.
+- Fixed the Auction House appraiser settings gear to open the remaster gold options section.
+- Updated addon version metadata to 3.0.145.
+
 ### Revision 144 - 3.0.144
 
 - Fixed a guide-boundary step helper crash where adjacent guide objects could exist without parsed steps, causing skip and auxiliary checks to index guide.steps unsafely.
@@ -295,6 +305,8 @@ This remaster focuses on UI/UX modernization, packaging quality, compatibility m
 
 <img width="433" height="247" alt="image" src="https://github.com/user-attachments/assets/579b6acb-df5e-4f40-8ef3-7d6b33e1015d" />
 <img width="436" height="248" alt="image" src="https://github.com/user-attachments/assets/a845b881-2831-43e3-bd26-5287f9783d68" />
+
+
 
 
 

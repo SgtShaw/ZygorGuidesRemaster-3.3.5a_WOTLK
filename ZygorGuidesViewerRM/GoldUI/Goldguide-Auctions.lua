@@ -13,6 +13,8 @@ local Auctions=Goldguide.Auctions
 local AHCUT = 1-0.05
 
 function Goldguide:InitialiseAuctionChores()
+	Goldguide.Chores = Goldguide.Chores or {}
+	Goldguide.Chores.Auctions = Goldguide.Chores.Auctions or {}
 	table.wipe(Goldguide.Chores.Auctions)
 
 	local ST=ZGV.Gold.servertrends

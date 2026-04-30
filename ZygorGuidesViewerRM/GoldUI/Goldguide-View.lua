@@ -1039,7 +1039,9 @@ function Goldguide:MakeTooltip(name,COLUMNS)
 	local frame = CHAIN(ui:Create("Frame",parent,name))
 		:SetPoint("TOPLEFT",0,0)
 		:SetSize(MAIN_WIDTH-21,100)
+		:SetFrameStrata("TOOLTIP")
 		:SetFrameLevel(parent:GetFrameLevel()+5)
+		:SetClampedToScreen(true)
 		:SetBackdropColor(0,0,0,1)
 		:SetBackdropBorderColor(unpack(SkinData("MainBackdropBorderColor")))
 	.__END
@@ -1143,13 +1145,6 @@ function Goldguide:MakeTooltip(name,COLUMNS)
 	function frame:DisplayData(row)
 		if ZGV.db.profile.gold_tooltips_guide==0 then return end
 		if ZGV.db.profile.gold_tooltips_guide==1 and not IsShiftKeyDown() then return end
-		
-		-- position
-		self:SetParent(row)
-		self:SetFrameLevel(row:GetFrameLevel()+5)
-		self:ClearAllPoints()
-		self:SetPoint("TOPLEFT",row,"BOTTOMLEFT")
-		self:Show()
 
 		-- cleanup
 		for _,row in pairs(frame.rows) do
@@ -1194,6 +1189,28 @@ function Goldguide:MakeTooltip(name,COLUMNS)
 
 		local totalheight=40+statusheight+ROW_HEIGHT*(#data.items)
 		self:SetHeight(totalheight)
+
+		-- position
+		self:SetParent(Goldguide.MainFrame)
+		self:SetFrameStrata("TOOLTIP")
+		self:SetFrameLevel(Goldguide.MainFrame:GetFrameLevel()+50)
+		self:ClearAllPoints()
+
+		local content = Goldguide.MainFrame and Goldguide.MainFrame.ContentFrame
+		local rowBottom = row:GetBottom() or 0
+		local rowTop = row:GetTop() or 0
+		local contentBottom = content and content:GetBottom() or (Goldguide.MainFrame:GetBottom() or 0)
+		local contentTop = content and content:GetTop() or (Goldguide.MainFrame:GetTop() or 0)
+		local edgeBuffer = 8
+		local showAbove = (rowBottom - totalheight) < (contentBottom + edgeBuffer)
+
+		if showAbove and (rowTop + totalheight) < (contentTop - edgeBuffer) then
+			self:SetPoint("BOTTOMLEFT",row,"TOPLEFT",0,2)
+		else
+			self:SetPoint("TOPLEFT",row,"BOTTOMLEFT",0,-2)
+		end
+
+		self:Show()
 	
 	end
 

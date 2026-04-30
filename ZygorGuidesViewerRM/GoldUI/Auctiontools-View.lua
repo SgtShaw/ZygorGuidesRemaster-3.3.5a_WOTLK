@@ -216,7 +216,7 @@ function Appraiser:CreateMainFrame()
 		MF.FooterSettingsButton = CHAIN(CreateFrame("Button",nil,MF.FooterFrame))
 			:SetPoint("BOTTOMRIGHT",-5,0)
 			:SetSize(15,15)
-			:SetScript("OnClick",function() ZGV:OpenOptions() end)
+			:SetScript("OnClick",function() ZGV:OpenOptions("gold") end)
 		.__END
 		ZGV.F.AssignButtonTexture(MF.FooterSettingsButton,(SkinData("TitleButtons")),5,64)
 
@@ -233,15 +233,16 @@ function Appraiser:CreateMainFrame()
 		:SetSize(95,20)
 		:SetPoint("BOTTOMRIGHT",MF.FooterFrame ,"TOPRIGHT", -10, 7)
 		:SetFont(FONT,12)
-		:SetText("Scan")
+		:SetText("Full Scan")
 		:SetScript("OnClick", function(self) Appraiser:ScanAll() end)
 		:SetScript("OnEnter",function(self) 
 			CHAIN(GameTooltip):SetOwner(self, "ANCHOR_TOP") 
-			:SetText(self.tooltip or "Zygor Scan") 
+			:SetText(self.tooltip or "Scan the whole Auction House. May take some time.") 
 			:Show() 
 			end)
 		:SetScript("OnLeave",function(self) GameTooltip:Hide() end)
 	.__END
+	MF.ScanButton.tooltip = "Scan the whole Auction House. May take some time."
 
 	Appraiser.Inventory_Frame = self:MakeInventoryTable()
 	Appraiser.Buy_Frame = self:MakeBuyTable()
@@ -484,6 +485,14 @@ local function OldColor(timestamp,red,yellow)
 	end
 end
 
+local message_type_labels = {
+	success="|cff00ff00SUCCESS:|r",
+	error="|cffff0000ERROR:|r",
+	alert="|cffff8800ALERT:|r",
+	scanning1="|cffbbaa00SCANNING:|r",
+	scanning2="|cff00aa00SCANNING:|r",
+}
+
 function Appraiser:UpdateTimeStamp()
 	if not self.MainFrame then return end
 	if not self.lastScanTime then self.lastScanTime = time() end
@@ -529,43 +538,43 @@ function Appraiser:UpdateTimeStamp()
 	local progress = string.rep(".",progress_dots)
 	local preprogress = ""
 
-	if not (Scan.queried_by_name or Scan.queried_by_partial_name or Scan.queried_by_link) then
+	if self.manualScanning then
+		preprogress = ("%d/%d: "):format(self.manualScanningDone,self.manualScanningTotal)
+	elseif self.manualBuyScanning then
+		preprogress = ("%d/%d: "):format(self.manualBuyScanningDone,self.manualBuyScanningTotal)
+	elseif not (Scan.queried_by_name or Scan.queried_by_partial_name or Scan.queried_by_link) then
 		-- long scan, provide progress %
 		if Scan.state =="SS_SCANNING" or Scan.state =="SS_SCANSINGLE" then
 			progress = (" %d%%"):format((Scan.scan_progress or 0)*100)
 		elseif Scan.state =="SS_ANALYZING" then
 			progress = (" %d%%"):format((Scan.analysis_progress or 0)*100)
 		end
-	elseif self.manualScanning then
-		preprogress = ("%d/%d: "):format(self.manualScanningDone,self.manualScanningTotal)
-	elseif self.manualBuyScanning then
-		preprogress = ("%d/%d: "):format(self.manualBuyScanningDone,self.manualBuyScanningTotal)
 	end
 
 	if Scan.state == "SS_QUERYING" then
-		updateTitletext = "|cffff0000SCANNING:|r"
+		updateTitletext = message_type_labels.scanning1
 		if (Scan.queried_by_name or Scan.queried_by_partial_name or Scan.queried_by_link) then
 			timestamptext = preprogress .. data_text .. page_text .. (ZGV.db.profile.debug_display and " [stage 1/3: querying]" or "") .. progress
 		else
-			timestamptext = preprogress .. data_text .. (ZGV.db.profile.debug_display and " [stage 1/3: querying]" or " (initiating)") .. progress
+			timestamptext = preprogress .. data_text .. (ZGV.db.profile.debug_display and " [stage 1/3: querying]" or " - initiating...")
 		end
 	elseif Scan.state =="SS_RECEIVING" then
-		-- stage deprecated.
-		--updateTitletext = "|cffff0000SCANNING:|r"
-		--timestamptext = data_text .. page_text .. " (stage 2/4: receiving)" .. progress
+		updateTitletext = message_type_labels.scanning2
+		timestamptext = preprogress .. data_text .. page_text .. (ZGV.db.profile.debug_display and " [stage 1b/3: receiving]" or " - receiving...")
 	elseif Scan.state =="SS_SCANNING" or Scan.state =="SS_SCANSINGLE" then
-		updateTitletext = "|cffff0000SCANNING:|r"
-		timestamptext = preprogress .. data_text .. page_text .. (ZGV.db.profile.debug_display and " [stage 2/3: scanning]" or "") .. progress
+		updateTitletext = message_type_labels.scanning2
+		timestamptext = preprogress .. data_text .. page_text .. (ZGV.db.profile.debug_display and " [stage 2/3: scanning]" or " - processing:") .. progress
 	elseif Scan.state =="SS_ANALYZING" then
-		updateTitletext = "|cffff0000SCANNING:|r"
-		timestamptext = preprogress .. data_text .. page_text .. (ZGV.db.profile.debug_display and " [stage 3/3: analyzing]" or "") .. progress
-	--[[
-	elseif Appraiser.ScanIsRunning or Appraiser.ActiveShoppingAddItem or (Appraiser.ScanItems and next(Appraiser.ScanItems)) then
-		-- show Analyzing to avoid idle flashes
-		updateTitletext = "|cffff0000SCANNING:|r"
-		timestamptext = preprogress .. data_text .. page_text .. " (awaiting next item)" .. progress
-	--]]
+		updateTitletext = message_type_labels.scanning2
+		timestamptext = preprogress .. data_text .. page_text .. (ZGV.db.profile.debug_display and " [stage 3/3: analyzing]" or " - analyzing:") .. progress
+	elseif Scan.state =="SS_MESSAGE" then
+		updateTitletext = message_type_labels[(Scan.message_data and Scan.message_data.kind) or "error"]
+		timestamptext = Scan.message_data and Scan.message_data.msg or ""
 	elseif Scan.state =="SS_IDLE" then
+		if self.manualScanning or self.manualBuyScanning then
+			updateTitletext = message_type_labels.scanning1
+			timestamptext = preprogress
+		end
 	end
 
 	if ZGV.db.profile.debug_display then  updateTitletext = updateTitletext .. " [" .. Scan.state .. ", " .. (Appraiser.manualScanning and "manual " or "") .. (Appraiser.manualBuyScanning and "manualbuy " or "") .. "]"  end
@@ -573,6 +582,58 @@ function Appraiser:UpdateTimeStamp()
 	self.MainFrame.FooterUpdatedOverlay.tooltip = tooltiptext
 	self.MainFrame.FooterUpdated:SetText(updateTitletext)
 	self.MainFrame.FooterUpdatedTime:SetText(timestamptext)
+end
+
+function Appraiser:UpdateButtonStates()
+	if not self.MainFrame then return end
+
+	local MF = self.MainFrame
+	local scanButton = MF.ScanButton
+	local Scan = ZGV.Gold.Scan
+	local canFast = Scan:CanScanFast()
+	local busy = Scan.state~="SS_IDLE" and Scan.state~="SS_OUT" and Scan.state~="SS_MESSAGE"
+	local function setButtonEnabled(enabled)
+		if scanButton.EnableIf then
+			scanButton:EnableIf(enabled)
+		elseif enabled then
+			scanButton:Enable()
+		else
+			scanButton:Disable()
+		end
+	end
+
+	setButtonEnabled(not busy)
+	scanButton:SetTextColor(1,1,1,1)
+	scanButton:SetAlpha(busy and 0.7 or 1)
+
+	if Scan:BlockNeutral() then
+		scanButton.tooltip = "Scanning is disabled on neutral Auction House."
+		scanButton:SetText("Scan disabled")
+		scanButton:SetTextColor(1,1,1,0.5)
+		setButtonEnabled(false)
+		scanButton:SetAlpha(0.7)
+	elseif busy then
+		scanButton.tooltip = "Auction scan already in progress."
+		scanButton:SetText("Scanning")
+	elseif canFast then
+		scanButton.tooltip = "Scan the whole Auction House. May take some time."
+		scanButton:SetText("Full Scan")
+	else
+		if self.ActiveTab == "Inventory" then
+			scanButton.tooltip = "Run refresh scan for all visible inventory items."
+			scanButton:SetText("Appraise all")
+		else
+			scanButton.tooltip = "Full scan is not possible at this time."
+			scanButton:SetText("Full Scan")
+			scanButton:SetTextColor(1,1,1,0.5)
+			setButtonEnabled(false)
+			scanButton:SetAlpha(0.7)
+		end
+	end
+
+	if GameTooltip:IsVisible() and GameTooltip:GetOwner()==scanButton then
+		GameTooltip:SetText(scanButton.tooltip)
+	end
 end
 
 local last_pages=0

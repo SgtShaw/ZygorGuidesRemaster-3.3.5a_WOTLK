@@ -95,7 +95,7 @@ local function GetInfoFrame(parentFrame)
 		:CanDrag("parent")
 	.__END
 
-	contentwidth = infoframe:GetWidth() - (HORT_PADDING*2)	-- full frame with the buffer on each side.
+	contentwidth = max((parentFrame:GetWidth() or 0) - (HORT_PADDING*2), 300)	-- full frame with the buffer on each side.
 
 	infoframe.summaryheader = CHAIN(infoframe:CreateFontString())
 		:SetPoint("TOPLEFT",infoframe,"TOPLEFT",HORT_PADDING,-SECTION_VERT_PADDING)
@@ -126,8 +126,10 @@ local function GetInfoFrame(parentFrame)
 
 		sq.text = CHAIN(infoframe:CreateFontString())
 			:SetPoint("LEFT",sq,"RIGHT",LABEL_HORT_PADDING,0)
+			:SetWidth(contentwidth - PRO_N_CON_SQUARE_SIZE - LABEL_HORT_PADDING)
 			:SetFont(FONT,REG_TEXT_FONTSIZE)
-			-- Assumed that this text will be short enough to not wrap.
+			:SetJustifyH("LEFT")
+			:SetWordWrap(true)
 			:SetText("No Text")
 		.__END
 
@@ -224,7 +226,7 @@ local function GetInfoFrame(parentFrame)
 	
 	-- Takes integers 0-100
 	function infoframe:SetDiffBarPercent(num)
-		assert(num > -1 or num < 101, "Num 0-100 pls")
+		assert(num >= 0 and num <= 100, "Num 0-100 pls")
 		local color
 	
 		infoframe.difftex:SetWidth((num/100) * PROGRESS_BAR_WIDTH)
