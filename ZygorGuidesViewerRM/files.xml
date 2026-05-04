@@ -20,6 +20,10 @@
 	<Script file="Data-WOTLK\Dungeons.lua"/>
 
 	<!-- ItemScore & Gear Finder system -->
+	<Script file="ZygorItemDB.lua"/>
+	<Script file="ZygorBossLootDB.lua"/>
+	<Script file="ZygorQuestDB.lua"/>
+	<Script file="ZygorQuestLootDB.lua"/>
 	<Script file="Code-WOTLK\Item-DataTables.lua"/>
 	<Script file="Data-WOTLK\Item-Statweights.lua"/>
 	<Script file="Data-WOTLK\GearFinderItemMeta.lua"/>

@@ -164,6 +164,14 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
+### Revision 147 - 3.0.147
+
+- Extended the DB-first gear model across Gear Finder, Gear Advisor, tooltip scoring, loot-roll markers, bank-open upgrade checks, and related gear suggestion surfaces.
+- Added local bank upgrade scanning and bank-aware equip handling, including rechecks while the bank stays open during spec changes.
+- Improved Gear Finder result quality with distinct ring and trinket recommendations, more reliable boss-name resolution, better reasonable-upgrade selection, and a reworked full-width footer recommendation area.
+- Hardened missing-item handling by batching equippable-only database warnings and added the missing Mercurial Alchemist Stone item database entry.
+- Fixed multiple gear tooltip and advisor issues, including duplicate stat lines, false equip-failed spam, random-suffix exact-stat waiting, and tooltip/live-scan fallback for equip-effect items.
+- Updated addon version metadata to 3.0.147.
 ### Revision 145 - 3.0.145
 
 - Removed the broken built-in Retail skin option and deleted the unused Retail experiment files from the active addon copy.
@@ -305,6 +313,7 @@ This remaster focuses on UI/UX modernization, packaging quality, compatibility m
 
 <img width="433" height="247" alt="image" src="https://github.com/user-attachments/assets/579b6acb-df5e-4f40-8ef3-7d6b33e1015d" />
 <img width="436" height="248" alt="image" src="https://github.com/user-attachments/assets/a845b881-2831-43e3-bd26-5287f9783d68" />
+
 
 
 

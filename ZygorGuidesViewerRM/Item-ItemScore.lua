@@ -49,6 +49,7 @@ ItemScore.Gear_ZygorToPawn = ItemScore.Gear_ZygorToPawn or {}
 
 local ItemCache = {}
 ItemScore.ItemCache = ItemCache
+ItemScore.Items = ItemScore.Items or {}
 ItemScore.PendingLootRolls = ItemScore.PendingLootRolls or {}
 ItemScore.MasterLootNoticeCooldown = 10
 ItemScore.MasterLootRecent = ItemScore.MasterLootRecent or {}
@@ -81,6 +82,15 @@ local function add_stat(stats, statname, value)
 	value = tonumber(value)
 	if not value then return end
 	stats[statname] = (stats[statname] or 0) + value
+end
+
+local function copy_stats(source)
+	local target = {}
+	if not source then return target end
+	for key, value in pairs(source) do
+		target[key] = value
+	end
+	return target
 end
 
 local function normalize_label(value)
@@ -210,11 +220,316 @@ local function resolve_family_from_equip_loc(itemEquipLoc)
 	return nil, nil
 end
 
+local DB_SLOT_TO_INVTYPE = {
+	Back = "INVTYPE_CLOAK",
+	Chest = "INVTYPE_CHEST",
+	Finger = "INVTYPE_FINGER",
+	Feet = "INVTYPE_FEET",
+	Hands = "INVTYPE_HAND",
+	Head = "INVTYPE_HEAD",
+	HeldOffHand = "INVTYPE_HOLDABLE",
+	Holdable = "INVTYPE_HOLDABLE",
+	Legs = "INVTYPE_LEGS",
+	MainHand = "INVTYPE_WEAPONMAINHAND",
+	Neck = "INVTYPE_NECK",
+	OffHand = "INVTYPE_WEAPONOFFHAND",
+	OneHand = "INVTYPE_WEAPON",
+	Ranged = "INVTYPE_RANGED",
+	RangedRight = "INVTYPE_RANGEDRIGHT",
+	Relic = "INVTYPE_RELIC",
+	Robe = "INVTYPE_ROBE",
+	Shield = "INVTYPE_SHIELD",
+	Shoulder = "INVTYPE_SHOULDER",
+	Shirt = "INVTYPE_BODY",
+	Tabard = "INVTYPE_TABARD",
+	Thrown = "INVTYPE_THROWN",
+	Trinket = "INVTYPE_TRINKET",
+	TwoHand = "INVTYPE_2HWEAPON",
+	Waist = "INVTYPE_WAIST",
+	Wrist = "INVTYPE_WRIST",
+}
+
+local DB_STAT_MAP = {
+	agility = "AGILITY",
+	armorPenetration = "ARMOR_PENETRATION",
+	attackPower = "ATTACK_POWER",
+	blockRating = "BLOCK",
+	blockValue = "BLOCK_VALUE",
+	critRating = "CRIT",
+	defenseRating = "DEFENSE_SKILL",
+	dodgeRating = "DODGE",
+	expertiseRating = "EXPERTISE",
+	feralAttackPower = "FERAL_ATTACK_POWER",
+	hasteRating = "HASTE",
+	hitRating = "HIT",
+	intellect = "INTELLECT",
+	mp5 = "MANA_REGENERATION",
+	parryRating = "PARRY",
+	rangedAttackPower = "RANGED_ATTACK_POWER",
+	spellPenetration = "SPELL_PENETRATION",
+	spellPower = "SPELL_POWER",
+	spirit = "SPIRIT",
+	stamina = "STAMINA",
+	strength = "STRENGTH",
+}
+
+local DB_CLASS_BITS = {
+	{1, "WARRIOR"},
+	{2, "PALADIN"},
+	{4, "HUNTER"},
+	{8, "ROGUE"},
+	{16, "PRIEST"},
+	{64, "SHAMAN"},
+	{128, "MAGE"},
+	{256, "WARLOCK"},
+	{1024, "DRUID"},
+	{2048, "DEATHKNIGHT"},
+}
+
+local ARMOR_FAMILY_ORDER
+local bit_band = (bit and bit.band) or (bit32 and bit32.band)
+local missing_itemdb_warnings = {}
+local missing_itemdb_pending = {}
+local missing_itemdb_flush_timer = nil
+ItemScore.DBStats = ItemScore.DBStats or { primed = 0, dbonly = 0, live = 0, missing = 0 }
+local db_primed_seen = {}
+local db_only_seen = {}
+local db_live_seen = {}
+
+local function bump_db_counter(counter, itemID)
+	if not itemID then return end
+	local seen
+	if counter == "primed" then
+		seen = db_primed_seen
+	elseif counter == "dbonly" then
+		seen = db_only_seen
+	elseif counter == "live" then
+		seen = db_live_seen
+	end
+	if seen then
+		if seen[itemID] then return end
+		seen[itemID] = true
+	end
+	ItemScore.DBStats[counter] = (ItemScore.DBStats[counter] or 0) + 1
+end
+
+local function db_mask_to_classes(mask)
+	if not mask or mask == -1 or not bit_band then return nil end
+	local classes = {}
+	for _, data in ipairs(DB_CLASS_BITS) do
+		if bit_band(mask, data[1]) ~= 0 then
+			local localized = (LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE[data[2]])
+				or (LOCALIZED_CLASS_NAMES_FEMALE and LOCALIZED_CLASS_NAMES_FEMALE[data[2]])
+				or data[2]
+			classes[#classes + 1] = localized
+		end
+	end
+	if #classes == 0 then return nil end
+	return table.concat(classes, ", ")
+end
+
+local function flush_missing_itemdb_warnings()
+	missing_itemdb_flush_timer = nil
+	if #missing_itemdb_pending == 0 then return end
+
+	table.sort(missing_itemdb_pending)
+	local count = #missing_itemdb_pending
+	local preview = {}
+	for i = 1, math.min(count, 5) do
+		preview[#preview + 1] = tostring(missing_itemdb_pending[i])
+	end
+
+	local message
+	if count == 1 then
+		message = ("Equippable item ID [%s] not present in database. Please let the dev know."):format(preview[1])
+	else
+		message = ("%d equippable item IDs not present in database: %s"):format(count, table.concat(preview, ", "))
+		if count > #preview then
+			message = message .. (", +" .. (count - #preview) .. " more")
+		end
+		message = message .. ". Please let the dev know."
+	end
+
+	wipe(missing_itemdb_pending)
+	if ZGV and ZGV.Print then
+		ZGV:Print(message)
+	else
+		print(branded_chat_prefix("Gear"), message)
+	end
+end
+
+local function should_warn_missing_itemdb(itemLinkOrID, itemID)
+	if not itemID then return false end
+	local _, _, _, _, _, _, _, _, equipLoc = GetItemInfo(itemLinkOrID or itemID)
+	if not equipLoc or equipLoc == "" then
+		local okName, _, _, _, _, _, _, _, instantEquipLoc = GetItemInfoInstant(itemLinkOrID or itemID)
+		if okName or instantEquipLoc then
+			equipLoc = instantEquipLoc
+		end
+	end
+	if not equipLoc or equipLoc == "" then
+		return false
+	end
+	if not EQUIPPABLE_INV_TYPES[equipLoc] then
+		return false
+	end
+	if NON_GEAR_INV_TYPES[equipLoc] then
+		return false
+	end
+	return true
+end
+
+local function warn_missing_itemdb(itemLinkOrID, itemID)
+	if not itemID or missing_itemdb_warnings[itemID] then return end
+	if not should_warn_missing_itemdb(itemLinkOrID, itemID) then return end
+	missing_itemdb_warnings[itemID] = true
+	ItemScore.DBStats.missing = (ItemScore.DBStats.missing or 0) + 1
+	missing_itemdb_pending[#missing_itemdb_pending + 1] = itemID
+	if not missing_itemdb_flush_timer and ZGV and ZGV.ScheduleTimer then
+		missing_itemdb_flush_timer = ZGV:ScheduleTimer(flush_missing_itemdb_warnings, 0.5)
+	elseif not missing_itemdb_flush_timer then
+		flush_missing_itemdb_warnings()
+	end
+end
+
+local function build_db_stats(dbitem)
+	local stats = {}
+	if not dbitem then return stats end
+	if dbitem.st then
+		for dbkey, blizzkey in pairs(DB_STAT_MAP) do
+			if dbitem.st[dbkey] then
+				add_stat(stats, blizzkey, dbitem.st[dbkey])
+			end
+		end
+	end
+	if dbitem.ar and dbitem.ar > 0 then
+		add_stat(stats, "ARMOR", dbitem.ar)
+	end
+	if dbitem.bk and dbitem.bk > 0 then
+		add_stat(stats, "BLOCK_VALUE", dbitem.bk)
+	end
+	if dbitem.w and dbitem.w[1] and dbitem.w[2] and dbitem.w[7] then
+		local avgDmg = (dbitem.w[1] + dbitem.w[2]) / 2
+		local delay = dbitem.w[7] / 1000
+		if delay > 0 then
+			add_stat(stats, "DAMAGE_PER_SECOND", avgDmg / delay)
+		end
+	end
+	return stats
+end
+
+function ItemScore:GetItemDetailsFromDB(itemLinkOrID)
+	local itemID
+	if type(itemLinkOrID) == "number" then
+		itemID = itemLinkOrID
+	else
+		itemID = ZGV.ItemLink and ZGV.ItemLink.GetItemID(itemLinkOrID)
+	end
+	if not itemID then return nil end
+
+	local dbsource = ZygorItemDB and ZygorItemDB.items and ZygorItemDB.items[tonumber(itemID)]
+	if not dbsource then return nil end
+
+	local meta = self.GearFinderItemMeta and self.GearFinderItemMeta[tonumber(itemID)] or nil
+	local equiploc = (meta and meta.equipLoc) or DB_SLOT_TO_INVTYPE[dbsource.s]
+	local family = meta and meta.family or nil
+	if not family and equiploc then
+		family = select(1, resolve_family_from_equip_loc(equiploc))
+	end
+	if family == "MISCARM" or family == "OFFHAND" then
+		family = nil
+	end
+
+	local itemClassID, itemSubClassID
+	if family and ARMOR_FAMILY_ORDER[family] then
+		itemClassID = LE_ITEM_CLASS_ARMOR
+		for id, name in pairs(item_armor_types or {}) do
+			if name == family then
+				itemSubClassID = id
+				break
+			end
+		end
+	elseif family then
+		for id, name in pairs(item_weapon_types or {}) do
+			if name == family then
+				itemClassID = LE_ITEM_CLASS_WEAPON
+				itemSubClassID = id
+				break
+			end
+		end
+	end
+
+	local itemlink = type(itemLinkOrID) == "string" and (strip_link(itemLinkOrID) or ("item:" .. itemID)) or ("item:" .. itemID)
+	local itemlinkfull = type(itemLinkOrID) == "string" and itemLinkOrID or itemlink
+
+	return {
+		stats = build_db_stats(dbsource),
+		itemlink = itemlink,
+		itemid = itemID,
+		itemlinkfull = itemlinkfull,
+		minlevel = dbsource.rl,
+		type = equiploc,
+		equiploc = equiploc,
+		class = itemClassID,
+		subclass = itemSubClassID,
+		family = family,
+		subtype = dbsource.s,
+		quality = dbsource.q,
+		validated = false,
+		texture = GetItemIcon and GetItemIcon(itemID) or nil,
+		itemlvl = dbsource.i,
+		playerclass = db_mask_to_classes(dbsource.cl),
+		playerspec = nil,
+		requires_detail = nil,
+		needs_exact_stats = ((dbsource.rp and dbsource.rp ~= 0) or (dbsource.sc and dbsource.sc ~= 0)) and true or false,
+		needs_live_scan = true,
+		name = (meta and meta.name) or dbsource.n,
+		fromdb = true,
+	}
+end
+
+function ItemScore:GetResolvedItemDetails(itemLinkOrID)
+	local item = self:GetItemDetails(itemLinkOrID)
+	if item and (item.needs_exact_stats or item.needs_live_scan) then
+		local refreshed = self:GetItemDetailsQueued((type(itemLinkOrID) == "string" and itemLinkOrID) or item.itemlinkfull or item.itemlink, true)
+		if refreshed and not refreshed.needs_exact_stats and not refreshed.needs_live_scan then
+			return refreshed
+		end
+	end
+	return item or self:GetItemDetailsFromDB(itemLinkOrID)
+end
+
 local function get_item_family(item)
 	if not item then return nil end
 	local equipFamily = resolve_family_from_equip_loc(item.equiploc or item.type)
-	if equipFamily then return equipFamily end
+	if equipFamily and equipFamily ~= "MISCARM" and equipFamily ~= "OFFHAND" then return equipFamily end
 	if item.family then return item.family end
+	if (item.equiploc == "INVTYPE_RANGED" or item.equiploc == "INVTYPE_RANGEDRIGHT") and ItemScore and ItemScore.playerclass then
+		if ItemScore.playerclass == "PRIEST" or ItemScore.playerclass == "MAGE" or ItemScore.playerclass == "WARLOCK" then
+			return "WAND"
+		end
+	end
+	if item.name then
+		local normalizedName = normalize_label(item.name)
+		if normalizedName then
+			if normalizedName:find("wand", 1, true) then return "WAND" end
+			if normalizedName:find("crossbow", 1, true) then return "CROSSBOW" end
+			if normalizedName:find("rifle", 1, true) or normalizedName:find("gun", 1, true) then return "GUN" end
+			if normalizedName:find("bow", 1, true) or normalizedName:find("long rifle", 1, true) then return "BOW" end
+			if normalizedName:find("thrown", 1, true) then return "THROWN" end
+			if normalizedName:find("polearm", 1, true) or normalizedName:find("halberd", 1, true) or normalizedName:find("glaive", 1, true) or normalizedName:find("lance", 1, true) or normalizedName:find("pike", 1, true) or normalizedName:find("spear", 1, true) then return "TH_POLE" end
+			if normalizedName:find("staff", 1, true) or normalizedName:find("stave", 1, true) then return "TH_STAFF" end
+			if normalizedName:find("dagger", 1, true) then return "DAGGER" end
+			if normalizedName:find("sword", 1, true) then return normalizedName:find("two%-hand", 1) and "TH_SWORD" or "SWORD" end
+			if normalizedName:find("axe", 1, true) then return normalizedName:find("two%-hand", 1) and "TH_AXE" or "AXE" end
+			if normalizedName:find("mace", 1, true) or normalizedName:find("hammer", 1, true) then return normalizedName:find("two%-hand", 1) and "TH_MACE" or "MACE" end
+			if normalizedName:find("fist", 1, true) or normalizedName:find("claw", 1, true) then return "FIST" end
+			if normalizedName:find("idol", 1, true) then return "IDOL" end
+			if normalizedName:find("totem", 1, true) then return "TOTEM" end
+			if normalizedName:find("sigil", 1, true) then return "SIGIL" end
+			if normalizedName:find("libram", 1, true) then return "LIBRAM" end
+		end
+	end
 	if item.subtype then
 		local normalizedSubtype = normalize_label(item.subtype)
 		if normalizedSubtype then
@@ -238,7 +553,7 @@ local function get_item_family(item)
 	return nil
 end
 
-local ARMOR_FAMILY_ORDER = {
+ARMOR_FAMILY_ORDER = {
 	CLOTH = 1,
 	LEATHER = 2,
 	MAIL = 3,
@@ -264,10 +579,25 @@ local SHIELD_CLASSES = {
 	SHAMAN = true,
 }
 
+local RANGED_FAMILY_CLASSES = {
+	BOW = {HUNTER=true, ROGUE=true, WARRIOR=true},
+	GUN = {HUNTER=true, ROGUE=true, WARRIOR=true},
+	CROSSBOW = {HUNTER=true, ROGUE=true, WARRIOR=true},
+	WAND = {PRIEST=true, MAGE=true, WARLOCK=true},
+	THROWN = {ROGUE=true, WARRIOR=true},
+	IDOL = {DRUID=true},
+	TOTEM = {SHAMAN=true},
+	LIBRAM = {PALADIN=true},
+	SIGIL = {DEATHKNIGHT=true},
+}
+
 local function class_can_use_standard_family(classToken, family, level)
 	if not classToken or not family then return nil end
 	if family == "SHIELD" then
 		return SHIELD_CLASSES[classToken] and true or false
+	end
+	if RANGED_FAMILY_CLASSES[family] then
+		return RANGED_FAMILY_CLASSES[family][classToken] and true or false
 	end
 	local wantedRank = ARMOR_FAMILY_ORDER[family]
 	if not wantedRank then return nil end
@@ -362,6 +692,9 @@ function ItemScore:Initialise()
 		:RegisterEvent("MAIL_CLOSED")
 		:RegisterEvent("GET_ITEM_INFO_RECEIVED")
 		:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED")
+		:RegisterEvent("BANKFRAME_OPENED")
+		:RegisterEvent("BANKFRAME_CLOSED")
+		:RegisterEvent("PLAYERBANKSLOTS_CHANGED")
 		:RegisterEvent("START_LOOT_ROLL")
 		:RegisterEvent("CANCEL_LOOT_ROLL")
 		:RegisterEvent("LOOT_OPENED")
@@ -715,7 +1048,7 @@ function ItemScore:BuildRuleContext(classToken, buildNum, level)
 end
 
 function ItemScore:GetItemScoreForContext(itemlink, context)
-	local item = ItemScore:GetItemDetails(itemlink)
+	local item = ItemScore:GetResolvedItemDetails(itemlink)
 	if not item then return -1, false, "no info yet" end
 	if not context or not context.ActiveRuleSet then return -1, false, "no context" end
 
@@ -761,7 +1094,7 @@ end
 
 function ItemScore:GetItemValidityForContext(itemlink, future, context)
 	if not context then return {valid = false, final = false, reason = "No context", code = "missing_context"} end
-	local item = ItemScore:GetItemDetails(itemlink)
+	local item = ItemScore:GetResolvedItemDetails(itemlink)
 	if not item then return {valid = false, final = false, reason = "No info", code = "missing_info"} end
 
 	local slot_1, slot_2, twohander, equippable, slotReason = get_item_slot_info(item)
@@ -868,7 +1201,7 @@ function ItemScore:GetUpgradeComparisonForContext(slot, newitem, context, second
 	local candidateScore = newitem and (select(1, self:GetItemScoreForContext(newitem.itemlink, context)) or 0) or 0
 	local baselineScore = 0
 	local currentLink = GetInventoryItemLink("player", slot)
-	local current = currentLink and ItemScore:GetItemDetails(currentLink)
+	local current = currentLink and ItemScore:GetResolvedItemDetails(currentLink)
 	local hasBaselineItem = currentLink and true or false
 	if currentLink then
 		baselineScore = select(1, self:GetItemScoreForContext(currentLink, context)) or 0
@@ -1064,6 +1397,16 @@ function ItemScore:OnEvent(event,arg1,arg2,...)
 		ItemScore:ScheduleEquipRescore(0.5)
 	elseif event == "BAG_UPDATE" or event == "MAIL_INBOX_UPDATE" or event == "MAIL_CLOSED" then -- 3.3.5a-safe bag/mail hooks; debounce to one scan
 		ItemScore:ScheduleBagAcquisitionScan(0.25)
+	elseif event == "BANKFRAME_OPENED" then
+		ItemScore.Upgrades:SetBankOpen(true)
+		ItemScore:ScheduleEquipRescore(0.1)
+	elseif event == "BANKFRAME_CLOSED" then
+		ItemScore.Upgrades:SetBankOpen(false)
+		ItemScore:ScheduleEquipRescore(0.1)
+	elseif event == "PLAYERBANKSLOTS_CHANGED" then
+		if ItemScore.Upgrades:IsBankOpen() then
+			ItemScore:ScheduleEquipRescore(0.1)
+		end
 	elseif event == "PLAYER_EQUIPMENT_CHANGED"
 		or event=="ZGV_STEP_FINALISED"  or event=="LIBROVER_TRAVEL_REPORTED" or event=="GET_ITEM_INFO_RECEIVED" -- step finished loading, or travel route updated, see if we have useless quest equip or portkey
 		then 
@@ -1239,7 +1582,7 @@ function ItemScore:HandleMasterLootOpened()
 		local itemlink = GetLootSlotLink(slot)
 		local noticeKey = itemlink and self:HasMasterLootAnnouncement(slot, itemlink)
 		if itemlink and noticeKey then
-			local item = self:GetItemDetails(itemlink) or self:GetItemDetailsQueued(itemlink, true)
+			local item = self:GetResolvedItemDetails(itemlink) or self:GetItemDetailsQueued(itemlink, true)
 			if item then
 				local validity = self:GetItemValidity(itemlink)
 				if validity and not validity.final then
@@ -1385,7 +1728,7 @@ function ItemScore:RefreshLootRollMarker(rollID, attempt)
 	local itemlink = GetLootRollItemLink and GetLootRollItemLink(rollID)
 	if not itemlink then return false end
 
-	local item = self:GetItemDetails(itemlink)
+	local item = self:GetResolvedItemDetails(itemlink)
 	if not item then item = self:GetItemDetailsQueued(itemlink, true) end
 	if not item then
 		if attempt < 10 and ZGV.ScheduleTimer then
@@ -1660,6 +2003,15 @@ function ItemScore:GetItemDetails(itemlink,callback,force)
 
 	local item = ItemCache[itemlink]
 	if not item then
+		local dbitem = self:GetItemDetailsFromDB(itemlink)
+		if dbitem then
+			bump_db_counter("primed", dbitem.itemid)
+			ItemCache[itemlink] = dbitem
+			table.insert(ItemScore.GetItemDetailsQueue,{itemlink,callback,force})
+			return dbitem
+		end
+		local itemID = ZGV.ItemLink and ZGV.ItemLink.GetItemID(itemlink)
+		warn_missing_itemdb(itemlink, itemID)
 		table.insert(ItemScore.GetItemDetailsQueue,{itemlink,callback,force})
 		return
 	end
@@ -1684,6 +2036,8 @@ function ItemScore:GetItemDetailsQueued(itemlink,force)
 	local itemlinkfull = itemlink
 	itemlink = strip_link(itemlink)
 	if not itemlink then return false end
+	local itemID = ZGV.ItemLink.GetItemID(itemlink)
+	local dbitem = itemID and self:GetItemDetailsFromDB(itemlinkfull)
 
 	-- if item is not yet cached, grab its data
 	if not ItemCache[itemlink] or SKIP_CACHE or force then
@@ -1694,12 +2048,23 @@ function ItemScore:GetItemDetailsQueued(itemlink,force)
 		-- Pre-flight cache check: for suffix/random-enchant items GetItemInfo may return nil
 		-- until the server pushes data. Trigger a tooltip scan to populate cache and exit safely.
 		if not itemName then
-			Gratuity:SetHyperlink(itemlink)
-			return false
+			if not dbitem then
+				warn_missing_itemdb(itemlink, itemID)
+				Gratuity:SetHyperlink(itemlink)
+				return false
+			end
+			bump_db_counter("dbonly", itemID)
 		end
 		
+		itemName = itemName or (dbitem and dbitem.name)
+		itemRarity = itemRarity or (dbitem and dbitem.quality)
+		itemLevel = itemLevel or (dbitem and dbitem.itemlvl)
+		itemMinLevel = itemMinLevel or (dbitem and dbitem.minlevel)
+		itemEquipLoc = (itemEquipLoc and itemEquipLoc ~= "" and itemEquipLoc) or (dbitem and dbitem.equiploc) or ""
+		texture = texture or (dbitem and dbitem.texture)
+
 		local itemlvl = itemLevel
-		local itemClassID = resolve_item_class_id(itemType)
+		local itemClassID = resolve_item_class_id(itemType) or (dbitem and dbitem.class)
 		local itemFamily, itemSubClassID = resolve_item_family(itemClassID, itemSubType)
 		if not itemFamily then
 			local equipFamily, equipSubClassID = resolve_family_from_equip_loc(itemEquipLoc)
@@ -1708,21 +2073,28 @@ function ItemScore:GetItemDetailsQueued(itemlink,force)
 				itemSubClassID = itemSubClassID or equipSubClassID
 			end
 		end
+		itemFamily = itemFamily or (dbitem and dbitem.family)
+		itemSubClassID = itemSubClassID or (dbitem and dbitem.subclass)
 
 		if itemEquipLoc=="" then -- not equipment, don't bother parsing tooltip
 			ItemCache[itemlink] = { 
-				stats = {}, 
+				stats = copy_stats(dbitem and dbitem.stats), 
 				itemlink = itemlink,
-				itemid = ZGV.ItemLink.GetItemID(itemlink),
+				itemid = itemID,
 				itemlinkfull = itemlinkfull,
 				class = itemClassID,
 				subclass = itemSubClassID,
 				family = itemFamily,
-				subtype = itemSubType,
+				subtype = itemSubType or (dbitem and dbitem.subtype),
 				equiploc = itemEquipLoc,
 				quality = itemRarity,
 				validated = false,
 				texture = texture,
+				itemlvl = itemlvl,
+				minlevel = itemMinLevel,
+				name = itemName,
+				needs_exact_stats = false,
+				needs_live_scan = false,
 			}
 			return ItemCache[itemlink]
 		end
@@ -1731,94 +2103,104 @@ function ItemScore:GetItemDetailsQueued(itemlink,force)
 
 		-- class, spec check, and level check. we need to scan tooltip for those. meh.
 		local playerclass, playerspec
+		local canScanTooltip = true
 		Gratuity:SetHyperlink(itemlink)
-		if Gratuity:NumLines()==0 then return false end
+		if Gratuity:NumLines()==0 then
+			if not dbitem then return false end
+			canScanTooltip = false
+		end
 
-		local stats = {}
+		local stats = copy_stats(dbitem and dbitem.stats)
 		local tooltip = {}
 
 		-- use blizz GetItemStats to get sockets, since tooltip scanning would only detect empty ones
 		local blizzstats = GetItemStats(itemlinkfull) or GetItemStats(itemlink)
 		local blizz_present_normalized = {}
+		for statname in pairs(stats) do
+			blizz_present_normalized[ItemScore:NormaliseStatName(statname)] = true
+		end
 		if blizzstats then
+			if dbitem then
+				bump_db_counter("live", itemID)
+			end
 			for i,v in pairs(blizzstats) do
 				if type(v) == "number" then
-					add_stat(stats, i, v)
+					if stats[i] == nil then
+						add_stat(stats, i, v)
+					else
+						stats[i] = math.max(stats[i], v)
+					end
 					blizz_present_normalized[ItemScore:NormaliseStatName(i)] = true
 				end
 			end
 		end
 
-		for num=1,Gratuity:NumLines() do
-			local line=Gratuity:GetLine(num)
+		if canScanTooltip then
+			for num=1,Gratuity:NumLines() do
+				local line=Gratuity:GetLine(num)
 
-			if not line then return false end
-			if line==RETRIEVING_ITEM_INFO then return false end
+				if not line then return false end
+				if line==RETRIEVING_ITEM_INFO then return false end
 
-			if ItemScore.SaveTooltip then table.insert(tooltip,line) end
+				if ItemScore.SaveTooltip then table.insert(tooltip,line) end
 
-			line = line:gsub("|c........",""):gsub("|r","") -- strip color codes, if any
+				line = line:gsub("|c........",""):gsub("|r","") -- strip color codes, if any
 
-			if ITEM_CLASSES_ALLOWED then
-				local found_class = line:match( gsub(ITEM_CLASSES_ALLOWED,"%%s","(.*)"))
-				if found_class then playerclass = found_class end
-			end
-
-			-- 3.3.5a: ITEM_REQ_SPECIALIZATION global does not exist in this client.
-            -- Fallback to localized pattern matching to prevent nil-pointer crashes.
-            if line:find(L["Requires"] .. " ") then
-                -- Extract the requirement string (e.g., "Requires Paladin" or "Requires Protection")
-                local requirement = line:match(L["Requires"] .. " (.+)")
-                if requirement then
-                    -- NOTE: Full validation against current talent build would require 
-                    -- additional tooltip parsing logic. For now, capturing the requirement 
-                    -- ensures we don't skip checks due to missing Blizzard global strings.
-                    requires_detail = requirement 
-                end
-            end
-
-			-- 3.3.5a: classic has normal stats as equip: effects, so do NOT early exit on those lines
-
-			local socket_bonus = ITEM_SOCKET_BONUS and line:match( ITEM_SOCKET_BONUS:gsub("%%s","(.*)"))
-			local set_bonus = ITEM_SET_BONUS_GRAY and line:match( ITEM_SET_BONUS_GRAY:gsub("%%s","(.*)"))
-			local set2_bonus = ITEM_SET_BONUS and line:match( ITEM_SET_BONUS:gsub("%%s","(.*)"))
-			if socket_bonus or set_bonus or set2_bonus then line="" end -- skip all extra lines
-
-			local line = (ITEM_SPELL_TRIGGER_ONEQUIP and line:gsub(ITEM_SPELL_TRIGGER_ONEQUIP.." ","") or line):lower()
-			local matchedThisLine = {}
-			for _,statdata in pairs(ItemScore.Keywords) do
-				local coveredByBlizzard = false
-				if statdata.multi then
-					for _,multiname in ipairs(statdata.multi) do
-						if blizz_present_normalized[ItemScore:NormaliseStatName(multiname)] then
-							coveredByBlizzard = true
-							break
-						end
-					end
-				else
-					coveredByBlizzard = blizz_present_normalized[ItemScore:NormaliseStatName(statdata.blizz)] and true or false
+				if ITEM_CLASSES_ALLOWED then
+					local found_class = line:match( gsub(ITEM_CLASSES_ALLOWED,"%%s","(.*)"))
+					if found_class then playerclass = found_class end
 				end
-				if not coveredByBlizzard and not matchedThisLine[statdata.blizz] then
-					for _,regex in ipairs(statdata.regexs) do
-						local sign,value = line:match(regex)
-						if sign and not value then value = sign end
 
-						if statdata.boolean and sign then
-							value="1"
-						end
+				-- 3.3.5a: ITEM_REQ_SPECIALIZATION global does not exist in this client.
+				-- Fallback to localized pattern matching to prevent nil-pointer crashes.
+				if line:find(L["Requires"] .. " ") then
+					local requirement = line:match(L["Requires"] .. " (.+)")
+					if requirement then
+						requires_detail = requirement
+					end
+				end
 
-						if value then
-							value = value:gsub(",",".")
-							if sign=="-" then value=value*(-1) end
-							if statdata.multi then
-								for _,multiname in ipairs(statdata.multi) do
-									add_stat(stats, multiname, value)
-								end
-							else
-								add_stat(stats, statdata.blizz, value)
+				local socket_bonus = ITEM_SOCKET_BONUS and line:match( ITEM_SOCKET_BONUS:gsub("%%s","(.*)"))
+				local set_bonus = ITEM_SET_BONUS_GRAY and line:match( ITEM_SET_BONUS_GRAY:gsub("%%s","(.*)"))
+				local set2_bonus = ITEM_SET_BONUS and line:match( ITEM_SET_BONUS:gsub("%%s","(.*)"))
+				if socket_bonus or set_bonus or set2_bonus then line="" end
+
+				local line = (ITEM_SPELL_TRIGGER_ONEQUIP and line:gsub(ITEM_SPELL_TRIGGER_ONEQUIP.." ","") or line):lower()
+				local matchedThisLine = {}
+				for _,statdata in pairs(ItemScore.Keywords) do
+					local coveredByBlizzard = false
+					if statdata.multi then
+						for _,multiname in ipairs(statdata.multi) do
+							if blizz_present_normalized[ItemScore:NormaliseStatName(multiname)] then
+								coveredByBlizzard = true
+								break
 							end
-							matchedThisLine[statdata.blizz] = true
-							break
+						end
+					else
+						coveredByBlizzard = blizz_present_normalized[ItemScore:NormaliseStatName(statdata.blizz)] and true or false
+					end
+					if not coveredByBlizzard and not matchedThisLine[statdata.blizz] then
+						for _,regex in ipairs(statdata.regexs) do
+							local sign,value = line:match(regex)
+							if sign and not value then value = sign end
+
+							if statdata.boolean and sign then
+								value="1"
+							end
+
+							if value then
+								value = value:gsub(",",".")
+								if sign=="-" then value=value*(-1) end
+								if statdata.multi then
+									for _,multiname in ipairs(statdata.multi) do
+										add_stat(stats, multiname, value)
+									end
+								else
+									add_stat(stats, statdata.blizz, value)
+								end
+								matchedThisLine[statdata.blizz] = true
+								break
+							end
 						end
 					end
 				end
@@ -1829,7 +2211,7 @@ function ItemScore:GetItemDetailsQueued(itemlink,force)
 		ItemCache[itemlink] = { 
 			stats = stats, 
 			itemlink = itemlink,
-			itemid = ZGV.ItemLink.GetItemID(itemlink),
+			itemid = itemID,
 			itemlinkfull = itemlinkfull,
 			minlevel = itemMinLevel,
 			type = itemEquipLoc,
@@ -1837,14 +2219,18 @@ function ItemScore:GetItemDetailsQueued(itemlink,force)
 			class = itemClassID,
 			subclass = itemSubClassID,
 			family = itemFamily,
-			subtype = itemSubType,
+			subtype = itemSubType or (dbitem and dbitem.subtype),
 			quality = itemRarity,
 			validated = false,
 			texture = texture,
 			itemlvl = itemlvl,
-			playerclass = playerclass,
+			playerclass = playerclass or (dbitem and dbitem.playerclass),
 			playerspec = playerspec,
 			requires_detail = requires_detail,
+			name = itemName,
+			needs_exact_stats = false,
+			needs_live_scan = false,
+			fromdb = dbitem and true or false,
 		}
 
 		if ItemScore.SaveTooltip then ItemCache[itemlink].tooltip = tooltip end
@@ -1877,7 +2263,7 @@ end
 --	success - bool - was item scored at all
 --	comment - string - description
 function ItemScore:GetItemScore(itemlink,verbose)
-	local item = ItemScore:GetItemDetails(itemlink)
+	local item = ItemScore:GetResolvedItemDetails(itemlink)
 	if not item then return -1, -1, false, "no info yet" end
 	if not self:EnsureActiveRuleSet() then return -1, false, "no active rules" end
 
@@ -1963,7 +2349,7 @@ function ItemScore:GetHeirloomInfo(itemlink)
 	-- in shadowland heirlooms no longer give exp bonus, so we are not protecting them anymore unless player asks for it
 	do return ZGV.db.profile.autogear_keepheirlooms, 60 end
 
-	local item = ItemScore:GetItemDetails(itemlink)
+	local item = ItemScore:GetResolvedItemDetails(itemlink)
 	if not item then return false,0 end
 	if item.quality ~= 7 then return false,0 end
 
@@ -1988,7 +2374,7 @@ function ItemScore:GetItemValidity(itemlink, future)
 		return {valid = false, final = false, reason = "No active rules", code = "missing_rules"}
 	end
 
-	local item = ItemScore:GetItemDetails(itemlink)
+	local item = ItemScore:GetResolvedItemDetails(itemlink)
 	if not item then
 		return {valid = false, final = false, reason = "No info", code = "missing_info"}
 	end
@@ -2133,7 +2519,7 @@ end
 function ItemScore:IsValidItem(itemlink, future)
 	if not itemlink then return false, false, "No itemlink" end
 
-	local item = ItemScore:GetItemDetails(itemlink)
+	local item = ItemScore:GetResolvedItemDetails(itemlink)
 	if not item then return false, false, "No info" end
 
 	local verdict = self:GetItemValidity(itemlink, future)
@@ -2228,7 +2614,7 @@ local function ItemScore_SetTooltipData(tooltip, tooltipobj)
 			end
 		end
 
-		local item = ItemScore:GetItemDetails(originalLink, refresh_tooltip, true)
+		local item = ItemScore:GetResolvedItemDetails(originalLink) or ItemScore:GetItemDetails(originalLink, refresh_tooltip, true)
 		if not item then
 			-- Item not cached yet - queued for async parse. Tooltip will refresh via callback once data arrives.
 			ItemScore.TooltipPatched = true
@@ -2448,7 +2834,7 @@ end
 function ItemScore:GetEquippedStatValue(statname)
 	local result = 0
 	for slotID,item in pairs(ZGV.ItemScore.Upgrades.EquippedItems) do 
-		local details = ItemScore:GetItemDetails(item.itemlink)
+		local details = ItemScore:GetResolvedItemDetails(item.itemlink)
 		if details then
 			for sname,svalue in pairs(details.stats) do
 				local name = ItemScore:NormaliseStatName(sname)
