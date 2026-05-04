@@ -1735,16 +1735,8 @@ function Upgrades:CreatePopup()
 
 	F.statscroll = F.statscroll or CreateFrame("ScrollFrame", "ZygorItemPopupStatScroll", F, "UIPanelScrollFrameTemplate")
 	F.statscroll:SetFrameLevel(F:GetFrameLevel()+1)
-	F.statscroll:EnableMouseWheel(true)
-	F.statscroll:SetScript("OnMouseWheel", function(self, delta)
-		local current = self:GetVerticalScroll() or 0
-		local minScroll = 0
-		local maxScroll = math.max((self.maxScroll or 0), 0)
-		local nextScroll = current - delta * 20
-		if nextScroll < minScroll then nextScroll = minScroll end
-		if nextScroll > maxScroll then nextScroll = maxScroll end
-		self:SetVerticalScroll(nextScroll)
-	end)
+	F.statscroll:EnableMouseWheel(false)
+	F.statscroll:SetScript("OnMouseWheel", nil)
 
 	F.statcontent = F.statcontent or CreateFrame("Frame", nil, F.statscroll)
 	F.statcontent:SetWidth(F:GetWidth() - 28)
@@ -1768,6 +1760,53 @@ function Upgrades:CreatePopup()
 	F.stattext:SetPoint("TOPLEFT", F.statcontent, "TOPLEFT", 0, 0)
 	F.stattext:SetPoint("TOPRIGHT", F.statcontent, "TOPRIGHT", 0, 0)
 	if F.stattext.SetNonSpaceWrap then F.stattext:SetNonSpaceWrap(false) end
+	F.stattext:Hide()
+	F.statlines = F.statlines or {}
+	F.statLinesHeight = 0
+
+	F.RenderStatText = function(self, text, fontSize)
+		local lines = {}
+		text = tostring(text or "")
+		if text == "" then
+			lines[1] = " "
+		else
+			for line in (text .. "\n"):gmatch("(.-)\n") do
+				lines[#lines + 1] = line ~= "" and line or " "
+			end
+		end
+
+		local contentWidth = math.max((self:GetWidth() or 300) - 28, 140)
+		local totalHeight = 0
+		for i, lineText in ipairs(lines) do
+			local fs = self.statlines[i]
+			if not fs then
+				fs = self.statcontent:CreateFontString(nil, "ARTWORK")
+				fs:SetJustifyH("CENTER")
+				fs:SetWordWrap(true)
+				if fs.SetNonSpaceWrap then fs:SetNonSpaceWrap(false) end
+				self.statlines[i] = fs
+			end
+			fs:ClearAllPoints()
+			if i == 1 then
+				fs:SetPoint("TOPLEFT", self.statcontent, "TOPLEFT", 0, 0)
+				fs:SetPoint("TOPRIGHT", self.statcontent, "TOPRIGHT", 0, 0)
+			else
+				fs:SetPoint("TOPLEFT", self.statlines[i-1], "BOTTOMLEFT", 0, -1)
+				fs:SetPoint("TOPRIGHT", self.statlines[i-1], "BOTTOMRIGHT", 0, -1)
+			end
+			fs:SetWidth(contentWidth)
+			fs:SetFont(FONT, fontSize)
+			fs:SetText(lineText)
+			fs:Show()
+			totalHeight = totalHeight + math.max(fs:GetStringHeight() or 0, fontSize + 2) + (i > 1 and 1 or 0)
+		end
+		for i = #lines + 1, #self.statlines do
+			self.statlines[i]:Hide()
+			self.statlines[i]:SetText("")
+		end
+		self.statLinesHeight = math.max(totalHeight, fontSize + 4)
+		self.statcontent:SetHeight(self.statLinesHeight)
+	end
 
 	F.OnAccept = function(self)
 		self.selfHidden = true
@@ -1804,15 +1843,20 @@ function Upgrades:CreatePopup()
 		local popupWidth = self:GetWidth() or 300
 		local titleHeight = math.max(self.text:GetStringHeight() or 0, self.text:GetHeight() or 0, 18)
 		local warningHeight = (self.bindwarning and self.bindwarning:IsVisible()) and math.max(self.bindwarning:GetStringHeight() or 0, self.bindwarning:GetHeight() or 0, 12) or 0
-		local statFullHeight = math.max(self.stattext and self.stattext:GetStringHeight() or 0, 14) + 4
-		local topChrome = 36
-		local topGap = 10
-		local rowGap = 5
-		local withGap = 7
-		local statGap = 5
-		local warningGap = warningHeight > 0 and 6 or 0
+		local statFullHeight = math.max(self.statLinesHeight or 0, 14)
+		local lineCount = tonumber(self.longStatLineCount) or 0
+		local compact = lineCount >= 8
+		local topChrome = compact and 30 or 36
+		local topGap = compact and 6 or 10
+		local rowGap = compact and 3 or 5
+		local withGap = compact and 4 or 7
+		local statGap = compact and 2 or 5
+		local warningGap = warningHeight > 0 and (compact and 3 or 6) or 0
 		local contentBottomGap = 4
-		local maxPopupHeight = math.max(math.floor((UIParent and UIParent:GetHeight() or 768) * 0.72), 240)
+		local parentHeight = (UIParent and UIParent:GetHeight() or 768)
+		local heightRatio = 0.995
+		local maxPopupHeight = math.max(math.floor(parentHeight * heightRatio), 340)
+		maxPopupHeight = math.min(maxPopupHeight, parentHeight - 4)
 		local fixedHeight = topChrome + titleHeight + topGap + footerHeight + contentBottomGap
 		local rowsHeight = 0
 
@@ -1835,13 +1879,15 @@ function Upgrades:CreatePopup()
 			rowsHeight = (self.item1:IsVisible() and self.item1:GetHeight() or 0) + statGap
 		end
 
-		local maxStatHeight = maxPopupHeight - fixedHeight - rowsHeight - warningHeight - warningGap
-		maxStatHeight = math.max(maxStatHeight, 40)
-		local visibleStatHeight = math.min(statFullHeight, maxStatHeight)
+		local availableStatHeight = maxPopupHeight - fixedHeight - rowsHeight - warningHeight - warningGap
+		availableStatHeight = math.max(availableStatHeight, 160)
+		local visibleStatHeight = math.min(statFullHeight, availableStatHeight)
 
 		if self.statscroll and self.statscroll:IsVisible() then
 			self.statscroll:SetHeight(visibleStatHeight)
-			self.statscroll.maxScroll = math.max(statFullHeight - visibleStatHeight, 0)
+			if self.statscroll.ScrollBar then
+				self.statscroll.ScrollBar:Hide()
+			end
 			if self.statscroll.SetVerticalScroll then
 				self.statscroll:SetVerticalScroll(0)
 			end
@@ -1885,6 +1931,7 @@ function Upgrades:CreatePopup()
 			return (frame and frame.itemlink and frame.itemlink:IsVisible() and frame.itemlink) or frame
 		end
 
+		local compact = (tonumber(self.longStatLineCount) or 0) >= 8
 		local function placeRow(frame, anchor, offset)
 			frame:ClearAllPoints()
 			frame:SetPoint("LEFT", self, "LEFT", leftPad, 0)
@@ -1902,32 +1949,32 @@ function Upgrades:CreatePopup()
 				if self.bindwarning:IsVisible() then
 					self.bindwarning:SetPoint("LEFT", self, "LEFT", leftPad, 0)
 					self.bindwarning:SetPoint("RIGHT", self, "RIGHT", rightPad, 0)
-					self.bindwarning:SetPoint("TOP", self.statscroll, "BOTTOM", 0, -6)
+					self.bindwarning:SetPoint("TOP", self.statscroll, "BOTTOM", 0, -(compact and 3 or 6))
 				end
 			end
 		end
 
 		if mode == "pair_old_to_new" then
-			placeRow(self.item_double, self.text, 10)
+			placeRow(self.item_double, self.text, compact and 6 or 10)
 			self.string_with:ClearAllPoints()
-			self.string_with:SetPoint("TOP", rowBottomAnchor(self.item_double), "BOTTOM", 0, -5)
-			placeRow(self.item2, self.string_with, 7)
-			placeStats(rowBottomAnchor(self.item2), 5)
+			self.string_with:SetPoint("TOP", rowBottomAnchor(self.item_double), "BOTTOM", 0, -(compact and 3 or 5))
+			placeRow(self.item2, self.string_with, compact and 4 or 7)
+			placeStats(rowBottomAnchor(self.item2), compact and 2 or 5)
 		elseif mode == "old_to_pair_new" then
-			placeRow(self.item1, self.text, 10)
+			placeRow(self.item1, self.text, compact and 6 or 10)
 			self.string_with:ClearAllPoints()
-			self.string_with:SetPoint("TOP", rowBottomAnchor(self.item1), "BOTTOM", 0, -5)
-			placeRow(self.item_double, self.string_with, 3)
-			placeStats(rowBottomAnchor(self.item_double), 5)
+			self.string_with:SetPoint("TOP", rowBottomAnchor(self.item1), "BOTTOM", 0, -(compact and 3 or 5))
+			placeRow(self.item_double, self.string_with, compact and 2 or 3)
+			placeStats(rowBottomAnchor(self.item_double), compact and 2 or 5)
 		elseif mode == "old_to_new" then
-			placeRow(self.item1, self.text, 10)
+			placeRow(self.item1, self.text, compact and 6 or 10)
 			self.string_with:ClearAllPoints()
-			self.string_with:SetPoint("TOP", rowBottomAnchor(self.item1), "BOTTOM", 0, -5)
-			placeRow(self.item2, self.string_with, 7)
-			placeStats(rowBottomAnchor(self.item2), 5)
+			self.string_with:SetPoint("TOP", rowBottomAnchor(self.item1), "BOTTOM", 0, -(compact and 3 or 5))
+			placeRow(self.item2, self.string_with, compact and 4 or 7)
+			placeStats(rowBottomAnchor(self.item2), compact and 2 or 5)
 		elseif mode == "new_only" then
-			placeRow(self.item1, self.text, 10)
-			placeStats(rowBottomAnchor(self.item1), 5)
+			placeRow(self.item1, self.text, compact and 6 or 10)
+			placeStats(rowBottomAnchor(self.item1), compact and 2 or 5)
 		end
 	end
 
@@ -1935,15 +1982,12 @@ function Upgrades:CreatePopup()
 		if self.statscroll and self.stattext then
 			local contentWidth = math.max((self:GetWidth() or 300) - 28, 140)
 			self.statcontent:SetWidth(contentWidth)
-			self.stattext:SetWidth(contentWidth)
-			if self.stattext.SetNonSpaceWrap then
-				self.stattext:SetNonSpaceWrap(false)
+			for _, fs in ipairs(self.statlines or {}) do
+				fs:SetWidth(contentWidth)
 			end
-			local fullTextHeight = math.max(self.stattext:GetStringHeight() or 0, 14)
-			self.stattext:SetHeight(fullTextHeight + 4)
-			self.statcontent:SetHeight(fullTextHeight + 4)
-			self.statscroll:SetHeight(fullTextHeight + 4)
-			self.statscroll.maxScroll = 0
+			local fullTextHeight = math.max(self.statLinesHeight or 0, 14)
+			self.statcontent:SetHeight(fullTextHeight)
+			self.statscroll:SetHeight(fullTextHeight)
 			if self.statscroll.ScrollBar then
 				self.statscroll.ScrollBar:Hide()
 			end
@@ -2349,12 +2393,20 @@ function Upgrades:ShowEquipmentChangePopup(slot)
 	else
 		stattext = ("%s|cffcccccc%s: %s|r\n\n%s"):format(sourceLine, L["itemscore_ae_build"] or "Build", Upgrades:GetActiveBuildName(), changes)
 	end
-	F.stattext:SetWidth((F:GetWidth() or 300) - 42)
-	F.stattext:SetText(stattext)
-	F.stattext:SetHeight(F.stattext:GetStringHeight() + 4)
-	if F.statcontent then
-		F.statcontent:SetHeight(F.stattext:GetHeight() or (F.stattext:GetStringHeight() + 4))
+	local lineCount = 1
+	if stattext and stattext ~= "" then
+		lineCount = select(2, stattext:gsub("\n", "\n")) + 1
 	end
+	F.longStatLineCount = lineCount
+	local baseStatFont = ZGV.db.profile.fontsecsize or 12
+	local statFontSize = baseStatFont
+	if lineCount >= 11 then
+		statFontSize = math.max(baseStatFont - 2, 10)
+	elseif lineCount >= 8 then
+		statFontSize = math.max(baseStatFont - 1, 11)
+	end
+	F.stattext:SetFont(FONT, statFontSize)
+	F:RenderStatText(stattext, statFontSize)
 
 	F:Show()
 	F:RefreshLayout()

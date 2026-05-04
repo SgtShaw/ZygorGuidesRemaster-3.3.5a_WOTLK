@@ -93,6 +93,17 @@ local function copy_stats(source)
 	return target
 end
 
+local function copy_selected_stats(source, allowed)
+	local target = {}
+	if not source or not allowed then return target end
+	for key in pairs(allowed) do
+		if source[key] ~= nil then
+			target[key] = source[key]
+		end
+	end
+	return target
+end
+
 local function normalize_label(value)
 	if not value then return nil end
 	value = tostring(value):gsub("^%s+", ""):gsub("%s+$", ""):lower()
@@ -143,6 +154,12 @@ local NON_GEAR_INV_TYPES = {
 
 local NON_GEAR_WEAPON_SUBTYPES = {
 	["miscellaneous"] = true,
+}
+
+local DB_STRUCTURAL_STATS = {
+	ARMOR = true,
+	BLOCK_VALUE = true,
+	DAMAGE_PER_SECOND = true,
 }
 
 local FAMILY_ALIASES = {
@@ -395,10 +412,24 @@ end
 local function build_db_stats(dbitem)
 	local stats = {}
 	if not dbitem then return stats end
+	local dbstats = dbitem.st or {}
+	local remapArmorPenToSpellPower = false
+	if dbstats.armorPenetration and not dbstats.spellPower then
+		local hasCasterMarkers = dbstats.intellect or dbstats.spirit or dbstats.mp5 or dbstats.spellPenetration
+		local hasPhysicalMarkers = dbstats.strength or dbstats.agility or dbstats.attackPower or dbstats.rangedAttackPower or dbstats.feralAttackPower
+			or dbstats.expertiseRating or dbstats.defenseRating or dbstats.dodgeRating or dbstats.parryRating or dbstats.blockRating or dbstats.blockValue
+		if hasCasterMarkers and not hasPhysicalMarkers then
+			remapArmorPenToSpellPower = true
+		end
+	end
 	if dbitem.st then
 		for dbkey, blizzkey in pairs(DB_STAT_MAP) do
-			if dbitem.st[dbkey] then
-				add_stat(stats, blizzkey, dbitem.st[dbkey])
+			if dbstats[dbkey] then
+				if dbkey == "armorPenetration" and remapArmorPenToSpellPower then
+					add_stat(stats, "SPELL_POWER", dbstats[dbkey])
+				else
+					add_stat(stats, blizzkey, dbstats[dbkey])
+				end
 			end
 		end
 	end
@@ -2110,7 +2141,14 @@ function ItemScore:GetItemDetailsQueued(itemlink,force)
 			canScanTooltip = false
 		end
 
-		local stats = copy_stats(dbitem and dbitem.stats)
+		local stats
+		if canScanTooltip then
+			-- Once we can scan live item data, rebuild the statline from Blizzard data
+			-- and tooltip parsing so dirty imported DB stats do not leak into comparisons.
+			stats = copy_selected_stats(dbitem and dbitem.stats, DB_STRUCTURAL_STATS)
+		else
+			stats = copy_stats(dbitem and dbitem.stats)
+		end
 		local tooltip = {}
 
 		-- use blizz GetItemStats to get sockets, since tooltip scanning would only detect empty ones

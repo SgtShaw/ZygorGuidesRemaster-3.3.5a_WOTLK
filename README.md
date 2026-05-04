@@ -164,6 +164,13 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
+### Revision 148 - 3.0.148
+
+- Continued the DB-first gear-system rollout so Gear Finder, Gear Advisor, equip comparisons, tooltip suggestions, loot-roll markers, and bank-open gear checks rely more consistently on shared resolved item data.
+- Improved Gear Finder presentation and recommendation quality with fuller footer handling, corrected boss labels, distinct ring and trinket recommendations, and more reasonable dungeon suggestion behavior.
+- Hardened Gear Advisor compare popups with better long-stat layout, expanded vertical sizing, per-line stat rendering, and more accurate DB-plus-live stat resolution for equip-effect and suspicious imported item rows.
+- Added item DB audit tooling and continued cleanup of dirty imported item-stat patterns, including targeted fixes such as Mercurial Alchemist Stone and caster-item stat remapping.
+- Updated addon version metadata to 3.0.148.
 ### Revision 147 - 3.0.147
 
 - Extended the DB-first gear model across Gear Finder, Gear Advisor, tooltip scoring, loot-roll markers, bank-open upgrade checks, and related gear suggestion surfaces.
@@ -313,6 +320,7 @@ This remaster focuses on UI/UX modernization, packaging quality, compatibility m
 
 <img width="433" height="247" alt="image" src="https://github.com/user-attachments/assets/579b6acb-df5e-4f40-8ef3-7d6b33e1015d" />
 <img width="436" height="248" alt="image" src="https://github.com/user-attachments/assets/a845b881-2831-43e3-bd26-5287f9783d68" />
+
 
 
 
