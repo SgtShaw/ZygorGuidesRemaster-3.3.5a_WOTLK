@@ -1,4 +1,4 @@
-# Zygor Guides Viewer Remaster
+﻿# Zygor Guides Viewer Remaster
 
 Remastered Zygor Guides Viewer for **World of Warcraft: Wrath of the Lich King (WotLK) 3.3.5a (build 12340)**.
 
@@ -164,6 +164,13 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
+### Revision 149 - 3.0.149
+
+- Continued the item database audit and materialized confirmed dirty imported stat patterns directly into `ZygorItemDB.lua`, including caster `armorPenetration -> spellPower`, physical `mp5 -> armorPenetration`, and tank/physical `spellPenetration -> blockValue` corrections.
+- Verified the remaining suspicious hybrid, relic, trinket, and held-offhand buckets against trusted TBC/WotLK references; the current audit now leaves only QA/test rows flagged and no confirmed gameplay-relevant dirty items.
+- Refreshed the live `ZygorItemDB.lua` header metadata after the cleanup pass and kept runtime item resolution aligned with the cleaned database.
+- Updated addon version metadata to 3.0.149.
+
 ### Revision 148 - 3.0.148
 
 - Continued the DB-first gear-system rollout so Gear Finder, Gear Advisor, equip comparisons, tooltip suggestions, loot-roll markers, and bank-open gear checks rely more consistently on shared resolved item data.
@@ -320,6 +327,9 @@ This remaster focuses on UI/UX modernization, packaging quality, compatibility m
 
 <img width="433" height="247" alt="image" src="https://github.com/user-attachments/assets/579b6acb-df5e-4f40-8ef3-7d6b33e1015d" />
 <img width="436" height="248" alt="image" src="https://github.com/user-attachments/assets/a845b881-2831-43e3-bd26-5287f9783d68" />
+
+
+
 
 
 

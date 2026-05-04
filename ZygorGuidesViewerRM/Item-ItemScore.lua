@@ -112,6 +112,15 @@ local function normalize_label(value)
 	return value
 end
 
+local function is_test_item_name(name)
+	if not name then return false end
+	return name:find("^QA Test") ~= nil
+		or name:find("^QA ") ~= nil
+		or name:find("^Test ") ~= nil
+		or name == "Bland Blade"
+		or name == "Frostmourne Art Demo"
+end
+
 local TYPE_CLASS_ALIASES = {
 	armor = LE_ITEM_CLASS_ARMOR,
 	weapon = LE_ITEM_CLASS_WEAPON,
@@ -266,6 +275,14 @@ local DB_SLOT_TO_INVTYPE = {
 	Wrist = "INVTYPE_WRIST",
 }
 
+local RELIC_NAME_FAMILY_OVERRIDES = {
+	["venture co. lightning rod"] = "TOTEM",
+	["venture co. flame slicer"] = "TOTEM",
+	["tome of the lightbringer"] = "LIBRAM",
+	["blessed book of nagrand"] = "LIBRAM",
+	["harold's rejuvenating broach"] = "IDOL",
+}
+
 local DB_STAT_MAP = {
 	agility = "AGILITY",
 	armorPenetration = "ARMOR_PENETRATION",
@@ -414,12 +431,49 @@ local function build_db_stats(dbitem)
 	if not dbitem then return stats end
 	local dbstats = dbitem.st or {}
 	local remapArmorPenToSpellPower = false
-	if dbstats.armorPenetration and not dbstats.spellPower then
+	local remapMp5ToArmorPen = false
+	local remapSpellPenToBlockValue = false
+	if dbstats.armorPenetration then
 		local hasCasterMarkers = dbstats.intellect or dbstats.spirit or dbstats.mp5 or dbstats.spellPenetration
+			or dbstats.spellPower or dbstats.hitRating or dbstats.critRating or dbstats.hasteRating
 		local hasPhysicalMarkers = dbstats.strength or dbstats.agility or dbstats.attackPower or dbstats.rangedAttackPower or dbstats.feralAttackPower
 			or dbstats.expertiseRating or dbstats.defenseRating or dbstats.dodgeRating or dbstats.parryRating or dbstats.blockRating or dbstats.blockValue
-		if hasCasterMarkers and not hasPhysicalMarkers then
+		local casterSlot = dbitem.s == "Finger" or dbitem.s == "Neck" or dbitem.s == "Back" or dbitem.s == "Trinket"
+			or dbitem.s == "HeldOffHand" or dbitem.s == "Holdable" or dbitem.s == "Ranged" or dbitem.s == "RangedRight"
+			or dbitem.s == "Head" or dbitem.s == "Shoulder" or dbitem.s == "Chest" or dbitem.s == "Robe"
+			or dbitem.s == "Wrist" or dbitem.s == "Wrists" or dbitem.s == "Hands" or dbitem.s == "Waist" or dbitem.s == "Legs" or dbitem.s == "Feet"
+			or dbitem.s == "Shield"
+		local casterShield = dbitem.s == "Shield" and (dbstats.intellect or dbstats.spirit or dbstats.mp5 or dbstats.spellPenetration)
+		if hasCasterMarkers and casterSlot and not hasPhysicalMarkers and (dbitem.s ~= "Shield" or casterShield) then
 			remapArmorPenToSpellPower = true
+		end
+	end
+	if dbstats.mp5 then
+		local hasCasterMarkers = dbstats.intellect or dbstats.spirit or dbstats.spellPenetration or dbstats.spellPower
+		local hasPhysicalMarkers = dbstats.strength or dbstats.agility or dbstats.attackPower or dbstats.rangedAttackPower or dbstats.feralAttackPower
+			or dbstats.expertiseRating or dbstats.hitRating or dbstats.critRating or dbstats.hasteRating
+			or dbstats.defenseRating or dbstats.dodgeRating or dbstats.parryRating or dbstats.blockRating or dbstats.blockValue
+		local physicalSlot = dbitem.s == "Finger" or dbitem.s == "Neck" or dbitem.s == "Back" or dbitem.s == "Trinket"
+			or dbitem.s == "Head" or dbitem.s == "Shoulder" or dbitem.s == "Chest" or dbitem.s == "Robe"
+			or dbitem.s == "Wrist" or dbitem.s == "Wrists" or dbitem.s == "Hands" or dbitem.s == "Waist" or dbitem.s == "Legs" or dbitem.s == "Feet"
+			or dbitem.s == "OneHand" or dbitem.s == "MainHand" or dbitem.s == "OffHand" or dbitem.s == "TwoHand"
+			or dbitem.s == "Ranged" or dbitem.s == "RangedRight"
+		local knownPhysicalArmorPenTrinket = dbitem.s == "Trinket" and dbitem.n and (
+			dbitem.n == "Deathbringer's Will"
+			or dbitem.n == "Sharpened Twilight Scale"
+			or dbitem.n == "Banner of Victory"
+		)
+		if ((physicalSlot and hasPhysicalMarkers) or knownPhysicalArmorPenTrinket) and not hasCasterMarkers then
+			remapMp5ToArmorPen = true
+		end
+	end
+	if dbstats.spellPenetration then
+		local hasCasterCore = dbstats.intellect or dbstats.spirit or dbstats.spellPower or dbstats.mp5
+		local hasTankOrPhysical = dbstats.strength or dbstats.agility or dbstats.attackPower or dbstats.rangedAttackPower or dbstats.feralAttackPower
+			or dbstats.expertiseRating or dbstats.hitRating or dbstats.critRating or dbstats.hasteRating
+			or dbstats.defenseRating or dbstats.dodgeRating or dbstats.parryRating or dbstats.blockRating or dbstats.blockValue
+		if hasTankOrPhysical and not hasCasterCore then
+			remapSpellPenToBlockValue = true
 		end
 	end
 	if dbitem.st then
@@ -427,6 +481,10 @@ local function build_db_stats(dbitem)
 			if dbstats[dbkey] then
 				if dbkey == "armorPenetration" and remapArmorPenToSpellPower then
 					add_stat(stats, "SPELL_POWER", dbstats[dbkey])
+				elseif dbkey == "mp5" and remapMp5ToArmorPen then
+					add_stat(stats, "ARMOR_PENETRATION", dbstats[dbkey])
+				elseif dbkey == "spellPenetration" and remapSpellPenToBlockValue then
+					add_stat(stats, "BLOCK_VALUE", dbstats[dbkey])
 				else
 					add_stat(stats, blizzkey, dbstats[dbkey])
 				end
@@ -515,6 +573,7 @@ function ItemScore:GetItemDetailsFromDB(itemLinkOrID)
 		needs_exact_stats = ((dbsource.rp and dbsource.rp ~= 0) or (dbsource.sc and dbsource.sc ~= 0)) and true or false,
 		needs_live_scan = true,
 		name = (meta and meta.name) or dbsource.n,
+		ignore_for_gear = is_test_item_name((meta and meta.name) or dbsource.n),
 		fromdb = true,
 	}
 end
@@ -543,6 +602,9 @@ local function get_item_family(item)
 	if item.name then
 		local normalizedName = normalize_label(item.name)
 		if normalizedName then
+			if item.equiploc == "INVTYPE_RELIC" and RELIC_NAME_FAMILY_OVERRIDES[normalizedName] then
+				return RELIC_NAME_FAMILY_OVERRIDES[normalizedName]
+			end
 			if normalizedName:find("wand", 1, true) then return "WAND" end
 			if normalizedName:find("crossbow", 1, true) then return "CROSSBOW" end
 			if normalizedName:find("rifle", 1, true) or normalizedName:find("gun", 1, true) then return "GUN" end
@@ -1131,6 +1193,10 @@ function ItemScore:GetItemValidityForContext(itemlink, future, context)
 	local slot_1, slot_2, twohander, equippable, slotReason = get_item_slot_info(item)
 	if not equippable then
 		return {valid = false, final = true, reason = slotReason or "not equipment", code = "slot", item = item}
+	end
+
+	if item.ignore_for_gear then
+		return {valid = false, final = true, reason = "test item", code = "test_item", item = item}
 	end
 
 	if item.playerclass then
@@ -2424,6 +2490,16 @@ function ItemScore:GetItemValidity(itemlink, future)
 			final = true,
 			reason = slotReason or "not equipment",
 			code = "slot",
+			item = item,
+		}
+	end
+
+	if item.ignore_for_gear then
+		return {
+			valid = false,
+			final = true,
+			reason = "test item",
+			code = "test_item",
 			item = item,
 		}
 	end
