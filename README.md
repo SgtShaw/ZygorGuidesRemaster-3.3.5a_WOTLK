@@ -1,4 +1,4 @@
-﻿# Zygor Guides Viewer Remaster
+# Zygor Guides Viewer Remaster
 
 Remastered Zygor Guides Viewer for **World of Warcraft: Wrath of the Lich King (WotLK) 3.3.5a (build 12340)**.
 
@@ -164,6 +164,14 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
+### Revision 151 - 3.0.151
+
+- Normalized gear-signal handling so Gear Advisor, tooltip comparisons, master-loot notices, and loot-roll markers defer unresolved DB-backed items until live resolution is ready, improving same-item verdict consistency across the addon.
+- Added curated BIS annotations to Gear Finder without changing upgrade ranking, including gold-star BIS markers, Best In Slot Equipped status, and WotLK phase-aware BIS data scaffolding.
+- Expanded curated BIS coverage across all class and spec builds through pre-raid, T7, T8, T9, T10, Ruby Sanctum, and final late-phase targets, then refined side-slot and relic progression where it was safe to do so.
+- Fixed Gear Finder ranged-slot handling so wands and other ranged upgrades are not incorrectly blocked by the two-hand offhand rule.
+- Updated addon version metadata to 3.0.151.
+
 ### Revision 149 - 3.0.149
 
 - Continued the item database audit and materialized confirmed dirty imported stat patterns directly into `ZygorItemDB.lua`, including caster `armorPenetration -> spellPower`, physical `mp5 -> armorPenetration`, and tank/physical `spellPenetration -> blockValue` corrections.
@@ -327,6 +335,8 @@ This remaster focuses on UI/UX modernization, packaging quality, compatibility m
 
 <img width="433" height="247" alt="image" src="https://github.com/user-attachments/assets/579b6acb-df5e-4f40-8ef3-7d6b33e1015d" />
 <img width="436" height="248" alt="image" src="https://github.com/user-attachments/assets/a845b881-2831-43e3-bd26-5287f9783d68" />
+
+
 
 
 
