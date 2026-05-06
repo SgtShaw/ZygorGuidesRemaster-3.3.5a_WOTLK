@@ -164,6 +164,13 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
+### Revision 152 - 3.0.152
+
+- Carried the BIS rollout forward into a validation-focused release after the full class/spec phase coverage pass, keeping curated BIS annotations broad while tightening remaining early-tier healer/caster side-slot carry-forward gaps where the tier rows had dropped known Phase 1 weapons or wands.
+- Refined curated BIS data for multiple specs with safer early-tier weapon, shield, relic, and wand continuity so Gear Finder stars stay consistent with the intended progression path without changing recommendation ranking.
+- Updated the BIS work tracker to pivot from broad data fill toward in-game validation and targeted mismatch fixes, reflecting that the current work is now primarily spot-checking and maintenance.
+- Updated addon version metadata to 3.0.152.
+
 ### Revision 151 - 3.0.151
 
 - Normalized gear-signal handling so Gear Advisor, tooltip comparisons, master-loot notices, and loot-roll markers defer unresolved DB-backed items until live resolution is ready, improving same-item verdict consistency across the addon.
@@ -335,6 +342,8 @@ This remaster focuses on UI/UX modernization, packaging quality, compatibility m
 
 <img width="433" height="247" alt="image" src="https://github.com/user-attachments/assets/579b6acb-df5e-4f40-8ef3-7d6b33e1015d" />
 <img width="436" height="248" alt="image" src="https://github.com/user-attachments/assets/a845b881-2831-43e3-bd26-5287f9783d68" />
+
+
 
 
 
