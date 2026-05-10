@@ -7057,13 +7057,15 @@ function me:ApplyRemasterSkin(visualOnly)
 			remasterFrames.root:SetAlpha(opacitymain)
 			local rootc = (currentVariantData and currentVariantData.rootBackOverride) or backc
 			remasterFrames.root:SetBackdropColor(rootc[1], rootc[2], rootc[3], backalpha)
-			remasterFrames.root:SetBackdropBorderColor(theme.frameBorder[1], theme.frameBorder[2], theme.frameBorder[3], theme.frameBorder[4] or 1)
+			local rootBorderAlpha = (backalpha <= 0.005) and 0 or (theme.frameBorder[4] or 1)
+			remasterFrames.root:SetBackdropBorderColor(theme.frameBorder[1], theme.frameBorder[2], theme.frameBorder[3], rootBorderAlpha)
 		end
 		if remasterFrames.content then
 			local ib = theme.insetBg or backc
 			local ia = math.min(1, (theme.insetBg[4] or 0.95) * (backalpha / 0.3))
 			remasterFrames.content:SetBackdropColor(ib[1], ib[2], ib[3], ia)
-			remasterFrames.content:SetBackdropBorderColor(theme.insetBorder[1], theme.insetBorder[2], theme.insetBorder[3], theme.insetBorder[4] or 1)
+			local contentBorderAlpha = (backalpha <= 0.005) and 0 or (theme.insetBorder[4] or 1)
+			remasterFrames.content:SetBackdropBorderColor(theme.insetBorder[1], theme.insetBorder[2], theme.insetBorder[3], contentBorderAlpha)
 		end
 		if remasterFrames.headerBg then
 			local headerOverride = currentVariantData and currentVariantData.headerBgOverride
