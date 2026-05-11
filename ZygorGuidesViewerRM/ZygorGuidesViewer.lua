@@ -2114,7 +2114,8 @@ do
 
 		bar:SetAlpha(opacitymain)
 		bar:SetBackdropColor(backc[1], backc[2], backc[3], backalpha)
-		bar:SetBackdropBorderColor(border[1], border[2], border[3], border[4])
+		local barBorderAlpha = (backalpha <= 0.005) and 0 or (border[4] or 1)
+		bar:SetBackdropBorderColor(border[1], border[2], border[3], barBorderAlpha)
 		if bar.close and bar.close.x then
 			bar.close.x:SetTextColor(textc[1], textc[2], textc[3], 0.95)
 		end
@@ -7822,7 +7823,9 @@ function me:SkipStep(delta,fast)
 end
 
 function me:Print(s)
-	ChatFrame1:AddMessage(L['name']..": "..tostring(s))
+	if not self.db or not self.db.profile or not self.db.profile.mute_chat then
+		ChatFrame1:AddMessage(L['name']..": "..tostring(s))
+	end
 end
 
 function me:AnimateGears()
