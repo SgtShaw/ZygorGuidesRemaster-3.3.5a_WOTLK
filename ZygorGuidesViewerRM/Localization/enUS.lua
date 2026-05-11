@@ -230,6 +230,12 @@ ZygorGuidesViewer_L("Main", "enUS", function() return {
 	['opt_analyzereps'] = "Detailed reputation gains",
 	['opt_analyzereps_desc'] = "Display verbose reputation gain messages in chat, showing percentage gained and next standing.",
 
+	['opt_mute_chat'] = "Mute addon chat spam",
+	['opt_mute_chat_desc'] = "Silence all addon status messages in chat window.",
+
+	['opt_gold_tooltips_show'] = "Show Gold vendor prices in tooltips",
+	['opt_gold_tooltips_show_desc'] = "Append vendor sell prices and market status to item tooltips.",
+
 	-- Gold Guide options
 
 	['opt_group_gold'] = "Gold Guide",

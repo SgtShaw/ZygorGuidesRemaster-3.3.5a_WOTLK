@@ -2114,7 +2114,8 @@ do
 
 		bar:SetAlpha(opacitymain)
 		bar:SetBackdropColor(backc[1], backc[2], backc[3], backalpha)
-		bar:SetBackdropBorderColor(border[1], border[2], border[3], border[4])
+		local barBorderAlpha = (backalpha <= 0.005) and 0 or (border[4] or 1)
+		bar:SetBackdropBorderColor(border[1], border[2], border[3], barBorderAlpha)
 		if bar.close and bar.close.x then
 			bar.close.x:SetTextColor(textc[1], textc[2], textc[3], 0.95)
 		end
@@ -7057,13 +7058,15 @@ function me:ApplyRemasterSkin(visualOnly)
 			remasterFrames.root:SetAlpha(opacitymain)
 			local rootc = (currentVariantData and currentVariantData.rootBackOverride) or backc
 			remasterFrames.root:SetBackdropColor(rootc[1], rootc[2], rootc[3], backalpha)
-			remasterFrames.root:SetBackdropBorderColor(theme.frameBorder[1], theme.frameBorder[2], theme.frameBorder[3], theme.frameBorder[4] or 1)
+			local rootBorderAlpha = (backalpha <= 0.005) and 0 or (theme.frameBorder[4] or 1)
+			remasterFrames.root:SetBackdropBorderColor(theme.frameBorder[1], theme.frameBorder[2], theme.frameBorder[3], rootBorderAlpha)
 		end
 		if remasterFrames.content then
 			local ib = theme.insetBg or backc
 			local ia = math.min(1, (theme.insetBg[4] or 0.95) * (backalpha / 0.3))
 			remasterFrames.content:SetBackdropColor(ib[1], ib[2], ib[3], ia)
-			remasterFrames.content:SetBackdropBorderColor(theme.insetBorder[1], theme.insetBorder[2], theme.insetBorder[3], theme.insetBorder[4] or 1)
+			local contentBorderAlpha = (backalpha <= 0.005) and 0 or (theme.insetBorder[4] or 1)
+			remasterFrames.content:SetBackdropBorderColor(theme.insetBorder[1], theme.insetBorder[2], theme.insetBorder[3], contentBorderAlpha)
 		end
 		if remasterFrames.headerBg then
 			local headerOverride = currentVariantData and currentVariantData.headerBgOverride
@@ -7820,7 +7823,9 @@ function me:SkipStep(delta,fast)
 end
 
 function me:Print(s)
-	ChatFrame1:AddMessage(L['name']..": "..tostring(s))
+	if not self.db or not self.db.profile or not self.db.profile.mute_chat then
+		ChatFrame1:AddMessage(L['name']..": "..tostring(s))
+	end
 end
 
 function me:AnimateGears()

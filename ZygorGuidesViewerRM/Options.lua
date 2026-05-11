@@ -72,6 +72,7 @@ function me:Options_RegisterDefaults()
 			autoquestreward = false,
 			fixblizzardautoaccept = false,
 			analyzereps = false,
+			mute_chat = false,
 			colorblindmode = "off",
 
 
@@ -639,6 +640,12 @@ function me:Options_DefineOptions()
 						set = function(i,v)
 							Setter_Simple(i,v)
 							self:UpdateSkin(self.db and self.db.profile and self:IsRemasterSkin())
+							if self.ActionButtons_ApplyProfile then
+								self:ActionButtons_ApplyProfile()
+							end
+							if self.TargetPreview_ApplyProfile then
+								self:TargetPreview_ApplyProfile()
+							end
 						end,
 						min=0.0,
 						max=1.0,
@@ -1106,6 +1113,23 @@ function me:Options_DefineOptions()
 				set = function(i,v) Setter_Simple(i,v)  end,
 				width = "full",
 				order = 3.7,
+			},
+			mute_chat = {
+				name = L["opt_mute_chat"],
+				desc = L["opt_mute_chat_desc"],
+				type = 'toggle',
+				set = function(i,v) Setter_Simple(i,v)  end,
+				width = "full",
+				order = 3.8,
+			},
+			gold_tooltips_show = {
+				name = L["opt_gold_tooltips_show"],
+				desc = L["opt_gold_tooltips_show_desc"],
+				type = 'toggle',
+				get = Getter_Simple,
+				set = Setter_Simple,
+				width = "full",
+				order = 3.9,
 			},
 		}
 	}
@@ -1762,6 +1786,12 @@ function me:Options_DefineOptions()
 				set = function(i,v)
 					Setter_Simple(i,v)
 					self:UpdateSkin(self.db and self.db.profile and self:IsRemasterSkin())
+					if self.ActionButtons_ApplyProfile then
+						self:ActionButtons_ApplyProfile()
+					end
+					if self.TargetPreview_ApplyProfile then
+						self:TargetPreview_ApplyProfile()
+					end
 				end,
 				min = 0.0,
 				max = 1.0,
@@ -2098,7 +2128,13 @@ function me:Options_DefineOptions()
 		width = "full",
 		order = 22,
 		disabled = function() return not self.db.profile.actionbuttonbar_enabled end,
-		set = function(info, value) Setter_Simple(info, value) if self.ActionButtons_ApplyProfile then self:ActionButtons_ApplyProfile() end end,
+		set = function(info, value)
+			Setter_Simple(info, value)
+			if self.ActionButtons_ApplyProfile then self:ActionButtons_ApplyProfile() end
+			if self.ActionButtonBar and self.ActionButtons_UpdateDragState then
+				self:ActionButtons_UpdateDragState()
+			end
+		end,
 	}
 	self.optionsactionbuttons.args.actionbuttonbar_scale = {
 		name = L["opt_actionbar_scale"],
@@ -2210,7 +2246,13 @@ function me:Options_DefineOptions()
 		width = "full",
 		order = 33,
 		disabled = function() return not self.db.profile.targetpreview_enabled end,
-		set = function(info, value) Setter_Simple(info, value) if self.TargetPreview_ApplyProfile then self:TargetPreview_ApplyProfile() end end,
+		set = function(info, value)
+			Setter_Simple(info, value)
+			if self.TargetPreview_ApplyProfile then self:TargetPreview_ApplyProfile() end
+			if self.TargetPreviewPane and self.TargetPreview_UpdateDragState then
+				self:TargetPreview_UpdateDragState()
+			end
+		end,
 	}
 	self.optionsactionbuttons.args.targetpreview_scale = {
 		name = L["opt_targetpreview_scale"],

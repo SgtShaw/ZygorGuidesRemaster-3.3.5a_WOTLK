@@ -164,6 +164,16 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
+### Revision 158 - 3.0.158
+
+- Adds @hypopheria2k's PR Merge:
+  - Adds more Database Items that were originally missed, including roughly 365 Items.
+  - Adds Questing: Mute addon chat spam, preventing Zygor Guides from Letting you know every detail that's going on.
+  - Adds Questing: Show Gold vendor prices in tooltips, disabling the Auction House GOLD guide integration in the tooltips.
+  - Background opacity now hides borders on all panels.
+- Updated addon version metadata to 3.0.158.
+Thanks Hypo!
+
 ### Revision 157 - 3.0.157
 
 - Added a WotLK client guard in Gear Finder so later-client imported dungeon item IDs are skipped instead of being considered for 3.3.5a recommendations.

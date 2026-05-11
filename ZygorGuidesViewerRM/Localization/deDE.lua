@@ -150,6 +150,12 @@ ZygorGuidesViewer_L("Main", "deDE", function() return {
     ['opt_backopacity'] = "Hintergrund-Deckkraft",
     ['opt_backopacity_desc'] = "Deckkraft des Fensterhintergrunds.",
 
+    ['opt_mute_chat'] = "Info Chatnachrichten abschalten",
+	['opt_mute_chat_desc'] = "Schaltet alle Statusmeldungen im Chat aus.",
+
+    ['opt_gold_tooltips_show'] = "Gold-Verkaufspreise in Tooltips anzeigen",
+	['opt_gold_tooltips_show_desc'] = "Fügt Händlerverkaufspreise und Marktstatus zu Item-Tooltips hinzu.",
+
     --["mainframe_guide"] = "Select a guide:",
     --["mainframe_notloaded"] = "No leveling guides are loaded.|n|nPlease go to http://zygorguides.com to purchase Zygor's 1-80 Leveling Guides, or load some third-party guides.|n|nIf you're sure you have installed some guides, ask their authors for installation troubleshooting.",
     --["mainframe_notselected"] = "%d guides are loaded.|nPlease select a guide from the list above.",
