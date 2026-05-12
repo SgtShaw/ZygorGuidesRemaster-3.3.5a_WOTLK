@@ -2024,17 +2024,22 @@ function me:Options_DefineOptions()
 				desc = L["opt_travel_use_librover_desc"],
 				width = "full",
 				get = function()
-					return self.LibRover and self.db.profile.travel_use_librover == true
+					return self.db.profile.travel_use_librover == true
 				end,
 				set = function(_,v)
 					self.db.profile.travel_use_librover = v == true
-					if not self.db.profile.travel_use_librover and self.ClearLibRoverPath then
+					if self.db.profile.travel_use_librover then
+						self.LibRover = self.LibRover or _G.LibRover
+						if self.LibRover and self.LibRover.DoStartup and not self.LibRover.ready and not self.LibRover.startup_thread then
+							self.LibRover:DoStartup()
+						end
+					elseif self.ClearLibRoverPath then
 						self:ClearLibRoverPath()
+						if self.LibRover and self.LibRover.StopStartup and self.LibRover.startup_thread and not self.LibRover.ready then
+							self.LibRover:StopStartup()
+						end
 					end
 					self:SetWaypoint()
-				end,
-				disabled = function()
-					return not self.LibRover
 				end,
 			},
 			pathfinding_speed = {
@@ -2061,7 +2066,7 @@ function me:Options_DefineOptions()
 					end
 				end,
 				disabled = function()
-					return not self.LibRover or not self.db.profile.pathfinding or self.db.profile.travel_use_librover ~= true
+					return not (self.LibRover or _G.LibRover) or not self.db.profile.pathfinding or self.db.profile.travel_use_librover ~= true
 				end,
 			},
 			travel_do_full_linking_at_startup = {
@@ -2071,7 +2076,7 @@ function me:Options_DefineOptions()
 				desc = L["opt_travel_full_linking_startup_desc"],
 				width = "full",
 				disabled = function()
-					return not self.LibRover or self.db.profile.travel_use_librover ~= true
+					return not (self.LibRover or _G.LibRover) or self.db.profile.travel_use_librover ~= true
 				end,
 			},
 			memory_header = {

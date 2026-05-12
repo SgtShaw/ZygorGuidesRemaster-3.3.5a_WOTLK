@@ -2256,8 +2256,9 @@ local function BuildCurrentSectionRows(self, searchText)
 	return rows
 end
 
-local RETAIL_UI_FONT = ZGV.DIR.."\\Skins\\segoeui.ttf"
-local RETAIL_UI_FONT_BOLD = ZGV.DIR.."\\Skins\\segoeuib.ttf"
+local CJK_LOCALE = GetLocale and (GetLocale() == "zhCN" or GetLocale() == "zhTW" or GetLocale() == "koKR")
+local RETAIL_UI_FONT = CJK_LOCALE and STANDARD_TEXT_FONT or ZGV.DIR.."\\Skins\\segoeui.ttf"
+local RETAIL_UI_FONT_BOLD = CJK_LOCALE and STANDARD_TEXT_FONT or ZGV.DIR.."\\Skins\\segoeuib.ttf"
 local RETAIL_GUIDE_ICONS_BIG = ZGV.DIR.."\\Skins\\guideicons-big"
 local RETAIL_MENU_IMAGE_FALLBACK = ZGV.DIR.."\\Skins\\menu_noimage"
 local RETAIL_TITLEBUTTONS_TEXTURE = ZGV.DIR.."\\Skins\\Default\\Stealth\\titlebuttons.tga"
@@ -2829,14 +2830,14 @@ title="The Burning Crusade", group="tbc",
 local function wn_colourise(str, gray, dev)
 	if not str then return "" end
 	if not (gray or dev) then
-		str = str:gsub("[**]+([^\*]+)[**]+", "|cfffe6100%1|r")
-		str = str:gsub("[==]+([^\=]+)[==]+", "|cffbbbbbb%1|r")
+		str = str:gsub("%*%*([^%*]+)%*%*", "|cfffe6100%1|r")
+		str = str:gsub("==([^=]+)==", "|cffbbbbbb%1|r")
 	elseif dev then
-		str = str:gsub("[**]+([^\*]+)[**]+", "|cffff9a5c%1|r")
-		str = str:gsub("[==]+([^\=]+)[==]+", "|cffbbbbbb%1|r")
+		str = str:gsub("%*%*([^%*]+)%*%*", "|cffff9a5c%1|r")
+		str = str:gsub("==([^=]+)==", "|cffbbbbbb%1|r")
 	else
-		str = str:gsub("[**]+([^\*]+)[**]+", "|cffaaaaaa%1|r")
-		str = str:gsub("[==]+([^\=]+)[==]+", "|cffaaaaaa%1|r")
+		str = str:gsub("%*%*([^%*]+)%*%*", "|cffaaaaaa%1|r")
+		str = str:gsub("==([^=]+)==", "|cffaaaaaa%1|r")
 	end
 	return str
 end

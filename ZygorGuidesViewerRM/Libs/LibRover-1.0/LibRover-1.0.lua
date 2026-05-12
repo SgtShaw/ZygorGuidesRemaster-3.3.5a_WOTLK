@@ -1687,6 +1687,7 @@ do
 				self.F:Hide()
 				self.F:SetScript("OnUpdate",nil)
 			end
+			if self.F == true then self.F = nil end
 			self.startup_thread=nil
 		end
 
@@ -4243,7 +4244,7 @@ do
 			self.calculating=false
 			self.thread=nil
 			lam,laf,lax,lay,lbm,lbf,lbx,lby = nil
-			if was_updating and ZGV.Pointer and ZGV.Pointer.PathFoundHandler then ZGV.Pointer.PathFoundHandler("aborted") end
+			if was_updating and ZGV and ZGV.Pointer and ZGV.Pointer.PathFoundHandler then ZGV.Pointer.PathFoundHandler("aborted") end
 		end
 
 		function Lib:Stop()
@@ -4447,10 +4448,6 @@ do
 		local function onEvent(this, event, arg1, arg2, arg3, arg4, arg5)
 			local Lib=Lib
 			local self=Lib
-
-			if event=="ADDON_LOADED" and arg1==addonName then
-				Lib:DoStartup()
-			end
 
 			if not Lib.ready then return end
 

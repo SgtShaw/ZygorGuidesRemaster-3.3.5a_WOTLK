@@ -2530,6 +2530,18 @@ local function safeSetFont(fontString, fontPath, size, flags)
 	return ok
 end
 
+local function UseClientLocaleFont()
+	local locale = GetLocale and GetLocale()
+	return locale == "zhCN" or locale == "zhTW" or locale == "koKR"
+end
+
+local function safeSetRemasterFont(fontString, fontPath, size, flags)
+	if UseClientLocaleFont() then
+		return safeSetFont(fontString, STANDARD_TEXT_FONT, size, flags)
+	end
+	return safeSetFont(fontString, fontPath, size, flags)
+end
+
 function me:EnsureSectionTitleFont()
 	local title = ZygorGuidesViewerFrame_Border_SectionTitle
 	if not title or not title.GetFont then
@@ -2542,7 +2554,7 @@ function me:EnsureSectionTitleFont()
 	local size = 11
 	if self.db and self.db.profile and self:IsRemasterSkin() then
 		size = 13
-		if safeSetFont(title, ZGV.DIR.."\\Skins\\segoeuib.ttf", size) then
+		if safeSetRemasterFont(title, ZGV.DIR.."\\Skins\\segoeuib.ttf", size) then
 			return
 		end
 	end
@@ -3127,8 +3139,8 @@ function me:UpdateRemasterHeader()
 		local function ensureTitleFont()
 			local fp = titleFS.GetFont and titleFS:GetFont()
 			if fp then return true end
-			if safeSetFont(titleFS, ZGV.DIR.."\\Skins\\segoeuib.ttf", 13) then return true end
-			if safeSetFont(titleFS, ZGV.DIR.."\\Skins\\segoeui.ttf", 13) then return true end
+			if safeSetRemasterFont(titleFS, ZGV.DIR.."\\Skins\\segoeuib.ttf", 13) then return true end
+			if safeSetRemasterFont(titleFS, ZGV.DIR.."\\Skins\\segoeui.ttf", 13) then return true end
 			if safeSetFont(titleFS, STANDARD_TEXT_FONT, 13) then return true end
 			local ok = pcall(titleFS.SetFontObject, titleFS, "GameFontNormalSmall")
 			if ok and titleFS.GetFont and titleFS:GetFont() then return true end
@@ -3153,7 +3165,7 @@ function me:UpdateRemasterHeader()
 		if fontPath then
 			measureReady = safeSetFont(measureFS, fontPath, fontSize or 13, fontFlags)
 		else
-			measureReady = safeSetFont(measureFS, ZGV.DIR.."\\Skins\\segoeuib.ttf", 13)
+			measureReady = safeSetRemasterFont(measureFS, ZGV.DIR.."\\Skins\\segoeuib.ttf", 13)
 		end
 		if not measureReady then
 			measureReady = safeSetFont(measureFS, STANDARD_TEXT_FONT, 13)
@@ -3468,8 +3480,8 @@ function me:EnsureRemasterFrames()
 	title:SetPoint("LEFT", header, "LEFT", 8, 0)
 	title:SetJustifyH("LEFT")
 	title:SetTextColor(0.92, 0.94, 0.98, 1)
-	if not safeSetFont(title, ZGV.DIR.."\\Skins\\segoeuib.ttf", 13)
-		and not safeSetFont(title, ZGV.DIR.."\\Skins\\segoeui.ttf", 13) then
+	if not safeSetRemasterFont(title, ZGV.DIR.."\\Skins\\segoeuib.ttf", 13)
+		and not safeSetRemasterFont(title, ZGV.DIR.."\\Skins\\segoeui.ttf", 13) then
 		safeSetFont(title, STANDARD_TEXT_FONT, 13)
 	end
 	frames.headerTitle = title
@@ -3478,7 +3490,7 @@ function me:EnsureRemasterFrames()
 	meta:SetPoint("RIGHT", header, "RIGHT", -10, 0)
 	meta:SetJustifyH("RIGHT")
 	meta:SetTextColor(0.70, 0.75, 0.85, 1)
-	if not safeSetFont(meta, ZGV.DIR.."\\Skins\\segoeui.ttf", 11) then
+	if not safeSetRemasterFont(meta, ZGV.DIR.."\\Skins\\segoeui.ttf", 11) then
 		safeSetFont(meta, STANDARD_TEXT_FONT, 11)
 	end
 	frames.headerMeta = meta
@@ -3619,7 +3631,7 @@ function me:EnsureRemasterFrames()
 	stepLabel:SetPoint("LEFT", nextButton, "RIGHT", 8, 0)
 	stepLabel:SetJustifyH("LEFT")
 	stepLabel:SetTextColor(0.78, 0.82, 0.9, 1)
-	if not safeSetFont(stepLabel, ZGV.DIR.."\\Skins\\segoeui.ttf", 11) then
+	if not safeSetRemasterFont(stepLabel, ZGV.DIR.."\\Skins\\segoeui.ttf", 11) then
 		safeSetFont(stepLabel, STANDARD_TEXT_FONT, 11)
 	end
 	frames.stepLabel = stepLabel
@@ -3945,6 +3957,11 @@ function me:OnEnable()
 	self:AddEvent("PLAYER_CONTROL_GAINED")  -- try to force current zone updates; should prevent GoTo lines from locking up after a taxi flight
 
 	--self.startuptimer = self:ScheduleRepeatingTimer("StartupTimer", 0.1)
+
+	self.LibRover = self.LibRover or _G.LibRover
+	if self.db.profile.travel_use_librover and self.db.profile.pathfinding and self.LibRover and self.LibRover.DoStartup and not self.LibRover.ready and not self.LibRover.startup_thread then
+		self.LibRover:DoStartup()
+	end
 
 	-- startup 'modules'
 	for i,startup in ipairs(self.startups) do
@@ -4878,11 +4895,12 @@ function me:UpdateFrame(full,onupdate,nonsecure_only)
 			and self.db.profile
 			and self.db.profile.displaymode == "guide"
 			and not self.db.profile.showallsteps
+		local showProgressFooter = compactGuide and self.db.profile.showguideprogressbar ~= false
 		LayoutRemasterFrames(
 			remasterFrames,
 			self.db and self.db.profile and self.db.profile.resizeup,
-			compactGuide,
-			math.max(compactMetrics.progressReserve, 8)
+			showProgressFooter,
+			showProgressFooter and math.max(compactMetrics.progressReserve, 8) or 0
 		)
 		if ZygorGuidesViewerFrameScroll and remasterFrames and remasterFrames.content then
 			ZygorGuidesViewerFrameScroll:ClearAllPoints()
@@ -6917,11 +6935,12 @@ function me:ApplyRemasterSkin(visualOnly)
 			and self.db.profile
 			and self.db.profile.displaymode == "guide"
 			and not self.db.profile.showallsteps
+		local showProgressFooter = compactGuide and self.db.profile.showguideprogressbar ~= false
 		LayoutRemasterFrames(
 			remasterFrames,
 			self.db and self.db.profile and self.db.profile.resizeup,
-			compactGuide,
-			math.max(compactMetrics.progressReserve, 8)
+			showProgressFooter,
+			showProgressFooter and math.max(compactMetrics.progressReserve, 8) or 0
 		)
 		if ZygorGuidesViewerFrameMaster and ZygorGuidesViewerFrame then
 			ZygorGuidesViewerFrame:ClearAllPoints()
@@ -7497,12 +7516,13 @@ function me:ResizeFrame()
 			if count < 1 then count = 1 end
 			local contentHeight = self:GetVisibleStepContentHeight(count)
 			local compactMetrics = self:GetCompactGuideLayoutMetrics()
+			local showProgressFooter = self.db.profile.showguideprogressbar ~= false
 			local extra = 40
 				if self.RemasterFrames and self.RemasterFrames.header and self.RemasterFrames.toolbar then
 					local headerh = self.RemasterFrames.header:GetHeight() or 34
 					local toolbarh = self.RemasterFrames.toolbar:GetHeight() or 28
-					local footerh = compactMetrics.progressReserve or 0
-					if self.RemasterFrames.footer and self.RemasterFrames.footer.IsShown and self.RemasterFrames.footer:IsShown() then
+					local footerh = showProgressFooter and (compactMetrics.progressReserve or 0) or 0
+					if showProgressFooter and self.RemasterFrames.footer and self.RemasterFrames.footer.IsShown and self.RemasterFrames.footer:IsShown() then
 						footerh = self.RemasterFrames.footer:GetHeight() or footerh
 					end
 					local scrollPad = 4
@@ -7532,8 +7552,8 @@ function me:ResizeFrame()
 				LayoutRemasterFrames(
 					self.RemasterFrames,
 					self.db.profile.resizeup,
-					true,
-					math.max(compactMetrics.progressReserve, 8)
+					showProgressFooter,
+					showProgressFooter and math.max(compactMetrics.progressReserve, 8) or 0
 				)
 			end
 			if ZygorGuidesViewerFrameScrollChild and ZygorGuidesViewerFrameScroll then

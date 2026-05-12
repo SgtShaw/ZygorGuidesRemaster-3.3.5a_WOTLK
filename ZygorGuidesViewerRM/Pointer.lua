@@ -466,6 +466,17 @@ local function RemasterFormatTitle(title,waypoint)
 	if not title then return nil end
 	-- Preserve existing explicit color formatting from guide text if present.
 	if title:find("|c%x%x%x%x%x%x%x%x") then return title end
+	if waypoint and waypoint.travelTitle then
+		local prefix,place = title:match("^(Fly to%s+)(.+)$")
+		if prefix and place then
+			return "|cffffffff"..prefix.."|r"..RemasterNounColor("location")..place.."|r"
+		end
+		prefix,place = title:match("^(Travel to%s+)(.+)$")
+		if prefix and place then
+			return "|cffffffff"..prefix.."|r"..RemasterNounColor("location")..place.."|r"
+		end
+		return "|cffffffff"..title.."|r"
+	end
 
 	local step = ZGV and ZGV.CurrentStep
 	local goal = waypoint and waypoint.goal

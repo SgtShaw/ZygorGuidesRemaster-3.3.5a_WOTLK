@@ -1,6 +1,8 @@
 if GetLocale()~="zhCN" then return end
 
-ZygorGuidesViewer.LocaleFont = [[Fonts\ZYKai_T.ttf]]
+-- Use the client-provided Chinese font through STANDARD_TEXT_FONT.
+-- Forcing Fonts\ZYKai_T.ttf can fail on clients that do not ship that exact file.
+ZygorGuidesViewer.LocaleFont = nil
 
 ZygorGuidesViewer_L("Main", "zhCN", function() return {
 	["name"] = "|cffffff88Z|cffffee66y|cffffdd44g|cffffcc22o|cffffbb00r |cffffaa00Guides Viewer|r",

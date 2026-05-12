@@ -259,6 +259,7 @@ local function GetTaxiAdvice(playerZone, destZone, playerCont)
 end
 
 local function CanUseLibRoverPath()
+	if ZGV then ZGV.LibRover = ZGV.LibRover or _G.LibRover end
 	return ZGV
 		and ZGV.db
 		and ZGV.db.profile
@@ -267,6 +268,12 @@ local function CanUseLibRoverPath()
 		and ZGV.LibRover
 		and ZGV.LibRover.QueueFindPath
 		and ZGV.LibRover.Abort
+end
+
+local function StartLibRoverIfNeeded()
+	if not ZGV or not ZGV.LibRover or not ZGV.LibRover.DoStartup then return end
+	if ZGV.LibRover.ready or ZGV.LibRover.startup_thread or ZGV.LibRover.initializing then return end
+	ZGV.LibRover:DoStartup()
 end
 
 local function GetMapIDForGoal(goal, fallbackMap)
@@ -320,8 +327,60 @@ local function PickNextLibRoverNode(path)
 	return path[2]
 end
 
+local GetTravelAdvice
+
+local function ShowDirectWaypoint(finalWaypoint, reason)
+	if not ZGV or not ZGV.Pointer or not finalWaypoint then return end
+	if finalWaypoint.minimapFrame then
+		if reason then finalWaypoint.errortext = reason end
+		ZGV.Pointer:ShowArrow(finalWaypoint)
+		return
+	end
+	local goal = finalWaypoint.goal
+	local way = ZGV.Pointer:SetWaypoint(nil, finalWaypoint.map, finalWaypoint.x, finalWaypoint.y, {
+		title = finalWaypoint.t or "Destination",
+		titleloc = finalWaypoint.titleloc,
+		goal = goal,
+		onminimap = "always",
+		overworld = true,
+	})
+	if way and reason then way.errortext = reason end
+end
+
+local function ShowTravelAdviceWaypoint(finalWaypoint)
+	if not ZGV or not ZGV.Pointer or not finalWaypoint or not GetTravelAdvice then return false end
+	local destZone = finalWaypoint.map
+	if not destZone or destZone == GetRealZoneText() then return false end
+	local advice = GetTravelAdvice(destZone)
+	if not advice then return false end
+	if advice.zone and advice.x and advice.y then
+		ZGV.Pointer:ClearWaypoints("route")
+		local way = ZGV.Pointer:SetWaypoint(nil, advice.zone, advice.x, advice.y, {
+			title = advice.text,
+			type = "route",
+			travelDestZone = destZone,
+			travelTitle = true,
+			onminimap = "always",
+			overworld = true,
+		})
+		if way then
+			way.t = advice.text
+			way.travelTitle = true
+			ZGV.Pointer:ShowArrow(way)
+			return true
+		end
+	elseif advice.text then
+		finalWaypoint.t = advice.text
+		finalWaypoint.travelTitle = true
+		ShowDirectWaypoint(finalWaypoint)
+		return true
+	end
+	return false
+end
+
 local function StartLibRoverPath(finalWaypoint)
 	if not CanUseLibRoverPath() or not finalWaypoint or not finalWaypoint.goal then return false end
+	StartLibRoverIfNeeded()
 	local goal = finalWaypoint.goal
 	if goal.waypoint_notravel then return false end
 	local mapID = GetMapIDForGoal(goal, finalWaypoint.map)
@@ -339,13 +398,14 @@ local function StartLibRoverPath(finalWaypoint)
 
 	local function LibRoverPathHandler(state, path, ext, reason)
 		if not ZGV or ZGV.activeLibRoverWaypointToken ~= token then return end
-		if state == "progress" then return end
+		state = type(state) == "string" and state:lower() or state
+		if state == "progress" then
+			if not ShowTravelAdviceWaypoint(finalWaypoint) then ShowDirectWaypoint(finalWaypoint) end
+			return
+		end
 		if state == "failure" then
 			currentLibRoverPath = nil
-			if finalWaypoint then
-				finalWaypoint.errortext = reason
-				ZGV.Pointer:ShowArrow(finalWaypoint)
-			end
+			if not ShowTravelAdviceWaypoint(finalWaypoint) then ShowDirectWaypoint(finalWaypoint, reason) end
 			return
 		end
 		if state ~= "success" then return end
@@ -368,20 +428,23 @@ local function StartLibRoverPath(finalWaypoint)
 			onminimap = "always",
 			overworld = true,
 			pathnode = node,
+			travelTitle = true,
 		})
 		if routeWaypoint then
 			routeWaypoint.goal = finalWaypoint.goal
 			routeWaypoint.titleloc = finalWaypoint.titleloc
+			routeWaypoint.travelTitle = true
 			ZGV.Pointer:ShowArrow(routeWaypoint)
 		end
 	end
 
+	if not ShowTravelAdviceWaypoint(finalWaypoint) then ShowDirectWaypoint(finalWaypoint) end
 	ZGV.LibRover:Abort("before guide waypoint path", "quiet")
 	ZGV.LibRover:QueueFindPath(0, 0, 0, mapID, x, y, LibRoverPathHandler, { title = finalWaypoint.t or "Destination", waypoint = finalWaypoint })
 	return true
 end
 
-local function GetTravelAdvice(destZone)
+function GetTravelAdvice(destZone)
 	if not destZone then return nil end
 	local playerZone = GetRealZoneText()
 	if playerZone == destZone then return nil end
@@ -778,12 +841,34 @@ me.WaypointFunctions['internal'] = {
 			-- Travel Advisor: detect cross-zone goals
 			local currentZone = GetRealZoneText()
 			local crossZoneDest = nil
+			local advancedTravelGoal = nil
 			for _,goal in ipairs(goals) do
 				local gmap = goal.map or (self.CurrentStep and self.CurrentStep.map)
 				if gmap and gmap ~= currentZone and goal.x and goal.y then
 					crossZoneDest = gmap
+					if not goal.force_noway and not goal.waypoint_notravel then
+						advancedTravelGoal = goal
+					end
 					break
 				end
+			end
+			if crossZoneDest and advancedTravelGoal and CanUseLibRoverPath() then
+				local gmap = advancedTravelGoal.map or (self.CurrentStep and self.CurrentStep.map) or crossZoneDest
+				local waypointTitle =
+					advancedTravelGoal.title
+					or GetRemasterArrowTitle(self, advancedTravelGoal, title)
+					or self.CurrentStep:GetTitle()
+					or (gmap and advancedTravelGoal.x and ("%s %d,%d"):format(gmap, advancedTravelGoal.x, advancedTravelGoal.y))
+					or L['waypoint_step']:format(self.CurrentStepNum)
+				local travelWaypoint = {
+					t = waypointTitle,
+					map = gmap,
+					x = advancedTravelGoal.x,
+					y = advancedTravelGoal.y,
+					goal = advancedTravelGoal,
+					titleloc = FormatWaypointLocation(advancedTravelGoal, gmap),
+				}
+				if StartLibRoverPath(travelWaypoint) then return end
 			end
 			if not goalnumORx then
 				for i=1,#self.CurrentStep.goals do
@@ -909,15 +994,18 @@ me.WaypointFunctions['internal'] = {
 							title = advice.text,
 							type = "route",
 							travelDestZone = crossZoneDest,
+							travelTitle = true,
 							onminimap = "always",
 							overworld = true,
 						})
 						if transitWay then
 							selected = transitWay
 							selected.t = advice.text
+							selected.travelTitle = true
 						end
 					elseif advice then
 						selected.t = advice.text
+						selected.travelTitle = true
 					end
 				end
 				self.Pointer:ShowArrow (selected)

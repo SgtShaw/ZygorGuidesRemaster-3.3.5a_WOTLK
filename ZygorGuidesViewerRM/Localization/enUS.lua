@@ -849,7 +849,7 @@ ZygorGuidesViewer_L("Main", "enUS", function() return {
 	["opt_optimization_routing_header"] = "Travel Routing",
 	["opt_optimization_routing_desc"] = "Control how aggressively the built-in travel system calculates and prepares routes.",
 	["opt_travel_use_librover"] = "Use advanced LibRover routing",
-	["opt_travel_use_librover_desc"] = "Use LibRover for guide travel routing when that library is loaded. If this option is disabled, LibRover is not loaded and routing uses the lightweight flight-path fallback.",
+	["opt_travel_use_librover_desc"] = "Use the advanced LibRover travel system for guide routing. Disable this to use the lightweight flight-path fallback.",
 	["opt_pathfinding_speed"] = "Route Calculation Budget",
 	["opt_pathfinding_speed_desc"] = "Controls how much work LibRover does per update while building routes. Lower values reduce CPU spikes; higher values finish recalculations sooner.",
 	["opt_pathfinding_speed_slow"] = "Slow (Lowest CPU)",
