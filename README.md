@@ -164,6 +164,12 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
+### Revision 164 - 3.0.164
+
+- Added a small remaster compact-view spacing adjustment for 1-5 step mode so each inline step background/border has extra padding around the text.
+- Increased compact step breathing room to 3px top/bottom padding and a 6px horizontal text inset without changing the full "show all steps" layout.
+- Updated addon version metadata to 3.0.164.
+
 ### Revision 163 - 3.0.163
 
 - Added a Step Display toggle to hide the guide progress bar, including the remaster footer frame that contained it, so disabling the option removes the empty bottom container as well.

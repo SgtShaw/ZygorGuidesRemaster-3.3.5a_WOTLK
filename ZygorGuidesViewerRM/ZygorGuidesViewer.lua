@@ -2704,8 +2704,9 @@ function me:GetCompactGuideLayoutMetrics()
 	and not self.db.profile.showallsteps
 	then
 		metrics.lineSpacing = 0
-		metrics.stepTopPadding = 0
-		metrics.stepBottomPadding = 0
+		metrics.stepTopPadding = 3
+		metrics.stepBottomPadding = 3
+		metrics.compactTextInset = 6
 		if self.db.profile.showguideprogressbar ~= false then
 			metrics.progressReserve = 14
 		end
@@ -2787,7 +2788,11 @@ function me:GetGuideStepContentWidth(frame)
 		width = frame:GetWidth() or 0
 	end
 	if self.db and self.db.profile and self:IsRemasterSkin() then
-		return math.max(width - self.ICON_INDENT, 1)
+		local inset = 0
+		if self.db.profile.displaymode == "guide" and not self.db.profile.showallsteps then
+			inset = (self:GetCompactGuideLayoutMetrics().compactTextInset or 0) * 2
+		end
+		return math.max(width - self.ICON_INDENT - inset, 1)
 	end
 	return math.max(width - self.ICON_INDENT - 2 * self.STEPMARGIN_X, 1)
 end
@@ -2866,9 +2871,20 @@ function me:ApplyGuideLineLabelLayout(lineframe)
 	local label = lineframe.label
 	local x = lineframe.labelOffsetX or ZGV.ICON_INDENT
 	local y = lineframe.labelOffsetY or 0
+	local rightInset = 0
+	if self.db
+	and self.db.profile
+	and self:IsRemasterSkin()
+	and self.db.profile.displaymode == "guide"
+	and not self.db.profile.showallsteps
+	then
+		local inset = self:GetCompactGuideLayoutMetrics().compactTextInset or 0
+		x = x + inset
+		rightInset = inset
+	end
 	label:ClearAllPoints()
 	label:SetPoint("TOPLEFT", x, y)
-	label:SetPoint("TOPRIGHT", 0, y)
+	label:SetPoint("TOPRIGHT", -rightInset, y)
 	if self.db
 	and self.db.profile
 	and self:IsRemasterSkin()
