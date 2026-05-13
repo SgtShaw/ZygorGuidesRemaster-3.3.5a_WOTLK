@@ -244,18 +244,22 @@ function Pointer:EnsureQuestPOICompatPatch()
 
 	self._origQuestPOI_HideButtons = orig
 	_G.QuestPOI_HideButtons = function(parentName,buttonType,numButtons)
-		local ok = pcall(orig,parentName,buttonType,numButtons)
-		if ok then return end
-		if type(numButtons)~="number" or numButtons<1 then return end
-
-		-- Nil-safe fallback only when Blizzard's original function throws.
+		local safeNum = tonumber(numButtons) or 0
 		local buttonName = "poi"..tostring(parentName or "")..tostring(buttonType or "").."_"
-		for i=1,numButtons do
-			local poiButton = _G[buttonName..i]
-			if poiButton then
-				poiButton:Hide()
+
+		for i=1,safeNum do
+			if not _G[buttonName..i] then
+				for j=1,safeNum do
+					local poiButton = _G[buttonName..j]
+					if poiButton then
+						poiButton:Hide()
+					end
+				end
+				return
 			end
 		end
+
+		return orig(parentName,buttonType,safeNum)
 	end
 
 	self._questPOIPatched = true

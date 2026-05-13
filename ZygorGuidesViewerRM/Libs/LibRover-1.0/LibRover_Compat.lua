@@ -131,6 +131,40 @@ if not C_Map then
 	end
 end
 
+-- Some 3.3.5a server clients expose a partial C_Map table. Fill only the
+-- methods LibRover needs so retail-compatible clients keep their native APIs.
+C_Map = C_Map or {}
+if not C_Map.GetBestMapForUnit then
+	C_Map.GetBestMapForUnit = function(unit)
+		if unit and unit ~= "player" then return nil end
+		if not LibRover or not LibRover.data or not LibRover.data.MapIDsByName then return nil end
+		local zoneName = GetRealZoneText()
+		local mapData = zoneName and LibRover.data.MapIDsByName[zoneName]
+		if mapData then return mapData[0] end
+		local subZone = GetSubZoneText and GetSubZoneText()
+		if subZone and subZone ~= "" then
+			mapData = LibRover.data.MapIDsByName[subZone]
+			if mapData then return mapData[0] end
+		end
+		local miniZone = GetMinimapZoneText and GetMinimapZoneText()
+		if miniZone and miniZone ~= "" then
+			mapData = LibRover.data.MapIDsByName[miniZone]
+			if mapData then return mapData[0] end
+		end
+		return nil
+	end
+end
+if not C_Map.GetPlayerMapPosition then
+	C_Map.GetPlayerMapPosition = function(mapID, unit)
+		SetMapToCurrentZone()
+		local x, y = GetPlayerMapPosition(unit or "player")
+		if x and y and (x > 0 or y > 0) then
+			return { x = x, y = y }
+		end
+		return nil
+	end
+end
+
 ---------------------------------------------------------------------------
 -- 5. WorldMapFrame:GetMapID() stub (for debug menu - not critical)
 ---------------------------------------------------------------------------
