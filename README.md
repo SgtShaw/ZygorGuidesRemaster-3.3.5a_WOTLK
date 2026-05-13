@@ -164,6 +164,13 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
+### Revision 168 - 3.0.168
+
+- Added 76 additional missing item database records from `check_result (1).md` after verifying each item ID/name against WotLKDB.
+- Re-sorted `ZygorItemDB.lua` after the import by item level descending and item ID ascending, keeping the item database mechanically ordered.
+- Updated `ZygorItemDB.lua` metadata to `2026-05-13 12:15:18 -05:00` and `25183 Items`.
+- Updated addon version metadata to 3.0.168.
+
 ### Revision 167 - 3.0.167
 
 - Added 170 missing low-level item records from the latest item database check result after verifying each item ID/name against WotLKDB.
@@ -189,16 +196,6 @@ This addon is fully open source and can be inspected before use.
 - Added a small remaster compact-view spacing adjustment for 1-5 step mode so each inline step background/border has extra padding around the text.
 - Increased compact step breathing room to 3px top/bottom padding and a 6px horizontal text inset without changing the full "show all steps" layout.
 - Updated addon version metadata to 3.0.164.
-
-### Revision 163 - 3.0.163
-
-- Added a Step Display toggle to hide the guide progress bar, including the remaster footer frame that contained it, so disabling the option removes the empty bottom container as well.
-- Reworked guide travel routing so the Optimization travel toggle selects between advanced LibRover routing and the lightweight flight-path fallback.
-- Re-enabled LibRover loading, added WotLK taxi data for flight-path routing, and guarded LibRover startup/abort paths for the 3.3.5a runtime.
-- Improved fallback flight-path text so route waypoints preserve labels such as `Fly to River's Heart` instead of being reformatted as generic guide objective text.
-- Adjusted zhCN/CJK font handling so Chinese, Taiwanese, and Korean clients use the client-provided UI font for remaster headers and guide browser text instead of bundled Latin Segoe fonts.
-- Stopped forcing `Fonts\ZYKai_T.ttf` for zhCN because that exact font path is not guaranteed to exist in the addon/client environment.
-- Updated addon version metadata to 3.0.163.
 
 ## Notes
 
