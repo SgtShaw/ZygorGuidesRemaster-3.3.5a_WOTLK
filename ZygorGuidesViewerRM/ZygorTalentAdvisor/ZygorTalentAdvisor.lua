@@ -97,6 +97,7 @@ function me:OnEnable()
 
 			self.hooked=true
 		end
+		self:RefreshEnabledState()
 	end)
 
 	hooksecurefunc("TalentFrame_Update",function() self:PlayTalented() end)
@@ -224,6 +225,43 @@ function me:Debug(s)
 	self.Log:Add(s,self.db.profile.debug)
 end
 
+function me:IsAdvisorEnabled()
+	return not (self.db and self.db.profile and self.db.profile.enabled == false)
+end
+
+function me:EnsureAdvisorButton()
+	if not PlayerTalentFrame or not ZygorTalentAdvisorPopoutButton then return nil end
+	if not PlayerTalentFrame.advisorbutton then
+		ZygorTalentAdvisorPopoutButton:SetParent(PlayerTalentFrame)
+		PlayerTalentFrame.advisorbutton = ZygorTalentAdvisorPopoutButton
+	end
+	PlayerTalentFrame.advisorbutton:ClearAllPoints()
+	PlayerTalentFrame.advisorbutton:SetPoint("TOPRIGHT",-44,-39)
+	PlayerTalentFrame.advisorbutton:SetFrameLevel(120)
+	return PlayerTalentFrame.advisorbutton
+end
+
+function me:RefreshEnabledState()
+	if self:IsAdvisorEnabled() then
+		if PlayerTalentFrame and PlayerTalentFrame:IsVisible() then
+			local button = self:EnsureAdvisorButton()
+			if button then button:Show() end
+			self:PlayTalented()
+		end
+		return
+	end
+	if ZygorTalentAdvisorPopout and ZygorTalentAdvisorPopout:IsShown() then
+		ZygorTalentAdvisorPopout:Hide()
+	end
+	if PlayerTalentFrame and PlayerTalentFrame.advisorbutton then
+		PlayerTalentFrame.advisorbutton:Hide()
+	end
+	if GlyphFrame and GlyphFrame.suggestion then
+		GlyphFrame.suggestion:SetText("")
+	end
+	self:CleanupTalentFrame()
+end
+
 ---- events
 
 function me:CHAT_MSG_SYSTEM(event,text)
@@ -333,6 +371,7 @@ function me:SetupConfig()
 			tutorialflags = {}
 		},
 		profile = {
+			enabled = true,
 			debug = false,
 			forcebuild = false,
 			forcepetbuild = false,
@@ -364,6 +403,17 @@ function me:SetupConfig()
 				order = 1,
 				type = "description",
 				name = L['desc'],
+			},
+			enabled = {
+				order = 1.005,
+				type = "toggle",
+				width = "full",
+				name = "Enable Talent Advisor",
+				desc = "Show Talent Advisor suggestions, talent highlights, and the talent-tab button.",
+				set = function(i,v)
+					Setter_Simple(i,v)
+					self:RefreshEnabledState()
+				end,
 			},
 			desc01 = {
 				type = "header",
@@ -636,6 +686,7 @@ function me.ShowGlyphTooltip(icon)
 end
 
 function me:ShowGlyphSuggestions()
+	if not self:IsAdvisorEnabled() then return end
 	if not GlyphFrame then return end
 
 	-- Create icon overlays on each glyph socket (once)
@@ -693,27 +744,16 @@ end
 function me:PlayTalented()
 	if self.cleaning then return nil end
 	if not PlayerTalentFrame or not PlayerTalentFrame:IsVisible() then return end
+	if not self:IsAdvisorEnabled() then
+		if PlayerTalentFrame.advisorbutton then PlayerTalentFrame.advisorbutton:Hide() end
+		if ZygorTalentAdvisorPopout and ZygorTalentAdvisorPopout:IsShown() then ZygorTalentAdvisorPopout:Hide() end
+		if GlyphFrame and GlyphFrame.suggestion then GlyphFrame.suggestion:SetText("") end
+		self:CleanupTalentFrame()
+		return
+	end
 
 	
-	if not PlayerTalentFrame.advisorbutton then
-		ZygorTalentAdvisorPopoutButton:SetParent(PlayerTalentFrame)
-		PlayerTalentFrame.advisorbutton = ZygorTalentAdvisorPopoutButton
-		PlayerTalentFrame.advisorbutton:ClearAllPoints()
-		PlayerTalentFrame.advisorbutton:SetPoint("TOPRIGHT",-44,-39)
-		PlayerTalentFrame.advisorbutton:SetFrameLevel(120)
-		--[[
-		CreateFrame("Button",nil,PlayerTalentFrame,"UIPanelButtonTemplate")
-		PlayerTalentFrame.advisorbutton:ClearAllPoints()
-		PlayerTalentFrame.advisorbutton:SetPoint("TOPRIGHT",-40,-40)
-		PlayerTalentFrame.advisorbutton:SetHeight(30)
-		PlayerTalentFrame.advisorbutton:SetWidth(30)
-		PlayerTalentFrame.advisorbutton:SetText("ZTA>")
-		PlayerTalentFrame.advisorbutton:SetScript("OnClick",function() if ZygorTalentAdvisorPopout_Popup:IsShown() then ZygorTalentAdvisorPopout_Popup:Hide() else ZygorTalentAdvisorPopout_Popup() end end)
-		--PlayerTalentFrame.advisorbutton:SetScript("OnEnter",function(self) GameTooltip_SetDefaultAnchor(GameTooltip,self)  GameTooltip:SetText(L['name']) GameTooltip:AddLine(L['popout_button_tip']) GameTooltip:Show() end)
-		PlayerTalentFrame.advisorbutton:SetScript("OnEnter",function(self) GameTooltip_AddNewbieTip(self, L['name'], 1,1,1, L['popout_button_tip']) end)
-		PlayerTalentFrame.advisorbutton:SetScript("OnLeave",GameTooltip_Hide)
-		--]]
-	end
+	if not self:EnsureAdvisorButton() then return end
 	if GlyphFrame and not GlyphFrame.suggestion then
 		local glyphsug=GlyphFrame:CreateFontString()
 		glyphsug:SetPoint("CENTER",GlyphFrame,"Center",-15,25)

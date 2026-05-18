@@ -1107,18 +1107,34 @@ function me:ParseEntry(text)
 							subject.condition_visible = function()
 								return ZGV:RaceClassMatch(reqs) and luafun()
 							end
-						elseif IsRaceClassOnlyIfText(cond) then
-							local reqonly = ParseOnlyIfRequirementList(cond)
-							if not applyToStep then
-								if not ZGV:RaceClassMatch(reqonly) then
-									goal={}
-									break
+						else
+							local negated_req_text = cond:match("^not%s+(.+)$")
+							if negated_req_text and IsRaceClassOnlyIfText(negated_req_text) then
+								local reqonly = ParseOnlyIfRequirementList(negated_req_text)
+								if not applyToStep then
+									if ZGV:RaceClassMatch(reqonly) then
+										goal={}
+										break
+									end
+								else
+									step.condition_visible_raw = cond
+									step.condition_visible = function()
+										return not ZGV:RaceClassMatch(reqonly)
+									end
+								end
+							elseif IsRaceClassOnlyIfText(cond) then
+								local reqonly = ParseOnlyIfRequirementList(cond)
+								if not applyToStep then
+									if not ZGV:RaceClassMatch(reqonly) then
+										goal={}
+										break
+									end
+								else
+									step.requirement=reqonly
 								end
 							else
-								step.requirement=reqonly
+								return nil,err,linecount,chunk
 							end
-						else
-							return nil,err,linecount,chunk
 						end
 					end
 				else

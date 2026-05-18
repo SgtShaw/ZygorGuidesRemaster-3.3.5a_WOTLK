@@ -164,6 +164,15 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
+### Revision 170 - 3.0.170
+
+- Fixed `|only if not Orc Warlock`-style race/class guide conditions so they route through the requirement matcher instead of producing invalid Lua. Thanks to Hypopheria for the report and test guide notes.
+- Fixed minimap waypoint update crashes when marker frames lose their waypoint during an update, and guarded Astrolabe minimap diameter lookup against custom indoor/zoom states.
+- Added a Talent Advisor enable toggle, hid the talent-tab advisor button when disabled, restored the button when enabled, and expanded the suggestion scroll area for larger unspent-talent batches.
+- Fixed the Gear Advisor character-screen Z button so disabling Gear Advisor hides the PaperDoll button and prevents the finder from opening.
+- Applied apesquatch's guide/runtime fixes from PRs #43-#48: class-defining `|noobsolete` quest tags, quest-chain corrections, Razor Hill envelope/key tag updates, guide metadata hoisting, and `Goal:IsFitting()` returning `self.wrong` state correctly.
+- Updated addon version metadata to 3.0.170.
+
 ### Revision 169 - 3.0.169
 
 - Added an off-by-default Gear Finder `Prefer tier progression` mode that keeps the default best-path ranking unchanged unless enabled.

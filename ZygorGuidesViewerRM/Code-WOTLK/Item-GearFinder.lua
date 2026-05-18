@@ -7,6 +7,7 @@ GearFinder.FUTURE_DUNGEONS_LIMIT = 5 -- how many levels to look ahead for future
 
 function GearFinder:Initialise()
 	GearFinder:CreateMainFrame()
+	GearFinder:UpdateSystemTab()
 
 	GearFinder.MainFrame:SetScript("OnHide",function()
 		CharacterNameText:Show()
@@ -100,15 +101,20 @@ function GearFinder:AttachFrame()
 end
 
 function GearFinder:UpdateSystemTab()
-	if ZGV.db.profile.autogear then
-		GearFinder.PaperDollButtonFrame:Show()
+	local enabled = ZGV.db and ZGV.db.profile and ZGV.db.profile.autogear
+	if enabled then
+		if GearFinder.PaperDollButtonFrame then GearFinder.PaperDollButtonFrame:Show() end
 	else
-		GearFinder.PaperDollButtonFrame:Hide()
-		GearFinder.MainFrame:Hide()
+		if GearFinder.PaperDollButtonFrame then GearFinder.PaperDollButtonFrame:Hide() end
+		if GearFinder.MainFrame then GearFinder.MainFrame:Hide() end
 	end
 end
 
 function GearFinder:ShowFinder()
+	if not (ZGV.db and ZGV.db.profile and ZGV.db.profile.autogear) then
+		GearFinder:UpdateSystemTab()
+		return
+	end
 	if ZygorGearFinder and ZygorGearFinder:IsVisible() then GearFinder.MainFrame:Hide() return end
 
 	if CharacterFrame and not CharacterFrame:IsShown() and ToggleCharacter then

@@ -387,13 +387,23 @@ local minimapShape = false;
 
 local minimapRotationOffset = GetPlayerFacing();
 
+local function getMinimapDiameter(minimapZoom, outside)
+	minimapZoom = tonumber(minimapZoom) or 0
+	if ( minimapZoom < 0 ) then
+		minimapZoom = 0
+	elseif ( minimapZoom > 5 ) then
+		minimapZoom = 5
+	end
+
+	local sizeTable = outside and MinimapSize.outdoor or MinimapSize.indoor
+	return sizeTable[minimapZoom] or sizeTable[5] or sizeTable[0]
+end
+
 local function placeIconOnMinimap( minimap, minimapZoom, mapWidth, mapHeight, icon, dist, xDist, yDist )
 	local mapDiameter;
 
-	if ( Astrolabe.minimapOutside ) then
-		mapDiameter = MinimapSize.outdoor[minimapZoom]
-	else
-		mapDiameter = MinimapSize.indoor[minimapZoom]
+	mapDiameter = getMinimapDiameter(minimapZoom, Astrolabe.minimapOutside)
+	if not ( Astrolabe.minimapOutside ) then
 		if (GetMapInfo()=="Dalaran" and GetCurrentMapDungeonLevel()==2) then mapDiameter = mapDiameter * 1.5 end
 	end
 	local mapRadius = mapDiameter / 2;

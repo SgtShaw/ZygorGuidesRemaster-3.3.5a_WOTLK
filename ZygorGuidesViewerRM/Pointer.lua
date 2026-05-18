@@ -1483,6 +1483,12 @@ function Pointer.MinimapButton_OnUpdate(self,elapsed)
 		self.arrow:Hide()
 		return
 	end
+	local waypoint = self.waypoint
+	if not waypoint then
+		self.icon:Hide()
+		self.arrow:Hide()
+		return
+	end
 	local markerParent = GetMinimapMarkerParent()
 	if self:GetParent() ~= markerParent or self:GetScale() < 0.99 or self:GetAlpha() < 0.99 then
 		self:SetParent(markerParent)
@@ -1506,15 +1512,22 @@ function Pointer.MinimapButton_OnUpdate(self,elapsed)
 
 	self.lastdist=self.dist
 	self.dist = dist
-	if self.waypoint.OnUpdate then self.waypoint:OnUpdate() end
+	if waypoint.OnUpdate then
+		waypoint:OnUpdate()
+		if self.waypoint ~= waypoint then
+			self.icon:Hide()
+			self.arrow:Hide()
+			return
+		end
+	end
 
-	if self.waypoint.hidden or self.waypoint.hideminimap then
+	if waypoint.hidden or waypoint.hideminimap then
 		self.icon:Hide()
 		self.arrow:Hide()
 		return
 	end
 
-	if Pointer:IsWaypointSuppressedOnMinimap(self.waypoint) then
+	if Pointer:IsWaypointSuppressedOnMinimap(waypoint) then
 		self.icon:Hide()
 		self.arrow:Hide()
 		return

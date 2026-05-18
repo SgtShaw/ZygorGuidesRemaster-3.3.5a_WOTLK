@@ -130,6 +130,10 @@ end
 
 function ZygorTalentAdvisorPopout_OnShow(self)
 	if not ZTA then return end
+	if ZTA.IsAdvisorEnabled and not ZTA:IsAdvisorEnabled() then
+		self:Hide()
+		return
+	end
 
 	TalentFrame_LoadUI()
 	if ZTA.db.profile.windowdocked then
@@ -160,15 +164,18 @@ function ZygorTalentAdvisorPopout_OnUpdate(self)
 		local base = self.baseHeightOffset or 145
 		if self.scroll.child.group1:GetTop() then 
 			local height = self.scroll.child.group1:GetTop() - self.scroll.child.talents3:GetBottom()
-			local maxheight=100
-			local minheight=50
+			local maxheight=360
+			if PlayerTalentFrame and PlayerTalentFrame:GetHeight() then
+				maxheight = math.max(180, math.min(maxheight, PlayerTalentFrame:GetHeight() - base - 20))
+			end
+			local minheight=180
 			if height>maxheight then height=maxheight end
 			if height<minheight then height=minheight end
 			self.scroll.child:SetHeight(height)
 			self:SetHeight(height + base)
 		else
 			-- Fallback when scroll content hasn't measured yet.
-			self:SetHeight(50 + base)
+			self:SetHeight(180 + base)
 		end
 
 
