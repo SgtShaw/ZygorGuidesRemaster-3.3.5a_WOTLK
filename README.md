@@ -164,6 +164,13 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
+### Revision 174 - 3.0.174
+
+- Fixed Gear Advisor weapon-family validation on localized clients so unusable weapon subtypes are rejected before DPS fallback scoring can recommend them.
+- Added localized weapon subtype resolution for standard WotLK weapon families, including guns, bows, crossbows, thrown weapons, wands, and melee weapon types.
+- Added defensive spear handling as a polearm-family alias.
+- Updated addon version metadata to 3.0.174.
+
 ### Revision 173 - 3.0.173
 
 - Fixed Gear Advisor armor-family validation on localized clients so unusable armor subtypes are rejected before armor-only fallback scoring can recommend them.

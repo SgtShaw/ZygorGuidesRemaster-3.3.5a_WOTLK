@@ -198,6 +198,22 @@ local FAMILY_ALIASES = {
 
 local LOCALIZED_FAMILY_ALIASES = {
 	ruRU = {
+		AXE = {"Топоры", "топоры"},
+		TH_AXE = {"Двуручные топоры", "двуручные топоры"},
+		BOW = {"Луки", "луки"},
+		CROSSBOW = {"Арбалеты", "арбалеты"},
+		DAGGER = {"Кинжалы", "кинжалы"},
+		FIST = {"Кистевое оружие", "кистевое оружие"},
+		FISHPOLE = {"Удочки", "удочки"},
+		GUN = {"Огнестрельное", "огнестрельное", "Ружья", "ружья"},
+		MACE = {"Дробящее оружие", "дробящее оружие"},
+		TH_MACE = {"Двуручное ударное оружие", "двуручное ударное оружие"},
+		TH_POLE = {"Древковое оружие", "древковое оружие", "Копья", "копья"},
+		SWORD = {"Мечи", "мечи"},
+		TH_SWORD = {"Двуручные мечи", "двуручные мечи"},
+		TH_STAFF = {"Посохи", "посохи"},
+		THROWN = {"Метательное", "метательное", "Метательное оружие", "метательное оружие"},
+		WAND = {"Жезлы", "жезлы"},
 		CLOTH = {"Ткань", "ткань", "Тканевые доспехи", "тканевые доспехи"},
 		LEATHER = {"Кожа", "кожа", "Кожаные доспехи", "кожаные доспехи"},
 		MAIL = {"Кольчуга", "кольчуга", "Кольчужные доспехи", "кольчужные доспехи"},
@@ -212,6 +228,25 @@ local LOCALIZED_ARMOR_SUBTYPE_GLOBALS = {
 	MAIL = {"ITEM_SUBCLASS_ARMOR_MAIL"},
 	PLATE = {"ITEM_SUBCLASS_ARMOR_PLATE"},
 	SHIELD = {"ITEM_SUBCLASS_ARMOR_SHIELD"},
+}
+
+local LOCALIZED_WEAPON_SUBTYPE_GLOBALS = {
+	AXE = {"ITEM_SUBCLASS_WEAPON_AXE1H", "ITEM_SUBCLASS_WEAPON_AXE"},
+	TH_AXE = {"ITEM_SUBCLASS_WEAPON_AXE2H"},
+	BOW = {"ITEM_SUBCLASS_WEAPON_BOW"},
+	CROSSBOW = {"ITEM_SUBCLASS_WEAPON_CROSSBOW"},
+	DAGGER = {"ITEM_SUBCLASS_WEAPON_DAGGER"},
+	FIST = {"ITEM_SUBCLASS_WEAPON_FIST", "ITEM_SUBCLASS_WEAPON_FIST_WEAPON"},
+	FISHPOLE = {"ITEM_SUBCLASS_WEAPON_FISHINGPOLE", "ITEM_SUBCLASS_WEAPON_FISHING_POLE"},
+	GUN = {"ITEM_SUBCLASS_WEAPON_GUN"},
+	MACE = {"ITEM_SUBCLASS_WEAPON_MACE1H", "ITEM_SUBCLASS_WEAPON_MACE"},
+	TH_MACE = {"ITEM_SUBCLASS_WEAPON_MACE2H"},
+	TH_POLE = {"ITEM_SUBCLASS_WEAPON_POLEARM", "ITEM_SUBCLASS_WEAPON_SPEAR"},
+	SWORD = {"ITEM_SUBCLASS_WEAPON_SWORD1H", "ITEM_SUBCLASS_WEAPON_SWORD"},
+	TH_SWORD = {"ITEM_SUBCLASS_WEAPON_SWORD2H"},
+	TH_STAFF = {"ITEM_SUBCLASS_WEAPON_STAFF"},
+	THROWN = {"ITEM_SUBCLASS_WEAPON_THROWN"},
+	WAND = {"ITEM_SUBCLASS_WEAPON_WAND"},
 }
 
 local function add_family_alias(lookup, family, alias)
@@ -234,6 +269,11 @@ local function build_canonical_family_lookup()
 		end
 	end
 	for family, globals in pairs(LOCALIZED_ARMOR_SUBTYPE_GLOBALS) do
+		for _, globalName in ipairs(globals) do
+			add_family_alias(canonical_family_lookup, family, _G[globalName])
+		end
+	end
+	for family, globals in pairs(LOCALIZED_WEAPON_SUBTYPE_GLOBALS) do
 		for _, globalName in ipairs(globals) do
 			add_family_alias(canonical_family_lookup, family, _G[globalName])
 		end
