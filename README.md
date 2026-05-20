@@ -164,6 +164,12 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
+### Revision 177 - 3.0.177
+
+- Added a Gear Advisor tooltip-color guard so items with Blizzard-red unusable armor or weapon type lines are rejected before scoring.
+- Caches tooltip unusability during item scans and applies it in both immediate item validity paths.
+- Updated addon version metadata to 3.0.177.
+
 ### Revision 176 - 3.0.176
 
 - Added a Gear Advisor runtime usability guard so items Blizzard reports as unusable for the current character are rejected before scoring.

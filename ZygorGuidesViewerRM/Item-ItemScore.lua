@@ -884,6 +884,30 @@ local function runtime_unusable_verdict(item, slot_1, slot_2, twohander)
 	}
 end
 
+local function tooltip_line_is_red(line)
+	if not line then return false end
+	local color = tostring(line):match("|c(%x%x%x%x%x%x%x%x)")
+	if not color then return false end
+	local r = tonumber(color:sub(3, 4), 16) or 0
+	local g = tonumber(color:sub(5, 6), 16) or 0
+	local b = tonumber(color:sub(7, 8), 16) or 0
+	return r >= 200 and g <= 80 and b <= 80
+end
+
+local function tooltip_line_marks_unusable_item_type(line)
+	if not tooltip_line_is_red(line) then return false end
+	local text = tostring(line):gsub("|c........", ""):gsub("|r", "")
+	local normalized = normalize_label(text)
+	if not normalized or normalized == "" then return false end
+	local family = build_canonical_family_lookup()[normalized]
+	if family then return true end
+	local lowerText = normalized
+	return lowerText == "cloth" or lowerText == "leather" or lowerText == "mail" or lowerText == "plate" or lowerText == "shield"
+		or lowerText == "bow" or lowerText == "gun" or lowerText == "crossbow" or lowerText == "wand" or lowerText == "thrown"
+		or lowerText == "dagger" or lowerText == "sword" or lowerText == "axe" or lowerText == "mace" or lowerText == "staff"
+		or lowerText == "polearm" or lowerText == "fist weapon" or lowerText == "fishing pole"
+end
+
 local function clamp_display_percent(percent)
 	if not percent then return nil end
 	if percent >= 100 then return 99.99 end
@@ -1479,6 +1503,10 @@ function ItemScore:GetItemValidityForContext(itemlink, future, context)
 
 	if item.ignore_for_gear then
 		return {valid = false, final = true, reason = "test item", code = "test_item", item = item}
+	end
+
+	if item.unusable_by_tooltip then
+		return runtime_unusable_verdict(item, slot_1, slot_2, twohander)
 	end
 
 	if item.playerclass then
@@ -2509,6 +2537,7 @@ function ItemScore:GetItemDetailsQueued(itemlink,force)
 
 		-- class, spec check, and level check. we need to scan tooltip for those. meh.
 		local playerclass, playerspec
+		local unusable_by_tooltip = false
 		local canScanTooltip = true
 		Gratuity:SetHyperlink(itemlink)
 		if Gratuity:NumLines()==0 then
@@ -2556,6 +2585,9 @@ function ItemScore:GetItemDetailsQueued(itemlink,force)
 				if line==RETRIEVING_ITEM_INFO then return false end
 
 				if ItemScore.SaveTooltip then table.insert(tooltip,line) end
+				if tooltip_line_marks_unusable_item_type(line) then
+					unusable_by_tooltip = true
+				end
 
 				line = line:gsub("|c........",""):gsub("|r","") -- strip color codes, if any
 
@@ -2641,6 +2673,7 @@ function ItemScore:GetItemDetailsQueued(itemlink,force)
 			allowableRaceMask = dbitem and dbitem.allowableRaceMask,
 			playerspec = playerspec,
 			requires_detail = requires_detail,
+			unusable_by_tooltip = unusable_by_tooltip,
 			name = itemName,
 			needs_exact_stats = false,
 			needs_live_scan = false,
@@ -2812,6 +2845,10 @@ function ItemScore:GetItemValidity(itemlink, future)
 			code = "test_item",
 			item = item,
 		}
+	end
+
+	if item.unusable_by_tooltip then
+		return runtime_unusable_verdict(item, slot_1, slot_2, twohander)
 	end
 
 	if item.playerclass then
