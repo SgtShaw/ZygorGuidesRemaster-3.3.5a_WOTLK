@@ -788,6 +788,119 @@ local function item_is_gear(item)
 	return equippable and true or false
 end
 
+local function debug_bool(value)
+	if value == nil then return "nil" end
+	return tostring(value)
+end
+
+local function debug_num(value)
+	return value == nil and "nil" or tostring(value)
+end
+
+local function debug_text(value)
+	if value == nil or value == "" then return "nil" end
+	value = tostring(value):gsub("|c........", ""):gsub("|r", "")
+	if value:len() > 92 then value = value:sub(1, 89) .. "..." end
+	return value
+end
+
+local function debug_color_string(fontString)
+	if not fontString or not fontString.GetTextColor then return "nil" end
+	local r, g, b = fontString:GetTextColor()
+	if not r then return "nil" end
+	return ("%03d,%03d,%03d"):format((r or 0) * 255, (g or 0) * 255, (b or 0) * 255)
+end
+
+local function debug_api_call(func, ...)
+	if not func then return "n/a" end
+	local result = {pcall(func, ...)}
+	if not result[1] then return "err:" .. debug_text(result[2]) end
+	table.remove(result, 1)
+	for i = 1, #result do result[i] = debug_text(result[i]) end
+	return table.concat(result, ",")
+end
+
+local function debug_extract_itemlink(input)
+	input = tostring(input or ""):gsub("^%s+", ""):gsub("%s+$", "")
+	if input == "" and GetMouseFocus then
+		local focus = GetMouseFocus()
+		if focus and focus.GetParent then
+			local parent = focus:GetParent()
+			if parent and parent.GetName and parent:GetName() == "ItemRefTooltip" and ItemRefTooltip and ItemRefTooltip.GetItem then
+				local _, link = ItemRefTooltip:GetItem()
+				if link then return link end
+			end
+		end
+	end
+	local link = input:match("|H(item:[^|]+)|h") or input:match("(item:%-?%d+[^%s]*)")
+	if link then return link end
+	local id = tonumber(input:match("^(%d+)$")) or tonumber(input:match("item:(%d+)")) or tonumber(input:match("(%d+)"))
+	if id then return "item:" .. id end
+	return nil
+end
+
+function ItemScore:DebugGearItem(input)
+	local itemlink = debug_extract_itemlink(input)
+	if not itemlink then
+		print(branded_chat_prefix("Gear Debug") .. " Usage: /zgvgearbug item:2399, /zgvgearbug 2399, or shift-click an item link.")
+		return
+	end
+	itemlink = strip_link(itemlink) or itemlink
+	local itemID = ZGV.ItemLink and ZGV.ItemLink.GetItemID(itemlink)
+	local dbsource = itemID and ZygorItemDB and ZygorItemDB.items and ZygorItemDB.items[tonumber(itemID)]
+	local gii = {ZGV:GetItemInfo(itemlink)}
+	local dbitem = self:GetItemDetailsFromDB(itemlink)
+	local queued = self:GetItemDetailsQueued(itemlink, true)
+	local item = self:GetResolvedItemDetails(itemlink) or queued or dbitem
+	local validity = self:GetItemValidity(itemlink)
+	local verbose = {}
+	local score, scored, scoreComment = self:GetItemScore(itemlink, verbose)
+	local slot_1, slot_2, twohander, equippable, slotReason = item and get_item_slot_info(item)
+	local family = item and get_item_family(item)
+	local standardAllowed = class_can_use_standard_family(self.playerclass, family, self.playerlevel)
+	local equip1 = slot_1 and GetInventoryItemLink and GetInventoryItemLink("player", slot_1)
+	local equip2 = slot_2 and GetInventoryItemLink and GetInventoryItemLink("player", slot_2)
+	local blizzStats = (GetItemStats and (GetItemStats(itemlink) or GetItemStats(item and item.itemlinkfull or itemlink))) or nil
+	local blizzStatCount = 0
+	if blizzStats then for _ in pairs(blizzStats) do blizzStatCount = blizzStatCount + 1 end end
+
+	print(branded_chat_prefix("Gear Debug") .. " start. Screenshot all lines below and the item tooltip if visible.")
+	print(("ZGD 1/9 input=%s id=%s locale=%s player=%s/%s level=%s build=%s"):format(debug_text(itemlink), debug_num(itemID), debug_text(GetLocale and GetLocale()), debug_text(self.playerclass), debug_text(self.playerclassName), debug_num(self.playerlevel), debug_num(ZGV.db and ZGV.db.char and ZGV.db.char.gear_active_build)))
+	print(("ZGD 2/9 DB found=%s name=%s slot=%s q=%s ilvl=%s req=%s cl=%s rc=%s armor=%s weapon=%s"):format(debug_bool(dbsource ~= nil), debug_text(dbsource and dbsource.n), debug_text(dbsource and dbsource.s), debug_num(dbsource and dbsource.q), debug_num(dbsource and dbsource.i), debug_num(dbsource and dbsource.rl), debug_num(dbsource and dbsource.cl), debug_num(dbsource and dbsource.rc), debug_num(dbsource and dbsource.ar), debug_bool(dbsource and dbsource.w ~= nil)))
+	print(("ZGD 3/9 GII name=%s type=%s subtype=%s equip=%s q=%s ilvl=%s req=%s tex=%s"):format(debug_text(gii[1]), debug_text(gii[6]), debug_text(gii[7]), debug_text(gii[9]), debug_num(gii[3]), debug_num(gii[4]), debug_num(gii[5]), debug_num(gii[10])))
+	print(("ZGD 4/9 item name=%s fromdb=%s pending=%s exact=%s class=%s subclass=%s family=%s subtype=%s equip=%s"):format(debug_text(item and item.name), debug_bool(item and item.fromdb), debug_bool(item and item.needs_live_scan), debug_bool(item and item.needs_exact_stats), debug_num(item and item.class), debug_num(item and item.subclass), debug_text(family), debug_text(item and item.subtype), debug_text(item and (item.equiploc or item.type))))
+	print(("ZGD 5/9 validity valid=%s final=%s code=%s reason=%s equippable=%s slotReason=%s slot1=%s slot2=%s 2h=%s classFamilyAllowed=%s"):format(debug_bool(validity and validity.valid), debug_bool(validity and validity.final), debug_text(validity and validity.code), debug_text(validity and validity.reason), debug_bool(equippable), debug_text(slotReason), debug_num(slot_1), debug_num(slot_2), debug_bool(twohander), debug_bool(standardAllowed)))
+	print(("ZGD 6/9 score=%s scored=%s comment=%s armor=%s dps=%s blizzStats=%s"):format(debug_num(score), debug_bool(scored), debug_text(scoreComment), debug_num(item and item.stats and item.stats.ARMOR), debug_num(item and item.stats and item.stats.DAMAGE_PER_SECOND), debug_num(blizzStatCount)))
+	print(("ZGD 7/9 APIs usable=%s equippable=%s canEquip=%s equip1=%s equip2=%s"):format(debug_api_call(IsUsableItem, itemlink), debug_api_call(IsEquippableItem, itemlink), debug_api_call(CanEquipItem, itemlink), debug_text(equip1), debug_text(equip2)))
+
+	Gratuity:SetHyperlink(itemlink)
+	local lineCount = Gratuity:NumLines() or 0
+	print(("ZGD 8/9 tooltipLines=%s scanner=%s"):format(debug_num(lineCount), debug_text(Gratuity.vars and Gratuity.vars.tooltip and Gratuity.vars.tooltip:GetName())))
+	for i = 1, math.min(lineCount, 8) do
+		local left, right = Gratuity:GetLine(i)
+		local lfs = Gratuity.vars and Gratuity.vars.Llines and Gratuity.vars.Llines[i]
+		local rfs = Gratuity.vars and Gratuity.vars.Rlines and Gratuity.vars.Rlines[i]
+		print(("ZGD tip %d L[%s]=%s R[%s]=%s"):format(i, debug_color_string(lfs), debug_text(left), debug_color_string(rfs), debug_text(right)))
+	end
+	if verbose[1] then
+		print(("ZGD 9/9 scoreDetail=%s | %s | %s"):format(debug_text(verbose[1]), debug_text(verbose[2]), debug_text(verbose[3])))
+	else
+		print("ZGD 9/9 scoreDetail=none")
+	end
+end
+
+function ItemScore:RegisterDebugSlashCommands()
+	if self.DebugSlashRegistered then return end
+	SLASH_ZGVGEARBUG1 = "/zgvgearbug"
+	SLASH_ZGVGEARBUG2 = "/zgvitemdebug"
+	SlashCmdList["ZGVGEARBUG"] = function(msg)
+		if ZGV and ZGV.ItemScore and ZGV.ItemScore.DebugGearItem then
+			ZGV.ItemScore:DebugGearItem(msg)
+		end
+	end
+	self.DebugSlashRegistered = true
+end
+
 local function clamp_display_percent(percent)
 	if not percent then return nil end
 	if percent >= 100 then return 99.99 end
@@ -863,6 +976,7 @@ function ItemScore:Initialise()
 
 	ZGV:AddMessageHandler("ZGV_STEP_FINALISED",ItemScore.OnEvent)
 	ZGV:AddMessageHandler("LIBROVER_TRAVEL_REPORTED",ItemScore.OnEvent)
+	ItemScore:RegisterDebugSlashCommands()
 
 	-- create item popup
 	ItemScore.Upgrades:CreatePopup()

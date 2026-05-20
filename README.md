@@ -164,11 +164,19 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
+### Revision 181 - 3.0.181
+
+- Added the diagnostic-only `/zgvgearbug` slash command for Gear Advisor/Gear Finder item reports.
+- The command prints DB, live item info, cached item state, advisor validity, score, API probes, equipped slot baselines, and tooltip scanner color lines for a supplied item ID/link.
+- No recommendation behavior was changed in this release.
+- Updated addon version metadata to 3.0.181.
+
 ### Revision 180 - 3.0.180
 
 - Rolled Gear Advisor scoring and bundled item DB metadata back to the 3.0.172 baseline after reports that the 3.0.173-3.0.179 advisor changes broke tooltip recommendations and Gear Finder behavior.
 - Removed the experimental localized armor/weapon guards, runtime usability guard, tooltip-color guard, pending DB-only item guard, and item-template class/subclass DB enrichment from the shipped code path.
 - Updated addon version metadata to 3.0.180.
+
 ### Revision 179 - 3.0.179
 
 - Added numeric WotLK item-template class/subclass metadata to armor and weapon records in the bundled item DB.
