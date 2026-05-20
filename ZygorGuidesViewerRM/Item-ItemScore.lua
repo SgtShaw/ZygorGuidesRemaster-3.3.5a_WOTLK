@@ -28,11 +28,74 @@ local function round_score(value)
 	end
 end
 
+local function get_positive_weight_total(statweights)
+	local total = 0
+	if statweights then
+		for _, value in pairs(statweights) do
+			value = tonumber(value) or 0
+			if value > 0 then total = total + value end
+		end
+	end
+	return total > 0 and total or 1
+end
+
+local function get_active_score_weight_total()
+	return get_positive_weight_total(ItemScore and ItemScore.ActiveRuleSet and ItemScore.ActiveRuleSet.stats)
+end
+
+local function normalize_display_score(score, weightTotal)
+	if ZGV.db and ZGV.db.profile and ZGV.db.profile.itemscore_tooltip_normalize_score then
+		score = (score or 0) / (weightTotal or get_active_score_weight_total())
+	end
+	return score or 0
+end
+
+local function format_static_score(score, weightTotal)
+	local rounded = round_score(normalize_display_score(score, weightTotal))
+	return string.format("%.1f", rounded)
+end
+
+local function color_score_text(score, weightTotal)
+	return "|cffdddddd" .. format_static_score(score, weightTotal) .. "|r"
+end
+
 local function clamp_display_percent(percent)
 	if not percent then return nil end
 	if percent >= 100 then return 99.99 end
 	if percent <= -100 then return -99.99 end
 	return percent
+end
+
+local function get_tooltip_value_mode()
+	local mode = ZGV.db and ZGV.db.profile and ZGV.db.profile.itemscore_tooltip_value_mode or "comparison"
+	if mode ~= "score" and mode ~= "both" then mode = "comparison" end
+	return mode
+end
+
+local function format_tooltip_comparison(comparison)
+	if not comparison then return "|cffcccccc0.0|r" end
+	local roundedDelta = round_score(comparison.deltaScore or 0)
+	local color = roundedDelta < 0 and "|cffff0000" or (roundedDelta > 0 and "|cff00ff00" or "|cffcccccc")
+	local deltaText = roundedDelta == 0 and "0.0" or string.format("%+.1f", roundedDelta)
+	local line = color .. deltaText .. "|r"
+	local displayPercent = clamp_display_percent(comparison.percent)
+	if displayPercent and roundedDelta ~= 0 and not comparison.armorFallback and math.abs(displayPercent) >= 0.05 then
+		line = line .. " " .. color .. "(" .. string.format((L["gearfinder_upgrade_percent_short"] or "%+.1f%%"), displayPercent) .. ")|r"
+	end
+	if comparison.armorFallback and roundedDelta > 0 then
+		line = line .. " |cff88ccff(Armor)|r"
+	end
+	return line
+end
+
+local function format_tooltip_value(comparison, score, weightTotal)
+	local mode = get_tooltip_value_mode()
+	if mode == "score" then
+		return color_score_text(score, weightTotal)
+	elseif mode == "both" then
+		return color_score_text(score, weightTotal) .. " | " .. format_tooltip_comparison(comparison)
+	end
+	return format_tooltip_comparison(comparison)
 end
 
 if not ItemScore then return end
@@ -1507,6 +1570,10 @@ function ItemScore:GetItemScoreForContext(itemlink, context)
 	return score, true, "scored ok"
 end
 
+function ItemScore:GetContextScoreWeightTotal(context)
+	return get_positive_weight_total(context and context.ActiveRuleSet and context.ActiveRuleSet.stats)
+end
+
 function ItemScore:GetItemValidityForContext(itemlink, future, context)
 	if not context then return {valid = false, final = false, reason = "No context", code = "missing_context"} end
 	local item = ItemScore:GetResolvedItemDetails(itemlink)
@@ -1673,6 +1740,7 @@ function ItemScore:GetUpgradeComparisonForContext(slot, newitem, context, second
 		isNewItem = isNewItem,
 		state = state,
 		armorFallback = armorFallback,
+		context = context,
 	}
 end
 
@@ -3151,45 +3219,14 @@ local function ItemScore_SetTooltipData(tooltip, tooltipobj)
 
 		local function add_upgrade_line(slotinfo, equipped_item, slotid)
 			local comparison = ItemScore.Upgrades:GetUpgradeComparison(slotid, item)
-			local scoreDelta, percent, isNewItem = comparison.deltaScore, comparison.percent, comparison.isNewItem
-			local line
-			if isNewItem or not (equipped_item and equipped_item.itemlink) or scoreDelta ~= nil then
-				local roundedDelta = round_score(scoreDelta or 0)
-				local color = roundedDelta < 0 and "|cffff0000" or (roundedDelta > 0 and "|cff00ff00" or "|cffcccccc")
-				local deltaText = roundedDelta == 0 and "0.0" or string.format("%+.1f", roundedDelta)
-				line = "|r "..slotinfo..color..deltaText.."|r"
-				local displayPercent = clamp_display_percent(percent)
-				if displayPercent and roundedDelta ~= 0 and not comparison.armorFallback and math.abs(displayPercent) >= 0.05 then
-					line = line .. " "..color.."("..string.format((L["gearfinder_upgrade_percent_short"] or "%+.1f%%"), displayPercent)..")|r"
-				end
-				if comparison.armorFallback and roundedDelta > 0 then
-					line = line .. " |cff88ccff(Armor)|r"
-				end
-			else
-				line = "|r "..slotinfo.."|cffcccccc0.0|r"
-			end
+			local line = "|r " .. slotinfo .. format_tooltip_value(comparison, score, get_active_score_weight_total())
 			tooltip:AddLine(line)
 		end
 
 		local function add_context_upgrade_line(prefix, comparison)
 			if not comparison then return end
-			local scoreDelta, percent, isNewItem = comparison.deltaScore, comparison.percent, comparison.isNewItem
-			local line
-			if isNewItem or scoreDelta ~= nil then
-				local roundedDelta = round_score(scoreDelta or 0)
-				local color = roundedDelta < 0 and "|cffff0000" or (roundedDelta > 0 and "|cff00ff00" or "|cffcccccc")
-				local deltaText = roundedDelta == 0 and "0.0" or string.format("%+.1f", roundedDelta)
-				line = "|r "..prefix..color..deltaText.."|r"
-				local displayPercent = clamp_display_percent(percent)
-				if displayPercent and roundedDelta ~= 0 and not comparison.armorFallback and math.abs(displayPercent) >= 0.05 then
-					line = line .. " "..color.."("..string.format((L["gearfinder_upgrade_percent_short"] or "%+.1f%%"), displayPercent)..")|r"
-				end
-				if comparison.armorFallback and roundedDelta > 0 then
-					line = line .. " |cff88ccff(Armor)|r"
-				end
-			else
-				line = "|r "..prefix.."|cffcccccc0.0|r"
-			end
+			local contextWeightTotal = ItemScore:GetContextScoreWeightTotal(comparison.context)
+			local line = "|r " .. prefix .. format_tooltip_value(comparison, comparison.candidateScore, contextWeightTotal)
 			tooltip:AddLine(line)
 		end
 
@@ -3243,7 +3280,8 @@ local function ItemScore_SetTooltipData(tooltip, tooltipobj)
 								if comparison then
 									add_context_upgrade_line(prefix, comparison)
 								else
-									tooltip:AddLine(prefix .. "|cffcccccc0.0|r")
+									local contextScore = select(1, ItemScore:GetItemScoreForContext(itemlink, context))
+									tooltip:AddLine(prefix .. format_tooltip_value(nil, contextScore or 0, ItemScore:GetContextScoreWeightTotal(context)))
 								end
 							end
 						end

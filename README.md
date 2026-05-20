@@ -164,6 +164,13 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
+### Revision 183 - 3.0.183
+
+- Added Gear Advisor tooltip display options for `Upgrade Comparison`, `Item Score`, and `Both`.
+- Added an optional normalized item score display mode for Pawn-like static score values.
+- Localized the new tooltip value display and normalization options across supported addon locales.
+- Updated addon version metadata to 3.0.183.
+
 ### Revision 182 - 3.0.182
 
 - Added a targeted Gear Advisor guard for WotLK tooltips that mark an equipment subtype red on the right side of the item type row.

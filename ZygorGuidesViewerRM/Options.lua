@@ -234,6 +234,8 @@ function me:Options_RegisterDefaults()
 			gear_tier_progression_mode = false,
 			itemscore_tooltips = true,
 			itemscore_tooltips_allbuilds = false,
+			itemscore_tooltip_value_mode = "comparison",
+			itemscore_tooltip_normalize_score = false,
 			masterloot_notices = true,
 			masterloot_compare = true,
 			questitemcache = {},
@@ -2580,6 +2582,30 @@ function me:Options_DefineOptions()
 				type = "toggle",
 				width = "full",
 				disabled = function() return not self.db.profile.autogear or not self.db.profile.itemscore_tooltips end,
+			},
+			itemscore_tooltip_value_mode = {
+				order = 3.2,
+				name = L["opt_itemscore_tooltip_value_mode"],
+				desc = L["opt_itemscore_tooltip_value_mode_desc"],
+				type = "select",
+				values = {
+					comparison = L["opt_itemscore_tooltip_value_mode_comparison"],
+					score = L["opt_itemscore_tooltip_value_mode_score"],
+					both = L["opt_itemscore_tooltip_value_mode_both"],
+				},
+				disabled = function() return not self.db.profile.autogear or not self.db.profile.itemscore_tooltips end,
+			},
+			itemscore_tooltip_normalize_score = {
+				order = 3.3,
+				name = L["opt_itemscore_tooltip_normalize_score"],
+				desc = L["opt_itemscore_tooltip_normalize_score_desc"],
+				type = "toggle",
+				width = "full",
+				disabled = function()
+					return not self.db.profile.autogear
+						or not self.db.profile.itemscore_tooltips
+						or self.db.profile.itemscore_tooltip_value_mode == "comparison"
+				end,
 			},
 			prompting_header = {
 				order = 3.5,
