@@ -164,6 +164,12 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
+### Revision 176 - 3.0.176
+
+- Added a Gear Advisor runtime usability guard so items Blizzard reports as unusable for the current character are rejected before scoring.
+- Applies the guard before armor/DPS fallback comparisons to prevent unusable armor or weapon recommendations when localized subtype metadata is incomplete.
+- Updated addon version metadata to 3.0.176.
+
 ### Revision 175 - 3.0.175
 
 - Fixed Gear Advisor armor-family detection so numeric item class/subclass data is preferred before localized text heuristics.

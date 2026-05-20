@@ -865,6 +865,25 @@ local function item_is_gear(item)
 	return equippable and true or false
 end
 
+local function item_fails_runtime_usability(itemlink)
+	if not itemlink or not IsUsableItem then return false end
+	local usable, noResource = IsUsableItem(itemlink)
+	return usable == false and not noResource
+end
+
+local function runtime_unusable_verdict(item, slot_1, slot_2, twohander)
+	return {
+		valid = false,
+		final = true,
+		reason = "unsupported item type",
+		code = "runtime_usable",
+		item = item,
+		slot = slot_1,
+		slot_2 = slot_2,
+		twohander = twohander,
+	}
+end
+
 local function clamp_display_percent(percent)
 	if not percent then return nil end
 	if percent >= 100 then return 99.99 end
@@ -1485,6 +1504,10 @@ function ItemScore:GetItemValidityForContext(itemlink, future, context)
 
 	if not future and item.minlevel and item.minlevel > context.playerlevel then
 		return {valid = false, final = true, reason = ("required level %d to equip"):format(item.minlevel), code = "level", item = item, slot = slot_1, slot_2 = slot_2, twohander = twohander}
+	end
+
+	if not future and item_fails_runtime_usability(itemlink) then
+		return runtime_unusable_verdict(item, slot_1, slot_2, twohander)
 	end
 
 	if item.equiploc == "INVTYPE_SHIELD" and context.ActiveRuleSet and context.ActiveRuleSet.itemtypes and context.ActiveRuleSet.itemtypes.SHIELD == nil then
@@ -2850,6 +2873,10 @@ function ItemScore:GetItemValidity(itemlink, future)
 			slot_2 = slot_2,
 			twohander = twohander,
 		}
+	end
+
+	if not future and item_fails_runtime_usability(itemlink) then
+		return runtime_unusable_verdict(item, slot_1, slot_2, twohander)
 	end
 
 	if item.equiploc == "INVTYPE_SHIELD" and self.ActiveRuleSet and self.ActiveRuleSet.itemtypes and self.ActiveRuleSet.itemtypes.SHIELD == nil then
