@@ -725,6 +725,12 @@ local function get_item_family(item)
 	local equipFamily = resolve_family_from_equip_loc(item.equiploc or item.type)
 	if equipFamily and equipFamily ~= "MISCARM" and equipFamily ~= "OFFHAND" then return equipFamily end
 	if item.family then return item.family end
+	if item.class == LE_ITEM_CLASS_ARMOR and item.subclass and item_armor_types[item.subclass] then
+		return item_armor_types[item.subclass]
+	end
+	if item.class == LE_ITEM_CLASS_WEAPON and item.subclass and item_weapon_types[item.subclass] then
+		return item_weapon_types[item.subclass]
+	end
 	if (item.equiploc == "INVTYPE_RANGED" or item.equiploc == "INVTYPE_RANGEDRIGHT") and ItemScore and ItemScore.playerclass then
 		if ItemScore.playerclass == "PRIEST" or ItemScore.playerclass == "MAGE" or ItemScore.playerclass == "WARLOCK" then
 			return "WAND"
@@ -757,14 +763,8 @@ local function get_item_family(item)
 	if item.subtype then
 		local normalizedSubtype = normalize_label(item.subtype)
 		if normalizedSubtype then
-			for family, aliases in pairs(FAMILY_ALIASES) do
-				for _, alias in ipairs(aliases) do
-					local normalizedAlias = normalize_label(alias)
-					if normalizedAlias and (normalizedSubtype == normalizedAlias or normalizedSubtype:find(normalizedAlias, 1, true)) then
-						return family
-					end
-				end
-			end
+			local canonicalFamily = build_canonical_family_lookup()[normalizedSubtype]
+			if canonicalFamily then return canonicalFamily end
 		end
 		local subtypeFamily = select(1, resolve_item_family(item.class, item.subtype))
 		if subtypeFamily then return subtypeFamily end

@@ -164,6 +164,13 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
+### Revision 175 - 3.0.175
+
+- Fixed Gear Advisor armor-family detection so numeric item class/subclass data is preferred before localized text heuristics.
+- Routed localized subtype matching through the canonical localized lookup instead of the older English-only alias table.
+- This prevents leather and mail armor from being recommended to cloth-only classes through armor-only fallback scoring.
+- Updated addon version metadata to 3.0.175.
+
 ### Revision 174 - 3.0.174
 
 - Fixed Gear Advisor weapon-family validation on localized clients so unusable weapon subtypes are rejected before DPS fallback scoring can recommend them.
