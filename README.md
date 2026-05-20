@@ -164,6 +164,12 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
+### Revision 179 - 3.0.179
+
+- Added numeric WotLK item-template class/subclass metadata to armor and weapon records in the bundled item DB.
+- Gear Advisor now uses DB-backed armor and weapon family data as a reliable fallback when live tooltip data is unavailable.
+- This keeps the 3.0.178 safety behavior while preventing localized tooltip/cache gaps from hiding basic usability data such as cloth, leather, mail, plate, shields, guns, bows, and wands.
+- Updated addon version metadata to 3.0.179.
 ### Revision 178 - 3.0.178
 
 - Changed Gear Advisor item resolution so DB-only fallback gear records remain pending until Blizzard/tooltip item details are available.

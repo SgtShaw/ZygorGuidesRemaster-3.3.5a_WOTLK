@@ -633,7 +633,12 @@ function ItemScore:GetItemDetailsFromDB(itemLinkOrID)
 
 	local meta = self.GearFinderItemMeta and self.GearFinderItemMeta[tonumber(itemID)] or nil
 	local equiploc = (meta and meta.equipLoc) or DB_SLOT_TO_INVTYPE[dbsource.s]
+	local itemClassID = dbsource.ic
+	local itemSubClassID = dbsource["is"]
 	local family = meta and meta.family or nil
+	if not family and itemClassID and itemSubClassID then
+		family = select(1, resolve_item_family(itemClassID, itemSubClassID))
+	end
 	if not family and equiploc then
 		family = select(1, resolve_family_from_equip_loc(equiploc))
 	end
@@ -641,8 +646,7 @@ function ItemScore:GetItemDetailsFromDB(itemLinkOrID)
 		family = nil
 	end
 
-	local itemClassID, itemSubClassID
-	if family and ARMOR_FAMILY_ORDER[family] then
+	if not itemClassID and family and ARMOR_FAMILY_ORDER[family] then
 		itemClassID = LE_ITEM_CLASS_ARMOR
 		for id, name in pairs(item_armor_types or {}) do
 			if name == family then
@@ -650,7 +654,7 @@ function ItemScore:GetItemDetailsFromDB(itemLinkOrID)
 				break
 			end
 		end
-	elseif family then
+	elseif not itemClassID and family then
 		for id, name in pairs(item_weapon_types or {}) do
 			if name == family then
 				itemClassID = LE_ITEM_CLASS_WEAPON
@@ -684,7 +688,7 @@ function ItemScore:GetItemDetailsFromDB(itemLinkOrID)
 		playerspec = nil,
 		requires_detail = nil,
 		needs_exact_stats = ((dbsource.rp and dbsource.rp ~= 0) or (dbsource.sc and dbsource.sc ~= 0)) and true or false,
-		needs_live_scan = true,
+		needs_live_scan = not (itemClassID and itemSubClassID),
 		name = (meta and meta.name) or dbsource.n,
 		ignore_for_gear = is_test_item_name((meta and meta.name) or dbsource.n),
 		fromdb = true,
