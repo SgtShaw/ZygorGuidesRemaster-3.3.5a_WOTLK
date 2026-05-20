@@ -196,17 +196,54 @@ local FAMILY_ALIASES = {
 	JEWELERY = {"miscellaneous","misc", "jewelry", "jewellery"},
 }
 
+local LOCALIZED_FAMILY_ALIASES = {
+	ruRU = {
+		CLOTH = {"Ткань", "ткань", "Тканевые доспехи", "тканевые доспехи"},
+		LEATHER = {"Кожа", "кожа", "Кожаные доспехи", "кожаные доспехи"},
+		MAIL = {"Кольчуга", "кольчуга", "Кольчужные доспехи", "кольчужные доспехи"},
+		PLATE = {"Латы", "латы", "Латные доспехи", "латные доспехи"},
+		SHIELD = {"Щит", "щит"},
+	},
+}
+
+local LOCALIZED_ARMOR_SUBTYPE_GLOBALS = {
+	CLOTH = {"ITEM_SUBCLASS_ARMOR_CLOTH"},
+	LEATHER = {"ITEM_SUBCLASS_ARMOR_LEATHER"},
+	MAIL = {"ITEM_SUBCLASS_ARMOR_MAIL"},
+	PLATE = {"ITEM_SUBCLASS_ARMOR_PLATE"},
+	SHIELD = {"ITEM_SUBCLASS_ARMOR_SHIELD"},
+}
+
+local function add_family_alias(lookup, family, alias)
+	local normalized = normalize_label(alias)
+	if normalized and normalized ~= "" then
+		lookup[normalized] = family
+	end
+end
+
 local canonical_family_lookup
 local function build_canonical_family_lookup()
 	if canonical_family_lookup then return canonical_family_lookup end
 	canonical_family_lookup = {}
 	for family, skillName in pairs(ItemScore.SkillNames or {}) do
-		local normalized = normalize_label(skillName)
-		if normalized then canonical_family_lookup[normalized] = family end
+		add_family_alias(canonical_family_lookup, family, skillName)
 	end
 	for family, aliases in pairs(FAMILY_ALIASES) do
 		for _, alias in ipairs(aliases) do
-			canonical_family_lookup[normalize_label(alias)] = family
+			add_family_alias(canonical_family_lookup, family, alias)
+		end
+	end
+	for family, globals in pairs(LOCALIZED_ARMOR_SUBTYPE_GLOBALS) do
+		for _, globalName in ipairs(globals) do
+			add_family_alias(canonical_family_lookup, family, _G[globalName])
+		end
+	end
+	local localeAliases = LOCALIZED_FAMILY_ALIASES[locale]
+	if localeAliases then
+		for family, aliases in pairs(localeAliases) do
+			for _, alias in ipairs(aliases) do
+				add_family_alias(canonical_family_lookup, family, alias)
+			end
 		end
 	end
 	return canonical_family_lookup

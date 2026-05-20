@@ -164,6 +164,12 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
+### Revision 173 - 3.0.173
+
+- Fixed Gear Advisor armor-family validation on localized clients so unusable armor subtypes are rejected before armor-only fallback scoring can recommend them.
+- Added localized armor subtype resolution for cloth, leather, mail, plate, and shield, with ruRU fallback aliases for tooltip wording differences.
+- Updated addon version metadata to 3.0.173.
+
 ### Revision 172 - 3.0.172
 
 - Fixed Gear Finder empty result rows so internal `reject:` diagnostics no longer appear under `No upgrade found`.
