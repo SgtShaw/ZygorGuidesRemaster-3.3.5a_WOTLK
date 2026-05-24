@@ -146,6 +146,14 @@ local function GF_GetBossNameLookup()
 end
 
 local function GF_GetBossNameFromID(bossID, fallbackBossName)
+	if type(bossID) == "table" then
+		for _, id in ipairs(bossID) do
+			local name = GF_GetBossNameFromID(id)
+			if name and name ~= "" then
+				return name
+			end
+		end
+	end
 	local normalizedBossID = tonumber(bossID) or bossID
 	if normalizedBossID and ZGV.GetTranslatedNPC then
 		local name = ZGV:GetTranslatedNPC(normalizedBossID)
@@ -214,7 +222,59 @@ local function GF_EvaluateUpgrade(itemlink, future)
 	if not itemlink then return false, nil, 0, 0, "no link" end
 	itemlink = GF_StripLink(itemlink) or itemlink
 	if not itemlink then return false, nil, 0, 0, "no link" end
-	return ItemScore.Upgrades:IsUpgrade(itemlink, future)
+
+	local is_upgrade, slot, change, score, comment, futurevalid, slot_2, change_2 = ItemScore.Upgrades:IsUpgrade(itemlink, future)
+	if is_upgrade then
+		return is_upgrade, slot, change, score, comment, futurevalid, slot_2, change_2
+	end
+
+	if ItemScore.Upgrades.BadUpgrades and ItemScore.Upgrades.BadUpgrades[itemlink] then
+		return false, slot, change or 0, score or 0, comment or "rejected", futurevalid, slot_2, change_2
+	end
+
+	local item = ItemScore:GetResolvedItemDetails(itemlink) or ItemScore:GetItemDetailsQueued(itemlink, true) or ItemScore:GetItemDetailsFromDB(itemlink)
+	if not item then
+		return false, slot, change or 0, score or 0, comment or "pending details", futurevalid, slot_2, change_2
+	end
+
+	local scored, success = ItemScore:GetItemScore(itemlink)
+	if success then
+		item.score = scored
+	elseif item.score == nil then
+		return false, slot, change or 0, score or 0, comment or "not scored", futurevalid, slot_2, change_2
+	end
+
+	local validity = ItemScore:GetItemValidity(itemlink, future)
+	if not (validity and validity.valid) then
+		return false, validity and validity.slot or slot, 0, item.score or score or 0, validity and validity.reason or comment or "not valid", futurevalid, validity and validity.slot_2 or slot_2, change_2
+	end
+
+	local function positive_comparison(slotid)
+		if not slotid then return nil end
+		if ItemScore.Upgrades.CanUseUniqueItem and not ItemScore.Upgrades:CanUseUniqueItem(itemlink, slotid) then return nil end
+		local comparison = ItemScore.Upgrades:GetUpgradeComparison(slotid, item)
+		if comparison and (comparison.isNewItem or (tonumber(comparison.deltaScore) or 0) > 0) then
+			return comparison
+		end
+		return nil
+	end
+
+	local comparison_1 = positive_comparison(validity.slot or item.slot)
+	local comparison_2 = positive_comparison(validity.slot_2 or item.slot_2)
+	local delta_1 = comparison_1 and (tonumber(comparison_1.deltaScore) or 0) or nil
+	local delta_2 = comparison_2 and (tonumber(comparison_2.deltaScore) or 0) or nil
+	local primary_slot = validity.slot or item.slot
+	local secondary_slot = validity.slot_2 or item.slot_2
+
+	if comparison_1 and comparison_2 then
+		return true, primary_slot, delta_1, item.score or score or 0, "ok db comparison", false, secondary_slot, delta_2
+	elseif comparison_1 then
+		return true, primary_slot, delta_1, item.score or score or 0, "ok db comparison"
+	elseif comparison_2 then
+		return true, secondary_slot, delta_2, item.score or score or 0, "ok db comparison"
+	end
+
+	return false, primary_slot, 0, item.score or score or 0, comment or "not upgrade"
 end
 
 local function GF_ShouldIncludeCandidate(itemlink, future)
@@ -358,6 +418,9 @@ local function GF_IsValidVendorSource(source)
 	if source.expansionLevel and source.expansionLevel > (GearFinder.CurrentExpansion or 2) then
 		return false, "no expansion " .. source.expansionLevel
 	end
+	if (tonumber(ItemScore.playerlevel) or 0) >= 80 and source.expansionLevel and source.expansionLevel < 2 then
+		return false, "old expansion currency filtered out"
+	end
 	if source.minLevel and source.minLevel > (ItemScore.playerlevel or 0) then
 		return false, "need level " .. source.minLevel
 	end
@@ -371,6 +434,22 @@ local function GF_IsValidCraftedSource(source)
 	if not source then return false, "missing crafted source" end
 	if ZGV.db and ZGV.db.profile and ZGV.db.profile.gear_crafted_items == false then
 		return false, "crafted filtered out"
+	end
+	local playerLevel = tonumber(ItemScore.playerlevel) or 0
+	local tierProgression = ZGV.db and ZGV.db.profile and ZGV.db.profile.gear_tier_progression_mode == true
+	if playerLevel >= 80 then
+		if source.expansionLevel and source.expansionLevel < 2 then
+			return false, "crafted old expansion filtered out"
+		end
+		if source.category == "leveling" then
+			return false, "crafted leveling filtered out at max level"
+		end
+		if tierProgression and source.category == "raid" then
+			return false, "crafted raid filtered out by progression"
+		end
+		if tierProgression and source.category == "pvp" then
+			return false, "crafted pvp filtered out by progression"
+		end
 	end
 	if (source.category == "leveling" or source.category == "pvp") and ZGV.db and ZGV.db.profile and ZGV.db.profile.gear_crafted_leveling_items == false then
 		return false, "crafted leveling filtered out"
@@ -501,6 +580,23 @@ local function GF_FormatCraftedLine(upgrade)
 	end
 	if skill > 0 then return ("Made by %s %d%s"):format(profession, skill, suffix) end
 	return ("Made by %s%s"):format(profession, suffix)
+end
+
+local function GF_FormatSpecialSource(upgrade)
+	local special = upgrade and upgrade.special
+	if not special or special == "" then return nil end
+	if special:find("Tribunal of Ages") then return "Tribunal Chest" end
+	return special
+end
+
+local GF_StaticItemSourceLabels = {
+	[37655] = "Tribunal Chest",
+	[37730] = "Boss: Commander Kolurg",
+}
+
+local function GF_FormatStaticItemSource(upgrade)
+	local itemid = upgrade and tonumber(upgrade.itemid)
+	return itemid and GF_StaticItemSourceLabels[itemid] or nil
 end
 
 local function GF_GetSourceTooltipLines(upgrade)
@@ -723,6 +819,13 @@ local function GF_ResolveDungeonIdent(dungeonId, instanceId, dungeonName, heroic
 	return dungeonId
 end
 
+local WOTLK_CATCHUP_DUNGEONS = {
+	[650] = true, ["650H"] = true, -- Trial of the Champion
+	[632] = true, ["632H"] = true, -- The Forge of Souls
+	[658] = true, ["658H"] = true, -- Pit of Saron
+	[668] = true, ["668H"] = true, -- Halls of Reflection
+}
+
 -- remove all non-player class drops, and all bosses that do not drop anything for player
 function GearFinder:TrimDatabase() 
 	local player = ZGV.ItemScore.playerclass
@@ -771,6 +874,8 @@ function GearFinder:IsValidDungeon(dungeon, instanceId, dungeonName, heroic)
 	-- handle permanent rejects
 	if dungeon.max_level and dungeon.max_level<ItemScore.playerlevel then return false, false, ident, 0, false, false, "instance disabled" end
 	if dungeon.expansionLevel>GearFinder.CurrentExpansion then return false, false, ident, 0, false, false, "no expansion " ..dungeon.expansionLevel end
+	if (tonumber(ItemScore.playerlevel) or 0) >= 80 and dungeon.expansionLevel and dungeon.expansionLevel < 2 then return false, false, ident, 0, false, false, "old expansion filtered out" end
+	if ZGV.db and ZGV.db.profile and ZGV.db.profile.gear_tier_progression_mode == true and WOTLK_CATCHUP_DUNGEONS[ident] then return false, false, ident, 0, false, false, "catch-up dungeon filtered out" end
 	if dungeon.difficulty and not ZGV.db.profile["gear_"..dungeon.difficulty] then return false, false, ident, 0, false, false, "instance filtered out"..dungeon.difficulty end
 
 	if dungeon.isHoliday then return false, false, ident, 0, false, false, "holiday dungeons not supported" end
@@ -907,7 +1012,7 @@ end
 
 local function safe_get_item_details(itemlink)
 	local ok, result = pcall(function()
-		return ItemScore:GetItemDetails(itemlink) or ItemScore:GetItemDetailsQueued(itemlink, true)
+		return ItemScore:GetItemDetails(itemlink) or ItemScore:GetItemDetailsQueued(itemlink, true) or ItemScore:GetItemDetailsFromDB(itemlink)
 	end)
 	if not ok then
 		return nil, result
@@ -969,6 +1074,20 @@ local function queue_upgrade_candidate(slot, item)
 	table.insert(GearFinder.UpgradeQueue[slot], item)
 	add_slot_debug(slot, "upgrades")
 	return true
+end
+
+local function is_known_negative_fallback(slot, item)
+	if not slot or not item or not ItemScore or not ItemScore.Upgrades or not ItemScore.Upgrades.GetUpgradeComparison then return false end
+	local comparison = ItemScore.Upgrades:GetUpgradeComparison(slot, item)
+	local delta = comparison and tonumber(comparison.deltaScore)
+	return delta and delta < 0 or false
+end
+
+local function is_known_positive_fallback(slot, item)
+	if not slot or not item or not ItemScore or not ItemScore.Upgrades or not ItemScore.Upgrades.GetUpgradeComparison then return false end
+	local comparison = ItemScore.Upgrades:GetUpgradeComparison(slot, item)
+	local delta = comparison and tonumber(comparison.deltaScore)
+	return (comparison and comparison.isNewItem) or (delta and delta > 0) or false
 end
 
 -- checks if gearfounder got upgrades for all slots, so that we may skip looking for future upgrades
@@ -1071,21 +1190,14 @@ local PHASE_PRIORITY = {
 	wotlk5 = 5,
 }
 
-local WOTLK_CATCHUP_DUNGEONS = {
-	[650] = true, ["650H"] = true, -- Trial of the Champion
-	[632] = true, ["632H"] = true, -- The Forge of Souls
-	[658] = true, ["658H"] = true, -- Pit of Saron
-	[668] = true, ["668H"] = true, -- Halls of Reflection
-}
-
 local function get_progression_priority(item)
 	if item and item.sourceType == "currency" then return 0, 0, 0, 0, 0 end
 	if item and item.sourceType == "crafted" then
 		if item.craftedCategory == "pre_raid" or item.craftedCategory == "leveling" then return 1, 0, 0, 0, 0 end
-		if item.bind == "boe" then return 2, 0, 0, 0, 0 end
-		if item.professionOnly or item.bind == "bop" then return 3, 0, 0, 0, 0 end
 		if item.craftedCategory == "raid" then return 55, 0, 0, 0, 0 end
 		if item.craftedCategory == "pvp" then return 56, 0, 0, 0, 0 end
+		if item.bind == "boe" then return 2, 0, 0, 0, 0 end
+		if item.professionOnly or item.bind == "bop" then return 3, 0, 0, 0, 0 end
 		return 2, 0, 0, 0, 0
 	end
 
@@ -1093,7 +1205,7 @@ local function get_progression_priority(item)
 	if not dungeon then return 99, 99, 99, 99, 99 end
 
 	local difficulty = tonumber(dungeon.difficulty) or 99
-	local phase = PHASE_PRIORITY[dungeon.phase] or 99
+	local phase = PHASE_PRIORITY[(item and item.phase) or dungeon.phase] or 99
 	local minLevel = tonumber(dungeon.minLevel) or 0
 	local levelGap = math.max(0, minLevel - (tonumber(ItemScore.playerlevel) or 0))
 	local ident = item.ident
@@ -1127,7 +1239,7 @@ local function get_access_priority(item)
 	if not dungeon then return 5, 99, 99, 99, 99 end
 	local difficulty = tonumber(dungeon.difficulty) or 99
 	local contentBucket = difficulty >= 3 and 4 or 1
-	local phase = PHASE_PRIORITY[dungeon.phase] or 99
+	local phase = PHASE_PRIORITY[(item and item.phase) or dungeon.phase] or 99
 	local minLevel = tonumber(dungeon.minLevel) or 0
 	local levelGap = math.max(0, minLevel - (tonumber(ItemScore.playerlevel) or 0))
 	return contentBucket, difficulty, phase, levelGap, minLevel
@@ -1154,6 +1266,40 @@ end
 
 local function is_tier_progression_mode()
 	return ZGV.db and ZGV.db.profile and ZGV.db.profile.gear_tier_progression_mode == true
+end
+
+local function get_progression_bis_category(item)
+	if not item then return nil end
+	if item.sourceType == "currency" or item.sourceType == "crafted" then
+		return "pre_raid"
+	end
+	local tier, phase = get_progression_priority(item)
+	tier = tonumber(tier) or 99
+	phase = tonumber(phase) or 0
+	if tier < 30 then return "pre_raid" end
+	if phase == 1 then return "t7" end
+	if phase == 2 then return "t8" end
+	if phase == 3 then return "t9" end
+	if phase == 4 then return "t10" end
+	if phase == 5 then return "rs" end
+	return nil
+end
+
+local function get_bis_progression_preference(slot, item)
+	if not slot or not item or not ItemScore or not ItemScore.BISData then return nil end
+	local itemID = get_candidate_item_id(item)
+	if not itemID then return nil end
+	local classToken = ItemScore.playerclass
+	local buildNum = ItemScore.GetResolvedBuild and ItemScore:GetResolvedBuild(classToken, ItemScore.playerlevel, ZGV.db and ZGV.db.char and ZGV.db.char.gear_active_build) or (ZGV.db and ZGV.db.char and ZGV.db.char.gear_active_build)
+	local category = get_progression_bis_category(item)
+	local slotList = classToken and buildNum and category and ItemScore.BISData[classToken] and ItemScore.BISData[classToken][buildNum] and ItemScore.BISData[classToken][buildNum][category] and ItemScore.BISData[classToken][buildNum][category][slot]
+	if not slotList then return nil end
+	for index, listedID in ipairs(slotList) do
+		if tonumber(listedID) == tonumber(itemID) then
+			return {category = category, index = index}
+		end
+	end
+	return nil
 end
 
 local function get_practical_score(item)
@@ -1223,6 +1369,15 @@ local function compare_tier_progression_upgrade(slot, a, b)
 	if ar3 ~= br3 then return ar3 < br3 end
 	if ar4 ~= br4 then return ar4 < br4 end
 	if ar5 ~= br5 then return ar5 < br5 end
+	local aBIS = get_bis_progression_preference(slot, a)
+	local bBIS = get_bis_progression_preference(slot, b)
+	if aBIS and bBIS and aBIS.index ~= bBIS.index then
+		return aBIS.index < bBIS.index
+	elseif aBIS and not bBIS then
+		return true
+	elseif bBIS and not aBIS then
+		return false
+	end
 	if is_more_accessible(a,b) then
 		return true
 	elseif is_more_accessible(b,a) then
@@ -1279,32 +1434,12 @@ end
 
 local function prune_to_progression_band(slot, queue, cap)
 	if not queue or not cap then return end
-	local keepTier
-	for _, item in ipairs(queue) do
-		if not (item.sourceType == "crafted" and item.craftedCategory == "raid") then
-			local tier = get_progression_priority(item)
-			if tier <= cap then
-				keepTier = cap
-				break
-			elseif tier < 90 and (not keepTier or tier < keepTier) then
-				keepTier = tier
-			end
-		end
-	end
-	if not keepTier then
-		keepTier = cap
-	end
-
 	local removed = false
 	for idx = #queue, 1, -1 do
 		local tier = get_progression_priority(queue[idx])
 		local remove = queue[idx].sourceType == "crafted" and queue[idx].craftedCategory == "raid"
 		if not remove then
-			if keepTier == cap then
-				remove = tier > cap
-			else
-				remove = tier ~= keepTier
-			end
+			remove = tier > cap
 		end
 		if remove then
 			table.remove(queue, idx)
@@ -1454,7 +1589,11 @@ queue_fallback_candidate = function(slot, item, itemdata, ident, future)
 		set_slot_reject(slot, "reject: already equipped")
 		return false
 	end
-	if not item.force_approximate and candidateLevel > 0 and baseline > 0 and candidateLevel <= baseline then
+	if is_known_negative_fallback(slot, item) then
+		set_slot_reject(slot, ("reject: negative score fallback %s"):format(tostring(item.cached_name or item.name or item.itemlink or "item")))
+		return false
+	end
+	if not item.force_approximate and candidateLevel > 0 and baseline > 0 and candidateLevel <= baseline and not is_known_positive_fallback(slot, item) then
 		set_slot_reject(slot, ("reject: ilvl %d <= equipped %d for %s"):format(candidateLevel, baseline, tostring(item.cached_name or item.itemlink or "item")))
 		return false
 	end
@@ -1468,6 +1607,8 @@ queue_fallback_candidate = function(slot, item, itemdata, ident, future)
 		ident = ident,
 		boss = itemdata and itemdata.boss,
 		bossname = itemdata and GF_GetBossNameFromID(itemdata.boss, itemdata.bossname or itemdata.name),
+		special = itemdata and itemdata.special,
+		phase = itemdata and itemdata.phase,
 		encounterId = itemdata and itemdata.encounterId,
 		quest = itemdata and itemdata.quest,
 		questname = itemdata and itemdata.questname,
@@ -1578,6 +1719,8 @@ local function loot_score_dungeon_thread()
 						queuedItem.ident = ident
 						queuedItem.boss = itemdata.boss
 						queuedItem.bossname = GF_GetBossNameFromID(itemdata.boss, itemdata.bossname or itemdata.name)
+						queuedItem.special = itemdata.special
+						queuedItem.phase = itemdata.phase
 						queuedItem.encounterId = itemdata.encounterId
 						queuedItem.quest = itemdata.quest
 						queuedItem.itemid = queuedItem.itemid or (ZGV.ItemLink and ZGV.ItemLink.GetItemID(itemlink)) or queuedItem.itemid
@@ -1663,7 +1806,9 @@ local function loot_score_dungeon_thread()
 					if is_upgrade and validity and validity.valid and is_replacement(twohander_equipped,item) then
 						local queuedItem = clone_item_entry(item)
 						queuedItem.ident = ident
+						queuedItem.special = itemdata.special
 						queuedItem.itemid = queuedItem.itemid or (ZGV.ItemLink and ZGV.ItemLink.GetItemID(itemlink)) or queuedItem.itemid
+						queuedItem.phase = itemdata.phase
 						queuedItem.itemlinkfull = queuedItem.itemlinkfull or itemlink
 						queuedItem.cached_name = queuedItem.cached_name or queuedItem.name
 						queuedItem.change = change
@@ -1724,7 +1869,6 @@ local function loot_score_dungeon_thread()
 			return get_fallback_metric(a) > get_fallback_metric(b)
 		end)
 	end
-	prune_all_to_progression_band()
 
 	-- remove duplicates from primary/secondary slots
 	for first,second in pairs(slot_pairs) do
@@ -1807,9 +1951,11 @@ local function loot_score_dungeon_thread()
 								local queuedItem = clone_item_entry(item)
 								queuedItem.ident = dungeon.ident
 								queuedItem.min_ilevel = dungeon.min_ilevel
-								queuedItem.boss = itemdata.boss
-								queuedItem.bossname = GF_GetBossNameFromID(itemdata.boss, itemdata.bossname or itemdata.name)
-								queuedItem.encounterId = itemdata.encounterId
+						queuedItem.boss = itemdata.boss
+						queuedItem.bossname = GF_GetBossNameFromID(itemdata.boss, itemdata.bossname or itemdata.name)
+						queuedItem.special = itemdata.special
+						queuedItem.encounterId = itemdata.encounterId
+						queuedItem.phase = itemdata.phase
 								queuedItem.future = true
 								queuedItem.quest = itemdata.quest
 								queuedItem.itemid = queuedItem.itemid or (ZGV.ItemLink and ZGV.ItemLink.GetItemID(itemlink)) or queuedItem.itemid
@@ -1900,11 +2046,11 @@ local function loot_score_dungeon_thread()
 		end)
 		prune_to_best_content_tier(slotupgrades)
 	end
-	prune_all_to_progression_band()
 
 	local t3 = debugprofilestop()
 	ZGV:Debug("&gear scoring future took %d",t3-t2)
 	ZGV:Debug("&gear scoring all took %d",t3-GearFinder.TimeScoreStart)
+	prune_all_to_progression_band()
 	promote_fallback_results()
 	enforce_distinct_pair_results(distinct_slot_pairs)
 	GearFinder.ResultsReady=true
@@ -2030,7 +2176,7 @@ function GearFinder:ScoreDungeonItems()
 								if bossdata.quest and bossdata.quest[faction] then
 									qname = ZGV.QuestDB and ZGV.QuestDB:GetQuestName(bossdata.quest[faction])
 								end
-								table.insert(GearFinder.ItemsToScore[ident],{itemlink=itemlink,boss=bossdata.boss, bossname=GF_GetBossNameFromID(bossdata.boss, bossdata.name), encounterId=bossdata.encounterId, quest=bossdata.quest and bossdata.quest[faction], questname=qname})
+								table.insert(GearFinder.ItemsToScore[ident],{itemlink=itemlink,boss=bossdata.boss, bossname=GF_GetBossNameFromID(bossdata.boss, bossdata.name), special=bossdata.special, phase=bossdata.phase, encounterId=bossdata.encounterId, quest=bossdata.quest and bossdata.quest[faction], questname=qname})
 							elseif not knownClientItem then
 								skippedOutOfEraItems = skippedOutOfEraItems + 1
 								invalidReasons[knownClientReason or "out-of-era item"] = (invalidReasons[knownClientReason or "out-of-era item"] or 0) + 1
@@ -2061,7 +2207,7 @@ function GearFinder:ScoreDungeonItems()
 								if bossdata.quest and bossdata.quest[faction] then
 									qname = ZGV.QuestDB and ZGV.QuestDB:GetQuestName(bossdata.quest[faction])
 								end
-								table.insert(GearFinder.ItemsToMaybeScore[ident],{itemlink=itemlink,boss=bossdata.boss, bossname=GF_GetBossNameFromID(bossdata.boss, bossdata.name), encounterId=bossdata.encounterId, quest=bossdata.quest and bossdata.quest[faction], questname=qname})
+								table.insert(GearFinder.ItemsToMaybeScore[ident],{itemlink=itemlink,boss=bossdata.boss, bossname=GF_GetBossNameFromID(bossdata.boss, bossdata.name), special=bossdata.special, phase=bossdata.phase, encounterId=bossdata.encounterId, quest=bossdata.quest and bossdata.quest[faction], questname=qname})
 							elseif not knownClientItem then
 								skippedOutOfEraItems = skippedOutOfEraItems + 1
 								invalidReasons[knownClientReason or "out-of-era item"] = (invalidReasons[knownClientReason or "out-of-era item"] or 0) + 1
@@ -2983,7 +3129,13 @@ function GearFinder:DisplayResults()
 			elseif upgrade.approximate then
 				dungeons[upgrade.ident] = (dungeons[upgrade.ident] or 0) + 1
 				button.dungeonguide, button.dungeon = find_dungeon_guide(upgrade.ident)
-				if upgrade.quest then
+				local specialSource = GF_FormatSpecialSource(upgrade)
+				local staticSource = GF_FormatStaticItemSource(upgrade)
+				if specialSource then
+					button.itemencounter:SetText(specialSource)
+				elseif staticSource then
+					button.itemencounter:SetText(staticSource)
+				elseif upgrade.quest then
 					local questname = ZGV.QuestDB:GetQuestName(upgrade.quest)
 					button.itemencounter:SetText("Quest: "..(upgrade.questname or questname or ""))
 				elseif upgrade.encounterId then
@@ -2996,7 +3148,13 @@ function GearFinder:DisplayResults()
 			else
 				dungeons[upgrade.ident] = (dungeons[upgrade.ident] or 0) + 1
 				button.dungeonguide, button.dungeon = find_dungeon_guide(upgrade.ident)
-				if upgrade.quest then
+				local specialSource = GF_FormatSpecialSource(upgrade)
+				local staticSource = GF_FormatStaticItemSource(upgrade)
+				if specialSource then
+					button.itemencounter:SetText(specialSource)
+				elseif staticSource then
+					button.itemencounter:SetText(staticSource)
+				elseif upgrade.quest then
 					local questname = ZGV.QuestDB:GetQuestName(upgrade.quest)
 					button.itemencounter:SetText("Quest: "..(upgrade.questname or questname or ""))
 				elseif upgrade.encounterId then
@@ -3004,8 +3162,7 @@ function GearFinder:DisplayResults()
 				elseif bossLabel then
 					button.itemencounter:SetText("Boss: "..bossLabel)
 				else
-					local summary = GF_FormatFinderSummary(slotID, upgrade, upgrade.change, upgrade.pair)
-					button.itemencounter:SetText(summary or " ")
+					button.itemencounter:SetText(" ")
 				end
 			end
 		else
@@ -3241,5 +3398,220 @@ function GearFinder:RefreshAfterSourceSettingChange()
 	GearFinder:ClearResults()
 	if GearFinder.MainFrame and GearFinder.MainFrame:IsVisible() then
 		GearFinder:ScoreDungeonItems()
+	end
+end
+
+local function GF_TraceBool(value)
+	if value == nil then return "nil" end
+	return value and "true" or "false"
+end
+
+local function GF_TraceItemMatches(candidate, targetID, targetLink)
+	if not candidate then return false end
+	if type(candidate) == "number" then return candidate == targetID end
+	local candidateID = GF_GetItemID(candidate)
+	if candidateID and targetID and candidateID == targetID then return true end
+	local stripped = GF_StripLink(candidate)
+	return stripped and targetLink and stripped == targetLink or false
+end
+
+local function GF_TraceQueue(queue, targetID, targetLink, lines, label)
+	for slot, entries in pairs(queue or {}) do
+		for index, entry in ipairs(entries) do
+			if GF_TraceItemMatches(entry.itemlinkfull or entry.itemlink or entry.itemid, targetID, targetLink) then
+				local bisPref = get_bis_progression_preference(slot, entry)
+				lines[#lines + 1] = ("%s slot=%s pos=%d ident=%s phase=%s bis=%s score=%s change=%s delta=%s lvl=%s name=%s"):format(
+					label,
+					tostring(slot),
+					index,
+					tostring(entry.ident),
+					tostring(entry.phase),
+					bisPref and ((bisPref.category or "?") .. "#" .. tostring(bisPref.index or "?")) or "nil",
+					tostring(entry.score),
+					tostring(entry.change),
+					tostring(entry.deltascore),
+					tostring(entry.itemlvl),
+					tostring(entry.cached_name or entry.name or entry.itemlink or "")
+				)
+			end
+		end
+	end
+end
+
+local function GF_TraceTopQueue(queue, slot, lines, label)
+	local entries = queue and queue[slot]
+	if not entries then return end
+	for index = 1, math.min(5, #entries) do
+		local entry = entries[index]
+		local bisPref = get_bis_progression_preference(slot, entry)
+		lines[#lines + 1] = ("%s top%d slot=%s item=%s id=%s score=%s change=%s ident=%s phase=%s bis=%s lvl=%s"):format(
+			label,
+			index,
+			tostring(slot),
+			tostring(entry.cached_name or entry.name or entry.itemlink or ""),
+			tostring(get_candidate_item_id(entry)),
+			tostring(entry.score),
+			tostring(entry.change),
+			tostring(entry.ident),
+			tostring(entry.phase),
+			bisPref and ((bisPref.category or "?") .. "#" .. tostring(bisPref.index or "?")) or "nil",
+			tostring(entry.itemlvl)
+		)
+	end
+end
+
+local function GF_ShowTracePopup(text)
+	local frame = GearFinder.TracePopup
+	if not frame then
+		frame = CreateFrame("Frame", "ZGVGearFinderTracePopup", UIParent)
+		frame:SetFrameStrata("DIALOG")
+		frame:SetWidth(760)
+		frame:SetHeight(460)
+		frame:SetPoint("CENTER")
+		frame:SetBackdrop({
+			bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
+			edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
+			tile = true, tileSize = 32, edgeSize = 32,
+			insets = { left = 11, right = 12, top = 12, bottom = 11 }
+		})
+		frame:EnableMouse(true)
+		frame:SetMovable(true)
+		frame:RegisterForDrag("LeftButton")
+		frame:SetScript("OnDragStart", frame.StartMoving)
+		frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
+
+		local title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+		title:SetPoint("TOPLEFT", 18, -16)
+		title:SetText("Zygor Gear Finder Trace")
+		frame.title = title
+
+		local close = CreateFrame("Button", nil, frame, "UIPanelCloseButton")
+		close:SetPoint("TOPRIGHT", -4, -4)
+
+		local scroll = CreateFrame("ScrollFrame", "ZGVGearFinderTracePopupScroll", frame, "UIPanelScrollFrameTemplate")
+		scroll:SetPoint("TOPLEFT", 18, -46)
+		scroll:SetPoint("BOTTOMRIGHT", -34, 46)
+
+		local edit = CreateFrame("EditBox", nil, scroll)
+		edit:SetMultiLine(true)
+		edit:SetAutoFocus(false)
+		edit:SetFontObject(ChatFontNormal)
+		edit:SetWidth(690)
+		edit:SetScript("OnEscapePressed", function() frame:Hide() end)
+		scroll:SetScrollChild(edit)
+		frame.edit = edit
+
+		local hint = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+		hint:SetPoint("BOTTOMLEFT", 18, 18)
+		hint:SetText("Click text, Ctrl+A, Ctrl+C to copy.")
+		GearFinder.TracePopup = frame
+	end
+	frame.edit:SetText(text)
+	frame.edit:HighlightText()
+	frame.edit:SetFocus()
+	frame:Show()
+end
+
+function GearFinder:GetTraceLines(input)
+	local itemID = GF_GetItemID(input)
+	if not itemID then
+		return {"Usage: /zgvgeartrace item:40560 or /zgvgeartrace 40560"}
+	end
+	local itemlink = "item:" .. itemID
+	local lines = {}
+	lines[#lines + 1] = "Zygor Gear Finder Trace: copy all lines below."
+	lines[#lines + 1] = ("ZGFT input=%s id=%s player=%s/%s level=%s build=%s resultsReady=%s scored=%s"):format(
+		tostring(input),
+		tostring(itemID),
+		tostring(ItemScore.playerclass),
+		tostring(ItemScore.playerclassName),
+		tostring(ItemScore.playerlevel),
+		tostring(ZGV.db and ZGV.db.char and ZGV.db.char.gear_active_build),
+		GF_TraceBool(GearFinder.ResultsReady),
+		GF_TraceBool(GearFinder.DungeonItemsScored)
+	)
+	lines[#lines + 1] = ("ZGFT settings normal=%s heroic=%s raid10=%s raid25=%s tierProgression=%s crafted=%s currency=%s"):format(
+		GF_TraceBool(ZGV.db and ZGV.db.profile and ZGV.db.profile.gear_1),
+		GF_TraceBool(ZGV.db and ZGV.db.profile and ZGV.db.profile.gear_2),
+		GF_TraceBool(ZGV.db and ZGV.db.profile and ZGV.db.profile.gear_3),
+		GF_TraceBool(ZGV.db and ZGV.db.profile and ZGV.db.profile.gear_4),
+		GF_TraceBool(ZGV.db and ZGV.db.profile and ZGV.db.profile.gear_tier_progression_mode),
+		GF_TraceBool(not (ZGV.db and ZGV.db.profile and ZGV.db.profile.gear_crafted_items == false)),
+		GF_TraceBool(not (ZGV.db and ZGV.db.profile and ZGV.db.profile.gear_currency_rewards == false))
+	)
+
+	local dbitem = ItemScore:GetItemDetailsFromDB(itemlink)
+	local item = safe_get_item_details(itemlink)
+	local validity = ItemScore:GetItemValidity(itemlink)
+	local is_upgrade, slot, change, score, comment, futurevalid, slot_2, change_2 = GF_EvaluateUpgrade(itemlink)
+	lines[#lines + 1] = ("ZGFT db found=%s name=%s ilvl=%s req=%s slot=%s family=%s"):format(GF_TraceBool(dbitem), tostring(dbitem and dbitem.name), tostring(dbitem and dbitem.itemlvl), tostring(dbitem and dbitem.minlevel), tostring(dbitem and dbitem.equiploc), tostring(dbitem and dbitem.family))
+	lines[#lines + 1] = ("ZGFT item found=%s name=%s fromdb=%s pending=%s type=%s slot=%s slot2=%s score=%s"):format(GF_TraceBool(item), tostring(item and item.name), GF_TraceBool(item and item.fromdb), GF_TraceBool(item and ItemScore:IsItemPendingResolution(item)), tostring(item and item.type), tostring(item and item.slot), tostring(item and item.slot_2), tostring(item and item.score))
+	lines[#lines + 1] = ("ZGFT validity valid=%s final=%s code=%s reason=%s slot=%s slot2=%s"):format(GF_TraceBool(validity and validity.valid), GF_TraceBool(validity and validity.final), tostring(validity and validity.code), tostring(validity and validity.reason), tostring(validity and validity.slot), tostring(validity and validity.slot_2))
+	lines[#lines + 1] = ("ZGFT eval upgrade=%s slot=%s change=%s score=%s comment=%s future=%s slot2=%s change2=%s"):format(GF_TraceBool(is_upgrade), tostring(slot), tostring(change), tostring(score), tostring(comment), GF_TraceBool(futurevalid), tostring(slot_2), tostring(change_2))
+
+	local sourceCount = 0
+	for dungeon, dungeondata in pairs(ZGV.ItemScore.Items or {}) do
+		if GF_IsCuratedSourceKey(dungeon) and type(dungeondata) == "table" then
+			for bossindex, bossdata in pairs(dungeondata) do
+				if type(bossdata) == "table" then
+					local player_items = GF_GetBossDropItems(bossdata, ItemScore.playerclass or "ALL")
+					if player_items then
+						for _, candidate in pairs(player_items) do
+							if GF_TraceItemMatches(candidate, itemID, itemlink) then
+								sourceCount = sourceCount + 1
+								local valid, future, ident, maxscale, mythic, mythicplus, sourceComment = GearFinder:IsValidDungeon(dungeondata.dungeon or dungeondata.dungeonmap, dungeondata.instanceId, dungeon, dungeondata.heroic)
+								local include = GF_ShouldIncludeCandidate(itemlink, future)
+								lines[#lines + 1] = ("ZGFT source%d key=%s bossIndex=%s boss=%s bossName=%s special=%s phase=%s valid=%s future=%s ident=%s comment=%s include=%s"):format(
+									sourceCount,
+									tostring(dungeon),
+									tostring(bossindex),
+									tostring(bossdata.boss),
+									tostring(bossdata.name),
+									tostring(bossdata.special),
+									tostring(bossdata.phase),
+									GF_TraceBool(valid),
+									GF_TraceBool(future),
+									tostring(ident),
+									tostring(sourceComment),
+									GF_TraceBool(include)
+								)
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+	lines[#lines + 1] = ("ZGFT sourceCount=%d"):format(sourceCount)
+
+	GF_TraceQueue(GearFinder.UpgradeQueue, itemID, itemlink, lines, "ZGFT upgradeQueue")
+	GF_TraceQueue(GearFinder.FallbackQueue, itemID, itemlink, lines, "ZGFT fallbackQueue")
+	if validity and validity.slot then
+		GF_TraceTopQueue(GearFinder.UpgradeQueue, validity.slot, lines, "ZGFT upgradeQueue")
+		GF_TraceTopQueue(GearFinder.FallbackQueue, validity.slot, lines, "ZGFT fallbackQueue")
+		lines[#lines + 1] = ("ZGFT slotReject slot=%s reason=%s"):format(tostring(validity.slot), tostring(GearFinder.DebugSlotReject and GearFinder.DebugSlotReject[validity.slot]))
+	end
+	if validity and validity.slot_2 then
+		GF_TraceTopQueue(GearFinder.UpgradeQueue, validity.slot_2, lines, "ZGFT upgradeQueue")
+		GF_TraceTopQueue(GearFinder.FallbackQueue, validity.slot_2, lines, "ZGFT fallbackQueue")
+		lines[#lines + 1] = ("ZGFT slotReject slot=%s reason=%s"):format(tostring(validity.slot_2), tostring(GearFinder.DebugSlotReject and GearFinder.DebugSlotReject[validity.slot_2]))
+	end
+
+	local summary = GearFinder.DebugSummary or {}
+	lines[#lines + 1] = ("ZGFT summary sources=%s validDungeons=%s futureDungeons=%s invalid=%s"):format(tostring(summary.sourceInstances), tostring(summary.validDungeons), tostring(summary.futureDungeons), tostring(GF_CompactMapKeys(summary.invalidReasons)))
+	return lines
+end
+
+function GearFinder:ShowTracePopup(input)
+	local ok, result = pcall(function()
+		return table.concat(GearFinder:GetTraceLines(input), "\n")
+	end)
+	GF_ShowTracePopup(ok and result or ("Zygor Gear Finder Trace failed:\n" .. tostring(result)))
+end
+
+SLASH_ZGVGEARTRACE1 = "/zgvgeartrace"
+SlashCmdList["ZGVGEARTRACE"] = function(msg)
+	if ZGV and ZGV.ItemScore and ZGV.ItemScore.GearFinder then
+		ZGV.ItemScore.GearFinder:ShowTracePopup(msg)
 	end
 end

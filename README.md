@@ -164,6 +164,15 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
+### Revision 186 - 3.0.186
+
+- Improved Gear Finder recommendations with ranked BiS-Tooltip data for mapped WotLK specs, including stronger Shadow priest pre-raid/T9/T10/RS ordering.
+- Preserved Retail WotLK gear source tables when legacy faction gear files load, preventing missing source-backed upgrades.
+- Improved Gear Finder handling for DB-backed items while the client is still retrieving live item info.
+- Tightened tier-progression behavior with boss-row phase handling for late Vault of Archavon/Toravon-style rows and stricter progression-band pruning.
+- Added `/zgvgeartrace <itemid>` diagnostics for Gear Finder oddities. Users should run it on any suspicious recommendation and send the copied popup text with a screenshot of the finder result.
+- Updated addon version metadata to 3.0.186.
+
 ### Revision 183 - 3.0.183
 
 - Added Gear Advisor tooltip display options for `Upgrade Comparison`, `Item Score`, and `Both`.

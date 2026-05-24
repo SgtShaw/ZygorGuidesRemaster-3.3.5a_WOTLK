@@ -232,6 +232,42 @@ local DB_STRUCTURAL_STATS = {
 	ARMOR = true,
 	BLOCK_VALUE = true,
 	DAMAGE_PER_SECOND = true,
+	EMPTY_SOCKET_BLUE = true,
+	EMPTY_SOCKET_META = true,
+	EMPTY_SOCKET_PRISMATIC = true,
+	EMPTY_SOCKET_RED = true,
+	EMPTY_SOCKET_YELLOW = true,
+}
+
+local SOCKET_STAT_KEYS = {
+	EMPTY_SOCKET_BLUE = true,
+	EMPTY_SOCKET_META = true,
+	EMPTY_SOCKET_PRISMATIC = true,
+	EMPTY_SOCKET_RED = true,
+	EMPTY_SOCKET_YELLOW = true,
+}
+
+local DB_SOCKET_COLOR_TO_STAT = {
+	[1] = "EMPTY_SOCKET_META",
+	[2] = "EMPTY_SOCKET_RED",
+	[4] = "EMPTY_SOCKET_YELLOW",
+	[8] = "EMPTY_SOCKET_BLUE",
+}
+
+local SOCKET_STAT_TO_COLOR = {
+	EMPTY_SOCKET_BLUE = "BLUE",
+	EMPTY_SOCKET_META = "META",
+	EMPTY_SOCKET_PRISMATIC = "PRISMATIC",
+	EMPTY_SOCKET_RED = "RED",
+	EMPTY_SOCKET_YELLOW = "YELLOW",
+}
+
+local SOCKET_COLOR_LABELS = {
+	BLUE = "blue",
+	META = "meta",
+	PRISMATIC = "prismatic",
+	RED = "red",
+	YELLOW = "yellow",
 }
 
 local FAMILY_ALIASES = {
@@ -602,6 +638,12 @@ local function build_db_stats(dbitem)
 			add_stat(stats, "DAMAGE_PER_SECOND", avgDmg / delay)
 		end
 	end
+	if dbitem.so then
+		for _, socketColor in ipairs(dbitem.so) do
+			local socketStat = DB_SOCKET_COLOR_TO_STAT[socketColor] or "EMPTY_SOCKET_PRISMATIC"
+			add_stat(stats, socketStat, 1)
+		end
+	end
 	return stats
 end
 
@@ -924,11 +966,10 @@ local function debug_extract_itemlink(input)
 	return nil
 end
 
-function ItemScore:DebugGearItem(input)
+function ItemScore:GetGearDebugLines(input)
 	local itemlink = debug_extract_itemlink(input)
 	if not itemlink then
-		print(branded_chat_prefix("Gear Debug") .. " Usage: /zgvgearbug item:2399, /zgvgearbug 2399, or shift-click an item link.")
-		return
+		return nil, "Usage: /zgvgearbug item:2399, /zgvgearpop item:2399, or shift-click an item link."
 	end
 	itemlink = strip_link(itemlink) or itemlink
 	local itemID = ZGV.ItemLink and ZGV.ItemLink.GetItemID(itemlink)
@@ -943,44 +984,127 @@ function ItemScore:DebugGearItem(input)
 	local slot_1, slot_2, twohander, equippable, slotReason = item and get_item_slot_info(item)
 	local family = item and get_item_family(item)
 	local standardAllowed = class_can_use_standard_family(self.playerclass, family, self.playerlevel)
+	local comparison = slot_1 and self.Upgrades and self.Upgrades.GetUpgradeComparison and self.Upgrades:GetUpgradeComparison(slot_1, item)
 	local equip1 = slot_1 and GetInventoryItemLink and GetInventoryItemLink("player", slot_1)
 	local equip2 = slot_2 and GetInventoryItemLink and GetInventoryItemLink("player", slot_2)
 	local blizzStats = (GetItemStats and (GetItemStats(itemlink) or GetItemStats(item and item.itemlinkfull or itemlink))) or nil
 	local blizzStatCount = 0
 	if blizzStats then for _ in pairs(blizzStats) do blizzStatCount = blizzStatCount + 1 end end
 
-	print(branded_chat_prefix("Gear Debug") .. " start. Screenshot all lines below and the item tooltip if visible.")
-	print(("ZGD 1/9 input=%s id=%s locale=%s player=%s/%s level=%s build=%s"):format(debug_text(itemlink), debug_num(itemID), debug_text(GetLocale and GetLocale()), debug_text(self.playerclass), debug_text(self.playerclassName), debug_num(self.playerlevel), debug_num(ZGV.db and ZGV.db.char and ZGV.db.char.gear_active_build)))
-	print(("ZGD 2/9 DB found=%s name=%s slot=%s q=%s ilvl=%s req=%s cl=%s rc=%s armor=%s weapon=%s"):format(debug_bool(dbsource ~= nil), debug_text(dbsource and dbsource.n), debug_text(dbsource and dbsource.s), debug_num(dbsource and dbsource.q), debug_num(dbsource and dbsource.i), debug_num(dbsource and dbsource.rl), debug_num(dbsource and dbsource.cl), debug_num(dbsource and dbsource.rc), debug_num(dbsource and dbsource.ar), debug_bool(dbsource and dbsource.w ~= nil)))
-	print(("ZGD 3/9 GII name=%s type=%s subtype=%s equip=%s q=%s ilvl=%s req=%s tex=%s"):format(debug_text(gii[1]), debug_text(gii[6]), debug_text(gii[7]), debug_text(gii[9]), debug_num(gii[3]), debug_num(gii[4]), debug_num(gii[5]), debug_num(gii[10])))
-	print(("ZGD 4/9 item name=%s fromdb=%s pending=%s exact=%s class=%s subclass=%s family=%s subtype=%s equip=%s tipUnusable=%s"):format(debug_text(item and item.name), debug_bool(item and item.fromdb), debug_bool(item and item.needs_live_scan), debug_bool(item and item.needs_exact_stats), debug_num(item and item.class), debug_num(item and item.subclass), debug_text(family), debug_text(item and item.subtype), debug_text(item and (item.equiploc or item.type)), debug_bool(item and item.unusable_by_tooltip)))
-	print(("ZGD 5/9 validity valid=%s final=%s code=%s reason=%s equippable=%s slotReason=%s slot1=%s slot2=%s 2h=%s classFamilyAllowed=%s"):format(debug_bool(validity and validity.valid), debug_bool(validity and validity.final), debug_text(validity and validity.code), debug_text(validity and validity.reason), debug_bool(equippable), debug_text(slotReason), debug_num(slot_1), debug_num(slot_2), debug_bool(twohander), debug_bool(standardAllowed)))
-	print(("ZGD 6/9 score=%s scored=%s comment=%s armor=%s dps=%s blizzStats=%s"):format(debug_num(score), debug_bool(scored), debug_text(scoreComment), debug_num(item and item.stats and item.stats.ARMOR), debug_num(item and item.stats and item.stats.DAMAGE_PER_SECOND), debug_num(blizzStatCount)))
-	print(("ZGD 7/9 APIs usable=%s equippable=%s canEquip=%s equip1=%s equip2=%s"):format(debug_api_call(IsUsableItem, itemlink), debug_api_call(IsEquippableItem, itemlink), debug_api_call(CanEquipItem, itemlink), debug_text(equip1), debug_text(equip2)))
+	local lines = {}
+	lines[#lines + 1] = "Zygor Gear Debug: start. Copy all lines below and the item tooltip if visible."
+	lines[#lines + 1] = ("ZGD 1/9 input=%s id=%s locale=%s player=%s/%s level=%s build=%s"):format(debug_text(itemlink), debug_num(itemID), debug_text(GetLocale and GetLocale()), debug_text(self.playerclass), debug_text(self.playerclassName), debug_num(self.playerlevel), debug_num(ZGV.db and ZGV.db.char and ZGV.db.char.gear_active_build))
+	lines[#lines + 1] = ("ZGD 2/9 DB found=%s name=%s slot=%s q=%s ilvl=%s req=%s cl=%s rc=%s armor=%s weapon=%s"):format(debug_bool(dbsource ~= nil), debug_text(dbsource and dbsource.n), debug_text(dbsource and dbsource.s), debug_num(dbsource and dbsource.q), debug_num(dbsource and dbsource.i), debug_num(dbsource and dbsource.rl), debug_num(dbsource and dbsource.cl), debug_num(dbsource and dbsource.rc), debug_num(dbsource and dbsource.ar), debug_bool(dbsource and dbsource.w ~= nil))
+	lines[#lines + 1] = ("ZGD 3/9 GII name=%s type=%s subtype=%s equip=%s q=%s ilvl=%s req=%s tex=%s"):format(debug_text(gii[1]), debug_text(gii[6]), debug_text(gii[7]), debug_text(gii[9]), debug_num(gii[3]), debug_num(gii[4]), debug_num(gii[5]), debug_num(gii[10]))
+	lines[#lines + 1] = ("ZGD 4/9 item name=%s fromdb=%s pending=%s exact=%s class=%s subclass=%s family=%s subtype=%s equip=%s tipUnusable=%s"):format(debug_text(item and item.name), debug_bool(item and item.fromdb), debug_bool(item and item.needs_live_scan), debug_bool(item and item.needs_exact_stats), debug_num(item and item.class), debug_num(item and item.subclass), debug_text(family), debug_text(item and item.subtype), debug_text(item and (item.equiploc or item.type)), debug_bool(item and item.unusable_by_tooltip))
+	lines[#lines + 1] = ("ZGD 5/9 validity valid=%s final=%s code=%s reason=%s equippable=%s slotReason=%s slot1=%s slot2=%s 2h=%s classFamilyAllowed=%s"):format(debug_bool(validity and validity.valid), debug_bool(validity and validity.final), debug_text(validity and validity.code), debug_text(validity and validity.reason), debug_bool(equippable), debug_text(slotReason), debug_num(slot_1), debug_num(slot_2), debug_bool(twohander), debug_bool(standardAllowed))
+	lines[#lines + 1] = ("ZGD 6/9 score=%s scored=%s comment=%s armor=%s dps=%s blizzStats=%s"):format(debug_num(score), debug_bool(scored), debug_text(scoreComment), debug_num(item and item.stats and item.stats.ARMOR), debug_num(item and item.stats and item.stats.DAMAGE_PER_SECOND), debug_num(blizzStatCount))
+	lines[#lines + 1] = ("ZGD 7/9 APIs usable=%s equippable=%s canEquip=%s equip1=%s equip2=%s"):format(debug_api_call(IsUsableItem, itemlink), debug_api_call(IsEquippableItem, itemlink), debug_api_call(CanEquipItem, itemlink), debug_text(equip1), debug_text(equip2))
+	lines[#lines + 1] = ("ZGD cmp slot=%s candidate=%s baseline=%s delta=%s pct=%s state=%s new=%s armorFallback=%s"):format(debug_num(slot_1), debug_num(comparison and comparison.candidateScore), debug_num(comparison and comparison.baselineScore), debug_num(comparison and comparison.deltaScore), debug_num(comparison and comparison.percent), debug_text(comparison and comparison.state), debug_bool(comparison and comparison.isNewItem), debug_bool(comparison and comparison.armorFallback))
 
 	Gratuity:SetHyperlink(itemlink)
 	local lineCount = Gratuity:NumLines() or 0
-	print(("ZGD 8/9 tooltipLines=%s scanner=%s"):format(debug_num(lineCount), debug_text(Gratuity.vars and Gratuity.vars.tooltip and Gratuity.vars.tooltip:GetName())))
+	lines[#lines + 1] = ("ZGD 8/9 tooltipLines=%s scanner=%s"):format(debug_num(lineCount), debug_text(Gratuity.vars and Gratuity.vars.tooltip and Gratuity.vars.tooltip:GetName()))
 	for i = 1, math.min(lineCount, 8) do
 		local left, right = Gratuity:GetLine(i)
 		local lfs = Gratuity.vars and Gratuity.vars.Llines and Gratuity.vars.Llines[i]
 		local rfs = Gratuity.vars and Gratuity.vars.Rlines and Gratuity.vars.Rlines[i]
-		print(("ZGD tip %d L[%s]=%s R[%s]=%s"):format(i, debug_color_string(lfs), debug_text(left), debug_color_string(rfs), debug_text(right)))
+		lines[#lines + 1] = ("ZGD tip %d L[%s]=%s R[%s]=%s"):format(i, debug_color_string(lfs), debug_text(left), debug_color_string(rfs), debug_text(right))
 	end
 	if verbose[1] then
-		print(("ZGD 9/9 scoreDetail=%s | %s | %s"):format(debug_text(verbose[1]), debug_text(verbose[2]), debug_text(verbose[3])))
+		lines[#lines + 1] = ("ZGD 9/9 scoreDetail=%s | %s | %s"):format(debug_text(verbose[1]), debug_text(verbose[2]), debug_text(verbose[3]))
 	else
-		print("ZGD 9/9 scoreDetail=none")
+		lines[#lines + 1] = "ZGD 9/9 scoreDetail=none"
 	end
+	return lines
+end
+
+function ItemScore:DebugGearItem(input)
+	local lines, err = self:GetGearDebugLines(input)
+	if not lines then
+		print(branded_chat_prefix("Gear Debug") .. " " .. err)
+		return
+	end
+	for _, line in ipairs(lines) do
+		print(line)
+	end
+end
+
+function ItemScore:ShowGearDebugPopup(input)
+	local lines, err = self:GetGearDebugLines(input)
+	if not lines then
+		print(branded_chat_prefix("Gear Debug") .. " " .. err)
+		return
+	end
+	local text = table.concat(lines, "\n")
+	local frame = self.GearDebugPopup
+	if not frame then
+		frame = CreateFrame("Frame", "ZGVGearDebugPopup", UIParent)
+		frame:SetFrameStrata("DIALOG")
+		frame:SetWidth(720)
+		frame:SetHeight(420)
+		frame:SetPoint("CENTER")
+		frame:SetBackdrop({
+			bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
+			edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
+			tile = true, tileSize = 32, edgeSize = 32,
+			insets = { left = 11, right = 12, top = 12, bottom = 11 }
+		})
+		frame:EnableMouse(true)
+		frame:SetMovable(true)
+		frame:RegisterForDrag("LeftButton")
+		frame:SetScript("OnDragStart", frame.StartMoving)
+		frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
+
+		local title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+		title:SetPoint("TOPLEFT", 18, -16)
+		title:SetText("Zygor Gear Debug")
+		frame.title = title
+
+		local close = CreateFrame("Button", nil, frame, "UIPanelCloseButton")
+		close:SetPoint("TOPRIGHT", -4, -4)
+		frame.close = close
+
+		local scroll = CreateFrame("ScrollFrame", "ZGVGearDebugPopupScroll", frame, "UIPanelScrollFrameTemplate")
+		scroll:SetPoint("TOPLEFT", 18, -46)
+		scroll:SetPoint("BOTTOMRIGHT", -34, 46)
+		frame.scroll = scroll
+
+		local edit = CreateFrame("EditBox", nil, scroll)
+		edit:SetMultiLine(true)
+		edit:SetAutoFocus(false)
+		edit:SetFontObject(ChatFontNormal)
+		edit:SetWidth(650)
+		edit:SetScript("OnEscapePressed", function() frame:Hide() end)
+		scroll:SetScrollChild(edit)
+		frame.edit = edit
+
+		local hint = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+		hint:SetPoint("BOTTOMLEFT", 18, 18)
+		hint:SetText("Click text, Ctrl+A, Ctrl+C to copy.")
+		frame.hint = hint
+
+		self.GearDebugPopup = frame
+	end
+	frame.edit:SetText(text)
+	frame.edit:HighlightText()
+	frame.edit:SetFocus()
+	frame:Show()
 end
 
 function ItemScore:RegisterDebugSlashCommands()
 	if self.DebugSlashRegistered then return end
 	SLASH_ZGVGEARBUG1 = "/zgvgearbug"
 	SLASH_ZGVGEARBUG2 = "/zgvitemdebug"
+	SLASH_ZGVGEARPOP1 = "/zgvgearpop"
 	SlashCmdList["ZGVGEARBUG"] = function(msg)
 		if ZGV and ZGV.ItemScore and ZGV.ItemScore.DebugGearItem then
 			ZGV.ItemScore:DebugGearItem(msg)
+		end
+	end
+	SlashCmdList["ZGVGEARPOP"] = function(msg)
+		if ZGV and ZGV.ItemScore and ZGV.ItemScore.ShowGearDebugPopup then
+			ZGV.ItemScore:ShowGearDebugPopup(msg)
 		end
 	end
 	self.DebugSlashRegistered = true
@@ -1525,6 +1649,125 @@ function ItemScore:BuildRuleContext(classToken, buildNum, level)
 	return context
 end
 
+local WOTLK_SOCKET_GEM_CANDIDATES = {
+	RED = {
+		{SPELL_POWER = 23},
+		{STRENGTH = 20},
+		{AGILITY = 20},
+		{ARMOR_PENETRATION = 20},
+		{EXPERTISE = 20},
+		{PARRY = 20},
+		{ATTACK_POWER = 40},
+		{RANGED_ATTACK_POWER = 40},
+		{SPELL_POWER = 12, HIT = 10},
+		{SPELL_POWER = 12, CRIT = 10},
+		{SPELL_POWER = 12, HASTE = 10},
+		{SPELL_POWER = 12, INTELLECT = 10},
+		{SPELL_POWER = 12, SPIRIT = 10},
+		{SPELL_POWER = 12, MANA_REGENERATION = 5},
+		{STRENGTH = 10, HIT = 10},
+		{STRENGTH = 10, CRIT = 10},
+		{AGILITY = 10, HIT = 10},
+		{AGILITY = 10, CRIT = 10},
+	},
+	YELLOW = {
+		{INTELLECT = 20},
+		{HIT = 20},
+		{CRIT = 20},
+		{HASTE = 20},
+		{DEFENSE_SKILL = 20},
+		{DODGE = 20},
+		{SPELL_POWER = 12, HIT = 10},
+		{SPELL_POWER = 12, CRIT = 10},
+		{SPELL_POWER = 12, HASTE = 10},
+		{SPELL_POWER = 12, INTELLECT = 10},
+		{HIT = 10, STAMINA = 15},
+		{CRIT = 10, STAMINA = 15},
+		{HASTE = 10, STAMINA = 15},
+		{CRIT = 10, SPIRIT = 10},
+		{HASTE = 10, SPIRIT = 10},
+		{DEFENSE_SKILL = 10, STAMINA = 15},
+		{DODGE = 10, STAMINA = 15},
+	},
+	BLUE = {
+		{STAMINA = 30},
+		{SPIRIT = 20},
+		{MANA_REGENERATION = 10},
+		{SPELL_PENETRATION = 25},
+		{SPELL_POWER = 12, SPIRIT = 10},
+		{SPELL_POWER = 12, MANA_REGENERATION = 5},
+		{HIT = 10, STAMINA = 15},
+		{CRIT = 10, STAMINA = 15},
+		{HASTE = 10, STAMINA = 15},
+		{CRIT = 10, SPIRIT = 10},
+		{HASTE = 10, SPIRIT = 10},
+		{DEFENSE_SKILL = 10, STAMINA = 15},
+		{DODGE = 10, STAMINA = 15},
+		{PARRY = 10, STAMINA = 15},
+	},
+	META = {},
+}
+WOTLK_SOCKET_GEM_CANDIDATES.PRISMATIC = {}
+for _, socketColor in ipairs({"RED", "YELLOW", "BLUE"}) do
+	for _, candidate in ipairs(WOTLK_SOCKET_GEM_CANDIDATES[socketColor]) do
+		WOTLK_SOCKET_GEM_CANDIDATES.PRISMATIC[#WOTLK_SOCKET_GEM_CANDIDATES.PRISMATIC + 1] = candidate
+	end
+end
+
+local function socket_scoring_enabled()
+	return not (ZGV.db and ZGV.db.profile and ZGV.db.profile.itemscore_score_sockets == false)
+end
+
+local function get_effective_stat_weight(statname, statweights, caps, playerlevel)
+	local statweight = statweights[statname] or 0
+	if caps and caps[statname] then
+		local current_rating = ItemScore:GetEquippedStatValue(statname)
+		if (current_rating > caps[statname]) or playerlevel < GetMaxPlayerLevel() then
+			statweight = statweight / 2
+		end
+	end
+	return statweight
+end
+
+local function score_socket_candidate(candidate, statweights, caps, playerlevel)
+	local score = 0
+	for statname, amount in pairs(candidate) do
+		score = score + amount * get_effective_stat_weight(statname, statweights, caps, playerlevel)
+	end
+	return score
+end
+
+local function score_socket_color(color, statweights, caps, playerlevel)
+	local candidates = WOTLK_SOCKET_GEM_CANDIDATES[color]
+	local bestScore = 0
+	if not candidates then return bestScore end
+	for _, candidate in ipairs(candidates) do
+		local score = score_socket_candidate(candidate, statweights, caps, playerlevel)
+		if score > bestScore then
+			bestScore = score
+		end
+	end
+	return bestScore
+end
+
+local function get_item_socket_score(item, statweights, caps, playerlevel)
+	if not socket_scoring_enabled() or not item or not item.stats then return 0 end
+	local score = 0
+	local details = {}
+	for statname, statvalue in pairs(item.stats) do
+		local color = SOCKET_STAT_TO_COLOR[ItemScore:NormaliseStatName(statname)]
+		if color then
+			local count = tonumber(statvalue) or 0
+			local socketScore = score_socket_color(color, statweights, caps, playerlevel)
+			if count > 0 and socketScore > 0 then
+				score = score + socketScore * count
+				details[#details + 1] = ("%s %.1f"):format(SOCKET_COLOR_LABELS[color] or color:lower(), socketScore * count)
+			end
+		end
+	end
+	return score, table.concat(details, ", ")
+end
+
 function ItemScore:GetItemScoreForContext(itemlink, context)
 	local item = ItemScore:GetResolvedItemDetails(itemlink)
 	if not item then return -1, false, "no info yet" end
@@ -1537,15 +1780,12 @@ function ItemScore:GetItemScoreForContext(itemlink, context)
 
 	for statname, statvalue in pairs(stats) do
 		statname = ItemScore:NormaliseStatName(statname)
-		local statweight = statweights[statname] or 0
-		if caps and caps[statname] then
-			local current_rating = ItemScore:GetEquippedStatValue(statname)
-			if (current_rating > caps[statname]) or context.playerlevel < GetMaxPlayerLevel() then
-				statweight = statweight / 2
-			end
+		if not SOCKET_STAT_KEYS[statname] then
+			local statweight = get_effective_stat_weight(statname, statweights, caps, context.playerlevel)
+			score = score + statvalue * statweight
 		end
-		score = score + statvalue * statweight
 	end
+	score = score + get_item_socket_score(item, statweights, caps, context.playerlevel)
 
 	if not statweights.ARMOR then
 		score = score + (item.stats.ARMOR or 0) * context.whiteScoreWeight
@@ -2802,21 +3042,18 @@ function ItemScore:GetItemScore(itemlink,verbose)
 	-- calculate score based on stats
 	for statname,statvalue in pairs(stats) do
 		statname = ItemScore:NormaliseStatName(statname)
-		local statweight = statweights[statname] or 0
+		if not SOCKET_STAT_KEYS[statname] then
+			local statweight = get_effective_stat_weight(statname, statweights, caps, self.playerlevel)
+			score = score + statvalue*statweight
 
-		if caps and caps[statname] then
-			local current_rating = ItemScore:GetEquippedStatValue(statname)
-			-- reduce value of stats that are already capped, or if player is not at max level
-			if (current_rating > caps[statname]) or self.playerlevel < GetMaxPlayerLevel() then
-				statweight = statweight / 2
-			end
+			if verbose then table.insert(verbose,("  + |cff00ff00%.1f * %s|r: |cffaaaaaa * %.1f|r = |cffffffff%.1f|r"):format(statvalue,statname, statweight, statvalue*statweight))  end
 		end
-		
-		score = score + statvalue*statweight
+	end
 
-		if verbose then table.insert(verbose,("  + |cff00ff00%.1f * %s|r: |cffaaaaaa * %.1f|r = |cffffffff%.1f|r"):format(statvalue,statname, statweight, statvalue*statweight))  end
-		
-		-- 3.3.5a: gem socket scoring not supported (no gem database for WOTLK)
+	local socketScore, socketDetails = get_item_socket_score(item, statweights, caps, self.playerlevel)
+	if socketScore > 0 then
+		score = score + socketScore
+		if verbose then table.insert(verbose,("  + |cff00ff00sockets %s|r: |cffffffff%.1f|r"):format(socketDetails, socketScore)) end
 	end
 
 	-- add dps and armor at minimal weight, unless proper statweights for them exist
