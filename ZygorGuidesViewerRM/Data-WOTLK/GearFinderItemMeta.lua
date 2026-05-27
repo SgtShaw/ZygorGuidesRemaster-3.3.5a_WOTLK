@@ -2,6 +2,7 @@ local ZGV = ZygorGuidesViewer
 if not ZGV then return end
 ZGV.ItemScore = ZGV.ItemScore or {}
 ZGV.ItemScore.GearFinderItemMeta = {
+  [1513] = { name = "Old Greatsword", equipLoc = "INVTYPE_2HWEAPON", family = "TH_SWORD" },
   [1749] = { name = "Linked Chain Cloak", equipLoc = "INVTYPE_CLOAK" },
   [1761] = { name = "Reinforced Chain Vest", equipLoc = "INVTYPE_CHEST", family = "MAIL" },
   [1795] = { name = "Rawhide Belt", equipLoc = "INVTYPE_WAIST", family = "LEATHER" },

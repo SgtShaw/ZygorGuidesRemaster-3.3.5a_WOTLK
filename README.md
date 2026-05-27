@@ -170,6 +170,7 @@ This addon is fully open source and can be inspected before use.
 - Added user-editable `Custom Spec 1`, `Custom Spec 2`, and `Custom Spec 3` stat-weight profiles for custom-server fallback use.
 - Unknown class/spec fallback now defaults to `Custom Spec 1` and prints one Zygor-branded Gear Advisor notice pointing users to Stat Weights.
 - Fixed embedded Stat Weights `Show All Stats` refresh so the scrollbar appears immediately, and right-aligned the scrollbar inside the options frame.
+- Added missing item database coverage for grey item ID `1513` (`Old Greatsword`) so Gear Advisor no longer reports it as absent.
 - Updated addon version metadata to 3.0.188.
 
 ### Revision 187 - 3.0.187
