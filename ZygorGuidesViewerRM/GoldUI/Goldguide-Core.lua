@@ -1401,12 +1401,7 @@ function Goldguide.Common:CalculateDetails(refresh)
 		self.display_name = self.bad_items[1][1]
 	end
 	if quality then
-		local r, g, b, hex = GetItemQualityColor(quality)
-		if hex then
-			self.display_name = "|c" .. hex .. self.display_name
-		elseif r then
-			self.display_name = format("|cff%02x%02x%02x", r*255, g*255, b*255) .. self.display_name
-		end
+		self.display_name = (ZGV:GetItemQualityColorCode(quality) or "") .. self.display_name
 	end
 
 	self.display_name = self.display_name or self.name

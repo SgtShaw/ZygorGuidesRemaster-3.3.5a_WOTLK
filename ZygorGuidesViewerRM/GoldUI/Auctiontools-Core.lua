@@ -178,12 +178,7 @@ function Appraiser:Update()
 				row.icon:SetTexture(invItem.icon)
 				color = ""
 				if invItem.quality then
-					local r,g,b,hex = GetItemQualityColor(invItem.quality)
-					if hex then
-						color="|c"..hex
-					elseif r then
-						color=format("|cff%02x%02x%02x", r*255, g*255, b*255)
-					end
+					color=ZGV:GetItemQualityColorCode(invItem.quality) or ""
 				end
 				row.name:SetText(invItem.count.." "..color..(invItem.displayName or invItem.name or "..."))
 				row.status:SetTexCoord(unpack(invItem.statusIcon))
@@ -246,8 +241,7 @@ function Appraiser:Update()
 					row.icon:SetTexture(invItem.icon)
 					color = ""
 					if invItem.quality then
-						local _,_,_, hex = GetItemQualityColor(invItem.quality);
-						color="|c"..hex
+						color=ZGV:GetItemQualityColorCode(invItem.quality) or ""
 					end
 					row.price:SetText(invItem.priceMax and ZGV.GetMoneyString(invItem.priceMax) or "")
 					

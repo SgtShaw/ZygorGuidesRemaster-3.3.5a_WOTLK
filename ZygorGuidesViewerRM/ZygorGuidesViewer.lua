@@ -59,14 +59,29 @@ local DIR = "Interface\\AddOns\\"..(addonName or "ZygorGuidesViewer")
 ZGV.DIR = DIR
 local SKINDIR = ""
 
--- GetItemQualityColor polyfill: 3.3.5a returns (r,g,b) but later versions return (r,g,b,hex)
+-- GetItemQualityColor polyfill: 3.3.5a returns (r,g,b), while some addons expect
+-- the 4th return to be a display-ready color escape such as "|cffa334ee".
 do
 	local origGetItemQualityColor = GetItemQualityColor
 	GetItemQualityColor = function(quality)
-		local r, g, b = origGetItemQualityColor(quality)
-		local hex = format("ff%02x%02x%02x", (r or 1)*255, (g or 1)*255, (b or 1)*255)
-		return r, g, b, hex
+		local r, g, b, color = origGetItemQualityColor(quality)
+		if type(color) ~= "string" or not color:match("^|c%x%x%x%x%x%x%x%x$") then
+			color = format("|cff%02x%02x%02x", (r or 1)*255, (g or 1)*255, (b or 1)*255)
+		end
+		return r, g, b, color
 	end
+end
+
+function ZGV:GetItemQualityColorCode(quality)
+	local r, g, b, color = GetItemQualityColor(quality)
+	if type(color) == "string" then
+		if color:match("^|c%x%x%x%x%x%x%x%x$") then return color end
+		if color:match("^%x%x%x%x%x%x%x%x$") then return "|c" .. color end
+	end
+	if r then
+		return format("|cff%02x%02x%02x", (r or 1)*255, (g or 1)*255, (b or 1)*255)
+	end
+	return ""
 end
 
 -- API polyfills for 3.3.5a (methods added in later WoW versions)

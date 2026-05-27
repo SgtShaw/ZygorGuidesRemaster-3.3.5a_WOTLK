@@ -196,8 +196,7 @@ function Crafting:GetDisplayInfo(refresh)
 	name=name or ""
 
 	if quality then
-		local r, g, b, hex = GetItemQualityColor(quality);
-		name="|c"..hex..name	
+		name=(ZGV:GetItemQualityColorCode(quality) or "")..name	
 	end
 
 	--name=name.." ("..ZGV.GetMoneyString(self.sellprice)..") ("..self.demand..")"

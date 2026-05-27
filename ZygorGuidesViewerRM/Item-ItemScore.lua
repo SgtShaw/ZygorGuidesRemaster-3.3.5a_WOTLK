@@ -2124,6 +2124,9 @@ function ItemScore:OnEvent(event,arg1,arg2,...)
 	elseif event == "SKILL_LINES_CHANGED" then -- on classic, skills changed, so user may have learned new weapon skill
 		ItemScore:GetEquipmentSkills()
 	elseif event == "LOADING_SCREEN_DISABLED" then -- user logged in, see what upgrades we have
+		if ItemScore.GearFinder and ItemScore.GearFinder.MarkWorldLoaded then
+			ItemScore.GearFinder:MarkWorldLoaded()
+		end
 		ItemScore:DelayedRefreshUserData()
 		ItemScore.LoginRefreshTimer = ItemScore.LoginRefreshTimer or ZGV:ScheduleTimer(function()
 			ItemScore.LoginRefreshTimer = nil

@@ -34,8 +34,13 @@ local GearFinder = {}
 ItemScore.GearFinder = GearFinder
 ItemScore.Items = {}
 GearFinder.ITEM_RESOLVE_RETRY_LIMIT = 60
+GearFinder.STARTUP_ITEM_INFO_GRACE = 6
 local cancel_gearfinder_timer
 local queue_fallback_candidate
+
+local function get_time()
+	return GetTime and GetTime() or (debugprofilestop and debugprofilestop() / 1000) or 0
+end
 
 local function GF_FormatFinderSummary(slotID, item, change, secondnewitem)
 	local upgrades = ItemScore and ItemScore.Upgrades
@@ -1105,7 +1110,9 @@ end
 
 local function same_finder_candidate(a, b)
 	if not a or not b then return false end
-	if a.itemid and b.itemid then return a.itemid == b.itemid end
+	local aid = get_candidate_item_id(a)
+	local bid = get_candidate_item_id(b)
+	if aid and bid then return aid == bid end
 	local alink = strip_link(a.itemlinkfull or a.itemlink)
 	local blink = strip_link(b.itemlinkfull or b.itemlink)
 	return alink and blink and alink == blink or false
@@ -1426,7 +1433,7 @@ local function get_progression_band_cap()
 	for _, queue in pairs(GearFinder.UpgradeQueue or {}) do scan_queue(queue) end
 	for _, queue in pairs(GearFinder.FallbackQueue or {}) do scan_queue(queue) end
 	if not bestDungeonTier then return nil end
-	if bestDungeonTier <= 20 then return 20 end
+	if bestDungeonTier <= 20 then return 49 end
 	if bestDungeonTier < 50 then return 49 end
 	if bestDungeonTier < 60 then return 59 end
 	return bestDungeonTier
@@ -1692,10 +1699,10 @@ local function loot_score_dungeon_thread()
 				local item, itemerr = safe_get_item_details(itemlink)
 				if itemerr then GearFinder.LastError = itemerr end
 				if not item then
-					queue_local_meta_candidate(itemlink, itemdata, ident, false)
-					queue_bare_fallback_candidate(itemlink, itemdata, ident, false)
 					itemdata.resolve_attempts = (itemdata.resolve_attempts or 0) + 1
 					if itemdata.resolve_attempts >= GearFinder.ITEM_RESOLVE_RETRY_LIMIT then
+						queue_local_meta_candidate(itemlink, itemdata, ident, false)
+						queue_bare_fallback_candidate(itemlink, itemdata, ident, false)
 						ZGV:Debug("&gear dropping unresolved current item after %d attempts: %s",itemdata.resolve_attempts,tostring(itemlink))
 						GearFinder.HadUnresolvedItems = true
 						GearFinder.ItemsToScore[ident][index]=nil
@@ -1781,10 +1788,10 @@ local function loot_score_dungeon_thread()
 				local item, itemerr = safe_get_item_details(itemlink)
 				if itemerr then GearFinder.LastError = itemerr end
 				if not item then
-					queue_local_meta_candidate(itemlink, itemdata, ident, false)
-					queue_bare_fallback_candidate(itemlink, itemdata, ident, false)
 					itemdata.resolve_attempts = (itemdata.resolve_attempts or 0) + 1
 					if itemdata.resolve_attempts >= GearFinder.ITEM_RESOLVE_RETRY_LIMIT then
+						queue_local_meta_candidate(itemlink, itemdata, ident, false)
+						queue_bare_fallback_candidate(itemlink, itemdata, ident, false)
 						ZGV:Debug("&gear dropping unresolved external item after %d attempts: %s",itemdata.resolve_attempts,tostring(itemlink))
 						GearFinder.HadUnresolvedItems = true
 						GearFinder.VendorItemsToScore[ident][index]=nil
@@ -1897,6 +1904,9 @@ local function loot_score_dungeon_thread()
 		end
 	end
 	enforce_distinct_pair_results(distinct_slot_pairs)
+	prune_all_to_progression_band()
+	promote_fallback_results()
+	enforce_distinct_pair_results(distinct_slot_pairs)
 
 	if are_all_slots_filled() then 
 		GearFinder.ResultsReady=true 
@@ -1922,10 +1932,10 @@ local function loot_score_dungeon_thread()
 					local item, itemerr = safe_get_item_details(itemlink)
 					if itemerr then GearFinder.LastError = itemerr end
 					if not item then 
-						queue_local_meta_candidate(itemlink, itemdata, dungeon.ident, true)
-						queue_bare_fallback_candidate(itemlink, itemdata, dungeon.ident, true)
 						itemdata.resolve_attempts = (itemdata.resolve_attempts or 0) + 1
 						if itemdata.resolve_attempts >= GearFinder.ITEM_RESOLVE_RETRY_LIMIT then
+							queue_local_meta_candidate(itemlink, itemdata, dungeon.ident, true)
+							queue_bare_fallback_candidate(itemlink, itemdata, dungeon.ident, true)
 							ZGV:Debug("&gear dropping unresolved future item after %d attempts: %s",itemdata.resolve_attempts,tostring(itemlink))
 							GearFinder.HadUnresolvedItems = true
 							GearFinder.ItemsToMaybeScore[dungeon.ident][index]=nil
@@ -2106,6 +2116,58 @@ GearFinder.FutureDungeons = {}
 GearFinder.HadUnresolvedItems = false
 GearFinder.DebugSummary = {}
 
+function GearFinder:MarkWorldLoaded()
+	self.LastWorldLoadTime = get_time()
+end
+
+function GearFinder:GetStartupItemInfoGraceRemaining()
+	if not self.LastWorldLoadTime then return 0 end
+	local remaining = (self.STARTUP_ITEM_INFO_GRACE or 0) - (get_time() - self.LastWorldLoadTime)
+	return remaining > 0 and remaining or 0
+end
+
+function GearFinder:ShowItemInfoLoadingMessage()
+	if not self.MainFrame then return end
+	local MF = self.MainFrame
+	if MF.NoSourcesFrame then MF.NoSourcesFrame:Hide() end
+	if MF.ErrorBox then MF.ErrorBox:Hide() end
+	if MF.overlay then MF.overlay:Hide() end
+	if MF.Progress then
+		MF.Progress:SetPercent(0, "noanim")
+		MF.Progress:Show()
+	end
+	if MF.DungeonMessage then MF.DungeonMessage:SetText("Gear Finder loading") end
+	if MF.DungeonName then MF.DungeonName:SetText("Waiting for item data") end
+	if MF.DungeonDesc then MF.DungeonDesc:SetText("Item information is still loading from the game server.") end
+	if MF.DungeonReason then MF.DungeonReason:SetText("Results will refresh automatically.") end
+	if MF.AddButton then MF.AddButton:Hide() end
+	for _, button in pairs(MF.Buttons or {}) do
+		button.itemicon:SetTexture(button.slotTexture)
+		button.itemlink:SetText(" ")
+		button.link = nil
+		button.sourceTooltipLines = nil
+		button.dungeonguide = nil
+		button.bisTooltipText = nil
+		if button.bisbadge then button.bisbadge:Hide() end
+		button.itemdungeon:SetText("Loading item data...")
+		button.itemencounter:SetText(" ")
+		button.itemicon:SetDesaturated(false)
+		button:SetAlpha(0.5)
+	end
+end
+
+function GearFinder:ScheduleStartupItemInfoScan(remaining)
+	if self.StartupItemInfoTimer then return end
+	self:ClearResults()
+	self:ShowItemInfoLoadingMessage()
+	self.StartupItemInfoTimer = ZGV:ScheduleTimer(function()
+		self.StartupItemInfoTimer = nil
+		if not self.MainFrame or not self.MainFrame:IsVisible() then return end
+		self:ClearResults()
+		self:ScoreDungeonItems(true)
+	end, math.max(0.5, remaining or self.STARTUP_ITEM_INFO_GRACE or 0.5))
+end
+
 function GearFinder:ScheduleItemInfoRefresh()
 	if self.ItemInfoRefreshTimer or not self.MainFrame or not self.MainFrame:IsVisible() then return end
 	self.ItemInfoRefreshTimer = ZGV:ScheduleTimer(function()
@@ -2116,8 +2178,13 @@ function GearFinder:ScheduleItemInfoRefresh()
 	end, 0.4)
 end
 
-function GearFinder:ScoreDungeonItems()
+function GearFinder:ScoreDungeonItems(force)
 	if GearFinder.ResultsReady then return end
+	local startupGrace = not force and self:GetStartupItemInfoGraceRemaining()
+	if startupGrace and startupGrace > 0 then
+		self:ScheduleStartupItemInfoScan(startupGrace)
+		return
+	end
 
 	GearFinder.CurrentExpansion = (GetClassicExpansionLevel and GetClassicExpansionLevel()) or (GetServerExpansionLevel and GetServerExpansionLevel()) or 2 -- 2 = WOTLK
 
@@ -3341,6 +3408,9 @@ function GearFinder:ClearResults()
 	end
 	if GearFinder.AntsTimer then
 		cancel_gearfinder_timer("AntsTimer")
+	end
+	if GearFinder.StartupItemInfoTimer then
+		cancel_gearfinder_timer("StartupItemInfoTimer")
 	end
 	
 	-- Release coroutine reference for GC (Lua 5.1 has no coroutine.close())

@@ -108,8 +108,7 @@ function Auctions:CalculateDetails(refresh)
 	if name then self.name = name end
 
 	if self.quality then
-		local r, g, b, hex = GetItemQualityColor(self.quality);
-		self.name="|c"..hex..name	
+		self.name=(ZGV:GetItemQualityColorCode(self.quality) or "")..(name or self.name or "")
 	end
 
 	table.wipe(prices)
@@ -280,8 +279,7 @@ function Auctions:GetDisplayInfo(refresh)
 	if name then self.name = name end
 
 	if self.quality then
-		local r, g, b, hex = GetItemQualityColor(self.quality);
-		name="|c"..hex..name	
+		name=(ZGV:GetItemQualityColorCode(self.quality) or "")..(name or self.name or "")
 	end
 
 	local status="●"

@@ -164,6 +164,14 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
+### Revision 187 - 3.0.187
+
+- Fixed Gear Finder paired-slot duplicate handling so the same trinket or ring is not recommended in both slots when item IDs are represented differently internally.
+- Improved tier-progression filtering so early results are pruned before display while still allowing the next regular T7/Naxx progression step when a current pre-raid or heroic slot has no upgrade.
+- Fixed AtlasLoot compatibility with `GetItemQualityColor()` so external addon item names no longer show raw quality hex prefixes such as `ffa334eeItem Name`.
+- Added a Gear Finder startup item-cache guard. Opening Gear Finder immediately after login now shows a loading state and auto-scans after item data has had time to load.
+- Updated addon version metadata to 3.0.187.
+
 ### Revision 186 - 3.0.186
 
 - Improved Gear Finder recommendations with ranked BiS-Tooltip data for mapped WotLK specs, including stronger Shadow priest pre-raid/T9/T10/RS ordering.
