@@ -164,6 +164,13 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
+### Revision 190 - 3.0.190
+
+- Fixed an Ebonhold/Rogue-Lite Death Knight starter freeze when switching to the built-in waypointing system with the DK starter guide active.
+- Built-in waypointing now skips LibRover route calculation in the phased DK starter/Acherus/Scarlet Enclave area and falls back to a direct internal arrow.
+- External waypoint addons such as Carbonite remain unchanged.
+- Updated addon version metadata to 3.0.190.
+
 ### Revision 189 - 3.0.189
 
 - Fixed an Ebonhold/Rogue-Lite hard client crash where the server-provided `AwesomeWotlkLib.dll` implementation of `GetItemInfoInstant` could trigger `ERROR #132` during addon startup.
@@ -204,13 +211,6 @@ This addon is fully open source and can be inspected before use.
 - Added an optional normalized item score display mode for Pawn-like static score values.
 - Localized the new tooltip value display and normalization options across supported addon locales.
 - Updated addon version metadata to 3.0.183.
-
-### Revision 182 - 3.0.182
-
-- Added a targeted Gear Advisor guard for WotLK tooltips that mark an equipment subtype red on the right side of the item type row.
-- Items flagged this way are rejected before scoring with diagnostic code `tooltip_subtype`.
-- Updated `/zgvgearbug` output to include `tipUnusable=true/false` in the cached item line.
-- Updated addon version metadata to 3.0.182.
 
 ## Notes
 

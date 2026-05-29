@@ -270,6 +270,14 @@ local function CanUseLibRoverPath()
 		and ZGV.LibRover.Abort
 end
 
+local function IsDeathKnightStarterZone(zone)
+	if not zone or zone == "" then return false end
+	local scarlet = ZGV and ZGV.BZL and ZGV.BZL["Plaguelands: The Scarlet Enclave"] or "Plaguelands: The Scarlet Enclave"
+	return zone == scarlet
+		or zone == "Plaguelands: The Scarlet Enclave"
+		or zone == "Acherus: The Ebon Hold"
+end
+
 local function StartLibRoverIfNeeded()
 	if not ZGV or not ZGV.LibRover or not ZGV.LibRover.DoStartup then return end
 	if ZGV.LibRover.ready or ZGV.LibRover.startup_thread or ZGV.LibRover.initializing then return end
@@ -383,6 +391,7 @@ local function StartLibRoverPath(finalWaypoint)
 	StartLibRoverIfNeeded()
 	local goal = finalWaypoint.goal
 	if goal.waypoint_notravel then return false end
+	if IsDeathKnightStarterZone(GetRealZoneText()) or IsDeathKnightStarterZone(finalWaypoint.map) then return false end
 	local mapID = GetMapIDForGoal(goal, finalWaypoint.map)
 	local x = goal.x
 	local y = goal.y
