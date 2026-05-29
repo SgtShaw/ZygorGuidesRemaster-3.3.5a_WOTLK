@@ -164,6 +164,13 @@ This addon is fully open source and can be inspected before use.
 
 ## Changelog
 
+### Revision 189 - 3.0.189
+
+- Fixed an Ebonhold/Rogue-Lite hard client crash where the server-provided `AwesomeWotlkLib.dll` implementation of `GetItemInfoInstant` could trigger `ERROR #132` during addon startup.
+- Removed remaining direct addon calls to `GetItemInfoInstant`; Gear Advisor and Gold Guide compatibility paths now use regular item info or DB-backed data instead.
+- Deduplicated the integrated Talent Advisor startup chat message.
+- Updated addon version metadata to 3.0.189.
+
 ### Revision 188 - 3.0.188
 
 - Fixed Gear Advisor behavior on custom-server classes/specs so unknown builds no longer spam raw `Unknown spec` chat messages.
@@ -204,13 +211,6 @@ This addon is fully open source and can be inspected before use.
 - Items flagged this way are rejected before scoring with diagnostic code `tooltip_subtype`.
 - Updated `/zgvgearbug` output to include `tipUnusable=true/false` in the cached item line.
 - Updated addon version metadata to 3.0.182.
-
-### Revision 181 - 3.0.181
-
-- Added the diagnostic-only `/zgvgearbug` slash command for Gear Advisor/Gear Finder item reports.
-- The command prints DB, live item info, cached item state, advisor validity, score, API probes, equipped slot baselines, and tooltip scanner color lines for a supplied item ID/link.
-- No recommendation behavior was changed in this release.
-- Updated addon version metadata to 3.0.181.
 
 ## Notes
 

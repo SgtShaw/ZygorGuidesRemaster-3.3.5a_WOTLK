@@ -6,6 +6,7 @@ local function AnnounceTalentAdvisorLoaded(zgv)
 	if not _G.ZygorTalentAdvisor then return end
 	if type(zgv.Print) ~= "function" then return end
 	zgv._taLoadedMessageShown = true
+	_G.ZygorTalentAdvisor._integratedLoadAnnounced = true
 	zgv:Print("|cff88ff88ZygorTalentAdvisor loaded.|r Talent Advisor is integrated in this addon.")
 end
 

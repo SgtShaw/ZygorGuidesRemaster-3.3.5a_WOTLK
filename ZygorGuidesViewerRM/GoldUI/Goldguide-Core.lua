@@ -1047,7 +1047,7 @@ end
 function Goldguide:GetItemFlagsAndStatus(chore)
 	local id = chore.id or chore.productid
 	if not id then return {}, nil end
-	local _,class,subclass  = GetItemInfoInstant(id)
+	local _, _, _, _, _, class, subclass = ZGV:GetItemInfo(id)
 
 	local flags = {}
 

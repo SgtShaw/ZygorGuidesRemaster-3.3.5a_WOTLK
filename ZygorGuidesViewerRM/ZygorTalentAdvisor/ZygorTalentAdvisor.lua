@@ -42,7 +42,12 @@ me.suggestion_preview = {player={},pet={}}
 
 function me:AnnounceIntegratedLoad()
 	if self._integratedLoadAnnounced then return end
+	if ZGV and ZGV._taLoadedMessageShown then
+		self._integratedLoadAnnounced = true
+		return
+	end
 	self._integratedLoadAnnounced = true
+	if ZGV then ZGV._taLoadedMessageShown = true end
 	local msg = "|cff88ff88ZygorTalentAdvisor loaded.|r Talent Advisor is integrated in this addon."
 	if ZGV and type(ZGV.Print) == "function" then
 		ZGV:Print(msg)

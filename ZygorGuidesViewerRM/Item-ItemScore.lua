@@ -530,12 +530,6 @@ local function should_warn_missing_itemdb(itemLinkOrID, itemID)
 	if not itemID then return false end
 	local _, _, _, _, _, _, _, _, equipLoc = GetItemInfo(itemLinkOrID or itemID)
 	if not equipLoc or equipLoc == "" then
-		local okName, _, _, _, _, _, _, _, instantEquipLoc = GetItemInfoInstant(itemLinkOrID or itemID)
-		if okName or instantEquipLoc then
-			equipLoc = instantEquipLoc
-		end
-	end
-	if not equipLoc or equipLoc == "" then
 		return false
 	end
 	if not EQUIPPABLE_INV_TYPES[equipLoc] then

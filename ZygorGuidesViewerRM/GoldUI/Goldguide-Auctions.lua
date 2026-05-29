@@ -90,7 +90,7 @@ function Auctions:CalculateDetails(refresh)
 	local tooltip = self.tooltip
 	table.wipe(tooltip)
 
-	local _,class,subclass  = GetItemInfoInstant(id)
+	local _, _, _, _, _, class, subclass = ZGV:GetItemInfo(id)
 
 	local name,link,quality,icon,pet
 
